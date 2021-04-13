@@ -44,4 +44,4 @@ I am also writing the first two books of a trilogy:
 
 **Hegemony in America**: *Intellectuals and Equilibrium in the Thought of Alexis de Tocqueville and Antonio Gramsci*. Political Science honors thesis, University of Victoria, 2002.
 
-Additionally, I've contributed to DARPA-sponsored research, and my work has been supported by philanthropists such as Marc Cuban and Eric Schmidt.
+Additionally, I've contributed to DARPA-sponsored research, and my work has been supported by philanthropists such as Mark Cuban and Eric Schmidt.
