@@ -1,0 +1,7 @@
+title: Brad Fidler
+description: I work with computers
+theme: jekyll-theme-minimal
+permalink: /:year/:y_day/
+logo: https://github.com/brfid.png?size=175
+show-downloads: false
+auto_ids: true
