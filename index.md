@@ -22,11 +22,15 @@ My most updated list of publications is at [my ORCID](https://orcid.org/0000-000
 
 **Articles in Preparation or Press**:
 
-* *The Would-Be Technocracy: Evaluating Efforts to Control Social Change with Internet Protocol Design* (under review)
-* *A paper on metrics frameworks and Security Operations Centers* (under blinded review)
-* *A Price to Nature: Lessons Learned in the Evolution of Distributed Systems* (co-author; 2021)
-* *Ducking Autocorrect: Quantifying the Rise of Computational Writing* (co-author; 2021)
-* *The Other Binding Problem* (2021)
+The Would-Be Technocracy: Evaluating Efforts to Control Social Change with Internet Protocol Design (under review)
+
+A paper on metrics frameworks and Security Operations Centers (under blinded review)
+
+A Price to Nature: Lessons Learned in the Evolution of Distributed Systems (co-author)
+
+Ducking Autocorrect: Quantifying the Rise of Computational Writing (co-author)
+
+The Other Binding Problem
 
 ## Books
 
