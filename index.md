@@ -16,7 +16,16 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 **[National Science Foundation](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1915822&HistoricalAwards=false)**: *Sociotechnical Metrics Frameworks for Network and Security Operation Centers*. I am working with fellow PI [Alex Bardas](http://www.ittc.ku.edu/~alexbardas/) to specify a new class of metrics frameworks for enterprise network [Security Operations Centers](https://en.wikipedia.org/wiki/Information_security_operations_center).
 
-## [Publications](https://orcid.org/0000-0002-2882-5915) (link to ORCID)
+## Publications
+
+My most updated list of publications is at [my ORCID](https://orcid.org/0000-0002-2882-5915).
+
+**Articles in Preparation or Press**:
+
+* A paper (currently under blinded review) on metrics frameworks and Security Operations Centers
+* *A Price to Nature: Lessons Learned in the Evolution of Distributed Systems* (co-author)
+* *Ducking Autocorrect: Quantifying the Rise of Computational Writing*
+* *The Other Binding Problem*
 
 ## Books
 
