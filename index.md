@@ -2,7 +2,7 @@
 
 I study the evolution of distributed systems (their architecture, mostly) and their technical management. I'm currently focused on binding/mapping systems and virtualization in computer (and to a limited extent neural) networks.
 
-I am an [Assistant Professor](https://web.stevens.edu/facultyprofile/?id=2265) with the [Stevens Institute of Technology](https://www.stevens.edu) in the College of Arts and Letters. At my last job I was a researcher with the UCLA Computer Science Department. I will complete my final contracts for defense and big tech in CY2021.
+I am an [Assistant Professor](https://web.stevens.edu/facultyprofile/?id=2265) with the [Stevens Institute of Technology](https://www.stevens.edu) in the College of Arts and Letters. At my last job I was a researcher with the UCLA Computer Science Department.
 
 ## Contact Me / Appointments
 
