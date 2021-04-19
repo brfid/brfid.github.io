@@ -16,7 +16,7 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 **[National Science Foundation](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1915822&HistoricalAwards=false)**: *Sociotechnical Metrics Frameworks for Network and Security Operation Centers*. I am working with fellow PI [Alex Bardas](http://www.ittc.ku.edu/~alexbardas/) to specify a new class of metrics frameworks for enterprise network [Security Operations Centers](https://en.wikipedia.org/wiki/Information_security_operations_center).
 
-**[Sycamore Bank Defense](https://twitter.com/toteslates/status/1383231718421778439?s=21)**: There's an old sycamore in my yard that lives on a steep creek bank that got severely eroded during Hurricane Sandy, and never repaired. Eventually, continued erosion will take down the tree.
+**[Bank Reform](https://twitter.com/toteslates/status/1383231718421778439?s=21)**: There's an old sycamore in my yard that lives on a steep creek bank that was severely eroded during Hurricane Sandy, and was never repaired. I am remaking a section of creekbed and the bank itself.
 
 **[Feudal Path Dependency](https://twitter.com/toteslates/)**: I'm building an old-timey switchback path down a steep creek bank in my backyard.
 
