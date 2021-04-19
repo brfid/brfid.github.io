@@ -8,13 +8,17 @@ I am an [Assistant Professor](https://web.stevens.edu/facultyprofile/?id=2265) w
 
 I use the same Zoom Room for all teaching and meetings. You can make an appointment with me at [Doodle](https://doodle.com/mm/brfd/appt). You can reach me at toteslates@gmail.com.
 
-## Current Research Contracts
+## Current Projects
 
 **[Google](https://en.wikipedia.org/wiki/Google)**: *DNSSEC and the IANA Functions*. This study is an assessment of how the [Internet](https://en.wikipedia.org/wiki/Operant_conditioning_chamber) Assigned Numbers Authority (IANA) functions will incorporate the present and expanded technical and coordination requirements imposed by the [Domain Name System Security Extensions](https://en.wikipedia.org/wiki/Domain_Name_System_Security_Extensions).
 
 **[Lockheed Martin](https://www.lockheedmartin.com)**: *Mission Engineering and Multi-Domain Operations*. [Multi-Domain Operations](https://lockheedmartin.com/en-us/capabilities/multi-domain-operations.html) integrate communications between assets across multiple domains (e.g. subsea, sea, land, air, and space) as a coherent system-of-systems. With [Paul Grogan](https://ptgrogan.com).
 
 **[National Science Foundation](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1915822&HistoricalAwards=false)**: *Sociotechnical Metrics Frameworks for Network and Security Operation Centers*. I am working with fellow PI [Alex Bardas](http://www.ittc.ku.edu/~alexbardas/) to specify a new class of metrics frameworks for enterprise network [Security Operations Centers](https://en.wikipedia.org/wiki/Information_security_operations_center).
+
+**[Sycamore Bank Defense](https://twitter.com/toteslates/status/1383231718421778439?s=21)**: There's an old sycamore in my yard that lives on a steep creek bank that got severely eroded during Hurricane Sandy, and never repaired. Eventually, continued erosion will take down the tree.
+
+**[Feudal Path Dependency](https://twitter.com/toteslates/)**: I'm building an old-timey switchback path down a steep creek bank in my backyard.
 
 ## Publications
 
