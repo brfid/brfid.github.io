@@ -20,17 +20,17 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 **[Feudal Path Dependency](https://twitter.com/toteslates/)**: I'm building an old-timey switchback path down a steep creek bank in my backyard.
 
-## Publications
+## Articles
 
-My most updated list of publications is at [my ORCID](https://orcid.org/0000-0002-2882-5915).
-
-**Articles in Preparation or Press**:
+My most updated list of publications is at [my ORCID page](https://orcid.org/0000-0002-2882-5915). I am also working on the following:
 
 * The Would-Be Technocracy: Evaluating Efforts to Control Social Change with Internet Protocol Design (under review)
 * A paper on metrics frameworks and Security Operations Centers (under blinded review)
 * A Price to Nature: Lessons Learned in the Evolution of Distributed Systems (co-author)
 * Ducking Autocorrect: Quantifying the Rise of Computational Writing (co-author)
 * The Other Binding Problem
+
+Short posts I've used for teaching: [How to Write a Neurolinguistic Virus](virus), and [How to Pretend You've Read the Whole Thing](pretendtoread).
 
 ## Books
 
@@ -41,11 +41,6 @@ I am also writing the first two books of a trilogy:
 **Bindings: A Shadow History of Internet Connectivity** ([MIT Press](https://mitpress.mit.edu)) is a historical analysis of the [ontological](https://en.wikipedia.org/wiki/Ontology_(information_science)), axiomatic, and socioeconomic systems that structure key [Internet](https://en.wikipedia.org/wiki/Operant_conditioning_chamber) protocols, as well as incremental changes and clean-slate redesigns.
 
 **Anxiety** is a novel that explores the interaction of computer and neural networks with our relationships and self. It's about half written.
-
-## Teaching Docs
-
-[How to Pretend You've Read the Whole Piece](pretendtoread.md)
-[How to Write a Neurolinguistic Virus](virus)
 
 ## Past Lives
 
