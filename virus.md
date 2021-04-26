@@ -19,6 +19,8 @@
    10. [Explain Your Project as a Response to Others' Failings](#explain-your-project-as-a-response-to-others-failings)
    11. [Who Cares?](#who-cares)
 
+[Back to main page](/)
+
 ## How Did Essay Assignments Get So Terrible?
 
 Essays don't have to be terrible. And if you don't like writing them, it isn't completely on you: maybe it's _history's_ fault. It's the way tha humanities and social science disciplines formed, when everyone decided which departments got to do what. 

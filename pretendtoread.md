@@ -29,3 +29,5 @@ So, here is how I recommend trying to read, in step-form. I say 'trying' because
 9. Keep the notes in a single place. For example I suggest using Zotero (Links to an external site.) to automatically download materials, annotate them, add your notes, and automatically cite them in whatever style you want in your papers. Then in later humanities courses, you'll be able to draw on work you've already done that much easier.
 
 I encourage you to consider a system like this one, tailored for your own needs.
+
+[Back to main page](/)

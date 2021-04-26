@@ -42,6 +42,12 @@ I am also writing the first two books of a trilogy:
 
 **Anxiety** is a novel that explores the interaction of computer and neural networks with our relationships and self. It's about half written.
 
+## Teaching Docs
+
+**[How to Pretend You've Read the Whole Thing](pretendtoread.md)**
+
+**[How to Write a Neurolinguistic Virus](virus)**
+
 ## Past Lives
 
 **Economies of Everyday Suffering**: *Some Implications of Eli Lilly's Zyprexa Market Strategy in US Primary Care*. UCLA History Department PhD dissertation, 2011.
