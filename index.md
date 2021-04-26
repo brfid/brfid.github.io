@@ -44,9 +44,9 @@ I am also writing the first two books of a trilogy:
 
 ## Teaching Docs
 
-**[How to Pretend You've Read the Whole Thing](pretendtoread.md)**
+[How to Pretend You've Read the Whole Thing](pretendtoread.md)
 
-**[How to Write a Neurolinguistic Virus](virus)**
+[How to Write a Neurolinguistic Virus](virus)
 
 ## Past Lives
 
