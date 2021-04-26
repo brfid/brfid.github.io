@@ -18,7 +18,7 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 **[Bank Reform](https://twitter.com/toteslates/status/1383231718421778439?s=21)**: There's an old sycamore in my yard that lives on a steep creek bank that was severely eroded during Hurricane Sandy, and was never repaired. I am remaking a section of creekbed and the bank itself.
 
-**[Feudal Path Dependency](https://twitter.com/toteslates/)**: I'm building an old-timey switchback path down a steep creek bank in my backyard.
+**[Medieval Path Dependency](https://twitter.com/toteslates/)**: I'm building a ren faire-themed switchback path down a steep creek bank in my backyard.
 
 ## Articles
 
@@ -56,4 +56,4 @@ I am also writing the first two books of a trilogy:
 
 **Hegemony in America**: *Intellectuals and Equilibrium in the Thought of Alexis de Tocqueville and Antonio Gramsci*. Political Science honors thesis, University of Victoria, 2002.
 
-Additionally, I've contributed to DARPA-sponsored research, and my work has been supported by philanthropists such as Mark Cuban and Eric Schmidt.
+I've also contributed to DARPA-sponsored research and work supported by funders including Mark Cuban and Eric Schmidt.
