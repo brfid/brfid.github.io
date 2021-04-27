@@ -18,7 +18,7 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 **[Bank Reform](https://twitter.com/toteslates/status/1383231718421778439?s=21)**: There's an old sycamore in my yard that lives on a steep creek bank that was severely eroded during Hurricane Sandy, and was never repaired. I am remaking a section of creekbed and the bank itself.
 
-**[Medieval Path Dependency](https://twitter.com/toteslates/)**: I'm building a ren faire-themed switchback path down a steep creek bank in my backyard.
+**[Medieval Path Dependency](https://twitter.com/toteslates/)**: I'm building a renfaire-themed switchback path down a steep creek bank in my backyard.
 
 ## Articles
 
