@@ -16,9 +16,9 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 **[National Science Foundation](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1915822&HistoricalAwards=false)**: *Sociotechnical Metrics Frameworks for Network and Security Operation Centers*. I am working with fellow PI [Alex Bardas](http://www.ittc.ku.edu/~alexbardas/) to specify a new class of metrics frameworks for enterprise network [Security Operations Centers](https://en.wikipedia.org/wiki/Information_security_operations_center).
 
-**[Bank Reform](https://twitter.com/toteslates/status/1383231718421778439?s=21)**: There's an old sycamore in my yard that lives on a steep creek bank that was severely eroded during Hurricane Sandy, and was never repaired. I am remaking a section of creekbed and the bank itself.
+**Bank Reform**: I am remaking a section a steep bank, about 20x120 feet at 70 degrees, which ends in a creek. It is facing serious erosion due to climate change, neglect, and a local history of unregulated terraforming. I'm also adding a renfaire-themed switchback path, which I denote my medieval path dependency.
 
-**[Medieval Path Dependency](https://twitter.com/toteslates/)**: I'm building a renfaire-themed switchback path down a steep creek bank in my backyard.
+**My Town's Historical Society**: I do volunteer research.
 
 ## Articles
 
