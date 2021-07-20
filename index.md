@@ -20,14 +20,8 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 ## Articles
 
-* My most updated list of publications is at [my ORCID page](https://orcid.org/0000-0002-2882-5915).
-* I send out preprints on my [Newsletter](https://pfsm.substack.com/).
-
-In progress:
-
-* A paper on metrics frameworks and Security Operations Centers
-* A Price to Nature: Lessons Learned in the Evolution of Distributed Systems (co-author)
-* Ducking Autocorrect: Quantifying the Rise of Computational Writing (co-author)
+* My most updated list of publications is at [my ORCID page](https://orcid.org/0000-0002-2882-5915)
+* I send out preprints on my [Newsletter](https://pfsm.substack.com/)
 
 ## Books
 
