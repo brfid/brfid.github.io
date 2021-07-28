@@ -14,14 +14,13 @@ I use the same Zoom Room for all teaching and meetings. You can make an appointm
 
 **[National Science Foundation](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1915822&HistoricalAwards=false)**: *Sociotechnical Metrics Frameworks for Network and Security Operation Centers*. I am working with fellow PI [Alex Bardas](http://www.ittc.ku.edu/~alexbardas/) to specify a new class of metrics frameworks for enterprise network [Security Operations Centers](https://en.wikipedia.org/wiki/Information_security_operations_center).
 
-**Bank Reform**: I am repairing a steep bank in my backyard, about 20x120 feet at 70 degrees, which ends in a creek. It is facing serious erosion due to a local history of unregulated damming and dumping. I am also adding a renfaire-themed switchback path.
-
 **Local History**: I volunteer at a local historical society.
 
-## Articles
+**Bank Reform**: I am repairing a steep bank in my backyard that was destabilized due to a century and a half of dams, and adding renfaire-themed switchback path.
 
-* My most updated list of publications is at [my ORCID page](https://orcid.org/0000-0002-2882-5915)
-* I send out preprints on my [Newsletter](https://pfsm.substack.com/)
+## Articles ([ORCID](https://orcid.org/0000-0002-2882-5915), [Scholar](https://scholar.google.com/citations?user=PmNBZaAAAAAJ))
+
+I send out preprints on my [Substack](https://pfsm.substack.com/)
 
 ## Books & Monographs
 
