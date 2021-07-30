@@ -4,10 +4,6 @@ I study the evolution of distributed systems (their architecture, mostly) and th
 
 I am an [Assistant Professor](https://web.stevens.edu/facultyprofile/?id=2265) with the [Stevens Institute of Technology](https://www.stevens.edu) in the College of Arts and Letters. At my last job I was a researcher with the UCLA Computer Science Department.
 
-## Contact Me / Appointments
-
-I use the same Zoom Room for all teaching and meetings. You can make an appointment with me at [Doodle](https://doodle.com/mm/brfd/appt). You can reach me at toteslates@gmail.com.
-
 ## Current Contracts and Projects
 
 **[Google](https://en.wikipedia.org/wiki/Google)**: *DNSSEC and the IANA Functions*. This study is an assessment of how the [Internet](https://en.wikipedia.org/wiki/Operant_conditioning_chamber) Assigned Numbers Authority (IANA) functions will incorporate the present and expanded technical and coordination requirements imposed by the [Domain Name System Security Extensions](https://en.wikipedia.org/wiki/Domain_Name_System_Security_Extensions).
