@@ -24,11 +24,11 @@ I send out preprints on my [Substack](https://pfsm.substack.com/)
 
 I am also writing a trilogy:
 
-**Bindings: A Shadow History of Internet Connectivity** ([MIT Press](https://mitpress.mit.edu)) is a historical analysis of the [ontological](https://en.wikipedia.org/wiki/Ontology_(information_science)), axiomatic, and socioeconomic systems that structure key [Internet](https://en.wikipedia.org/wiki/Operant_conditioning_chamber) protocols, as well as incremental changes and clean-slate redesigns. I am finalizing the draft manuscript.
+**Bindings: A Shadow History of Internet Connectivity** ([MIT Press](https://mitpress.mit.edu)) is a social and historical analysis of the binding (or virtualization) architectures that structure key [Internet](https://en.wikipedia.org/wiki/Operant_conditioning_chamber) protocols, as well as incremental changes and clean-slate redesigns. I am finalizing the draft manuscript.
 
 **Anxiety** is a novel that explores the interaction of computer and neural networks with our relationships and self. It's about one-third written.
 
-**Torrent** is a social history of a ~50 acre hamlet in New York's Hudson Valley, c 1724-1934. I'm doing a bit of physical research (here's a [Twitter thread](https://twitter.com/toteslates/status/1417205888218243076)) until my first two books are complete.
+**Torrent** is a social history of a ~25 acre hamlet in New York's Hudson Valley, c 1724-1934. I'm doing physical research until my first two books are complete.
 
 ## Past Lives
 
