@@ -2,7 +2,7 @@
 
 I study the evolution of distributed systems (their architecture, mostly) and their technical management. I'm currently focused on binding/mapping systems and virtualization in computer (and to a limited extent neural) networks.
 
-I am an [Assistant Professor](https://faculty.stevens.edu/bfidler) and David & GG Farber Fellow in Science and Technology Studies with the [Stevens Institute of Technology](https://www.stevens.edu) College of Arts and Letters. At my last job I was a researcher with the UCLA Computer Science Department.
+I am an [Assistant Professor](https://faculty.stevens.edu/bfidler) and David & GG Farber Faculty Fellow in Science and Technology Studies with the [Stevens Institute of Technology](https://www.stevens.edu) College of Arts and Letters. At my last job I was a researcher with the UCLA Computer Science Department.
 
 ## Current Contracts and Projects
 
