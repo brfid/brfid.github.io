@@ -12,7 +12,7 @@ I am an [Assistant Professor](https://faculty.stevens.edu/bfidler) and David & G
 
 **Local History**: I volunteer at a local historical society, although this has largely been put on hold due to the pandemic.
 
-**Bank Reform**: I am repairing a creek floodplane in my backyard that was destabilized due to a century and a half of dam infrastructure.
+**Bank Reform**: I am repairing a section of creek floodplane that was destabilized due to a century and a half of dam infrastructure.
 
 ## Articles ([ORCID](https://orcid.org/0000-0002-2882-5915), [Scholar](https://scholar.google.com/citations?user=PmNBZaAAAAAJ))
 
