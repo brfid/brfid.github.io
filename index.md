@@ -2,7 +2,7 @@
 
 I study the evolution of distributed systems (their architecture, mostly) and their technical management. I'm currently focused on binding/mapping systems and virtualization in computer (and to a limited extent neural) networks.
 
-I am an [Assistant Professor](https://web.stevens.edu/facultyprofile/?id=2265) and David & GG Farber Fellow in Science and Technology Studies with the [Stevens Institute of Technology](https://www.stevens.edu) in the College of Arts and Letters. At my last job I was a researcher with the UCLA Computer Science Department.
+I am an [Assistant Professor](https://faculty.stevens.edu/bfidler) and David & GG Farber Fellow in Science and Technology Studies with the [Stevens Institute of Technology](https://www.stevens.edu) in the College of Arts and Letters. At my last job I was a researcher with the UCLA Computer Science Department.
 
 ## Current Contracts and Projects
 
@@ -10,9 +10,9 @@ I am an [Assistant Professor](https://web.stevens.edu/facultyprofile/?id=2265) a
 
 **[National Science Foundation](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1915822&HistoricalAwards=false)**: *Sociotechnical Metrics Frameworks for Network and Security Operation Centers*. I am working with fellow PI [Alex Bardas](http://www.ittc.ku.edu/~alexbardas/) to specify a new class of metrics frameworks for enterprise network [Security Operations Centers](https://en.wikipedia.org/wiki/Information_security_operations_center).
 
-**Local History**: I volunteer at a local historical society.
+**Local History**: I volunteer at a local historical society, although this has largely been put on hold due to the pandemic.
 
-**Bank Reform**: I am repairing a steep bank in my backyard that was destabilized due to a century and a half of dams, and adding renfaire-themed switchback path.
+**Bank Reform**: I am repairing a creek floodplane in my backyard that was destabilized due to a century and a half of dam infrastructure.
 
 ## Articles ([ORCID](https://orcid.org/0000-0002-2882-5915), [Scholar](https://scholar.google.com/citations?user=PmNBZaAAAAAJ))
 
