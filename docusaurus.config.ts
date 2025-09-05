@@ -74,7 +74,7 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
-      copyright: `© ${new Date().getFullYear()} Bradley Fidler • Rendered from JSON with TypeScript`,
+      copyright: `© ${new Date().getFullYear()} Bradley Fidler`,
     },
     
     prism: {
