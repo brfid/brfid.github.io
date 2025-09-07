@@ -29,11 +29,8 @@ const config: Config = {
     [
       'classic',
       {
-        docs: {
-          sidebarPath: './sidebars.ts',
-          editUrl:
-            'https://github.com/brfid/brfid.github.io/tree/main/',
-        },
+        // Disable docs plugin since this site doesn't use it
+        docs: false,
         blog: {
           path: 'blog',
           routeBasePath: 'blog',
