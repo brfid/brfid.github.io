@@ -64,6 +64,9 @@ const config: Config = {
           label: 'Download Resume',
           position: 'right',
           'aria-label': 'Download Resume PDF',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          'data-no-route': true,
         },
         {
           href: 'https://github.com/brfid/brfid.github.io/',
