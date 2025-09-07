@@ -45,12 +45,12 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
+    // Social card for sharing
     image: 'img/docusaurus-social-card.jpg',
     navbar: {
-      title: 'My Site',
+      title: 'Brad Fidler',
       logo: {
-        alt: 'My Site Logo',
+        alt: '📜 Brad Fidler',
         src: 'img/logo.svg',
       },
       items: [
