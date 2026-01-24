@@ -44,6 +44,7 @@ jobs:
           python -m pip install Jinja2>=3.1 playwright>=1.55
           python -m pip install -e .
           python -m pip list
+          python -c "import resume_site; print('resume_site imported successfully')"
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
