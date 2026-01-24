@@ -34,7 +34,7 @@ def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> Path:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Entry point for the `resume-site` console script.
+    """Entry point for the resume generator CLI.
 
     Args:
         argv: Optional argument list (primarily for tests).
@@ -42,12 +42,12 @@ def main(argv: list[str] | None = None) -> int:
     Returns:
         Process exit code (0 on success).
     """
-    parser = argparse.ArgumentParser(prog="resume-site")
+    parser = argparse.ArgumentParser(prog="resume-gen")
     parser.add_argument(
         "--in",
         dest="src",
-        default="resume/resume.json",
-        help="Path to JSON Resume source (default: resume/resume.json)",
+        default="resume_data/resume.json",
+        help="Path to JSON Resume source (default: resume_data/resume.json)",
     )
     parser.add_argument(
         "--out",

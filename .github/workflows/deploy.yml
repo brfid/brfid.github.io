@@ -6,9 +6,9 @@ on:
     paths:
       - ".github/workflows/deploy.yml"
       - "public/**"
-      - "resume/**"
+      - "resume_data/**"
       - "templates/**"
-      - "resume_site/**"
+      - "resume_generator/**"
       - "pyproject.toml"
   workflow_dispatch:
 
@@ -42,10 +42,8 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install Jinja2>=3.1 playwright>=1.55
-          python -m pip install -e .
-          python -m pip list
-          python -c "import resume_site; print('resume_site imported successfully')"
+          python -m pip install .
+          python -c "import resume_generator; print('resume_generator imported successfully')"
 
       - name: Cache Playwright browsers
         uses: actions/cache@v4
@@ -59,7 +57,7 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Generate resume (HTML + PDF)
-        run: python -m resume_site.cli --out public
+        run: python -m resume_generator --out public
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -119,4 +117,3 @@ jobs:
               }
             }
             console.log(`Cleaned up ${deletedCount} old deployments`);
-
