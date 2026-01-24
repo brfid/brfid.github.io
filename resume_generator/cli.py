@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 
 from .render import copy_file, load_resume_json, render_resume_html, write_text
+from .types import Resume
 
 
 def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> Path:
@@ -19,7 +20,7 @@ def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> Path:
     Returns:
         Path to the generated HTML file (`.../resume/index.html`).
     """
-    resume = load_resume_json(src)
+    resume: Resume = load_resume_json(src)
     html = render_resume_html(resume=resume, templates_dir=templates_dir)
 
     resume_dir = out_dir / "resume"
@@ -46,8 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--in",
         dest="src",
-        default="resume_data/resume.json",
-        help="Path to JSON Resume source (default: resume_data/resume.json)",
+        default="resume.json",
+        help="Path to JSON Resume source (default: resume.json)",
     )
     parser.add_argument(
         "--out",

@@ -7,8 +7,9 @@ stable and convenient for templates (sorted lists, computed date ranges, etc.).
 from __future__ import annotations
 
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
+from .types import Resume, ResumeView, WorkItemView, ProjectItemView
 
 def _parse_iso_date(value: str | None) -> date | None:
     """Parse a YYYY-MM-DD date string into a `date`.
@@ -69,7 +70,7 @@ def format_date_range(start: str | None, end: str | None) -> str | None:
     return None
 
 
-def normalize_resume(resume: dict[str, Any]) -> dict[str, Any]:
+def normalize_resume(resume: Resume) -> ResumeView:
     """Normalize a JSON Resume dict for rendering.
 
     Current behaviors:
@@ -94,8 +95,10 @@ def normalize_resume(resume: dict[str, Any]) -> dict[str, Any]:
         start = item.get("startDate") or ""
         return (end, start)
 
-    work = sorted((resume.get("work") or []), key=_date_key, reverse=True)
-    projects = sorted((resume.get("projects") or []), key=_date_key, reverse=True)
+    work_raw = cast(list[dict[str, Any]], (resume.get("work") or []))
+    projects_raw = cast(list[dict[str, Any]], (resume.get("projects") or []))
+    work = cast(list[WorkItemView], sorted(work_raw, key=_date_key, reverse=True))
+    projects = cast(list[ProjectItemView], sorted(projects_raw, key=_date_key, reverse=True))
 
     # Add computed ranges for templating convenience.
     for item in work:
@@ -105,7 +108,7 @@ def normalize_resume(resume: dict[str, Any]) -> dict[str, Any]:
         if isinstance(item, dict):
             item["dateRange"] = format_date_range(item.get("startDate"), item.get("endDate"))
 
-    out: dict[str, Any] = dict(resume)
+    out = cast(ResumeView, dict(resume))
     out["basics"] = basics
     out["basics"]["profiles"] = profiles
     out["work"] = work

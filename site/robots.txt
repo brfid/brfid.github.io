@@ -10,4 +10,3 @@ Disallow: /
 
 User-agent: GPTBot
 Disallow: /
-

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .normalize import normalize_resume
+from .types import Resume, ResumeView
 
 
-def load_resume_json(path: Path) -> dict[str, Any]:
+def load_resume_json(path: Path) -> Resume:
     """Load JSON Resume data from disk.
 
     Args:
@@ -21,12 +21,13 @@ def load_resume_json(path: Path) -> dict[str, Any]:
         Parsed JSON object as a dict.
     """
     with path.open("r", encoding="utf-8") as f:
+        # JSON Resume is a JSON object at the top level.
         return json.load(f)
 
 
 def render_resume_html(
     *,
-    resume: dict[str, Any],
+    resume: Resume,
     templates_dir: Path,
     template_name: str = "resume.html.j2",
 ) -> str:
@@ -48,7 +49,7 @@ def render_resume_html(
     )
 
     template = env.get_template(template_name)
-    view = normalize_resume(resume)
+    view: ResumeView = normalize_resume(resume)
     return template.render(resume=view)
 
 
