@@ -2,7 +2,7 @@ name: Deploy Landing
 
 on:
   push:
-    branches: [ main ]
+    branches: [ publish ]
     paths:
       - ".github/workflows/deploy.yml"
       - "site/**"
