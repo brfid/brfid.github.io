@@ -16,6 +16,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  deployments: write
 
 concurrency:
   group: "pages"
@@ -68,4 +69,54 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Clean up old deployments
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: deployments } = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: 'github-pages',
+              per_page: 100
+            });
+
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+            let deletedCount = 0;
+            for (const deployment of deployments) {
+              // Skip the current deployment
+              if (deployment.sha === context.sha) {
+                console.log(`Skipping current deployment ${deployment.id}`);
+                continue;
+              }
+
+              const deploymentDate = new Date(deployment.created_at);
+              if (deploymentDate < oneWeekAgo) {
+                try {
+                  // First set deployment to inactive
+                  await github.rest.repos.createDeploymentStatus({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    deployment_id: deployment.id,
+                    state: 'inactive'
+                  });
+
+                  // Then delete it
+                  await github.rest.repos.deleteDeployment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    deployment_id: deployment.id
+                  });
+
+                  deletedCount++;
+                  console.log(`Deleted old deployment ${deployment.id} from ${deployment.created_at}`);
+                } catch (error) {
+                  console.log(`Failed to delete deployment ${deployment.id}: ${error.message}`);
+                }
+              }
+            }
+            console.log(`Cleaned up ${deletedCount} old deployments`);
 
