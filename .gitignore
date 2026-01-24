@@ -18,6 +18,9 @@ static/resume.pdf
 public/resume/
 public/resume.pdf
 
+# IDE
+*.code-workspace
+
 # Misc
 .DS_Store
 .env.local
