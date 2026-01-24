@@ -1,5 +1,4 @@
 stages:
-  - build
   - deploy
 
 workflow:
@@ -10,31 +9,16 @@ workflow:
 # GitLab Pages requires a job named "pages" that uploads an artifact at ./public
 pages:
   stage: deploy
-  image: mcr.microsoft.com/playwright/python:v1.55.0-jammy
+  image: alpine:3.20
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - .gitlab-ci.yml
         - public/**
-        - resume_data/**
-        - templates/**
-        - resume_generator/**
-        - pyproject.toml
     - when: manual
       allow_failure: true
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - .cache/pip/
-      - .cache/ms-playwright/
-  variables:
-    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-    PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
   script:
-    - python -m pip install --upgrade pip
-    - python -m pip install .
-    - python -m playwright install chromium
-    - python -m resume_generator --out public
+    - echo "Deploying static landing only (resume temporarily disabled)."
   artifacts:
     paths:
       - public
