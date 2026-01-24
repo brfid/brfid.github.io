@@ -69,38 +69,3 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Clean up old deployments
-        if: success()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { data: deployments } = await github.rest.repos.listDeployments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              environment: 'github-pages',
-              per_page: 100
-            });
-
-            const oneWeekAgo = new Date();
-            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-            for (const deployment of deployments) {
-              // Skip the current deployment
-              if (deployment.id == steps.deployment.outputs.deployment_id) {
-                continue;
-              }
-
-              const deploymentDate = new Date(deployment.created_at);
-              if (deploymentDate < oneWeekAgo) {
-                try {
-                  await github.rest.repos.deleteDeployment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    deployment_id: deployment.id
-                  });
-                  console.log(`Deleted old deployment ${deployment.id}`);
-                } catch (error) {
-                  console.log(`Failed to delete deployment ${deployment.id}: ${error.message}`);
-                }
-              }
-            }
