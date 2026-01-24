@@ -58,7 +58,7 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Generate resume (HTML + PDF)
-        run: resume-site --out public
+        run: python -m resume_site.cli --out public
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
