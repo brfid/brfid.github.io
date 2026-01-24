@@ -9,5 +9,5 @@ Local generation:
 ```bash
 python -m pip install -e .
 python -m playwright install chromium
-python -m resume_generator --out public
+python -m resume_generator --out site
 ```

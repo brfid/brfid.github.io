@@ -13,7 +13,7 @@ def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> Path:
 
     Args:
         src: Path to JSON Resume input file.
-        out_dir: Output directory for published site (typically `public/`).
+        out_dir: Output directory for published site (typically `site/`).
         templates_dir: Directory containing `resume.html.j2` and `resume.css`.
 
     Returns:
@@ -52,8 +52,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--out",
         dest="out",
-        default="public",
-        help="Output directory for static site (default: public)",
+        default="site",
+        help="Output directory for static site (default: site)",
     )
     parser.add_argument(
         "--templates",

@@ -6,8 +6,8 @@ __pycache__/
 .pytest_cache/
 
 # Generated files
-public/resume/
-public/resume.pdf
+site/resume/
+site/resume.pdf
 
 # IDE
 *.code-workspace

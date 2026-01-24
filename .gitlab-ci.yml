@@ -6,7 +6,8 @@ workflow:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - when: never
 
-# GitLab Pages requires a job named "pages" that uploads an artifact at ./public
+# GitLab Pages requires a job named "pages" that uploads an artifact at ./public.
+# This repo's deploy root is `site/`, so CI copies `site/` into `public/`.
 pages:
   stage: deploy
   image: alpine:3.20
@@ -14,11 +15,14 @@ pages:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - .gitlab-ci.yml
-        - public/**
+        - site/**
     - when: manual
       allow_failure: true
   script:
     - echo "Deploying static landing only (resume temporarily disabled)."
+    - rm -rf public
+    - mkdir -p public
+    - cp -R site/. public/
   artifacts:
     paths:
       - public
