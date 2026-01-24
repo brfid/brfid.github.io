@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ resume.basics.name }} — Resume</title>
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="stylesheet" href="./resume.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <div class="name">{{ resume.basics.name }}</div>
+        {% if resume.basics.label %}
+          <div class="tagline">{{ resume.basics.label }}</div>
+        {% endif %}
+
+        <div class="meta">
+          {% if resume.basics.location %}
+            {% set loc = resume.basics.location %}
+            {% if loc.city or loc.region %}
+              <span>{{ [loc.city, loc.region]|select|join(", ") }}</span>
+            {% endif %}
+          {% endif %}
+
+          {% if resume.basics.email %}
+            <a href="mailto:{{ resume.basics.email }}">{{ resume.basics.email }}</a>
+          {% endif %}
+          {% if resume.basics.phone %}
+            <a href="tel:{{ resume.basics.phone }}">{{ resume.basics.phone }}</a>
+          {% endif %}
+
+          {% for p in resume.basics.profiles %}
+            {% if p.url and p.network %}
+              <a href="{{ p.url }}" target="_blank" rel="noopener noreferrer">{{ p.network }}</a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </header>
+
+      <main>
+        {% if resume.basics.summary %}
+          <section>
+            <h2>Summary</h2>
+            <div>{{ resume.basics.summary }}</div>
+          </section>
+        {% endif %}
+
+        {% if resume.work %}
+          <section>
+            <h2>Experience</h2>
+            {% for w in resume.work %}
+              <div class="item">
+                <div class="item-head">
+                  <div>
+                    <div class="item-title">
+                      {{ w.position or "" }}{% if w.company %} — {{ w.company }}{% endif %}
+                    </div>
+                    <div class="item-subtitle">
+                      {% if w.location %}{{ w.location }}{% endif %}
+                      {% if w.url %}
+                        {% if w.location %} · {% endif %}
+                        <a href="{{ w.url }}" target="_blank" rel="noopener noreferrer">{{ w.url }}</a>
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% if w.dateRange %}
+                    <div class="item-dates">{{ w.dateRange }}</div>
+                  {% endif %}
+                </div>
+
+                {% if w.summary %}
+                  <div style="margin-top: 0.35rem">{{ w.summary }}</div>
+                {% endif %}
+
+                {% if w.highlights %}
+                  <ul>
+                    {% for h in w.highlights %}
+                      <li>{{ h }}</li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+
+        {% if resume.projects %}
+          <section>
+            <h2>Projects</h2>
+            {% for p in resume.projects %}
+              <div class="item">
+                <div class="item-head">
+                  <div>
+                    <div class="item-title">
+                      {{ p.name or "Project" }}
+                      {% if p.url %}
+                        — <a href="{{ p.url }}" target="_blank" rel="noopener noreferrer">{{ p.url }}</a>
+                      {% endif %}
+                    </div>
+                    {% if p.description %}
+                      <div class="item-subtitle">{{ p.description }}</div>
+                    {% endif %}
+                  </div>
+                  {% if p.dateRange %}
+                    <div class="item-dates">{{ p.dateRange }}</div>
+                  {% endif %}
+                </div>
+
+                {% if p.highlights %}
+                  <ul>
+                    {% for h in p.highlights %}
+                      <li>{{ h }}</li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+
+        {% if resume.skills %}
+          <section>
+            <h2>Skills</h2>
+            {% for s in resume.skills %}
+              <div class="item">
+                <div class="item-title">{{ s.name }}</div>
+                {% if s.keywords %}
+                  <div class="item-subtitle">{{ s.keywords|join(" · ") }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+
+        {% if resume.education %}
+          <section>
+            <h2>Education</h2>
+            {% for e in resume.education %}
+              <div class="item">
+                <div class="item-head">
+                  <div>
+                    <div class="item-title">
+                      {{ e.institution or "" }}
+                      {% if e.studyType or e.area %}
+                        — {{ [e.studyType, e.area]|select|join(" ") }}
+                      {% endif %}
+                    </div>
+                    {% if e.score %}
+                      <div class="item-subtitle">{{ e.score }}</div>
+                    {% endif %}
+                  </div>
+                  {% set dr = (e.startDate and e.endDate) and (e.startDate ~ " – " ~ e.endDate) %}
+                  {% if dr %}
+                    <div class="item-dates">{{ dr }}</div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+
+        {% if resume.publications %}
+          <section>
+            <h2>Publications</h2>
+            {% for pub in resume.publications %}
+              <div class="item">
+                <div class="item-title">
+                  {{ pub.name or "" }}
+                  {% if pub.url %}
+                    — <a href="{{ pub.url }}" target="_blank" rel="noopener noreferrer">{{ pub.url }}</a>
+                  {% endif %}
+                </div>
+                {% if pub.publisher or pub.releaseDate %}
+                  <div class="item-subtitle">
+                    {{ [pub.publisher, pub.releaseDate]|select|join(" · ") }}
+                  </div>
+                {% endif %}
+                {% if pub.summary %}
+                  <div style="margin-top: 0.35rem">{{ pub.summary }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </section>
+        {% endif %}
+      </main>
+    </div>
+  </body>
+</html>

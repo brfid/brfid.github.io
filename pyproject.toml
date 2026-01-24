@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brfid-resume-site"
+version = "0.1.0"
+description = "Static resume generator (HTML + PDF) for GitHub Pages."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "Jinja2>=3.1",
+  "playwright>=1.55",
+]
+
+[project.scripts]
+resume-site = "resume_site.cli:main"

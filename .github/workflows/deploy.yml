@@ -3,6 +3,13 @@ name: Deploy Redirect
 on:
   push:
     branches: [ main ]
+    paths:
+      - ".github/workflows/deploy.yml"
+      - "public/**"
+      - "resume/**"
+      - "templates/**"
+      - "resume_site/**"
+      - "pyproject.toml"
   workflow_dispatch:
 
 permissions:
@@ -23,6 +30,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+
+      - name: Generate resume (HTML + PDF)
+        run: resume-site --out public
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

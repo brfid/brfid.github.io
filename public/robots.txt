@@ -1,0 +1,13 @@
+User-agent: *
+Disallow: /
+
+# Explicitly block common archive/caching bots as well.
+User-agent: ia_archiver
+Disallow: /
+
+User-agent: archive.org_bot
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
