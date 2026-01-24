@@ -15,3 +15,8 @@ dependencies = [
 
 [project.scripts]
 resume-site = "resume_site.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["resume_site*"]
+exclude = ["backup*", "public*", "resume*", "templates*"]
