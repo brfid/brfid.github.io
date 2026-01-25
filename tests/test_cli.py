@@ -3,26 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from resume_generator.cli import main
+from tests.helpers import write_minimal_resume
 
 
 def test_cli_html_only_writes_site(tmp_path: Path) -> None:
     resume_src = tmp_path / "resume.yaml"
-    resume_src.write_text(
-        "\n".join(
-            [
-                "basics:",
-                "  name: Test User",
-                "  label: Engineer",
-                "  profiles:",
-                "    - network: LinkedIn",
-                "      url: https://linkedin.com/in/test",
-                "work: []",
-                "skills: []",
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
+    write_minimal_resume(resume_src)
 
     out_dir = tmp_path / "site"
 

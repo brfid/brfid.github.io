@@ -85,6 +85,7 @@ class VaxStageConfig:
     site_dir: Path
     build_dir: Path = Path("build")
     mode: str = "local"
+    transcript_path: Path | None = None
 
 
 class VaxStageRunner:
@@ -183,13 +184,33 @@ class VaxStageRunner:
         self._write_build_log(log)
 
     def _run_docker(self) -> None:
-        # Intentionally stubbed: docker/SIMH will be wired next. Keeping the
-        # public module/CLI stable so later work is incremental.
-        #
-        # Note: `decode_marked_uuencode` is used by the planned docker/SIMH path
-        # to extract `brad.1` from console transcripts.
-        _ = self._decode_brad_1_from_transcript
-        raise NotImplementedError("docker/SIMH mode is not implemented yet")
+        log = VaxBuildLog()
+        log.add("vax stage mode=docker")
+
+        resume = self._emit_resume_vax_yaml(build_date=date.today(), log=log)
+
+        if self._config.transcript_path:
+            log.add(f"replay transcript: {self._config.transcript_path}")
+            transcript = self._config.transcript_path.read_text(encoding="utf-8")
+            brad_1_bytes = self._decode_brad_1_from_transcript(transcript)
+            self._paths.brad_1_path.write_bytes(brad_1_bytes)
+            self._render_brad_man_txt(log=log)
+            log.add("render landing page (index.html)")
+            build_landing_page(
+                resume=resume,
+                out_dir=self._paths.site_dir,
+                templates_dir=self._paths.repo_root / "templates",
+            )
+            log.add("done")
+            self._write_build_log(log)
+            return
+
+        docker_bin = shutil.which("docker")
+        if not docker_bin:
+            raise RuntimeError("Docker is not available; install Docker or use --transcript")
+        raise NotImplementedError(
+            "docker/SIMH live mode is not implemented yet; supply --transcript for replay"
+        )
 
     def _decode_brad_1_from_transcript(self, transcript: str) -> bytes:
         """Decode `brad.1` bytes from a transcript region."""
@@ -225,6 +246,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         default="local",
         help="Stage execution mode (default: local)",
     )
+    parser.add_argument(
+        "--transcript",
+        default=None,
+        help="Replay mode: path to a console transcript containing uuencoded artifacts",
+    )
     return parser.parse_args(argv)
 
 
@@ -244,6 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         site_dir=Path(args.site_dir),
         build_dir=Path(args.build_dir),
         mode=str(args.mode),
+        transcript_path=Path(args.transcript) if args.transcript else None,
     )
     runner = VaxStageRunner(config=config, repo_root=repo_root)
     runner.run()

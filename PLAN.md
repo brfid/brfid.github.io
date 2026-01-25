@@ -243,6 +243,8 @@ Goal: be able to run one command locally and open a “successful” webpage (la
   - Run SIMH container, drive via telnet, send sources, compile, run, extract uuencode block.
   - Write `build/vax/brad.1` and `site/vax-build.log`.
   - Write `site/vax-manifest.txt` from the VAX-side `hash_manifest` box (later), or keep host-side.
+  - [x] Replay mode: decode `brad.1` from a saved transcript (`--transcript`) to unblock local testing.
+  - [ ] Live docker/SIMH driver (telnet control + prompt detection).
 - [ ] Tests:
   - [x] Unit-test `resume.vax.yaml` emitter (schema/versioning + quoting/escaping rules).
   - [x] Unit-test transcript parsing + uudecode extraction (pure string fixtures).
@@ -252,7 +254,7 @@ Goal: be able to run one command locally and open a “successful” webpage (la
 - [x] GitHub Actions workflow:
   - On `publish` / `publish-*` tags: run gates → build site → run VAX stage → deploy Pages.
   - On `main`: run gates only (no deploy).
-- [ ] Verify CI (main) is green after refactors.
+- [x] Verify CI (main) is green after refactors.
 - [ ] Hardening: wait-for-prompt loops (no sleeps), pin Docker image by digest, deterministic logs.
   - Interim: CI may use `--vax-mode local` until the docker/SIMH transport is implemented and verified.
 

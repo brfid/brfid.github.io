@@ -40,6 +40,15 @@ def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> tuple[Path, 
 
 
 @dataclass(frozen=True)
+class VaxOptions:
+    """VAX stage options for the build."""
+
+    enabled: bool
+    mode: str
+    transcript: Path | None
+
+
+@dataclass(frozen=True)
 class BuildRequest:
     """Parsed build request for generating the site."""
 
@@ -48,8 +57,7 @@ class BuildRequest:
     templates_dir: Path
     build_dir: Path
     html_only: bool
-    with_vax: bool
-    vax_mode: str
+    vax: VaxOptions
 
 
 def build_site(req: BuildRequest) -> None:
@@ -83,7 +91,7 @@ def build_site(req: BuildRequest) -> None:
     print(f"Wrote: {resume_index_path}")
     print(f"Wrote: {landing_path}")
 
-    if req.with_vax:
+    if req.vax.enabled:
         # pylint: disable=import-outside-toplevel
         from .vax_stage import VaxStageConfig, VaxStageRunner
 
@@ -92,7 +100,8 @@ def build_site(req: BuildRequest) -> None:
                 resume_path=req.src,
                 site_dir=req.out_dir,
                 build_dir=req.build_dir,
-                mode=req.vax_mode,
+                mode=req.vax.mode,
+                transcript_path=req.vax.transcript,
             ),
             repo_root=Path.cwd(),
         )
@@ -153,6 +162,11 @@ def main(argv: list[str] | None = None) -> int:
         default="build",
         help="Build directory for intermediate artifacts (default: build).",
     )
+    parser.add_argument(
+        "--vax-transcript",
+        default=None,
+        help="Replay docker/SIMH transcript (docker mode only).",
+    )
 
     args = parser.parse_args(argv)
     build_site(
@@ -162,8 +176,11 @@ def main(argv: list[str] | None = None) -> int:
             templates_dir=Path(args.templates),
             build_dir=Path(args.build_dir),
             html_only=bool(args.html_only),
-            with_vax=bool(args.with_vax),
-            vax_mode=str(args.vax_mode),
+            vax=VaxOptions(
+                enabled=bool(args.with_vax),
+                mode=str(args.vax_mode),
+                transcript=Path(args.vax_transcript) if args.vax_transcript else None,
+            ),
         )
     )
     return 0
