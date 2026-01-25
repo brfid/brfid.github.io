@@ -1,11 +1,10 @@
-name: Deploy Landing
+name: Publish Site
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - ".github/workflows/deploy.yml"
-      - "site/**"
+    tags:
+      - "publish"
+      - "publish-*"
   workflow_dispatch:
 
 permissions:
@@ -26,6 +25,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Quality checks
+        run: |
+          python -m ruff check .
+          python -m mypy
+          python -m pytest -q
+          python -m pylint resume_generator tests -sn
+          python -m vulture --config pyproject.toml resume_generator
+
+      - name: Install Playwright browsers
+        run: python -m playwright install --with-deps chromium
+
+      - name: Generate site (HTML + PDF)
+        run: python -m resume_generator --out site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
