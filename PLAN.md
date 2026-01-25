@@ -10,7 +10,7 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
   - Clear name/title
   - Links: LinkedIn + resume PDF
 - Secondary artifact on the page:
-  - A Unix man-page–style summary (`brad(1)`) rendered on-page
+  - A Unix man-page–style summary (`brad(1)`) rendered on-page (as some kind of resume summary or greatest hits)
   - A short, muted build transcript proving generation (compile → generate → nroff/man output)
 - Tone: understated/professional (docs-as-code + CI automation), not retro cosplay.
 
@@ -29,7 +29,7 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
 
 ## Generator (local-first)
 
-- Primary interface: Python CLI (later: TUI).
+- Primary interface: Python CLI
 - Rendering:
   - HTML/CSS via Jinja2
   - PDF via Playwright
@@ -70,3 +70,71 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
 - Artifact contract:
   - Exact filenames and minimal transcript content for `site/vax-build.log`.
   - Whether the landing page renders `brad.txt` inline or links out.
+
+## VAX “Box” Abstraction (host ↔ guest transforms)
+
+Goal: keep the main build conventional (Python/Jinja2/Playwright) while allowing one or more
+SIMH/VAX steps to perform small, deterministic transformations or verifications in C, returning
+artifacts that the pipeline then uses/publishes.
+
+### Host ↔ VAX contract (portable across steps)
+
+Treat each SIMH step as a box with a stable envelope:
+
+- Host builds an input payload (directory + metadata) and packages it (e.g. `vax_in.tar.gz`).
+- SIMH/VAX job unpacks, runs a transformation, and produces an output payload (e.g. `vax_out.tar.gz`).
+- Host extracts outputs and *enforces* them (pipeline fails if required outputs are missing/invalid).
+
+Recommended envelope layout:
+
+- `spec.json`: serialized job spec (name/version/params + declared inputs/outputs + checks).
+- `in/`: input files for the job.
+- `out/`: output files produced by the job.
+- `transcript.log`: short guest transcript snippet for publication/audit (optional).
+
+### Where VAX boxes can plug into the pipeline
+
+Because the interface is “payload in / payload out”, boxes can be inserted at multiple points:
+
+- After quality gates: VAX verifies/attests to host-generated summary metadata.
+- After HTML render: VAX canonicalizes/normalizes a text artifact (stable wrapping, newline rules).
+- Before deploy: VAX produces a deterministic manifest/checksum file for published outputs.
+
+### Transport mechanisms (CI-friendly)
+
+From most robust to fastest to prototype:
+
+1. Exchange disk image: host writes files into a small image; guest mounts it; guest writes outputs back.
+2. Host-attached output file via simulated device: guest writes bytes to a device backed by a host file.
+3. Console-log encoding: guest prints base64 between markers; host extracts/decodes (best for small outputs).
+
+### “Trivial but necessary” VAX C transformations (not resume parsing)
+
+Keep v1 transformations small and obviously useful:
+
+- `canonicalize_text`: normalize newlines, trim trailing whitespace, wrap at N columns.
+- `hash_manifest`: compute checksums + sizes for a declared file list.
+- `validate_envelope`: verify required inputs exist/within bounds; emit a compact pass/fail report.
+- `render_nroff`: take a `.1` file and emit a rendered text view for the landing page.
+
+### Typed host-side abstraction (dataclass-based)
+
+Define a host-side “box” interface:
+
+- `VaxJobSpec` dataclass: `name`, `version`, `inputs`, `outputs`, `params`, `checks`.
+- `VaxResult` dataclass: parsed outputs + transcript summary + metrics.
+
+Host responsibilities:
+
+- Serialize `VaxJobSpec` → `spec.json`.
+- Package the envelope, run SIMH, extract and validate `out/`.
+- Expose results to later pipeline stages (and/or publish them into `site/`).
+
+### First box candidates (v1)
+
+- `hash_manifest` (lowest risk): output `site/vax-manifest.txt` + short transcript.
+- `render_nroff` (most visible): output `site/brad.txt` + transcript proving “compile → generate → nroff”.
+
+
+
+
