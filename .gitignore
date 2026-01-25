@@ -8,6 +8,10 @@ __pycache__/
 # Generated files
 site/resume/
 site/resume.pdf
+site/brad.man.txt
+site/vax-build.log
+site/vax-manifest.txt
+build/
 
 # IDE
 *.code-workspace

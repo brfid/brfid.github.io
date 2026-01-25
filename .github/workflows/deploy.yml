@@ -49,8 +49,8 @@ jobs:
       - name: Install Playwright browsers
         run: python -m playwright install --with-deps chromium
 
-      - name: Generate site (HTML + PDF)
-        run: python -m resume_generator --out site
+      - name: Generate site (HTML + PDF + artifacts)
+        run: python -m resume_generator --out site --with-vax --vax-mode local
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

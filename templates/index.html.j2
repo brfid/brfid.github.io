@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bradley Fidler</title>
+    <title>{{ name }}</title>
     <meta name="color-scheme" content="dark" />
     <style>
       :root {
@@ -115,41 +115,30 @@
     <main class="wrap">
       <section class="card">
         <header>
-          <h1>Bradley Fidler</h1>
-<p class="subtitle">Senior Technical Writer</p>          <ul class="nav" role="list" aria-label="Links">
-              <li><a class="pill" href="https://www.linkedin.com/in/brfid/" rel="me noopener noreferrer">LinkedIn</a></li>
-            <li><a class="pill" href="/resume/">Resume (HTML)</a></li>
-            <li><a class="pill" href="/resume.pdf">Resume (PDF)</a></li>
+          <h1>{{ name }}</h1>
+          {% if label %}<p class="subtitle">{{ label }}</p>{% endif %}
+          <ul class="nav" role="list" aria-label="Links">
+            {% if linkedin_url %}
+              <li><a class="pill" href="{{ linkedin_url }}" rel="me noopener noreferrer">LinkedIn</a></li>
+            {% endif %}
+            <li><a class="pill" href="{{ resume_html_path }}">Resume (HTML)</a></li>
+            <li><a class="pill" href="{{ resume_pdf_path }}">Resume (PDF)</a></li>
           </ul>
         </header>
 
+        {% if man_text %}
           <div class="section">
             <h2>brad(1)</h2>
-            <pre><code>NAME
-    brad - Senior Technical Writer
-
-DESCRIPTION
-    Senior Technical Writer focused on API documentation and docs-
-    as-code. Lead docs strategy, content, and platform. Build
-    OpenAPI and prose workflows that speed releases, encourage
-    subject-matter expert contributions, and prepare docs for AI...
-
-CONTACT
-    Email: brfid@icloud.com
-    Web: https://brfid.github.io
-    LinkedIn: https://www.linkedin.com/in/brfid/</code></pre>
+            <pre><code>{{ man_text }}</code></pre>
           </div>
+        {% endif %}
 
+        {% if vax_log_excerpt %}
           <div class="section">
             <h2>build</h2>
-            <pre><code>[+0.00s] vax stage mode=local (host compilation)
-[+0.00s] emit resume.vax.yaml from resume.yaml
-[+0.01s] compile bradman.c with cc
-[+0.15s] run bradman to generate brad.1
-[+0.37s] render brad.man.txt from brad.1 (host-side)
-[+0.37s] render landing page (index.html)
-[+0.37s] done</code></pre>
+            <pre><code>{{ vax_log_excerpt }}</code></pre>
           </div>
+        {% endif %}
 
         <footer>
           <span>Built from source.</span>
@@ -158,3 +147,4 @@ CONTACT
     </main>
   </body>
 </html>
+

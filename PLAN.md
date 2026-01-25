@@ -18,14 +18,20 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
 
 - `resume.yaml` (JSON Resume data, stored as YAML).
 
-## Build outputs (generated; not committed)
+## Outputs (generated; not committed)
+
+### Published (deployed in `site/`)
 
 - Static deploy root: `site/`
-- Planned outputs:
+- Planned published outputs:
   - `site/resume.pdf`
-  - `site/brad.1` (man page roff source; “proof artifact”)
   - `site/brad.man.txt` (plain text “manpage-style” blurb shown on the landing page)
   - `site/vax-build.log` (muted transcript; GitHub runner timestamps initially)
+
+### Internal-only (not deployed)
+
+- Intermediate artifacts (kept out of `site/`):
+  - `build/vax/brad.1` (roff source returned from the VAX stage; used to render `site/brad.man.txt`)
 
 ## Generator (local-first)
 
@@ -33,8 +39,14 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
 - Rendering:
   - HTML/CSS via Jinja2
   - PDF via Playwright
-- Task runner: `nox` (planned) to provide a single local/CI entrypoint.
+- Task runner: optional `nox` (or a simple `Makefile`) to provide a single local/CI entrypoint.
+  - (`nox` is a Python automation runner, similar to `tox`, for repeatable “sessions” like lint/typecheck/test.)
 - Quality gates (run frequently): ruff, mypy, pytest, pylint, vulture.
+- Test-first expectation: when adding a new module/feature, add/extend `pytest` coverage in the same batch (CI blocks publish on failures).
+- Code style guidance:
+  - Google-style docstrings (`Args:`, `Returns:`, `Raises:`).
+  - PEP 8 + ruff formatting/linting.
+  - Prefer small, modular functions; use dataclasses/classes when there is stateful orchestration (e.g., VAX stage runner).
 
 ## CI/CD
 
@@ -42,8 +54,9 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
 - Publish pipeline (tag-triggered):
   1. Run quality checks (ruff/mypy/pytest/pylint/vulture).
   2. Generate site (HTML + PDF) into `site/`.
-  3. Run VAX/SIMH manpage stage (Docker) to generate `site/brad.1`, `site/brad.man.txt`, and `site/vax-build.log`.
-  4. Deploy `site/` to GitHub Pages.
+  3. Run VAX/SIMH manpage stage (Docker) to generate `build/vax/brad.1` and `site/vax-build.log`.
+  4. Host renders `build/vax/brad.1` → `site/brad.man.txt` (deterministic, test-covered).
+  5. Deploy `site/` to GitHub Pages.
 - Non-publish pushes to `main` do not deploy.
 
 ## SIMH stage (technical artifact)
@@ -58,11 +71,10 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
   2. Host boots the VAX guest (preinstalled “golden” disk; no reinstall each run).
   3. Host sends `bradman.c` + `resume.vax.yaml` into the guest via console (`cat > ...`).
   4. Guest compiles `bradman` each run (part of the evidence signal).
-  5. Guest runs `bradman` to produce:
-     - `brad.1` (roff/man source; proof artifact)
-     - `brad.man.txt` (plain text for `<pre><code>` on the landing page)
-  6. Guest prints both files back to the host via uuencode blocks between hard markers.
-  7. Host decodes, writes artifacts into `site/`, and writes `site/vax-build.log` (runner-timestamped milestones for v1).
+  5. Guest runs `bradman` to produce `brad.1` (roff/man source).
+  6. Guest prints `brad.1` back to the host via uuencode blocks between hard markers.
+  7. Host decodes, writes `build/vax/brad.1`, renders `site/brad.man.txt`, and writes `site/vax-build.log`
+     (runner-timestamped milestones for v1).
 - Keep licensing/redistribution in mind for any OS images.
 - Policy:
   - Runs locally for testing, but only runs in GitHub Actions on `publish`/`publish-*`.
@@ -90,8 +102,8 @@ Input contract (host-produced `resume.vax.yaml`; not committed):
 
 Transformation rules (v1; implemented in the guest C program, not “templated”):
 
-- Emit roff `man(7)` source as `brad.1` (“proof artifact”).
-- Emit plain text as `brad.man.txt` for landing page display:
+- Emit roff `man(7)` source as `brad.1`.
+- Host renders `brad.1` → `site/brad.man.txt` for landing page display (deterministic, test-covered):
   - Wrap to 66 columns.
   - `DESCRIPTION` is max 4 wrapped lines, then truncate with `...`.
   - Sections: `NAME`, `DESCRIPTION`, `CONTACT`.
@@ -118,7 +130,6 @@ Escape rules (guest output safety):
   - Confirm the boot/login “readiness” signal for telnet driving (avoid fixed sleeps).
 - Landing page:
   - How much of `site/vax-build.log` to show inline (first N lines vs curated excerpt).
-  - Whether to link `site/brad.1` as a “proof artifact” download.
 
 ## VAX “Box” Abstraction (host ↔ guest transforms)
 
@@ -166,6 +177,7 @@ Keep v1 transformations small and obviously useful:
 - `validate_envelope`: verify required inputs exist/within bounds; emit a compact pass/fail report.
 - `render_nroff` (optional later): take a `.1` file and emit a rendered text view for the landing page.
 - `yaml_to_roff_and_text` (v1): take `resume.vax.yaml` and emit `brad.1` + `brad.man.txt` in-guest.
+  - (Updated): emit `brad.1` in-guest; render to `brad.man.txt` on the host for portability/testing.
 
 ### Typed host-side abstraction (dataclass-based)
 
@@ -183,26 +195,78 @@ Host responsibilities:
 ### First box candidates (v1)
 
 - `hash_manifest` (lowest risk): output `site/vax-manifest.txt` + short transcript.
-- `yaml_to_roff` (most visible): output `site/brad.1` + `site/brad.man.txt` + transcript proving “boot → compile → generate”.
+- `yaml_to_roff` (most visible): output `build/vax/brad.1` + transcript proving “boot → compile → generate”.
 
 ## Console protocol (v1)
 
 Hard markers + uuencode blocks in the telnet transcript:
 
 - `<<<BRAD_1_UU_BEGIN>>>` then `uuencode brad.1 brad.1` then `<<<BRAD_1_UU_END>>>`
-- `<<<BRAD_MAN_TXT_UU_BEGIN>>>` then `uuencode brad.man.txt brad.man.txt` then `<<<BRAD_MAN_TXT_UU_END>>>`
 
-Host decodes and writes `site/brad.1` and `site/brad.man.txt`.
+Host decodes and writes `build/vax/brad.1`, then renders `site/brad.man.txt`.
 
-## TODO (batches)
+## TODO (local success checklist)
+
+Goal: be able to run one command locally and open a “successful” webpage (landing page + resume + manpage-style excerpt).
+
+### Phase 0: Local “green path” (no SIMH/VAX required)
+
+- [x] Add a landing-page template (`templates/index.html.j2`) and generator code that writes `site/index.html`.
+  - Links: LinkedIn, `/resume/`, `/resume.pdf`.
+  - Embed `site/brad.man.txt` if present (a muted `<pre>` block); otherwise omit the section.
+  - Embed a muted excerpt of `site/vax-build.log` if present; otherwise omit the section.
+- [x] Add a single “build everything” entrypoint (CLI) that:
+  - Generates resume HTML + CSS into `site/resume/`.
+  - Generates `site/resume.pdf`.
+  - Runs the local VAX stage (or later docker/SIMH stage) to produce `build/vax/brad.1` and `site/vax-build.log`.
+  - Renders `build/vax/brad.1` → `site/brad.man.txt` (using `resume_generator.manpage`).
+  - Writes/refreshes `site/index.html`.
+  - Writes `site/.nojekyll` (if missing) and preserves existing `site/robots.txt` + `site/404.html`.
+- [x] Add a local-only helper path to produce `build/vax/brad.1` *without* SIMH:
+  - `resume-gen --with-vax --vax-mode local` compiles `vax/bradman.c` on the host and runs it against the emitted `build/vax/resume.vax.yaml`.
+  - This is strictly for local preview; CI/publish uses the docker/SIMH path once implemented.
+- [x] Tests (same batch as each addition):
+  - Landing page rendering: ensures `brad.man.txt` is conditionally included and HTML is valid-ish.
+  - “Build everything” CLI: smoke-test path writes expected files into a temp dir.
+- [x] Local smoke run instructions (document in `README.md`):
+  - Use a local virtualenv (`.venv/`); do not install anything globally or modify system Python.
+  - Setup: `python3 -m venv .venv` then `.venv/bin/python -m pip install -e '.[dev]'`
+  - Browser deps: `.venv/bin/python -m playwright install chromium`
+  - build: one command
+  - preview: `.venv/bin/python -m http.server --directory site 8000` then open `http://127.0.0.1:8000/`
+- [x] Write a deterministic published-file manifest before deploy (host-side for now): `site/vax-manifest.txt`.
+
+### Phase 1: SIMH/VAX stage (real artifact generation)
+
+- [x] Implement host emitter: `resume.yaml` → `resume.vax.yaml` (v1 schema + constraints).
+- [ ] Implement `resume_generator.vax_stage`:
+  - Run SIMH container, drive via telnet, send sources, compile, run, extract uuencode block.
+  - Write `build/vax/brad.1` and `site/vax-build.log`.
+  - Write `site/vax-manifest.txt` from the VAX-side `hash_manifest` box (later), or keep host-side.
+- [ ] Tests:
+  - [x] Unit-test `resume.vax.yaml` emitter (schema/versioning + quoting/escaping rules).
+  - [x] Unit-test transcript parsing + uudecode extraction (pure string fixtures).
+
+### Phase 2: CI + publish
+
+- [x] GitHub Actions workflow:
+  - On `publish` / `publish-*` tags: run gates → build site → run VAX stage → deploy Pages.
+  - On `main`: run gates only (no deploy).
+- [ ] Hardening: wait-for-prompt loops (no sleeps), pin Docker image by digest, deterministic logs.
+  - Interim: CI may use `--vax-mode local` until the docker/SIMH transport is implemented and verified.
+
+## TODO (milestones)
+
+These are coarse implementation batches; the “local success checklist” above is the day-to-day TODO.
 
 ### Batch 1: Host driver + schema emitter
 
 - Add `python -m resume_generator.vax_stage --out site` (modular, PEP 8, DRY-with-clarity):
   - Emit `resume.vax.yaml` v1 from `resume.yaml`.
   - Boot the Dockerized VAX/SIMH environment and drive it via telnet (no external `telnet` dependency).
-  - Send `bradman.c` + `resume.vax.yaml`, compile, generate `brad.1` + `brad.man.txt`.
-  - Extract uuencode blocks between markers; decode; write required artifacts into `site/`.
+  - Send `bradman.c` + `resume.vax.yaml`, compile, generate `brad.1`.
+  - Extract uuencode blocks between markers; decode; write `build/vax/brad.1`.
+  - Render `build/vax/brad.1` → `site/brad.man.txt` (unit-tested; deterministic).
   - Write `site/vax-build.log` with runner timestamps and milestones (v1).
   - Fail hard on missing markers, decode failure, or empty outputs.
 
@@ -210,7 +274,7 @@ Host decodes and writes `site/brad.1` and `site/brad.man.txt`.
 
 - Render `site/brad.man.txt` in a subtle codeblock below the header.
 - Render a muted excerpt of `site/vax-build.log` as “pipeline evidence”.
-- Link to `site/brad.1` (optional; recommended as a proof artifact).
+- Do not publish/download-link the roff source (`brad.1`); keep it as an internal intermediate.
 
 ### Batch 3: CI wiring + hardening
 
