@@ -29,4 +29,3 @@ def test_manifest_is_deterministic_and_excludes_self(tmp_path: Path) -> None:
     assert lines[0].endswith("  a.txt")
     assert lines[1].endswith("  b.txt")
     assert lines[2].endswith("  sub/c.txt")
-

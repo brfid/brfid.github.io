@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 
 from .landing import build_landing_page
@@ -36,6 +37,71 @@ def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> tuple[Path, 
     if css_src.exists():
         copy_file(css_src, css_dst)
     return index_path, resume
+
+
+@dataclass(frozen=True)
+class BuildRequest:
+    """Parsed build request for generating the site."""
+
+    src: Path
+    out_dir: Path
+    templates_dir: Path
+    build_dir: Path
+    html_only: bool
+    with_vax: bool
+    vax_mode: str
+
+
+def build_site(req: BuildRequest) -> None:
+    """Build the site and optional artifacts.
+
+    Args:
+        req: Build request.
+    """
+    resume_index_path, resume = build_html(
+        src=req.src,
+        out_dir=req.out_dir,
+        templates_dir=req.templates_dir,
+    )
+
+    if not req.html_only:
+        # pylint: disable=import-outside-toplevel
+        from .pdf import build_pdf
+
+        build_pdf(out_dir=req.out_dir, resume_url_path="/resume/", pdf_name="resume.pdf")
+
+    landing_path = build_landing_page(
+        resume=resume,
+        out_dir=req.out_dir,
+        templates_dir=req.templates_dir,
+    )
+
+    nojekyll_path = req.out_dir / ".nojekyll"
+    if not nojekyll_path.exists():
+        write_text(nojekyll_path, "")
+
+    print(f"Wrote: {resume_index_path}")
+    print(f"Wrote: {landing_path}")
+
+    if req.with_vax:
+        # pylint: disable=import-outside-toplevel
+        from .vax_stage import VaxStageConfig, VaxStageRunner
+
+        runner = VaxStageRunner(
+            config=VaxStageConfig(
+                resume_path=req.src,
+                site_dir=req.out_dir,
+                build_dir=req.build_dir,
+                mode=req.vax_mode,
+            ),
+            repo_root=Path.cwd(),
+        )
+        runner.run()
+        print(f"Wrote: {runner.paths.brad_man_txt_path}")
+        print(f"Wrote: {runner.paths.vax_build_log_path}")
+
+    manifest_path = write_manifest(root=req.out_dir, out_path=req.out_dir / "vax-manifest.txt")
+    print(f"Wrote: {manifest_path}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -89,45 +155,15 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
-    src = Path(args.src)
-    out_dir = Path(args.out)
-    templates_dir = Path(args.templates)
-    build_dir = Path(args.build_dir)
-
-    resume_index_path, resume = build_html(src=src, out_dir=out_dir, templates_dir=templates_dir)
-
-    if not args.html_only:
-        # pylint: disable=import-outside-toplevel
-        from .pdf import build_pdf
-
-        build_pdf(out_dir=out_dir, resume_url_path="/resume/", pdf_name="resume.pdf")
-
-    landing_path = build_landing_page(resume=resume, out_dir=out_dir, templates_dir=templates_dir)
-
-    nojekyll_path = out_dir / ".nojekyll"
-    if not nojekyll_path.exists():
-        write_text(nojekyll_path, "")
-
-    print(f"Wrote: {resume_index_path}")
-    print(f"Wrote: {landing_path}")
-
-    if args.with_vax:
-        # pylint: disable=import-outside-toplevel
-        from .vax_stage import VaxStageConfig, VaxStageRunner
-
-        runner = VaxStageRunner(
-            config=VaxStageConfig(
-                resume_path=src,
-                site_dir=out_dir,
-                build_dir=build_dir,
-                mode=str(args.vax_mode),
-            ),
-            repo_root=Path.cwd(),
+    build_site(
+        BuildRequest(
+            src=Path(args.src),
+            out_dir=Path(args.out),
+            templates_dir=Path(args.templates),
+            build_dir=Path(args.build_dir),
+            html_only=bool(args.html_only),
+            with_vax=bool(args.with_vax),
+            vax_mode=str(args.vax_mode),
         )
-        runner.run()
-        print(f"Wrote: {runner.paths.brad_man_txt_path}")
-        print(f"Wrote: {runner.paths.vax_build_log_path}")
-
-    manifest_path = write_manifest(root=out_dir, out_path=out_dir / "vax-manifest.txt")
-    print(f"Wrote: {manifest_path}")
+    )
     return 0

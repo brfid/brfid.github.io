@@ -102,4 +102,3 @@ def decode_marked_uuencode(
     """Extract a marked transcript region and decode its uuencode block."""
     region = extract_marked_region(transcript, begin_marker=begin_marker, end_marker=end_marker)
     return decode_uuencode_block(region)
-

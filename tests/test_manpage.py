@@ -63,4 +63,3 @@ def test_contact_ignores_br_macro_and_strips_leading_guard() -> None:
         "Web: https://example.com",
         "LinkedIn: https://linkedin.com/in/example",
     )
-

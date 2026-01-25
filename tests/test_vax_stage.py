@@ -18,4 +18,3 @@ def test_stage_paths_are_stable() -> None:
     assert paths.vax_build_dir.as_posix().endswith("build/vax")
     assert paths.brad_1_path.as_posix().endswith("build/vax/brad.1")
     assert paths.brad_man_txt_path.as_posix().endswith("site/brad.man.txt")
-

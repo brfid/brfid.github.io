@@ -42,4 +42,3 @@ def test_cli_html_only_writes_site(tmp_path: Path) -> None:
     assert (out_dir / "index.html").exists()
     assert (out_dir / "resume" / "index.html").exists()
     assert (out_dir / ".nojekyll").exists()
-

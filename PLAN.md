@@ -252,6 +252,7 @@ Goal: be able to run one command locally and open a “successful” webpage (la
 - [x] GitHub Actions workflow:
   - On `publish` / `publish-*` tags: run gates → build site → run VAX stage → deploy Pages.
   - On `main`: run gates only (no deploy).
+- [ ] Verify CI (main) is green after refactors.
 - [ ] Hardening: wait-for-prompt loops (no sleeps), pin Docker image by digest, deterministic logs.
   - Interim: CI may use `--vax-mode local` until the docker/SIMH transport is implemented and verified.
 

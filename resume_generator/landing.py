@@ -7,6 +7,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from .resume_fields import get_profile_url
 from .types import Resume
 
 
@@ -45,21 +46,34 @@ def _excerpt_lines(text: str, *, max_lines: int = 14) -> str:
     return "\n".join(excerpt).rstrip()
 
 
-def _get_linkedin_url(resume: Resume) -> str | None:
+def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
+    """Build the landing template context.
+
+    Args:
+        resume: Raw JSON Resume dict.
+        out_dir: Output directory (typically `site/`).
+
+    Returns:
+        Landing context for the template.
+    """
     basics = resume.get("basics") or {}
-    profiles = basics.get("profiles") or []
-    if not isinstance(profiles, list):
-        return None
-    for profile in profiles:
-        if not isinstance(profile, dict):
-            continue
-        network = str(profile.get("network") or "").strip().lower()
-        if network != "linkedin":
-            continue
-        url = str(profile.get("url") or "").strip()
-        if url:
-            return url
-    return None
+    name = str(basics.get("name") or "Resume").strip() or "Resume"
+    label_raw = str(basics.get("label") or "").strip()
+    label = label_raw or None
+
+    man_text = _read_optional_text(out_dir / "brad.man.txt")
+    vax_log = _read_optional_text(out_dir / "vax-build.log")
+    vax_log_excerpt = _excerpt_lines(vax_log) if vax_log else None
+
+    return LandingContext(
+        name=name,
+        label=label,
+        linkedin_url=get_profile_url(basics, "LinkedIn"),
+        resume_html_path="/resume/",
+        resume_pdf_path="/resume.pdf",
+        man_text=man_text,
+        vax_log_excerpt=vax_log_excerpt,
+    )
 
 
 def build_landing_page(
@@ -80,24 +94,7 @@ def build_landing_page(
     Returns:
         Path to the generated HTML file.
     """
-    basics = resume.get("basics") or {}
-    name = str(basics.get("name") or "Resume").strip() or "Resume"
-    label_raw = str(basics.get("label") or "").strip()
-    label = label_raw or None
-
-    man_text = _read_optional_text(out_dir / "brad.man.txt")
-    vax_log = _read_optional_text(out_dir / "vax-build.log")
-    vax_log_excerpt = _excerpt_lines(vax_log) if vax_log else None
-
-    ctx = LandingContext(
-        name=name,
-        label=label,
-        linkedin_url=_get_linkedin_url(resume),
-        resume_html_path="/resume/",
-        resume_pdf_path="/resume.pdf",
-        man_text=man_text,
-        vax_log_excerpt=vax_log_excerpt,
-    )
+    ctx = _build_context(resume=resume, out_dir=out_dir)
 
     env = _env_for_templates(templates_dir)
     template = env.get_template(template_name)
@@ -107,4 +104,3 @@ def build_landing_page(
     index_path = out_dir / "index.html"
     index_path.write_text(html, encoding="utf-8")
     return index_path
-

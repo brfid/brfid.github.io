@@ -23,6 +23,7 @@ from .landing import build_landing_page
 from .manpage import parse_brad_roff_summary, render_brad_man_txt
 from .render import load_resume
 from .types import Resume
+from .uudecode import decode_marked_uuencode
 from .vax_yaml import build_vax_resume_v1, emit_vax_yaml
 
 
@@ -184,7 +185,20 @@ class VaxStageRunner:
     def _run_docker(self) -> None:
         # Intentionally stubbed: docker/SIMH will be wired next. Keeping the
         # public module/CLI stable so later work is incremental.
+        #
+        # Note: `decode_marked_uuencode` is used by the planned docker/SIMH path
+        # to extract `brad.1` from console transcripts.
+        _ = self._decode_brad_1_from_transcript
         raise NotImplementedError("docker/SIMH mode is not implemented yet")
+
+    def _decode_brad_1_from_transcript(self, transcript: str) -> bytes:
+        """Decode `brad.1` bytes from a transcript region."""
+        res = decode_marked_uuencode(
+            transcript,
+            begin_marker="<<<BRAD_1_UU_BEGIN>>>",
+            end_marker="<<<BRAD_1_UU_END>>>",
+        )
+        return res.data
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:

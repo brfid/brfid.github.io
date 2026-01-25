@@ -13,6 +13,7 @@ from datetime import date
 from typing import Any, cast
 
 from .normalize import format_date_range
+from .resume_fields import get_profile_url, safe_str
 from .types import Resume
 
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -92,26 +93,86 @@ class VaxYamlEmitOptions:
     max_skill_keywords: int = 8
 
 
-def _get_profile_url(basics: Mapping[str, Any], network: str) -> str | None:
-    profiles = basics.get("profiles") or []
-    if not isinstance(profiles, list):
-        return None
-    for profile in profiles:
-        if not isinstance(profile, Mapping):
-            continue
-        if str(profile.get("network") or "").strip().lower() != network.lower():
-            continue
-        url = str(profile.get("url") or "").strip()
-        if url:
-            return url
-    return None
+def _build_contact(basics: Mapping[str, Any]) -> dict[str, str]:
+    contact: dict[str, str] = {}
+    email = safe_str(basics.get("email"))
+    if email:
+        contact["email"] = email
+
+    url = get_profile_url(basics, "Personal") or safe_str(basics.get("url"))
+    if url:
+        contact["url"] = url
+
+    linkedin = get_profile_url(basics, "LinkedIn")
+    if linkedin:
+        contact["linkedin"] = linkedin
+    return contact
 
 
-def _safe_str(value: Any) -> str | None:
-    if value is None:
-        return None
-    text = str(value).strip()
-    return text or None
+def _build_work_items(resume: Resume, opts: VaxYamlEmitOptions) -> list[dict[str, Any]]:
+    work_items_raw = cast(list[Mapping[str, Any]], (resume.get("work") or []))
+    out: list[dict[str, Any]] = []
+    for item in work_items_raw:
+        company = safe_str(item.get("name")) or safe_str(item.get("company"))
+        position = safe_str(item.get("position"))
+        if not company and not position:
+            continue
+
+        date_range = format_date_range(
+            safe_str(item.get("startDate")),
+            safe_str(item.get("endDate")),
+        )
+        location = safe_str(item.get("location"))
+
+        highlights: list[str] = []
+        highlights_raw = item.get("highlights") or []
+        if isinstance(highlights_raw, list):
+            for hl in highlights_raw:
+                text = safe_str(hl)
+                if text:
+                    highlights.append(text)
+
+        work_out: dict[str, Any] = {}
+        if company:
+            work_out["company"] = company
+        if position:
+            work_out["position"] = position
+        if date_range:
+            work_out["dateRange"] = date_range
+        if location:
+            work_out["location"] = location
+        if highlights:
+            work_out["highlights"] = highlights[: opts.max_work_highlights]
+
+        out.append(work_out)
+        if len(out) >= opts.max_work_items:
+            break
+    return out
+
+
+def _build_skills(resume: Resume, opts: VaxYamlEmitOptions) -> list[dict[str, Any]]:
+    skills_raw = cast(list[Mapping[str, Any]], (resume.get("skills") or []))
+    out: list[dict[str, Any]] = []
+    for skill in skills_raw:
+        group = safe_str(skill.get("name")) or safe_str(skill.get("group"))
+        if not group:
+            continue
+
+        keywords: list[str] = []
+        keywords_raw = skill.get("keywords") or []
+        if isinstance(keywords_raw, list):
+            for kw in keywords_raw:
+                text = safe_str(kw)
+                if text:
+                    keywords.append(text)
+
+        out_skill: dict[str, Any] = {"group": group}
+        if keywords:
+            out_skill["keywords"] = keywords[: opts.max_skill_keywords]
+        out.append(out_skill)
+        if len(out) >= opts.max_skill_groups:
+            break
+    return out
 
 
 def build_vax_resume_v1(
@@ -134,77 +195,9 @@ def build_vax_resume_v1(
 
     basics = cast(Mapping[str, Any], (resume.get("basics") or {}))
 
-    name = _safe_str(basics.get("name")) or ""
-    label = _safe_str(basics.get("label")) or ""
-    summary = _safe_str(basics.get("summary")) or ""
-
-    contact: dict[str, str] = {}
-    email = _safe_str(basics.get("email"))
-    if email:
-        contact["email"] = email
-    url = _get_profile_url(basics, "Personal") or _safe_str(basics.get("url"))
-    if url:
-        contact["url"] = url
-    linkedin = _get_profile_url(basics, "LinkedIn")
-    if linkedin:
-        contact["linkedin"] = linkedin
-
-    work_items_raw = cast(list[Mapping[str, Any]], (resume.get("work") or []))
-    work_items: list[dict[str, Any]] = []
-    for item in work_items_raw:
-        company = _safe_str(item.get("name")) or _safe_str(item.get("company"))
-        position = _safe_str(item.get("position"))
-        if not company and not position:
-            continue
-
-        date_range = format_date_range(
-            _safe_str(item.get("startDate")),
-            _safe_str(item.get("endDate")),
-        )
-        location = _safe_str(item.get("location"))
-
-        highlights_raw = item.get("highlights") or []
-        highlights: list[str] = []
-        if isinstance(highlights_raw, list):
-            for hl in highlights_raw:
-                text = _safe_str(hl)
-                if text:
-                    highlights.append(text)
-
-        work_out: dict[str, Any] = {}
-        if company:
-            work_out["company"] = company
-        if position:
-            work_out["position"] = position
-        if date_range:
-            work_out["dateRange"] = date_range
-        if location:
-            work_out["location"] = location
-        if highlights:
-            work_out["highlights"] = highlights[: opts.max_work_highlights]
-        work_items.append(work_out)
-        if len(work_items) >= opts.max_work_items:
-            break
-
-    skills_raw = cast(list[Mapping[str, Any]], (resume.get("skills") or []))
-    skills: list[dict[str, Any]] = []
-    for skill in skills_raw:
-        group = _safe_str(skill.get("name")) or _safe_str(skill.get("group"))
-        if not group:
-            continue
-        keywords_raw = skill.get("keywords") or []
-        keywords: list[str] = []
-        if isinstance(keywords_raw, list):
-            for kw in keywords_raw:
-                text = _safe_str(kw)
-                if text:
-                    keywords.append(text)
-        out_skill: dict[str, Any] = {"group": group}
-        if keywords:
-            out_skill["keywords"] = keywords[: opts.max_skill_keywords]
-        skills.append(out_skill)
-        if len(skills) >= opts.max_skill_groups:
-            break
+    name = safe_str(basics.get("name")) or ""
+    label = safe_str(basics.get("label")) or ""
+    summary = safe_str(basics.get("summary")) or ""
 
     out: dict[str, Any] = {
         "schemaVersion": opts.schema_version,
@@ -213,10 +206,16 @@ def build_vax_resume_v1(
         "label": label,
         "summary": summary,
     }
+
+    contact = _build_contact(basics)
     if contact:
         out["contact"] = contact
+
+    work_items = _build_work_items(resume, opts)
     if work_items:
         out["work"] = work_items
+
+    skills = _build_skills(resume, opts)
     if skills:
         out["skills"] = skills
     return out
