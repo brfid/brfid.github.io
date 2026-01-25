@@ -1,4 +1,4 @@
-# Redirect
+# brfid.github.io
 
 This repo deploys a minimal GitHub Pages landing/redirect for `brfid.github.io`.
 
