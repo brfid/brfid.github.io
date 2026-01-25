@@ -1,28 +1,31 @@
-"""Render resume outputs (HTML/CSS) from JSON Resume inputs."""
+"""Render resume outputs (HTML/CSS) from resume source inputs."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import cast
 
+import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .normalize import normalize_resume
 from .types import Resume, ResumeView
 
 
-def load_resume_json(path: Path) -> Resume:
-    """Load JSON Resume data from disk.
+def load_resume(path: Path) -> Resume:
+    """Load resume data from disk.
 
     Args:
-        path: Path to a JSON file.
+        path: Path to a YAML or JSON file.
 
     Returns:
-        Parsed JSON object as a dict.
+        Parsed resume object as a dict.
     """
     with path.open("r", encoding="utf-8") as f:
-        # JSON Resume is a JSON object at the top level.
-        return json.load(f)
+        if path.suffix.lower() == ".json":
+            return cast(Resume, json.load(f))
+        return cast(Resume, yaml.safe_load(f))
 
 
 def render_resume_html(

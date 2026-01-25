@@ -9,7 +9,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, cast
 
-from .types import Resume, ResumeView, WorkItemView, ProjectItemView
+from .types import ProjectItemView, Resume, ResumeView, WorkItemView
+
 
 def _parse_iso_date(value: str | None) -> date | None:
     """Parse a YYYY-MM-DD date string into a `date`.
@@ -101,12 +102,19 @@ def normalize_resume(resume: Resume) -> ResumeView:
     projects = cast(list[ProjectItemView], sorted(projects_raw, key=_date_key, reverse=True))
 
     # Add computed ranges for templating convenience.
-    for item in work:
-        if isinstance(item, dict):
-            item["dateRange"] = format_date_range(item.get("startDate"), item.get("endDate"))
-    for item in projects:
-        if isinstance(item, dict):
-            item["dateRange"] = format_date_range(item.get("startDate"), item.get("endDate"))
+    for work_item in work:
+        if isinstance(work_item, dict):
+            date_range = format_date_range(work_item.get("startDate"), work_item.get("endDate"))
+            if date_range is not None:
+                work_item["dateRange"] = date_range
+    for project_item in projects:
+        if isinstance(project_item, dict):
+            date_range = format_date_range(
+                project_item.get("startDate"),
+                project_item.get("endDate"),
+            )
+            if date_range is not None:
+                project_item["dateRange"] = date_range
 
     out = cast(ResumeView, dict(resume))
     out["basics"] = basics

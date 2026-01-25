@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from .render import copy_file, load_resume_json, render_resume_html, write_text
+from .render import copy_file, load_resume, render_resume_html, write_text
 from .types import Resume
 
 
@@ -20,7 +20,7 @@ def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> Path:
     Returns:
         Path to the generated HTML file (`.../resume/index.html`).
     """
-    resume: Resume = load_resume_json(src)
+    resume: Resume = load_resume(src)
     html = render_resume_html(resume=resume, templates_dir=templates_dir)
 
     resume_dir = out_dir / "resume"
@@ -47,8 +47,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--in",
         dest="src",
-        default="resume.json",
-        help="Path to JSON Resume source (default: resume.json)",
+        default="resume.yaml",
+        help="Path to resume source (default: resume.yaml)",
     )
     parser.add_argument(
         "--out",
@@ -76,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
     index_path = build_html(src=src, out_dir=out_dir, templates_dir=templates_dir)
 
     if not args.html_only:
+        # pylint: disable=import-outside-toplevel
         from .pdf import build_pdf
 
         build_pdf(out_dir=out_dir, resume_url_path="/resume/", pdf_name="resume.pdf")

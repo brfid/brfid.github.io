@@ -3,7 +3,7 @@
 ## Decisions (current)
 
 - Build: Python CLI (later TUI).
-- Resume source: root `resume.json` (JSON Resume).
+- Resume source: root `resume.yaml` (JSON Resume data in YAML).
 - Render: Jinja2 HTML + CSS; PDF via Playwright.
 - Output dir: `site/` (deploy root); generated outputs are not committed.
 - Deploy: GitHub Pages via Actions; resume generation currently disabled in CI (landing only).
@@ -13,5 +13,5 @@
 
 ## Next
 
-- PDP-11 SIMH stage: “tape round-trip” of `resume.json` → log/checksum artifact.
+- PDP-11 SIMH stage: “tape round-trip” of `resume.yaml` → log/checksum artifact.
 - Optional: add a separate CI workflow to run `pytest`/`mypy` on PRs without deploying.

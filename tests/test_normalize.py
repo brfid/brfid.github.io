@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from typing import cast
+
 from resume_generator.normalize import format_date_range, normalize_resume
+from resume_generator.types import Resume
 
 
 def test_format_date_range_present() -> None:
@@ -20,6 +23,6 @@ def test_normalize_sorts_work_reverse_chronological() -> None:
         ],
     }
 
-    view = normalize_resume(resume)
+    view = normalize_resume(cast(Resume, resume))
     assert view["work"][0]["company"] == "New"
     assert "dateRange" in view["work"][0]

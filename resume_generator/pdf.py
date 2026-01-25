@@ -6,18 +6,18 @@ relative assets (CSS, images) resolve consistently in Playwright.
 
 from __future__ import annotations
 
+import threading
+from collections.abc import Iterator
 from contextlib import contextmanager
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Iterator
-import threading
 
 
 class _QuietHandler(SimpleHTTPRequestHandler):
     """HTTP handler that suppresses request logging."""
 
-    def log_message(self, format: str, *args) -> None:  # noqa: A002
+    def log_message(self, _format: str, *_args: object) -> None:  # pylint: disable=arguments-differ
         return
 
 
@@ -59,6 +59,7 @@ def build_pdf(*, out_dir: Path, resume_url_path: str, pdf_name: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     pdf_path = out_dir / pdf_name
 
+    # pylint: disable=import-outside-toplevel
     from playwright.sync_api import sync_playwright
 
     with _serve_directory(out_dir) as port:

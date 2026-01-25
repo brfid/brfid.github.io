@@ -6,7 +6,7 @@ Unknown fields are still preserved at runtime because input data is plain JSON.
 
 from __future__ import annotations
 
-from typing import NotRequired, TypedDict
+from typing import TypedDict
 
 
 class Profile(TypedDict, total=False):
@@ -108,6 +108,12 @@ class Resume(TypedDict, total=False):
     languages: list[LanguageItem]
 
 
-class ResumeView(Resume, total=False):
+class ResumeView(TypedDict, total=False):
+    basics: Basics
     work: list[WorkItemView]
+    education: list[EducationItem]
+    skills: list[SkillItem]
     projects: list[ProjectItemView]
+    publications: list[PublicationItem]
+    volunteer: list[VolunteerItem]
+    languages: list[LanguageItem]
