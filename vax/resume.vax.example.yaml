@@ -1,0 +1,34 @@
+schemaVersion: "v1"
+buildDate: "2026-01-25"
+name: "Bradley Fidler"
+label: "Senior Technical Writer"
+contact:
+  email: "brfid@icloud.com"
+  url: "https://brfid.github.io"
+  linkedin: "https://www.linkedin.com/in/brfid/"
+summary: "Senior Technical Writer focused on API documentation and docs-as-code. Lead docs strategy, content, and platform. Build OpenAPI and prose workflows that speed releases, encourage subject-matter expert contributions, and prepare docs for AI use."
+work:
+  - company: "DomainTools"
+    position: "Senior Technical Writer"
+    dateRange: "Oct 2023 – Present"
+    location: "Seattle (Remote), WA, US"
+    highlights:
+      - "Deliver OpenAPI specifications, user guides, and runbooks as the source of record."
+      - "Consolidate docs into an SSG with Swagger support, CI/CD pipelines, and SME contribution workflows."
+  - company: "JPMorgan Chase & Co."
+    position: "Contract Technical Writer"
+    dateRange: "Apr 2023 – Sep 2023"
+    location: "Jersey City (Hybrid), NJ, US"
+skills:
+  - group: "Docs platform and automation"
+    keywords:
+      - "OpenAPI"
+      - "MkDocs/Docusaurus/SSG"
+      - "GitHub Actions"
+      - "Python 3.11+"
+  - group: "Security and Networking"
+    keywords:
+      - "DNS"
+      - "BGP"
+      - "SIEM"
+
