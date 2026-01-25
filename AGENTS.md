@@ -20,4 +20,3 @@ Notes:
 - Prefer WIP branches over `git stash` for multi-day work (stash is local-only
   unless you explicitly move it).
 - If you must stash: `git stash push -u -m "wip"` and `git stash pop`.
-
