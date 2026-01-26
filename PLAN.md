@@ -244,7 +244,7 @@ Goal: be able to run one command locally and open a “successful” webpage (la
   - Write `build/vax/brad.1` and `site/vax-build.log`.
   - Write `site/vax-manifest.txt` from the VAX-side `hash_manifest` box (later), or keep host-side.
   - [x] Replay mode: decode `brad.1` from a saved transcript (`--transcript`) to unblock local testing.
-  - [ ] Live docker/SIMH driver (telnet control + prompt detection).
+  - [x] Live docker/SIMH driver (telnet control + prompt detection) **(best-effort; validate on host with Docker)**.
 - [ ] Tests:
   - [x] Unit-test `resume.vax.yaml` emitter (schema/versioning + quoting/escaping rules).
   - [x] Unit-test transcript parsing + uudecode extraction (pure string fixtures).
