@@ -114,8 +114,8 @@ def decode_uuencode_block(block_text: str) -> UuDecodeResult:
             expected_len = 1 + ((uu_len + 2) // 3) * 4
             if expected_len > 1 and len(line) > expected_len:
                 line = line[:expected_len]
-        except Exception:
-            pass
+        except (IndexError, TypeError, ValueError):
+            line = line
         try:
             decoded.extend(binascii.a2b_uu(line.encode("ascii")))
         except (binascii.Error, UnicodeEncodeError):

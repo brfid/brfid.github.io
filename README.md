@@ -20,6 +20,18 @@ Generate the site:
 .venv/bin/resume-gen --out site --with-vax --vax-mode local
 ```
 
+### VAX/SIMH transfer mode status
+
+Docker mode defaults to tape (`--transfer tape`).
+
+- `tape`: Working (TS11 tape image attached via SIMH).
+- `console`: Unreliable — SIMH telnet/DZ line drops input without proper XON/XOFF pacing.
+- `ftp`: Not working in this setup — VAX cannot reliably reach a container-hosted FTP service.
+
+Implementation notes:
+- VAX-side `vax/bradman.c` uses K&R-compatible fallbacks (varargs/stdlib/size_t/void* and `_doprnt`).
+- Host uuencode decoding is tolerant of trailing garbage in console output.
+
 Preview:
 
 ```bash

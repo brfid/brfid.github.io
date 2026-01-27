@@ -24,3 +24,10 @@ Before committing:
 
 - GitHub Pages deploy is tag-triggered (`publish` / `publish-*`). Avoid creating/pushing those tags unless you intend to deploy.
 
+## Current VAX/SIMH status (handoff notes)
+
+- Tape (TS11 image) is the working transfer path and is now the default for docker mode.
+- Console transfer remains unreliable due to XON/XOFF flow control and SIMH telnet/DZ input drops.
+- FTP transfer is not working in this setup (guest cannot reliably reach container-hosted FTP).
+- `vax/bradman.c` was updated for 4.3BSD/K&R C (varargs/stdlib/size_t/void* fallbacks, `_doprnt` + `sys_errlist` stubs).
+- Host uuencode decoding is tolerant of trailing garbage in console output.

@@ -64,12 +64,12 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
 - v1 target: VAX via SIMH (BSD 4.3 family) using a Dockerized SIMH environment.
 - v1 implementation choice:
   - Container: `jguillaumes/simh-vaxbsd` (4.3BSD on VAX under SIMH).
-  - Control channel: host drives the guest over the container’s exposed DZ line via telnet.
-  - Transport: file exchange via console transcript with hard markers + uuencode blocks.
+- Control channel: host drives the guest over the container’s exposed DZ line via telnet.
+- Transport: **tape by default** (TS11 image attached); console transcript remains the output path for `bradAD.1`.
 - Build behavior:
   1. Host converts `resume.yaml` → `resume.vax.yaml` (constrained, versioned YAML subset; full summary, single-line).
   2. Host boots the VAX guest (preinstalled “golden” disk; no reinstall each run).
-  3. Host sends `bradman.c` + `resume.vax.yaml` into the guest (current: TS11 tape image; console/FTP are fallbacks).
+  3. Host sends `bradman.c` + `resume.vax.yaml` into the guest (TS11 tape image; console/FTP are fallbacks).
   4. Guest compiles `bradman` each run (part of the evidence signal).
   5. Guest runs `bradman` to produce `brad.1` (roff/man source).
   6. Guest prints `brad.1` back to the host via uuencode blocks between hard markers.
@@ -204,6 +204,12 @@ Hard markers + uuencode blocks in the telnet transcript:
 - `<<<BRAD_1_UU_BEGIN>>>` then `uuencode brad.1 brad.1` then `<<<BRAD_1_UU_END>>>`
 
 Host decodes and writes `build/vax/brad.1`, then renders `site/brad.man.txt`.
+
+## Implementation notes (current state)
+
+- Docker/SIMH transfer default is now **tape** (TS11 image attached). Console/FTP are fallback only.
+- VAX-side `bradman.c` was updated for 4.3BSD/K&R C: varargs/stdlib fallbacks, `size_t`/`void*` compatibility, `_doprnt`/`sys_errlist` stubs.
+- Host uuencode decoding is tolerant of trailing garbage on lines (SIMH console occasionally appends).
 
 ## TODO (local success checklist)
 

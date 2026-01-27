@@ -96,7 +96,7 @@ class VaxStageConfig:
     docker_timeout: int = 600
     send_timeout: int = 180
     docker_quick: bool = False
-    transfer_mode: str = "console"
+    transfer_mode: str = "tape"
     docker_image: str = "jguillaumes/simh-vaxbsd"
     ftp_image: str = "simh-ftp-server"
 
@@ -1049,8 +1049,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--transfer",
         choices=["console", "ftp", "tape"],
-        default="console",
-        help="File transfer method for docker mode (default: console)",
+        default="tape",
+        help="File transfer method for docker mode (default: tape)",
     )
     parser.add_argument(
         "--docker-image",
