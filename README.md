@@ -31,6 +31,7 @@ Docker mode defaults to tape (`--transfer tape`).
 Implementation notes:
 - VAX-side `vax/bradman.c` uses K&R-compatible fallbacks (varargs/stdlib/size_t/void* and `_doprnt`).
 - Host uuencode decoding is tolerant of trailing garbage in console output.
+- Docker image is pinned by digest in code for reproducibility.
 
 Preview:
 

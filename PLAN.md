@@ -208,6 +208,7 @@ Host decodes and writes `build/vax/brad.1`, then renders `site/brad.man.txt`.
 ## Implementation notes (current state)
 
 - Docker/SIMH transfer default is now **tape** (TS11 image attached). Console/FTP are fallback only.
+- Docker image is pinned by digest in code (deterministic).
 - VAX-side `bradman.c` was updated for 4.3BSD/K&R C: varargs/stdlib fallbacks, `size_t`/`void*` compatibility, `_doprnt`/`sys_errlist` stubs.
 - Host uuencode decoding is tolerant of trailing garbage on lines (SIMH console occasionally appends).
 
@@ -251,7 +252,7 @@ Goal: be able to run one command locally and open a “successful” webpage (la
   - Write `site/vax-manifest.txt` from the VAX-side `hash_manifest` box (later), or keep host-side.
   - [x] Replay mode: decode `brad.1` from a saved transcript (`--transcript`) to unblock local testing.
   - [x] Live docker/SIMH driver (telnet control + prompt detection) **(best-effort; validate on host with Docker)**.
-- [ ] Tests:
+- [x] Tests:
   - [x] Unit-test `resume.vax.yaml` emitter (schema/versioning + quoting/escaping rules).
   - [x] Unit-test transcript parsing + uudecode extraction (pure string fixtures).
 
@@ -261,7 +262,7 @@ Goal: be able to run one command locally and open a “successful” webpage (la
   - On `publish` / `publish-*` tags: run gates → build site → run VAX stage → deploy Pages.
   - On `main`: run gates only (no deploy).
 - [x] Verify CI (main) is green after refactors.
-- [ ] Hardening: wait-for-prompt loops (no sleeps), pin Docker image by digest, deterministic logs.
+- [x] Hardening: wait-for-prompt loops (no sleeps), pin Docker image by digest, deterministic logs.
   - Interim: CI may use `--vax-mode local` until the docker/SIMH transport is implemented and verified.
 
 ## TODO (milestones)
@@ -290,3 +291,4 @@ These are coarse implementation batches; the “local success checklist” above
 - GitHub Actions: run the VAX stage only on `publish`/`publish-*` tags; fail deploy if it fails.
 - Replace fixed sleeps with “wait for login prompt” loops (telnet-driven).
 - Pin the Docker image by digest once stable.
+- Status: done (wait loops are select-based; image pinned by digest).

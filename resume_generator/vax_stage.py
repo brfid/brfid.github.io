@@ -32,6 +32,11 @@ from .types import Resume
 from .uudecode import decode_marked_uuencode
 from .vax_yaml import build_vax_resume_v1, emit_vax_yaml
 
+DOCKER_IMAGE_DEFAULT = (
+    "jguillaumes/simh-vaxbsd@sha256:"
+    "1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215"
+)
+
 
 @dataclass(frozen=True)
 class VaxStagePaths:
@@ -97,7 +102,7 @@ class VaxStageConfig:
     send_timeout: int = 180
     docker_quick: bool = False
     transfer_mode: str = "tape"
-    docker_image: str = "jguillaumes/simh-vaxbsd"
+    docker_image: str = DOCKER_IMAGE_DEFAULT
     ftp_image: str = "simh-ftp-server"
 
 
@@ -253,6 +258,8 @@ class VaxStageRunner:
         if not docker_bin:
             raise RuntimeError("Docker is not available; install Docker or use --transcript")
 
+        log.add(f"docker image: {self._config.docker_image}")
+        log.add(f"docker transfer: {self._config.transfer_mode}")
         if self._config.transfer_mode == "ftp":
             simh_dir_name = "simh-ftp"
         elif self._config.transfer_mode == "tape":
@@ -332,7 +339,7 @@ class VaxStageRunner:
         container_name = f"vaxbsd-{uuid.uuid4().hex[:8]}"
         host_port = _find_free_port()
 
-        log.add(f"docker run {container_name} on port {host_port}")
+        log.add("docker run simh container")
         subprocess.run(  # noqa: S603
             [
                 docker_bin,
@@ -669,7 +676,7 @@ class VaxStageRunner:
                         fh.write(
                             f"t+{now - start:0.1f}s inspect_failed rc={status.returncode}\n"
                         )
-                    time.sleep(1)
+                    _pause(1.0)
                     continue
                 if status.stdout.strip() == "exited":
                     raise RuntimeError("Docker container exited before login prompt")
@@ -689,7 +696,7 @@ class VaxStageRunner:
                 session.wait_for_login(timeout=60)
                 return session
             except (ConnectionError, TimeoutError, OSError):
-                time.sleep(1)
+                _pause(1.0)
                 continue
 
         raise TimeoutError("Timed out waiting for VAX login prompt")
@@ -713,7 +720,7 @@ class TelnetSession:
         self._send_timeout = send_timeout
         self._read_buffer = bytearray()
         self._flow_paused = False
-        self._log.add(f"telnet connected to {host}:{port}")
+        self._log.add("telnet connected")
 
     def wait_for_login(self, timeout: int = 120) -> None:
         self._send_line("")
@@ -733,7 +740,6 @@ class TelnetSession:
             if b"#" in output or b"$" in output:
                 return
             if b"login:" in output:
-                time.sleep(1)
                 continue
         raise RuntimeError("Login failed; received login prompt again")
 
@@ -761,7 +767,7 @@ class TelnetSession:
             self._drain()
             self._send_line(f"cat >> {filename}")
             self._send_bytes_throttled(payload.encode("utf-8"))
-            time.sleep(0.1)
+            self._poll_incoming(timeout=0.1)
             self._send(b"\r\n")
             self._send(b"\x04")
             self._send(b"\r\n")
@@ -831,8 +837,7 @@ class TelnetSession:
         for idx in range(0, len(data), chunk_size):
             self._wait_for_xon()
             self._send(data[idx : idx + chunk_size])
-            self._poll_incoming()
-            time.sleep(delay)
+            self._poll_incoming(timeout=delay)
 
     def _send_line(self, line: str) -> None:
         self._wait_for_xon()
@@ -886,8 +891,6 @@ class TelnetSession:
             if self._poll_incoming(timeout=0.1):
                 buf.extend(self._read_buffer)
                 self._read_buffer.clear()
-            else:
-                time.sleep(0.05)
         raise TimeoutError(f"Timed out waiting for {needle!r}")
 
     def _read_until_any(self, needles: list[bytes], timeout: int) -> bytes:
@@ -907,8 +910,6 @@ class TelnetSession:
             if self._poll_incoming(timeout=0.1):
                 buf.extend(self._read_buffer)
                 self._read_buffer.clear()
-            else:
-                time.sleep(0.05)
         raise TimeoutError(f"Timed out waiting for one of: {needles!r}")
 
     def _recv_filtered(self) -> bytes:
@@ -925,6 +926,12 @@ def _find_free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
         return int(sock.getsockname()[1])
+
+
+def _pause(seconds: float) -> None:
+    if seconds <= 0:
+        return
+    select.select([], [], [], seconds)
 
 
 def _filter_telnet(data: bytes, sock: socket.socket) -> bytes:
@@ -1054,8 +1061,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--docker-image",
-        default="jguillaumes/simh-vaxbsd",
-        help="Docker image to run for SIMH (default: jguillaumes/simh-vaxbsd)",
+        default=DOCKER_IMAGE_DEFAULT,
+        help=(
+            "Docker image to run for SIMH "
+            f"(default: {DOCKER_IMAGE_DEFAULT})"
+        ),
     )
     parser.add_argument(
         "--ftp-image",

@@ -31,3 +31,4 @@ Before committing:
 - FTP transfer is not working in this setup (guest cannot reliably reach container-hosted FTP).
 - `vax/bradman.c` was updated for 4.3BSD/K&R C (varargs/stdlib/size_t/void* fallbacks, `_doprnt` + `sys_errlist` stubs).
 - Host uuencode decoding is tolerant of trailing garbage in console output.
+- Docker image is pinned by digest in code; wait loops avoid fixed sleeps.
