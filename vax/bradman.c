@@ -1,9 +1,50 @@
+#if !defined(__STDC__) || __STDC__ == 0
+#define const
+#endif
+
+#include <sys/types.h>
+
+#if !defined(__STDC__) || __STDC__ == 0
+#define BRADMAN_SIZE_T unsigned int
+#else
+#define BRADMAN_SIZE_T size_t
+#endif
 #include <ctype.h>
 #include <errno.h>
-#include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+
+#if !defined(__STDC__) || __STDC__ == 0
+extern int errno;
+extern int _doprnt();
+extern char *sys_errlist[];
+extern int sys_nerr;
+#endif
+
+#if !defined(__STDC__) || __STDC__ == 0
+#define BRADMAN_VOIDP char *
+#else
+#define BRADMAN_VOIDP void *
+#endif
+
+#if defined(__STDC__) || defined(__cplusplus)
+#include <stdarg.h>
+#define BRADMAN_HAVE_STDARG 1
+#else
+#include <varargs.h>
+#endif
+
+#if defined(__STDC__) || defined(__cplusplus)
+#include <stdlib.h>
+#define BRADMAN_HAVE_STDLIB 1
+#endif
+
+#ifndef BRADMAN_HAVE_STDLIB
+BRADMAN_VOIDP malloc();
+BRADMAN_VOIDP realloc();
+void free();
+void exit();
+#endif
 
 typedef struct {
   char *company;
@@ -11,15 +52,15 @@ typedef struct {
   char *dateRange;
   char *location;
   char **highlights;
-  size_t highlights_len;
-  size_t highlights_cap;
+  BRADMAN_SIZE_T highlights_len;
+  BRADMAN_SIZE_T highlights_cap;
 } WorkEntry;
 
 typedef struct {
   char *group;
   char **keywords;
-  size_t keywords_len;
-  size_t keywords_cap;
+  BRADMAN_SIZE_T keywords_len;
+  BRADMAN_SIZE_T keywords_cap;
 } SkillGroup;
 
 typedef struct {
@@ -32,13 +73,14 @@ typedef struct {
   char *linkedin;
   char *summary;
   WorkEntry *work;
-  size_t work_len;
-  size_t work_cap;
+  BRADMAN_SIZE_T work_len;
+  BRADMAN_SIZE_T work_cap;
   SkillGroup *skills;
-  size_t skills_len;
-  size_t skills_cap;
+  BRADMAN_SIZE_T skills_len;
+  BRADMAN_SIZE_T skills_cap;
 } Resume;
 
+#ifdef BRADMAN_HAVE_STDARG
 static void die(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -47,29 +89,73 @@ static void die(const char *fmt, ...) {
   fputc('\n', stderr);
   exit(2);
 }
+#else
+static void die(va_alist)
+    va_dcl {
+  va_list ap;
+  const char *fmt;
+  va_start(ap);
+  fmt = va_arg(ap, const char *);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  fputc('\n', stderr);
+  exit(2);
+}
+#endif
 
-static void *xrealloc(void *p, size_t n) {
-  void *q = realloc(p, n);
+#if !defined(__STDC__) || __STDC__ == 0
+static int vfprintf(stream, fmt, ap)
+    FILE *stream;
+    const char *fmt;
+    va_list ap;
+{
+  return _doprnt(fmt, ap, stream);
+}
+
+static char *strerror(err)
+    int err;
+{
+  if (err >= 0 && err < sys_nerr) return sys_errlist[err];
+  return "Unknown error";
+}
+#endif
+
+static BRADMAN_VOIDP xrealloc(p, n)
+    BRADMAN_VOIDP p;
+    BRADMAN_SIZE_T n;
+{
+  BRADMAN_VOIDP q;
+  q = realloc(p, n);
   if (!q && n) die("out of memory");
   return q;
 }
 
-static char *xstrdup(const char *s) {
-  size_t n = strlen(s);
-  char *p = (char *)malloc(n + 1);
+static char *xstrdup(s)
+    const char *s;
+{
+  BRADMAN_SIZE_T n;
+  char *p;
+  n = strlen(s);
+  p = (char *)malloc(n + 1);
   if (!p) die("out of memory");
   memcpy(p, s, n + 1);
   return p;
 }
 
-static void rstrip(char *s) {
-  size_t n = strlen(s);
+static void rstrip(s)
+    char *s;
+{
+  BRADMAN_SIZE_T n;
+  n = strlen(s);
   while (n > 0 && (s[n - 1] == '\n' || s[n - 1] == '\r' || isspace((unsigned char)s[n - 1])))
     s[--n] = '\0';
 }
 
-static int count_indent(const char *s) {
-  int n = 0;
+static int count_indent(s)
+    const char *s;
+{
+  int n;
+  n = 0;
   while (*s == ' ') {
     n++;
     s++;
@@ -77,25 +163,40 @@ static int count_indent(const char *s) {
   return n;
 }
 
-static const char *skip_ws(const char *s) {
+static const char *skip_ws(s)
+    const char *s;
+{
   while (*s && isspace((unsigned char)*s)) s++;
   return s;
 }
 
-static int starts_with(const char *s, const char *pfx) { return strncmp(s, pfx, strlen(pfx)) == 0; }
+static int starts_with(s, pfx)
+    const char *s;
+    const char *pfx;
+{
+  return strncmp(s, pfx, strlen(pfx)) == 0;
+}
 
-static char *parse_quoted(const char *s) {
+static char *parse_quoted(s)
+    const char *s;
+{
+  BRADMAN_SIZE_T cap;
+  BRADMAN_SIZE_T len;
+  char *out;
+  unsigned char c;
+  unsigned char e;
   /* Expect a double-quoted YAML scalar with minimal escape support. */
   if (*s != '"') die("expected double-quoted string");
   s++;
-  size_t cap = 64, len = 0;
-  char *out = (char *)malloc(cap);
+  cap = 64;
+  len = 0;
+  out = (char *)malloc(cap);
   if (!out) die("out of memory");
 
   while (*s && *s != '"') {
-    unsigned char c = (unsigned char)*s++;
+    c = (unsigned char)*s++;
     if (c == '\\') {
-      unsigned char e = (unsigned char)*s++;
+      e = (unsigned char)*s++;
       if (!e) die("unterminated escape");
       if (e == 'n')
         c = '\n';
@@ -115,34 +216,48 @@ static char *parse_quoted(const char *s) {
   return out;
 }
 
-static int parse_key_value(const char *line, char **key_out, char **val_out) {
+static int parse_key_value(line, key_out, val_out)
+    const char *line;
+    char **key_out;
+    char **val_out;
+{
+  const char *colon;
+  BRADMAN_SIZE_T klen;
+  char *key;
+  const char *rest;
+  char *val;
   /* Parses: key: "value"  OR  key:   (no value) */
-  const char *colon = strchr(line, ':');
+  colon = strchr(line, ':');
   if (!colon) return 0;
 
-  size_t klen = (size_t)(colon - line);
+  klen = (BRADMAN_SIZE_T)(colon - line);
   while (klen > 0 && isspace((unsigned char)line[klen - 1])) klen--;
   if (klen == 0) return 0;
 
-  char *key = (char *)malloc(klen + 1);
+  key = (char *)malloc(klen + 1);
   if (!key) die("out of memory");
   memcpy(key, line, klen);
   key[klen] = '\0';
 
-  const char *rest = skip_ws(colon + 1);
+  rest = skip_ws(colon + 1);
   if (*rest == '\0') {
     *key_out = key;
     *val_out = NULL;
     return 1;
   }
   if (*rest != '"') die("expected quoted scalar for key '%s'", key);
-  char *val = parse_quoted(rest);
+  val = parse_quoted(rest);
   *key_out = key;
   *val_out = val;
   return 1;
 }
 
-static void push_string(char ***items, size_t *len, size_t *cap, char *s) {
+static void push_string(items, len, cap, s)
+    char ***items;
+    BRADMAN_SIZE_T *len;
+    BRADMAN_SIZE_T *cap;
+    char *s;
+{
   if (*len + 1 > *cap) {
     *cap = (*cap == 0) ? 4 : (*cap * 2);
     *items = (char **)xrealloc(*items, (*cap) * sizeof((*items)[0]));
@@ -150,32 +265,44 @@ static void push_string(char ***items, size_t *len, size_t *cap, char *s) {
   (*items)[(*len)++] = s;
 }
 
-static WorkEntry *push_work(Resume *r) {
+static WorkEntry *push_work(r)
+    Resume *r;
+{
+  WorkEntry *e;
   if (r->work_len + 1 > r->work_cap) {
     r->work_cap = (r->work_cap == 0) ? 4 : (r->work_cap * 2);
     r->work = (WorkEntry *)xrealloc(r->work, r->work_cap * sizeof(r->work[0]));
   }
-  WorkEntry *e = &r->work[r->work_len++];
+  e = &r->work[r->work_len++];
   memset(e, 0, sizeof(*e));
   return e;
 }
 
-static SkillGroup *push_skill(Resume *r) {
+static SkillGroup *push_skill(r)
+    Resume *r;
+{
+  SkillGroup *g;
   if (r->skills_len + 1 > r->skills_cap) {
     r->skills_cap = (r->skills_cap == 0) ? 4 : (r->skills_cap * 2);
     r->skills = (SkillGroup *)xrealloc(r->skills, r->skills_cap * sizeof(r->skills[0]));
   }
-  SkillGroup *g = &r->skills[r->skills_len++];
+  g = &r->skills[r->skills_len++];
   memset(g, 0, sizeof(*g));
   return g;
 }
 
-static void set_field(char **dst, char *src) {
+static void set_field(dst, src)
+    char **dst;
+    char *src;
+{
   if (*dst) free(*dst);
   *dst = src;
 }
 
-static void parse_resume_vax_yaml(FILE *in, Resume *r) {
+static void parse_resume_vax_yaml(in, r)
+    FILE *in;
+    Resume *r;
+{
   char buf[4096];
 
   enum { TOP_NONE, TOP_CONTACT, TOP_WORK, TOP_SKILLS } top = TOP_NONE;
@@ -186,12 +313,19 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
   SkillGroup *cur_skill = NULL;
 
   while (fgets(buf, (int)sizeof(buf), in)) {
+    const char *raw;
+    int indent;
+    const char *line;
+    char *key;
+    char *val;
+    const char *rest;
+
     rstrip(buf);
-    const char *raw = buf;
+    raw = buf;
     if (*raw == '\0') continue;
 
-    int indent = count_indent(raw);
-    const char *line = raw + indent;
+    indent = count_indent(raw);
+    line = raw + indent;
     line = skip_ws(line);
     if (*line == '\0' || *line == '#') continue;
 
@@ -201,7 +335,8 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
     }
 
     if (indent == 0) {
-      char *key = NULL, *val = NULL;
+      key = NULL;
+      val = NULL;
       if (!parse_key_value(line, &key, &val)) die("invalid line: %s", line);
 
       top = TOP_NONE;
@@ -241,7 +376,8 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
     }
 
     if (indent == 2 && top == TOP_CONTACT) {
-      char *key = NULL, *val = NULL;
+      key = NULL;
+      val = NULL;
       if (!parse_key_value(line, &key, &val) || !val) die("invalid contact line: %s", line);
       if (strcmp(key, "email") == 0) {
         set_field(&r->email, val);
@@ -258,7 +394,7 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
 
     if (indent == 2 && top == TOP_WORK) {
       if (!starts_with(line, "-")) die("expected list item in work: %s", line);
-      const char *rest = skip_ws(line + 1);
+      rest = skip_ws(line + 1);
       if (*rest == '\0') {
         cur_work = push_work(r);
         continue;
@@ -266,7 +402,8 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
       if (*rest == '-') die("invalid work list item: %s", line);
       if (*rest != '\0') {
         cur_work = push_work(r);
-        char *key = NULL, *val = NULL;
+        key = NULL;
+        val = NULL;
         if (!parse_key_value(rest, &key, &val)) die("invalid work list item: %s", line);
         if (!val) die("work field must have scalar value: %s", key);
         if (strcmp(key, "company") == 0)
@@ -286,7 +423,8 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
 
     if (indent == 4 && top == TOP_WORK) {
       if (!cur_work) die("work item fields appear before first list item");
-      char *key = NULL, *val = NULL;
+      key = NULL;
+      val = NULL;
       if (!parse_key_value(line, &key, &val)) die("invalid work field: %s", line);
       if (strcmp(key, "highlights") == 0) {
         if (val) die("highlights must be a sequence (no scalar value)");
@@ -311,20 +449,21 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
     if (indent == 6 && top == TOP_WORK && in_work_highlights) {
       if (!cur_work) die("highlight appears before work item");
       if (!starts_with(line, "-")) die("expected highlight list item: %s", line);
-      const char *rest = skip_ws(line + 1);
+      rest = skip_ws(line + 1);
       if (*rest != '"') die("expected quoted highlight string");
-      char *val = parse_quoted(rest);
+      val = parse_quoted(rest);
       push_string(&cur_work->highlights, &cur_work->highlights_len, &cur_work->highlights_cap, val);
       continue;
     }
 
     if (indent == 2 && top == TOP_SKILLS) {
       if (!starts_with(line, "-")) die("expected list item in skills: %s", line);
-      const char *rest = skip_ws(line + 1);
+      rest = skip_ws(line + 1);
       cur_skill = push_skill(r);
       if (*rest == '\0') continue;
 
-      char *key = NULL, *val = NULL;
+      key = NULL;
+      val = NULL;
       if (!parse_key_value(rest, &key, &val) || !val) die("invalid skills list item: %s", line);
       if (strcmp(key, "group") == 0)
         set_field(&cur_skill->group, val);
@@ -336,7 +475,8 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
 
     if (indent == 4 && top == TOP_SKILLS) {
       if (!cur_skill) die("skill fields appear before first list item");
-      char *key = NULL, *val = NULL;
+      key = NULL;
+      val = NULL;
       if (!parse_key_value(line, &key, &val)) die("invalid skill field: %s", line);
       if (strcmp(key, "keywords") == 0) {
         if (val) die("keywords must be a sequence (no scalar value)");
@@ -355,9 +495,9 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
     if (indent == 6 && top == TOP_SKILLS && in_skill_keywords) {
       if (!cur_skill) die("keyword appears before skill item");
       if (!starts_with(line, "-")) die("expected keyword list item: %s", line);
-      const char *rest = skip_ws(line + 1);
+      rest = skip_ws(line + 1);
       if (*rest != '"') die("expected quoted keyword string");
-      char *val = parse_quoted(rest);
+      val = parse_quoted(rest);
       push_string(&cur_skill->keywords, &cur_skill->keywords_len, &cur_skill->keywords_cap, val);
       continue;
     }
@@ -366,10 +506,17 @@ static void parse_resume_vax_yaml(FILE *in, Resume *r) {
   }
 }
 
-static char *roff_escape_line(const char *s, int for_name_synopsis) {
-  size_t cap = strlen(s) * 2 + 32;
-  size_t len = 0;
-  char *out = (char *)malloc(cap);
+static char *roff_escape_line(s, for_name_synopsis)
+    const char *s;
+    int for_name_synopsis;
+{
+  BRADMAN_SIZE_T cap;
+  BRADMAN_SIZE_T len;
+  char *out;
+  char c;
+  cap = strlen(s) * 2 + 32;
+  len = 0;
+  out = (char *)malloc(cap);
   if (!out) die("out of memory");
 
   if (s[0] == '.' || s[0] == '\'') {
@@ -378,7 +525,7 @@ static char *roff_escape_line(const char *s, int for_name_synopsis) {
   }
 
   for (; *s; s++) {
-    char c = *s;
+    c = *s;
     if (c == '\\') {
       out[len++] = '\\';
       out[len++] = '\\';
@@ -397,18 +544,40 @@ static char *roff_escape_line(const char *s, int for_name_synopsis) {
   return out;
 }
 
-static void emit_roff(FILE *out, const Resume *r) {
-  const char *date = (r->buildDate && r->buildDate[0]) ? r->buildDate : "";
+static void emit_roff(out, r)
+    FILE *out;
+    const Resume *r;
+{
+  const char *date;
+  char *label;
+  char *summary;
+  char *email;
+  char *url;
+  char *li;
+  BRADMAN_SIZE_T i;
+  BRADMAN_SIZE_T j;
+  const WorkEntry *w;
+  char *company;
+  char *position;
+  char *dateRange;
+  char *loc;
+  char *hl;
+  const SkillGroup *g;
+  char *group;
+  char *kw;
+  char *name;
+
+  date = (r->buildDate && r->buildDate[0]) ? r->buildDate : "";
   fprintf(out, ".TH BRAD 1 \"%s\" \"brfid.github.io\" \"\"\n", date);
 
   fputs(".SH NAME\n", out);
-  char *label = roff_escape_line(r->label ? r->label : "", 0);
+  label = roff_escape_line(r->label ? r->label : "", 0);
   fprintf(out, "brad \\\\- %s\n", label);
   free(label);
 
   if (r->summary && r->summary[0]) {
     fputs(".SH DESCRIPTION\n", out);
-    char *summary = roff_escape_line(r->summary, 0);
+    summary = roff_escape_line(r->summary, 0);
     fprintf(out, "%s\n", summary);
     free(summary);
   }
@@ -416,17 +585,17 @@ static void emit_roff(FILE *out, const Resume *r) {
   if ((r->email && r->email[0]) || (r->url && r->url[0]) || (r->linkedin && r->linkedin[0])) {
     fputs(".SH CONTACT\n", out);
     if (r->email && r->email[0]) {
-      char *email = roff_escape_line(r->email, 0);
+      email = roff_escape_line(r->email, 0);
       fprintf(out, "Email: %s\n.br\n", email);
       free(email);
     }
     if (r->url && r->url[0]) {
-      char *url = roff_escape_line(r->url, 0);
+      url = roff_escape_line(r->url, 0);
       fprintf(out, "Web: %s\n.br\n", url);
       free(url);
     }
     if (r->linkedin && r->linkedin[0]) {
-      char *li = roff_escape_line(r->linkedin, 0);
+      li = roff_escape_line(r->linkedin, 0);
       fprintf(out, "LinkedIn: %s\n", li);
       free(li);
     }
@@ -434,13 +603,13 @@ static void emit_roff(FILE *out, const Resume *r) {
 
   if (r->work_len) {
     fputs(".SH EXPERIENCE\n", out);
-    for (size_t i = 0; i < r->work_len; i++) {
-      const WorkEntry *w = &r->work[i];
+    for (i = 0; i < r->work_len; i++) {
+      w = &r->work[i];
       if (!w->company && !w->position) continue;
 
-      char *company = roff_escape_line(w->company ? w->company : "", 0);
-      char *position = roff_escape_line(w->position ? w->position : "", 0);
-      char *dateRange = roff_escape_line(w->dateRange ? w->dateRange : "", 0);
+      company = roff_escape_line(w->company ? w->company : "", 0);
+      position = roff_escape_line(w->position ? w->position : "", 0);
+      dateRange = roff_escape_line(w->dateRange ? w->dateRange : "", 0);
       fputs(".TP\n", out);
       if (w->position && w->position[0]) {
         fprintf(out, ".B %s\n%s", company, position);
@@ -454,13 +623,13 @@ static void emit_roff(FILE *out, const Resume *r) {
       free(dateRange);
 
       if (w->location && w->location[0]) {
-        char *loc = roff_escape_line(w->location, 0);
+        loc = roff_escape_line(w->location, 0);
         fprintf(out, ".I %s\n", loc);
         free(loc);
       }
 
-      for (size_t j = 0; j < w->highlights_len; j++) {
-        char *hl = roff_escape_line(w->highlights[j], 0);
+      for (j = 0; j < w->highlights_len; j++) {
+        hl = roff_escape_line(w->highlights[j], 0);
         fprintf(out, ".IP \\\\(bu 2\n%s\n", hl);
         free(hl);
       }
@@ -469,14 +638,14 @@ static void emit_roff(FILE *out, const Resume *r) {
 
   if (r->skills_len) {
     fputs(".SH SKILLS\n", out);
-    for (size_t i = 0; i < r->skills_len; i++) {
-      const SkillGroup *g = &r->skills[i];
+    for (i = 0; i < r->skills_len; i++) {
+      g = &r->skills[i];
       if (!g->group || !g->group[0]) continue;
-      char *group = roff_escape_line(g->group, 0);
+      group = roff_escape_line(g->group, 0);
       fprintf(out, ".SS %s\n", group);
       free(group);
-      for (size_t j = 0; j < g->keywords_len; j++) {
-        char *kw = roff_escape_line(g->keywords[j], 0);
+      for (j = 0; j < g->keywords_len; j++) {
+        kw = roff_escape_line(g->keywords[j], 0);
         fputs(kw, out);
         free(kw);
         if (j + 1 < g->keywords_len) fputs(", ", out);
@@ -487,13 +656,19 @@ static void emit_roff(FILE *out, const Resume *r) {
 
   if (r->name && r->name[0]) {
     fputs(".SH AUTHOR\n", out);
-    char *name = roff_escape_line(r->name, 0);
+    name = roff_escape_line(r->name, 0);
     fprintf(out, "%s\n", name);
     free(name);
   }
 }
 
-static void free_resume(Resume *r) {
+static void free_resume(r)
+    Resume *r;
+{
+  BRADMAN_SIZE_T i;
+  BRADMAN_SIZE_T j;
+  WorkEntry *w;
+  SkillGroup *g;
   free(r->schemaVersion);
   free(r->buildDate);
   free(r->name);
@@ -503,36 +678,48 @@ static void free_resume(Resume *r) {
   free(r->linkedin);
   free(r->summary);
 
-  for (size_t i = 0; i < r->work_len; i++) {
-    WorkEntry *w = &r->work[i];
+  for (i = 0; i < r->work_len; i++) {
+    w = &r->work[i];
     free(w->company);
     free(w->position);
     free(w->dateRange);
     free(w->location);
-    for (size_t j = 0; j < w->highlights_len; j++) free(w->highlights[j]);
+    for (j = 0; j < w->highlights_len; j++) free(w->highlights[j]);
     free(w->highlights);
   }
   free(r->work);
 
-  for (size_t i = 0; i < r->skills_len; i++) {
-    SkillGroup *g = &r->skills[i];
+  for (i = 0; i < r->skills_len; i++) {
+    g = &r->skills[i];
     free(g->group);
-    for (size_t j = 0; j < g->keywords_len; j++) free(g->keywords[j]);
+    for (j = 0; j < g->keywords_len; j++) free(g->keywords[j]);
     free(g->keywords);
   }
   free(r->skills);
 }
 
-static void usage(const char *argv0) {
+static void usage(argv0)
+    const char *argv0;
+{
   fprintf(stderr, "usage: %s -i resume.vax.yaml [-o brad.1]\n", argv0);
   exit(2);
 }
 
-int main(int argc, char **argv) {
-  const char *in_path = NULL;
-  const char *out_path = NULL;
+int main(argc, argv)
+    int argc;
+    char **argv;
+{
+  int i;
+  const char *in_path;
+  const char *out_path;
+  FILE *in;
+  FILE *out;
+  Resume r;
 
-  for (int i = 1; i < argc; i++) {
+  in_path = NULL;
+  out_path = NULL;
+
+  for (i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-i") == 0) {
       if (++i >= argc) usage(argv[0]);
       in_path = argv[i];
@@ -546,16 +733,15 @@ int main(int argc, char **argv) {
 
   if (!in_path) usage(argv[0]);
 
-  FILE *in = fopen(in_path, "r");
+  in = fopen(in_path, "r");
   if (!in) die("open %s: %s", in_path, strerror(errno));
 
-  FILE *out = stdout;
+  out = stdout;
   if (out_path && strcmp(out_path, "-") != 0) {
     out = fopen(out_path, "w");
     if (!out) die("open %s: %s", out_path, strerror(errno));
   }
 
-  Resume r;
   memset(&r, 0, sizeof(r));
   parse_resume_vax_yaml(in, &r);
   fclose(in);
@@ -571,4 +757,3 @@ int main(int argc, char **argv) {
   free_resume(&r);
   return 0;
 }
-

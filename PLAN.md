@@ -69,7 +69,7 @@ Recruiter-friendly landing page that also provides a quiet technical signal via 
 - Build behavior:
   1. Host converts `resume.yaml` → `resume.vax.yaml` (constrained, versioned YAML subset; full summary, single-line).
   2. Host boots the VAX guest (preinstalled “golden” disk; no reinstall each run).
-  3. Host sends `bradman.c` + `resume.vax.yaml` into the guest via console (`cat > ...`).
+  3. Host sends `bradman.c` + `resume.vax.yaml` into the guest (current: TS11 tape image; console/FTP are fallbacks).
   4. Guest compiles `bradman` each run (part of the evidence signal).
   5. Guest runs `bradman` to produce `brad.1` (roff/man source).
   6. Guest prints `brad.1` back to the host via uuencode blocks between hard markers.
@@ -239,7 +239,7 @@ Goal: be able to run one command locally and open a “successful” webpage (la
 ### Phase 1: SIMH/VAX stage (real artifact generation)
 
 - [x] Implement host emitter: `resume.yaml` → `resume.vax.yaml` (v1 schema + constraints).
-- [ ] Implement `resume_generator.vax_stage`:
+- [x] Implement `resume_generator.vax_stage`:
   - Run SIMH container, drive via telnet, send sources, compile, run, extract uuencode block.
   - Write `build/vax/brad.1` and `site/vax-build.log`.
   - Write `site/vax-manifest.txt` from the VAX-side `hash_manifest` box (later), or keep host-side.

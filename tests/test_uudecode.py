@@ -42,3 +42,15 @@ def test_decode_marked_uuencode_ignores_noise() -> None:
     )
     assert res.filename == "brad.1"
     assert res.data == payload
+
+
+def test_decode_uuencode_trims_trailing_garbage() -> None:
+    payload = b"hello world" * 5
+    block = uuencode_bytes(payload, filename="payload.bin")
+    lines = block.splitlines()
+    begin_index = next(i for i, line in enumerate(lines) if line.startswith("begin "))
+    data_index = begin_index + 1
+    lines[data_index] = lines[data_index] + "EXTRA"
+    res = decode_uuencode_block("\n".join(lines) + "\n")
+    assert res.filename == "payload.bin"
+    assert res.data == payload

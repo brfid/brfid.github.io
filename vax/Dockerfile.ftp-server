@@ -1,0 +1,11 @@
+FROM debian:11-slim
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends vsftpd \
+    && mkdir -p /var/run/vsftpd/empty /files \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY vax/vsftpd.ftp.conf /etc/vsftpd.conf
+
+EXPOSE 21
+CMD ["/usr/sbin/vsftpd", "/etc/vsftpd.conf"]

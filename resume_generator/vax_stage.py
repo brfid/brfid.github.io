@@ -12,13 +12,17 @@ and a future docker/SIMH mode for CI parity.
 from __future__ import annotations
 
 import argparse
+import select
 import shutil
 import socket
+import struct
 import subprocess
+import tarfile
 import time
 import uuid
 from dataclasses import dataclass
 from datetime import date
+from io import BytesIO
 from pathlib import Path
 
 from .landing import build_landing_page
@@ -79,6 +83,7 @@ class VaxBuildLog:
         return "\n".join(self._lines).rstrip() + "\n"
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class VaxStageConfig:
     """Configuration for running the VAX stage."""
@@ -88,6 +93,31 @@ class VaxStageConfig:
     build_dir: Path = Path("build")
     mode: str = "local"
     transcript_path: Path | None = None
+    docker_timeout: int = 600
+    send_timeout: int = 180
+    docker_quick: bool = False
+    transfer_mode: str = "console"
+    docker_image: str = "jguillaumes/simh-vaxbsd"
+    ftp_image: str = "simh-ftp-server"
+
+
+@dataclass(frozen=True)
+class DockerContext:
+    """Metadata for a running SIMH Docker container."""
+
+    docker_bin: str
+    container_name: str
+    host_port: int
+
+
+@dataclass(frozen=True)
+class FtpContainer:
+    """Metadata for a running FTP server container."""
+
+    docker_bin: str
+    container_name: str
+    container_ip: str
+    host_port: int
 
 
 class VaxStageRunner:
@@ -223,64 +253,63 @@ class VaxStageRunner:
         if not docker_bin:
             raise RuntimeError("Docker is not available; install Docker or use --transcript")
 
-        simh_dir = self._paths.vax_build_dir / "simh"
+        if self._config.transfer_mode == "ftp":
+            simh_dir_name = "simh-ftp"
+        elif self._config.transfer_mode == "tape":
+            simh_dir_name = "simh-tape"
+        else:
+            simh_dir_name = "simh"
+        simh_dir = (self._paths.vax_build_dir / simh_dir_name).resolve()
         simh_dir.mkdir(parents=True, exist_ok=True)
+        if self._config.transfer_mode == "tape":
+            self._prepare_tape_media(simh_dir)
 
-        container_name = f"vaxbsd-{uuid.uuid4().hex[:8]}"
-        host_port = _find_free_port()
-
-        log.add(f"docker run {container_name} on port {host_port}")
-        subprocess.run(  # noqa: S603
-            [
-                docker_bin,
-                "run",
-                "--rm",
-                "--name",
-                container_name,
-                "-d",
-                "-p",
-                f"{host_port}:2323",
-                "-v",
-                f"{simh_dir}:/machines",
-                "jguillaumes/simh-vaxbsd",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
+        context = self._start_docker_container(
+            docker_bin=docker_bin,
+            simh_dir=simh_dir,
+            log=log,
         )
-
-        transcript_parts: list[str] = []
+        ftp_container: FtpContainer | None = None
         try:
-            session = TelnetSession(host="127.0.0.1", port=host_port, log=log)
-            session.wait_for_login()
-            session.login_root()
-            session.ensure_shell_prompt()
-
-            session.exec_cmd("cd /machines")
-
-            bradman_c = (self._paths.repo_root / "vax" / "bradman.c").read_text(encoding="utf-8")
-            session.send_heredoc("bradman.c", bradman_c)
-
-            resume_yaml = self._paths.resume_vax_yaml_path.read_text(encoding="utf-8")
-            session.send_heredoc("resume.vax.yaml", resume_yaml)
-
-            session.exec_cmd("cc -O -o bradman bradman.c")
-            session.exec_cmd("./bradman -i resume.vax.yaml -o brad.1")
-
-            output = session.exec_cmd(
-                "echo '<<<BRAD_1_UU_BEGIN>>>'; uuencode brad.1 brad.1; "
-                "echo '<<<BRAD_1_UU_END>>>'"
+            self._init_console_log()
+            session = self._wait_for_console(
+                ctx=context,
+                log=log,
+                timeout=self._config.docker_timeout,
             )
-            transcript_parts.append(output)
+            self._prepare_guest_session(session)
+            self._write_diagnostics(session)
+            if self._config.docker_quick:
+                log.add("docker quick mode: skipping transfer/compile")
+                transcript = ""
+            else:
+                if self._config.transfer_mode == "ftp":
+                    ftp_container = self._start_ftp_container(
+                        docker_bin=docker_bin,
+                        ftp_dir=simh_dir / "ftp",
+                    )
+                    self._transfer_guest_inputs_ftp(
+                        session=session,
+                        ftp_container=ftp_container,
+                        simh_dir=simh_dir,
+                    )
+                elif self._config.transfer_mode == "tape":
+                    self._transfer_guest_inputs_tape(session)
+                else:
+                    self._transfer_guest_inputs(session)
+                transcript = self._compile_and_capture(session)
         finally:
-            subprocess.run(  # noqa: S603
-                [docker_bin, "rm", "-f", container_name],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
+            if ftp_container:
+                self._stop_container(
+                    docker_bin=ftp_container.docker_bin,
+                    container_name=ftp_container.container_name,
+                )
+            self._stop_docker_container(context)
 
-        transcript = "\n".join(transcript_parts)
+        if self._config.docker_quick:
+            self._write_build_log(log)
+            return
+
         brad_1_bytes = self._decode_brad_1_from_transcript(transcript)
         self._paths.brad_1_path.write_bytes(brad_1_bytes)
         self._render_brad_man_txt(log=log)
@@ -293,60 +322,594 @@ class VaxStageRunner:
         log.add("done")
         self._write_build_log(log)
 
+    def _start_docker_container(
+        self,
+        *,
+        docker_bin: str,
+        simh_dir: Path,
+        log: VaxBuildLog,
+    ) -> DockerContext:
+        container_name = f"vaxbsd-{uuid.uuid4().hex[:8]}"
+        host_port = _find_free_port()
+
+        log.add(f"docker run {container_name} on port {host_port}")
+        subprocess.run(  # noqa: S603
+            [
+                docker_bin,
+                "run",
+                "--name",
+                container_name,
+                "-d",
+                "-p",
+                f"{host_port}:2323",
+                "-v",
+                f"{simh_dir}:/machines",
+                self._config.docker_image,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return DockerContext(
+            docker_bin=docker_bin,
+            container_name=container_name,
+            host_port=host_port,
+        )
+
+    def _stop_docker_container(self, ctx: DockerContext) -> None:
+        subprocess.run(  # noqa: S603
+            [ctx.docker_bin, "rm", "-f", ctx.container_name],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    def _stop_container(self, *, docker_bin: str, container_name: str) -> None:
+        subprocess.run(  # noqa: S603
+            [docker_bin, "rm", "-f", container_name],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    def _init_console_log(self) -> None:
+        (self._paths.vax_build_dir / "vax-console.log").write_text(
+            "[session]\n",
+            encoding="utf-8",
+        )
+
+    def _append_console_log(self, section: str, output: str) -> None:
+        log_path = self._paths.vax_build_dir / "vax-console.log"
+        with log_path.open("a", encoding="utf-8") as fh:
+            fh.write(f"\n[{section}]\n")
+            fh.write(output)
+
+    def _prepare_guest_session(self, session: TelnetSession) -> None:
+        session.login_root()
+        session.ensure_shell_prompt()
+        session.exec_cmd("cd /tmp")
+        session.exec_cmd("pwd")
+
+    def _write_diagnostics(self, session: TelnetSession) -> None:
+        diagnostics = {
+            "diag mount": "mount",
+            "diag ls /": "ls /",
+            "diag includes": "ls /usr/include/stdarg.h /usr/include/stdlib.h",
+            "diag printf": "ls /bin/printf /usr/bin/printf",
+            "diag ed": "ls /bin/ed /usr/bin/ed",
+            "diag ifconfig": "/etc/ifconfig de0",
+            "diag netstat": "netstat -rn",
+            "diag ftp": "ls /usr/bin/ftp /bin/ftp",
+            "diag tftp": "ls /usr/bin/tftp /bin/tftp",
+            "diag rcp": "ls /usr/bin/rcp /bin/rcp",
+            "diag rsh": "ls /usr/bin/rsh /bin/rsh",
+            "diag telnet": "ls /usr/bin/telnet /bin/telnet",
+            "diag ucb tools": (
+                "ls /usr/ucb/ftp /usr/ucb/ifconfig /usr/ucb/telnet "
+                "/usr/ucb/rsh /usr/ucb/rcp /usr/etc/ifconfig"
+            ),
+            "diag ping": "ls /etc/ping /usr/etc/ping /usr/ucb/ping",
+            "diag tape dev": "ls /dev/mt* /dev/rmt* /dev/ts* /dev/ht*",
+            "diag mt": "ls /bin/mt /usr/bin/mt",
+        }
+        for section, command in diagnostics.items():
+            output = session.exec_cmd(command)
+            self._append_console_log(section, output)
+
+    def _transfer_guest_inputs(self, session: TelnetSession) -> None:
+        session.send_file("probe.txt", "probe line 1\nprobe line 2\n")
+        probe_out = session.exec_cmd("wc -l probe.txt")
+        self._append_console_log("probe wc", probe_out)
+        session.send_file_ed(
+            "resume.vax.yaml",
+            self._paths.resume_vax_yaml_path.read_text(encoding="utf-8"),
+        )
+        resume_out = session.exec_cmd("wc -l resume.vax.yaml")
+        self._append_console_log("resume wc", resume_out)
+        session.send_file_ed(
+            "bradman.c",
+            (self._paths.repo_root / "vax" / "bradman.c").read_text(encoding="utf-8"),
+        )
+        bradman_out = session.exec_cmd("wc -l bradman.c")
+        self._append_console_log("bradman wc", bradman_out)
+
+    def _transfer_guest_inputs_ftp(
+        self,
+        *,
+        session: TelnetSession,
+        ftp_container: FtpContainer,
+        simh_dir: Path,
+    ) -> None:
+        ftp_dir = simh_dir / "ftp"
+        ftp_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(
+            self._paths.repo_root / "vax" / "bradman.c",
+            ftp_dir / "bradman.c",
+        )
+        shutil.copyfile(
+            self._paths.resume_vax_yaml_path,
+            ftp_dir / "resume.vax.yaml",
+        )
+
+        session.exec_cmd("rm -f /tmp/ftp.cmd")
+        ftp_cmds = [
+            "user anonymous",
+            "binary",
+            "cd ftp",
+            "get bradman.c",
+            "get resume.vax.yaml",
+            "bye",
+        ]
+        for line in ftp_cmds:
+            session.exec_cmd(f"echo {_sh_single_quote(line)} >> /tmp/ftp.cmd")
+
+        cmd_preview = session.exec_cmd("wc -l /tmp/ftp.cmd")
+        self._append_console_log("ftp cmd wc", cmd_preview)
+        cmd_preview = session.exec_cmd("cat /tmp/ftp.cmd")
+        self._append_console_log("ftp cmd", cmd_preview)
+
+        route_output = session.exec_cmd("netstat -rn", timeout=60)
+        gateway = _parse_default_gateway(route_output)
+        target_host = gateway or ftp_container.container_ip
+        ftp_output = session.exec_cmd(
+            f"/usr/ucb/ftp -n {target_host} {ftp_container.host_port} < /tmp/ftp.cmd",
+            timeout=300,
+        )
+        self._append_console_log("ftp get", ftp_output)
+
+    def _transfer_guest_inputs_tape(self, session: TelnetSession) -> None:
+        session.exec_cmd("cd /tmp")
+        candidates = [
+            "/dev/rmt12",
+            "/dev/rmt0",
+            "/dev/mt12",
+            "/dev/mt0",
+            "/dev/ts0",
+            "/dev/ts1",
+            "/dev/ht0",
+            "/dev/ht1",
+        ]
+        selected: str | None = None
+        for dev in candidates:
+            status_output = session.exec_cmd(f"/bin/mt -f {dev} status", timeout=60)
+            self._append_console_log(f"tape status {dev}", status_output)
+            rewind_output = session.exec_cmd(f"/bin/mt -f {dev} rewind; echo $?", timeout=60)
+            self._append_console_log(f"tape rewind {dev}", rewind_output)
+            commands = [
+                f"tar tf {dev}",
+                f"tar tbf 20 {dev}",
+                f"tar tbf20 {dev}",
+                f"tar tfb20 {dev}",
+            ]
+            for cmd in commands:
+                output = session.exec_cmd(
+                    f"{cmd} > /tmp/tar.log 2>&1; echo __RC__=$?",
+                    timeout=120,
+                )
+                self._append_console_log(f"tape probe {dev} {cmd}", output)
+                log_output = session.exec_cmd("cat /tmp/tar.log")
+                self._append_console_log(f"tape log {dev} {cmd}", log_output)
+                rc: int | None = None
+                for line in output.splitlines():
+                    if line.startswith("__RC__="):
+                        try:
+                            rc = int(line.split("=", 1)[1].strip())
+                        except ValueError:
+                            rc = None
+                if rc == 0:
+                    selected = dev
+                    break
+            if selected:
+                break
+        if not selected:
+            raise RuntimeError("Failed to identify tape device for tar")
+        session.exec_cmd(f"/bin/mt -f {selected} rewind")
+        extract_output = session.exec_cmd(
+            f"tar xvf {selected} > /tmp/tar.extract 2>&1; echo __RC__=$?",
+            timeout=300,
+        )
+        self._append_console_log("tape extract", extract_output)
+        ls_output = session.exec_cmd("ls -l bradman.c resume.vax.yaml")
+        self._append_console_log("tape ls", ls_output)
+
+    def _prepare_tape_media(self, simh_dir: Path) -> None:
+        tap_path = simh_dir / "inputs.tap"
+        tar_bytes = _build_tar_bytes(
+            [
+                ("bradman.c", (self._paths.repo_root / "vax" / "bradman.c").read_bytes()),
+                ("resume.vax.yaml", self._paths.resume_vax_yaml_path.read_bytes()),
+            ]
+        )
+        _write_simh_tap(tap_path, tar_bytes)
+        ini_path = simh_dir / "vax780.ini"
+        if not ini_path.exists():
+            for candidate in (
+                self._paths.vax_build_dir / "simh" / "vax780.ini",
+                self._paths.vax_build_dir / "simh-ftp" / "vax780.ini",
+            ):
+                if candidate.exists():
+                    ini_path.write_text(candidate.read_text(encoding="utf-8"), encoding="utf-8")
+                    break
+        if not ini_path.exists():
+            return
+        text = ini_path.read_text(encoding="utf-8")
+        updated = False
+        if "attach ts0" not in text:
+            text = text.replace(
+                "set ts enabled",
+                "set ts enabled\nattach ts0 /machines/inputs.tap",
+            )
+            updated = True
+        if "set ts0 online" in text:
+            text = text.replace("set ts0 online\n", "")
+            text = text.replace("\nset ts0 online", "")
+            updated = True
+        if updated:
+            ini_path.write_text(text, encoding="utf-8")
+
+    def _container_ip(self, *, docker_bin: str, container_name: str) -> str:
+        result = subprocess.run(  # noqa: S603
+            [
+                docker_bin,
+                "inspect",
+                "-f",
+                "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
+                container_name,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        ip = result.stdout.strip()
+        if not ip:
+            raise RuntimeError("Failed to determine container IP")
+        return ip
+
+    def _start_ftp_container(
+        self,
+        *,
+        docker_bin: str,
+        ftp_dir: Path,
+    ) -> FtpContainer:
+        container_name = f"vaxftp-{uuid.uuid4().hex[:8]}"
+        host_port = 2121
+        ftp_dir.mkdir(parents=True, exist_ok=True)
+        subprocess.run(  # noqa: S603
+            [
+                docker_bin,
+                "run",
+                "--rm",
+                "--name",
+                container_name,
+                "-d",
+                "-p",
+                f"{host_port}:21",
+                "-v",
+                f"{ftp_dir}:/files",
+                self._config.ftp_image,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        ip = self._container_ip(docker_bin=docker_bin, container_name=container_name)
+        return FtpContainer(
+            docker_bin=docker_bin,
+            container_name=container_name,
+            container_ip=ip,
+            host_port=host_port,
+        )
+
+    def _compile_and_capture(self, session: TelnetSession) -> str:
+        compile_output = session.exec_cmd("cc -O -o bradman bradman.c", timeout=600)
+        self._append_console_log("compile", compile_output)
+        stat_output = session.exec_cmd("ls -l bradman bradman.c resume.vax.yaml")
+        self._append_console_log("ls", stat_output)
+        run_output = session.exec_cmd("./bradman -i resume.vax.yaml -o brad.1")
+        self._append_console_log("bradman", run_output)
+        output = session.exec_cmd(
+            "echo '<<<BRAD_1_UU_BEGIN>>>'; uuencode brad.1 brad.1; "
+            "echo '<<<BRAD_1_UU_END>>>'"
+        )
+        self._append_console_log("uuencode", output)
+        return output
+
+    def _wait_for_console(
+        self,
+        *,
+        ctx: DockerContext,
+        log: VaxBuildLog,
+        timeout: int = 600,
+    ) -> TelnetSession:
+        """Wait for the VAX console to reach a login prompt and return a session."""
+        wait_log_path = self._paths.vax_build_dir / "vax-wait.log"
+        wait_log_path.write_text(f"wait_for_console timeout={timeout}\n", encoding="utf-8")
+
+        start = time.monotonic()
+        deadline = start + timeout
+        last_log_check = 0.0
+        while time.monotonic() < deadline:
+            now = time.monotonic()
+            if now - last_log_check > 5:
+                last_log_check = now
+                logs = subprocess.run(  # noqa: S603
+                    [ctx.docker_bin, "logs", ctx.container_name, "--tail", "200"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                status = subprocess.run(  # noqa: S603
+                    [ctx.docker_bin, "inspect", "-f", "{{.State.Status}}", ctx.container_name],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                if status.returncode != 0:
+                    with wait_log_path.open("a", encoding="utf-8") as fh:
+                        fh.write(
+                            f"t+{now - start:0.1f}s inspect_failed rc={status.returncode}\n"
+                        )
+                    time.sleep(1)
+                    continue
+                if status.stdout.strip() == "exited":
+                    raise RuntimeError("Docker container exited before login prompt")
+                with wait_log_path.open("a", encoding="utf-8") as fh:
+                    fh.write(
+                        f"t+{now - start:0.1f}s logs_tail_len={len(logs.stdout)} "
+                        f"status={status.stdout.strip()}\n"
+                    )
+
+            try:
+                session = TelnetSession(
+                    host="127.0.0.1",
+                    port=ctx.host_port,
+                    log=log,
+                    send_timeout=self._config.send_timeout,
+                )
+                session.wait_for_login(timeout=60)
+                return session
+            except (ConnectionError, TimeoutError, OSError):
+                time.sleep(1)
+                continue
+
+        raise TimeoutError("Timed out waiting for VAX login prompt")
+
 
 class TelnetSession:
     """Minimal telnet session helper for SIMH console control."""
 
-    def __init__(self, *, host: str, port: int, log: VaxBuildLog) -> None:
+    def __init__(
+        self,
+        *,
+        host: str,
+        port: int,
+        log: VaxBuildLog,
+        send_timeout: int = 180,
+    ) -> None:
         self._log = log
         self._sock = socket.create_connection((host, port), timeout=10)
         self._sock.settimeout(5)
-        self._prompt = b"BRAD# "
+        self._prompt = b"BRAD#"
+        self._send_timeout = send_timeout
+        self._read_buffer = bytearray()
+        self._flow_paused = False
         self._log.add(f"telnet connected to {host}:{port}")
 
     def wait_for_login(self, timeout: int = 120) -> None:
+        self._send_line("")
         self._read_until(b"login:", timeout=timeout)
 
     def login_root(self, timeout: int = 60) -> None:
-        self._send(b"root\n")
-        output = self._read_until(b"Password:", timeout=5)
-        if b"Password:" in output:
-            self._send(b"\n")
-        self._read_until(b"#", timeout=timeout)
+        for _ in range(3):
+            self._send_line("root")
+            output = self._read_until_any(
+                [b"Password:", b"#", b"$", b"login:"],
+                timeout=timeout,
+            )
+            if b"Password:" in output:
+                self._send_line("")
+                self._read_until_any([b"#", b"$"], timeout=timeout)
+                return
+            if b"#" in output or b"$" in output:
+                return
+            if b"login:" in output:
+                time.sleep(1)
+                continue
+        raise RuntimeError("Login failed; received login prompt again")
 
     def ensure_shell_prompt(self) -> None:
-        self._send(b"sh\n")
-        self._read_until(b"#", timeout=30)
-        self._send(b"PS1='BRAD# '\n")
+        self._send_line("sh")
+        self._read_until_any([b"#", b"$"], timeout=30)
+        self._send_line("PS1='BRAD# '")
         self._read_until(self._prompt, timeout=30)
 
     def exec_cmd(self, command: str, timeout: int = 120) -> str:
-        self._send(command.encode() + b"\n")
+        self._drain()
+        self._read_buffer.clear()
+        self._send_line(command)
         output = self._read_until(self._prompt, timeout=timeout)
         return output.decode("utf-8", errors="ignore")
 
-    def send_heredoc(self, filename: str, content: str) -> None:
-        marker = f"BRAD_EOF_{uuid.uuid4().hex[:8]}"
-        self._send(f"cat > {filename} <<'{marker}'\n".encode())
-        self._send(content.encode() + b"\n")
-        self._send(f"{marker}\n".encode())
-        self._read_until(self._prompt, timeout=60)
+    def send_file(self, filename: str, content: str) -> None:
+        lines = content.splitlines()
+        self.exec_cmd(f": > {filename}")
+        if not lines:
+            return
+        chunk_size = 20
+        for chunk in _chunk_lines(lines, size=chunk_size):
+            payload = "\n".join(chunk) + "\n"
+            self._drain()
+            self._send_line(f"cat >> {filename}")
+            self._send_bytes_throttled(payload.encode("utf-8"))
+            time.sleep(0.1)
+            self._send(b"\r\n")
+            self._send(b"\x04")
+            self._send(b"\r\n")
+            try:
+                self._read_buffer.clear()
+                self._read_until_any(
+                    [self._prompt, b"# ", b"$ "],
+                    timeout=self._send_timeout,
+                )
+            except TimeoutError as exc:
+                self._recover_prompt(timeout=10)
+                raise exc
+
+    def send_file_heredoc(self, filename: str, content: str) -> None:
+        marker = f"__BRAD_EOF_{uuid.uuid4().hex}__"
+        self._drain()
+        self._send_line(f"cat > {filename} <<'{marker}'")
+        self._send_bytes_throttled(content.encode("utf-8"))
+        if not content.endswith("\n"):
+            self._send(b"\n")
+        self._send_line(marker)
+        self._read_until_any(
+            [self._prompt, b"# ", b"$ "],
+            timeout=self._send_timeout,
+        )
+
+    def send_file_ed(self, filename: str, content: str) -> None:
+        lines = content.splitlines()
+        self.exec_cmd(f": > {filename}")
+        self._drain()
+        self._send_line(f"/bin/ed -s {filename}")
+        self._send_line("a")
+        for line in lines:
+            self._send_line(line)
+        self._send_line(".")
+        self._send_line("w")
+        self._send_line("q")
+        self._read_buffer.clear()
+        self._read_until_any(
+            [self._prompt, b"# ", b"$ "],
+            timeout=self._send_timeout,
+        )
 
     def _send(self, data: bytes) -> None:
         self._sock.sendall(data)
 
+    def _interrupt(self) -> None:
+        self._send(b"\x03")
+
+    def _recover_prompt(self, timeout: int = 10) -> None:
+        self._send(b"\r\n")
+        self._send(b"\x04")
+        self._send(b"\r\n")
+        try:
+            self._read_until_any([self._prompt, b"# ", b"$ "], timeout=timeout)
+        except TimeoutError:
+            self._interrupt()
+            self._read_until_any([self._prompt, b"# ", b"$ "], timeout=timeout)
+
+    def _send_bytes_throttled(
+        self,
+        data: bytes,
+        *,
+        chunk_size: int = 128,
+        delay: float = 0.05,
+    ) -> None:
+        for idx in range(0, len(data), chunk_size):
+            self._wait_for_xon()
+            self._send(data[idx : idx + chunk_size])
+            self._poll_incoming()
+            time.sleep(delay)
+
+    def _send_line(self, line: str) -> None:
+        self._wait_for_xon()
+        self._send(line.encode() + b"\r\n")
+        self._poll_incoming()
+
+    def _drain(self, max_reads: int = 50) -> None:
+        for _ in range(max_reads):
+            if not self._poll_incoming(timeout=0.05):
+                break
+
+    def _poll_incoming(self, timeout: float = 0.0) -> bool:
+        readable, _, _ = select.select([self._sock], [], [], timeout)
+        if not readable:
+            return False
+        data = self._recv_filtered()
+        if data:
+            self._ingest_data(data)
+            return True
+        return False
+
+    def _ingest_data(self, data: bytes) -> None:
+        if b"\x13" in data:
+            self._flow_paused = True
+        if b"\x11" in data:
+            self._flow_paused = False
+        cleaned = data.replace(b"\x13", b"").replace(b"\x11", b"")
+        if cleaned:
+            self._read_buffer.extend(cleaned)
+
+    def _wait_for_xon(self) -> None:
+        start = time.monotonic()
+        while self._flow_paused:
+            self._poll_incoming(timeout=0.1)
+            if time.monotonic() - start > self._send_timeout:
+                raise TimeoutError("Timed out waiting for XON")
+
     def _read_until(self, needle: bytes, timeout: int) -> bytes:
         end_time = time.time() + timeout
         buf = bytearray()
+        if self._read_buffer:
+            buf.extend(self._read_buffer)
+            self._read_buffer.clear()
         while time.time() < end_time:
-            chunk = self._recv_filtered()
-            if chunk:
-                buf.extend(chunk)
-                if needle in buf:
-                    return bytes(buf)
+            idx = buf.find(needle)
+            if idx != -1:
+                end = idx + len(needle)
+                result = bytes(buf[:end])
+                self._read_buffer.extend(buf[end:])
+                return result
+            if self._poll_incoming(timeout=0.1):
+                buf.extend(self._read_buffer)
+                self._read_buffer.clear()
             else:
                 time.sleep(0.05)
         raise TimeoutError(f"Timed out waiting for {needle!r}")
+
+    def _read_until_any(self, needles: list[bytes], timeout: int) -> bytes:
+        end_time = time.time() + timeout
+        buf = bytearray()
+        if self._read_buffer:
+            buf.extend(self._read_buffer)
+            self._read_buffer.clear()
+        while time.time() < end_time:
+            for needle in needles:
+                idx = buf.find(needle)
+                if idx != -1:
+                    end = idx + len(needle)
+                    result = bytes(buf[:end])
+                    self._read_buffer.extend(buf[end:])
+                    return result
+            if self._poll_incoming(timeout=0.1):
+                buf.extend(self._read_buffer)
+                self._read_buffer.clear()
+            else:
+                time.sleep(0.05)
+        raise TimeoutError(f"Timed out waiting for one of: {needles!r}")
 
     def _recv_filtered(self) -> bytes:
         try:
@@ -397,6 +960,46 @@ def _filter_telnet(data: bytes, sock: socket.socket) -> bytes:
     return bytes(out)
 
 
+def _sh_single_quote(value: str) -> str:
+    if value == "":
+        return "''"
+    return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+def _parse_default_gateway(route_output: str) -> str | None:
+    for line in route_output.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] == "default":
+            return parts[1]
+    return None
+
+
+def _chunk_lines(lines: list[str], *, size: int) -> list[list[str]]:
+    return [lines[i : i + size] for i in range(0, len(lines), size)]
+
+
+def _build_tar_bytes(files: list[tuple[str, bytes]]) -> bytes:
+    buffer = BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w", format=tarfile.USTAR_FORMAT) as tar:
+        for name, data in files:
+            info = tarfile.TarInfo(name=name)
+            info.size = len(data)
+            tar.addfile(info, BytesIO(data))
+    return buffer.getvalue()
+
+
+def _write_simh_tap(path: Path, payload: bytes, *, record_size: int = 10240) -> None:
+    with path.open("wb") as fh:
+        for offset in range(0, len(payload), record_size):
+            chunk = payload[offset : offset + record_size]
+            fh.write(struct.pack("<I", len(chunk)))
+            fh.write(chunk)
+            fh.write(struct.pack("<I", len(chunk)))
+        fh.write(struct.pack("<I", 0))
+        fh.write(struct.pack("<I", 0))
+        fh.write(struct.pack("<I", 0xFFFFFFFF))
+
+
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="python -m resume_generator.vax_stage")
     parser.add_argument(
@@ -426,6 +1029,39 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         default=None,
         help="Replay mode: path to a console transcript containing uuencoded artifacts",
     )
+    parser.add_argument(
+        "--docker-timeout",
+        type=int,
+        default=600,
+        help="Seconds to wait for SIMH login prompt (default: 600)",
+    )
+    parser.add_argument(
+        "--send-timeout",
+        type=int,
+        default=180,
+        help="Seconds to wait for file transfer completion (default: 180)",
+    )
+    parser.add_argument(
+        "--docker-quick",
+        action="store_true",
+        help="Only boot/login and write vax-build.log (skip transfer/compile)",
+    )
+    parser.add_argument(
+        "--transfer",
+        choices=["console", "ftp", "tape"],
+        default="console",
+        help="File transfer method for docker mode (default: console)",
+    )
+    parser.add_argument(
+        "--docker-image",
+        default="jguillaumes/simh-vaxbsd",
+        help="Docker image to run for SIMH (default: jguillaumes/simh-vaxbsd)",
+    )
+    parser.add_argument(
+        "--ftp-image",
+        default="simh-ftp-server",
+        help="Docker image to run for FTP transfers (default: simh-ftp-server)",
+    )
     return parser.parse_args(argv)
 
 
@@ -446,6 +1082,12 @@ def main(argv: list[str] | None = None) -> int:
         build_dir=Path(args.build_dir),
         mode=str(args.mode),
         transcript_path=Path(args.transcript) if args.transcript else None,
+        docker_timeout=int(args.docker_timeout),
+        send_timeout=int(args.send_timeout),
+        docker_quick=bool(args.docker_quick),
+        transfer_mode=str(args.transfer),
+        docker_image=str(args.docker_image),
+        ftp_image=str(args.ftp_image),
     )
     runner = VaxStageRunner(config=config, repo_root=repo_root)
     runner.run()

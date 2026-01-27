@@ -14,6 +14,32 @@ class UuDecodeResult:
     data: bytes
 
 
+def _decode_uu_line(line: str) -> bytes:
+    """Decode a single uuencode data line (tolerant fallback).
+
+    Args:
+        line: A uuencoded data line.
+
+    Returns:
+        The decoded bytes for the line.
+    """
+    if not line:
+        return b""
+    length = (ord(line[0]) - 0x20) & 0x3F
+    if length == 0:
+        return b""
+    out = bytearray()
+    for i in range(1, len(line), 4):
+        chunk = line[i : i + 4]
+        if len(chunk) < 4:
+            break
+        vals = [((ord(ch) - 0x20) & 0x3F) for ch in chunk]
+        out.append((vals[0] << 2) | (vals[1] >> 4))
+        out.append(((vals[1] & 0x0F) << 4) | (vals[2] >> 2))
+        out.append(((vals[2] & 0x03) << 6) | vals[3])
+    return bytes(out[:length])
+
+
 def extract_marked_region(text: str, *, begin_marker: str, end_marker: str) -> str:
     """Extract text between hard markers.
 
@@ -82,10 +108,21 @@ def decode_uuencode_block(block_text: str) -> UuDecodeResult:
             break
         if not line:
             continue
+        # Some terminals may append extra characters; trim to the expected uu line length.
+        try:
+            uu_len = (ord(line[0]) - 0x20) & 0x3F
+            expected_len = 1 + ((uu_len + 2) // 3) * 4
+            if expected_len > 1 and len(line) > expected_len:
+                line = line[:expected_len]
+        except Exception:
+            pass
         try:
             decoded.extend(binascii.a2b_uu(line.encode("ascii")))
-        except (binascii.Error, UnicodeEncodeError) as exc:
-            raise ValueError(f"Invalid uuencoded line: {line!r}") from exc
+        except (binascii.Error, UnicodeEncodeError):
+            try:
+                decoded.extend(_decode_uu_line(line))
+            except Exception as exc:
+                raise ValueError(f"Invalid uuencoded line: {line!r}") from exc
 
     if not found_end:
         raise ValueError("Missing uuencode end line")
