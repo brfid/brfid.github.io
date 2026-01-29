@@ -3,6 +3,7 @@
 This repo deploys a minimal GitHub Pages landing/redirect for `brfid.github.io`.
 
 - LinkedIn: `https://linkedin.com/in/brfid/`
+- Architecture: see `ARCHITECTURE.md`.
 
 ## Local build (venv-only)
 
@@ -22,13 +23,12 @@ Generate the site:
 
 ### VAX/SIMH transfer mode status
 
-Docker mode defaults to tape (`--transfer tape`).
-
-- `tape`: Working (TS11 tape image attached via SIMH).
-- `console`: Unreliable — SIMH telnet/DZ line drops input without proper XON/XOFF pacing.
-- `ftp`: Not working in this setup — VAX cannot reliably reach a container-hosted FTP service.
+Docker mode uses tape (TS11 image attached via SIMH).
+Console/FTP transports were removed from the active path and archived here:
+`docs/transport-archive.md`.
 
 Implementation notes:
+
 - VAX-side `vax/bradman.c` uses K&R-compatible fallbacks (varargs/stdlib/size_t/void* and `_doprnt`).
 - Host uuencode decoding is tolerant of trailing garbage in console output.
 - Docker image is pinned by digest in code for reproducibility.

@@ -124,10 +124,9 @@ Escape rules (guest output safety):
 ## Open questions (next)
 
 - `nox` sessions:
-  - Which sessions are mandatory on `publish` (vs “occasional”)?
-- Docker/SIMH details:
-  - Pin the Docker image by digest once stable (vs tag during prototyping).
-  - Confirm the boot/login “readiness” signal for telnet driving (avoid fixed sleeps).
+  - Decision: **minimal scope** for now (`pytest`, `ruff`, `mypy`) on publish.
+- Build log determinism:
+  - Decision: **keep elapsed timing** in `site/vax-build.log` for debugging.
 - Landing page:
   - How much of `site/vax-build.log` to show inline (first N lines vs curated excerpt).
 
@@ -207,10 +206,12 @@ Host decodes and writes `build/vax/brad.1`, then renders `site/brad.man.txt`.
 
 ## Implementation notes (current state)
 
-- Docker/SIMH transfer default is now **tape** (TS11 image attached). Console/FTP are fallback only.
+- Docker/SIMH transfer uses **tape** (TS11 image attached). Console/FTP are archived.
 - Docker image is pinned by digest in code (deterministic).
 - VAX-side `bradman.c` was updated for 4.3BSD/K&R C: varargs/stdlib fallbacks, `size_t`/`void*` compatibility, `_doprnt`/`sys_errlist` stubs.
 - Host uuencode decoding is tolerant of trailing garbage on lines (SIMH console occasionally appends).
+- Console/FTP transfer code has been removed from the active path and archived in `docs/transport-archive.md`.
+- Build log retains elapsed timing (non-deterministic but useful for debugging).
 
 ## TODO (local success checklist)
 

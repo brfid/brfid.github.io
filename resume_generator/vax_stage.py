@@ -101,9 +101,7 @@ class VaxStageConfig:
     docker_timeout: int = 600
     send_timeout: int = 180
     docker_quick: bool = False
-    transfer_mode: str = "tape"
     docker_image: str = DOCKER_IMAGE_DEFAULT
-    ftp_image: str = "simh-ftp-server"
 
 
 @dataclass(frozen=True)
@@ -112,16 +110,6 @@ class DockerContext:
 
     docker_bin: str
     container_name: str
-    host_port: int
-
-
-@dataclass(frozen=True)
-class FtpContainer:
-    """Metadata for a running FTP server container."""
-
-    docker_bin: str
-    container_name: str
-    container_ip: str
     host_port: int
 
 
@@ -259,24 +247,16 @@ class VaxStageRunner:
             raise RuntimeError("Docker is not available; install Docker or use --transcript")
 
         log.add(f"docker image: {self._config.docker_image}")
-        log.add(f"docker transfer: {self._config.transfer_mode}")
-        if self._config.transfer_mode == "ftp":
-            simh_dir_name = "simh-ftp"
-        elif self._config.transfer_mode == "tape":
-            simh_dir_name = "simh-tape"
-        else:
-            simh_dir_name = "simh"
+        simh_dir_name = "simh-tape"
         simh_dir = (self._paths.vax_build_dir / simh_dir_name).resolve()
         simh_dir.mkdir(parents=True, exist_ok=True)
-        if self._config.transfer_mode == "tape":
-            self._prepare_tape_media(simh_dir)
+        self._prepare_tape_media(simh_dir)
 
         context = self._start_docker_container(
             docker_bin=docker_bin,
             simh_dir=simh_dir,
             log=log,
         )
-        ftp_container: FtpContainer | None = None
         try:
             self._init_console_log()
             session = self._wait_for_console(
@@ -290,27 +270,9 @@ class VaxStageRunner:
                 log.add("docker quick mode: skipping transfer/compile")
                 transcript = ""
             else:
-                if self._config.transfer_mode == "ftp":
-                    ftp_container = self._start_ftp_container(
-                        docker_bin=docker_bin,
-                        ftp_dir=simh_dir / "ftp",
-                    )
-                    self._transfer_guest_inputs_ftp(
-                        session=session,
-                        ftp_container=ftp_container,
-                        simh_dir=simh_dir,
-                    )
-                elif self._config.transfer_mode == "tape":
-                    self._transfer_guest_inputs_tape(session)
-                else:
-                    self._transfer_guest_inputs(session)
+                self._transfer_guest_inputs_tape(session)
                 transcript = self._compile_and_capture(session)
         finally:
-            if ftp_container:
-                self._stop_container(
-                    docker_bin=ftp_container.docker_bin,
-                    container_name=ftp_container.container_name,
-                )
             self._stop_docker_container(context)
 
         if self._config.docker_quick:
@@ -371,14 +333,6 @@ class VaxStageRunner:
             text=True,
         )
 
-    def _stop_container(self, *, docker_bin: str, container_name: str) -> None:
-        subprocess.run(  # noqa: S603
-            [docker_bin, "rm", "-f", container_name],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-
     def _init_console_log(self) -> None:
         (self._paths.vax_build_dir / "vax-console.log").write_text(
             "[session]\n",
@@ -406,15 +360,6 @@ class VaxStageRunner:
             "diag ed": "ls /bin/ed /usr/bin/ed",
             "diag ifconfig": "/etc/ifconfig de0",
             "diag netstat": "netstat -rn",
-            "diag ftp": "ls /usr/bin/ftp /bin/ftp",
-            "diag tftp": "ls /usr/bin/tftp /bin/tftp",
-            "diag rcp": "ls /usr/bin/rcp /bin/rcp",
-            "diag rsh": "ls /usr/bin/rsh /bin/rsh",
-            "diag telnet": "ls /usr/bin/telnet /bin/telnet",
-            "diag ucb tools": (
-                "ls /usr/ucb/ftp /usr/ucb/ifconfig /usr/ucb/telnet "
-                "/usr/ucb/rsh /usr/ucb/rcp /usr/etc/ifconfig"
-            ),
             "diag ping": "ls /etc/ping /usr/etc/ping /usr/ucb/ping",
             "diag tape dev": "ls /dev/mt* /dev/rmt* /dev/ts* /dev/ht*",
             "diag mt": "ls /bin/mt /usr/bin/mt",
@@ -422,67 +367,6 @@ class VaxStageRunner:
         for section, command in diagnostics.items():
             output = session.exec_cmd(command)
             self._append_console_log(section, output)
-
-    def _transfer_guest_inputs(self, session: TelnetSession) -> None:
-        session.send_file("probe.txt", "probe line 1\nprobe line 2\n")
-        probe_out = session.exec_cmd("wc -l probe.txt")
-        self._append_console_log("probe wc", probe_out)
-        session.send_file_ed(
-            "resume.vax.yaml",
-            self._paths.resume_vax_yaml_path.read_text(encoding="utf-8"),
-        )
-        resume_out = session.exec_cmd("wc -l resume.vax.yaml")
-        self._append_console_log("resume wc", resume_out)
-        session.send_file_ed(
-            "bradman.c",
-            (self._paths.repo_root / "vax" / "bradman.c").read_text(encoding="utf-8"),
-        )
-        bradman_out = session.exec_cmd("wc -l bradman.c")
-        self._append_console_log("bradman wc", bradman_out)
-
-    def _transfer_guest_inputs_ftp(
-        self,
-        *,
-        session: TelnetSession,
-        ftp_container: FtpContainer,
-        simh_dir: Path,
-    ) -> None:
-        ftp_dir = simh_dir / "ftp"
-        ftp_dir.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(
-            self._paths.repo_root / "vax" / "bradman.c",
-            ftp_dir / "bradman.c",
-        )
-        shutil.copyfile(
-            self._paths.resume_vax_yaml_path,
-            ftp_dir / "resume.vax.yaml",
-        )
-
-        session.exec_cmd("rm -f /tmp/ftp.cmd")
-        ftp_cmds = [
-            "user anonymous",
-            "binary",
-            "cd ftp",
-            "get bradman.c",
-            "get resume.vax.yaml",
-            "bye",
-        ]
-        for line in ftp_cmds:
-            session.exec_cmd(f"echo {_sh_single_quote(line)} >> /tmp/ftp.cmd")
-
-        cmd_preview = session.exec_cmd("wc -l /tmp/ftp.cmd")
-        self._append_console_log("ftp cmd wc", cmd_preview)
-        cmd_preview = session.exec_cmd("cat /tmp/ftp.cmd")
-        self._append_console_log("ftp cmd", cmd_preview)
-
-        route_output = session.exec_cmd("netstat -rn", timeout=60)
-        gateway = _parse_default_gateway(route_output)
-        target_host = gateway or ftp_container.container_ip
-        ftp_output = session.exec_cmd(
-            f"/usr/ucb/ftp -n {target_host} {ftp_container.host_port} < /tmp/ftp.cmd",
-            timeout=300,
-        )
-        self._append_console_log("ftp get", ftp_output)
 
     def _transfer_guest_inputs_tape(self, session: TelnetSession) -> None:
         session.exec_cmd("cd /tmp")
@@ -550,10 +434,7 @@ class VaxStageRunner:
         _write_simh_tap(tap_path, tar_bytes)
         ini_path = simh_dir / "vax780.ini"
         if not ini_path.exists():
-            for candidate in (
-                self._paths.vax_build_dir / "simh" / "vax780.ini",
-                self._paths.vax_build_dir / "simh-ftp" / "vax780.ini",
-            ):
+            for candidate in (self._paths.vax_build_dir / "simh" / "vax780.ini",):
                 if candidate.exists():
                     ini_path.write_text(candidate.read_text(encoding="utf-8"), encoding="utf-8")
                     break
@@ -591,41 +472,6 @@ class VaxStageRunner:
         if not ip:
             raise RuntimeError("Failed to determine container IP")
         return ip
-
-    def _start_ftp_container(
-        self,
-        *,
-        docker_bin: str,
-        ftp_dir: Path,
-    ) -> FtpContainer:
-        container_name = f"vaxftp-{uuid.uuid4().hex[:8]}"
-        host_port = 2121
-        ftp_dir.mkdir(parents=True, exist_ok=True)
-        subprocess.run(  # noqa: S603
-            [
-                docker_bin,
-                "run",
-                "--rm",
-                "--name",
-                container_name,
-                "-d",
-                "-p",
-                f"{host_port}:21",
-                "-v",
-                f"{ftp_dir}:/files",
-                self._config.ftp_image,
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        ip = self._container_ip(docker_bin=docker_bin, container_name=container_name)
-        return FtpContainer(
-            docker_bin=docker_bin,
-            container_name=container_name,
-            container_ip=ip,
-            host_port=host_port,
-        )
 
     def _compile_and_capture(self, session: TelnetSession) -> str:
         compile_output = session.exec_cmd("cc -O -o bradman bradman.c", timeout=600)
@@ -755,61 +601,6 @@ class TelnetSession:
         self._send_line(command)
         output = self._read_until(self._prompt, timeout=timeout)
         return output.decode("utf-8", errors="ignore")
-
-    def send_file(self, filename: str, content: str) -> None:
-        lines = content.splitlines()
-        self.exec_cmd(f": > {filename}")
-        if not lines:
-            return
-        chunk_size = 20
-        for chunk in _chunk_lines(lines, size=chunk_size):
-            payload = "\n".join(chunk) + "\n"
-            self._drain()
-            self._send_line(f"cat >> {filename}")
-            self._send_bytes_throttled(payload.encode("utf-8"))
-            self._poll_incoming(timeout=0.1)
-            self._send(b"\r\n")
-            self._send(b"\x04")
-            self._send(b"\r\n")
-            try:
-                self._read_buffer.clear()
-                self._read_until_any(
-                    [self._prompt, b"# ", b"$ "],
-                    timeout=self._send_timeout,
-                )
-            except TimeoutError as exc:
-                self._recover_prompt(timeout=10)
-                raise exc
-
-    def send_file_heredoc(self, filename: str, content: str) -> None:
-        marker = f"__BRAD_EOF_{uuid.uuid4().hex}__"
-        self._drain()
-        self._send_line(f"cat > {filename} <<'{marker}'")
-        self._send_bytes_throttled(content.encode("utf-8"))
-        if not content.endswith("\n"):
-            self._send(b"\n")
-        self._send_line(marker)
-        self._read_until_any(
-            [self._prompt, b"# ", b"$ "],
-            timeout=self._send_timeout,
-        )
-
-    def send_file_ed(self, filename: str, content: str) -> None:
-        lines = content.splitlines()
-        self.exec_cmd(f": > {filename}")
-        self._drain()
-        self._send_line(f"/bin/ed -s {filename}")
-        self._send_line("a")
-        for line in lines:
-            self._send_line(line)
-        self._send_line(".")
-        self._send_line("w")
-        self._send_line("q")
-        self._read_buffer.clear()
-        self._read_until_any(
-            [self._prompt, b"# ", b"$ "],
-            timeout=self._send_timeout,
-        )
 
     def _send(self, data: bytes) -> None:
         self._sock.sendall(data)
@@ -967,24 +758,6 @@ def _filter_telnet(data: bytes, sock: socket.socket) -> bytes:
     return bytes(out)
 
 
-def _sh_single_quote(value: str) -> str:
-    if value == "":
-        return "''"
-    return "'" + value.replace("'", "'\"'\"'") + "'"
-
-
-def _parse_default_gateway(route_output: str) -> str | None:
-    for line in route_output.splitlines():
-        parts = line.split()
-        if len(parts) >= 2 and parts[0] == "default":
-            return parts[1]
-    return None
-
-
-def _chunk_lines(lines: list[str], *, size: int) -> list[list[str]]:
-    return [lines[i : i + size] for i in range(0, len(lines), size)]
-
-
 def _build_tar_bytes(files: list[tuple[str, bytes]]) -> bytes:
     buffer = BytesIO()
     with tarfile.open(fileobj=buffer, mode="w", format=tarfile.USTAR_FORMAT) as tar:
@@ -1054,23 +827,12 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="Only boot/login and write vax-build.log (skip transfer/compile)",
     )
     parser.add_argument(
-        "--transfer",
-        choices=["console", "ftp", "tape"],
-        default="tape",
-        help="File transfer method for docker mode (default: tape)",
-    )
-    parser.add_argument(
         "--docker-image",
         default=DOCKER_IMAGE_DEFAULT,
         help=(
             "Docker image to run for SIMH "
             f"(default: {DOCKER_IMAGE_DEFAULT})"
         ),
-    )
-    parser.add_argument(
-        "--ftp-image",
-        default="simh-ftp-server",
-        help="Docker image to run for FTP transfers (default: simh-ftp-server)",
     )
     return parser.parse_args(argv)
 
@@ -1095,9 +857,7 @@ def main(argv: list[str] | None = None) -> int:
         docker_timeout=int(args.docker_timeout),
         send_timeout=int(args.send_timeout),
         docker_quick=bool(args.docker_quick),
-        transfer_mode=str(args.transfer),
         docker_image=str(args.docker_image),
-        ftp_image=str(args.ftp_image),
     )
     runner = VaxStageRunner(config=config, repo_root=repo_root)
     runner.run()
