@@ -78,19 +78,6 @@ def build_site(req: BuildRequest) -> None:
 
         build_pdf(out_dir=req.out_dir, resume_url_path="/resume/", pdf_name="resume.pdf")
 
-    landing_path = build_landing_page(
-        resume=resume,
-        out_dir=req.out_dir,
-        templates_dir=req.templates_dir,
-    )
-
-    nojekyll_path = req.out_dir / ".nojekyll"
-    if not nojekyll_path.exists():
-        write_text(nojekyll_path, "")
-
-    print(f"Wrote: {resume_index_path}")
-    print(f"Wrote: {landing_path}")
-
     if req.vax.enabled:
         # pylint: disable=import-outside-toplevel
         from .vax_stage import VaxStageConfig, VaxStageRunner
@@ -108,6 +95,20 @@ def build_site(req: BuildRequest) -> None:
         runner.run()
         print(f"Wrote: {runner.paths.brad_man_txt_path}")
         print(f"Wrote: {runner.paths.vax_build_log_path}")
+
+    # Build landing page after VAX stage so it can link to vax-build.log
+    landing_path = build_landing_page(
+        resume=resume,
+        out_dir=req.out_dir,
+        templates_dir=req.templates_dir,
+    )
+
+    nojekyll_path = req.out_dir / ".nojekyll"
+    if not nojekyll_path.exists():
+        write_text(nojekyll_path, "")
+
+    print(f"Wrote: {resume_index_path}")
+    print(f"Wrote: {landing_path}")
 
     manifest_path = write_manifest(root=req.out_dir, out_path=req.out_dir / "vax-manifest.txt")
     print(f"Wrote: {manifest_path}")
