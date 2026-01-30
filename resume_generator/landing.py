@@ -12,7 +12,7 @@ from .types import Resume
 
 
 @dataclass(frozen=True)
-class LandingContext:
+class LandingContext:  # pylint: disable=too-many-instance-attributes
     """Template context for the landing page."""
 
     name: str
@@ -22,6 +22,7 @@ class LandingContext:
     resume_pdf_path: str
     man_text: str | None
     vax_log_excerpt: str | None
+    vax_log_path: str | None
 
 
 def _env_for_templates(templates_dir: Path) -> Environment:
@@ -64,6 +65,7 @@ def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
     man_text = _read_optional_text(out_dir / "brad.man.txt")
     vax_log = _read_optional_text(out_dir / "vax-build.log")
     vax_log_excerpt = _excerpt_lines(vax_log) if vax_log else None
+    vax_log_path = "/vax-build.log" if vax_log else None
 
     return LandingContext(
         name=name,
@@ -73,6 +75,7 @@ def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
         resume_pdf_path="/resume.pdf",
         man_text=man_text,
         vax_log_excerpt=vax_log_excerpt,
+        vax_log_path=vax_log_path,
     )
 
 
