@@ -94,7 +94,6 @@ def render_brad_man_txt(
     summary: BradManSummary,
     *,
     width: int = 66,
-    max_description_lines: int = 4,
 ) -> str:
     """Render a stable, manpage-style text excerpt for embedding on the landing page."""
 
@@ -105,10 +104,7 @@ def render_brad_man_txt(
 
     out_lines.append("DESCRIPTION")
     wrapped = textwrap.wrap(summary.description, width=body_width, break_long_words=False)
-    if len(wrapped) > max_description_lines:
-        wrapped = wrapped[:max_description_lines]
-        if wrapped:
-            wrapped[-1] = wrapped[-1].rstrip(".") + "..."
+    # Don't truncate - show full description
     for line in wrapped:
         out_lines.append(f"{indent}{line}".rstrip())
     out_lines.append("")
@@ -135,12 +131,6 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="Output format (default: text)",
     )
     parser.add_argument("--width", type=int, default=66, help="Wrap width (default: 66)")
-    parser.add_argument(
-        "--max-description-lines",
-        type=int,
-        default=4,
-        help="Max wrapped DESCRIPTION lines (default: 4)",
-    )
     return parser.parse_args(argv)
 
 
@@ -154,7 +144,6 @@ def main(argv: list[str] | None = None) -> int:
     rendered = render_brad_man_txt(
         summary,
         width=int(args.width),
-        max_description_lines=int(args.max_description_lines),
     )
 
     out.parent.mkdir(parents=True, exist_ok=True)
