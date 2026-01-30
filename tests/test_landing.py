@@ -48,7 +48,7 @@ def test_build_landing_page_includes_man_and_build_log(tmp_path: Path) -> None:
     html = index_path.read_text(encoding="utf-8")
     assert "brad(1)" in html
     assert "NAME" in html
-    assert "<h2>build</h2>" in html
-    assert "line 0" in html
-    assert "line 20" not in html  # excerpt is capped
+    assert "<h2>build</h2>" not in html  # build log excerpt hidden by default
+    assert "line 0" not in html  # build log content not shown inline
+    assert 'href="/vax-build.log"' in html  # link to full log is present
     assert "linkedin.com/in/test" in html
