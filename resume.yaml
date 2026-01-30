@@ -3,11 +3,11 @@ basics:
   label: Senior Technical Writer
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: Senior Technical Writer focused on API documentation and docs-as-code.
-    Lead docs strategy, content, and platform. Build OpenAPI and prose workflows that
-    speed releases, encourage subject-matter expert contributions, and prepare docs
-    for AI use. Python 3.1x automation for docs CI, schema validation, and content
-    pipelines.
+  summary: Senior Technical Writer specializing in API documentation and docs-as-code.
+    I lead documentation strategy, content development, and platform architecture.
+    I build OpenAPI and prose workflows that accelerate releases, enable SME contributions,
+    and prepare documentation for AI applications. Experienced in Python automation for
+    docs CI/CD, schema validation, and content pipelines.
   location:
     city: Warwick
     countryCode: US
