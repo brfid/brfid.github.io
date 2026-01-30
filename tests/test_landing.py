@@ -35,7 +35,7 @@ def test_build_landing_page_includes_man_and_build_log(tmp_path: Path) -> None:
     }
     out_dir = tmp_path / "site"
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "brad.man.txt").write_text("NAME\n    brad - Test\n", encoding="utf-8")
+    (out_dir / "brad.man.txt").write_text("DESCRIPTION\n    Test description\nCONTACT\n    Email: test@example.com\n", encoding="utf-8")
     log_text = "\n".join([f"line {i}" for i in range(30)]) + "\n"
     (out_dir / "vax-build.log").write_text(log_text, encoding="utf-8")
 
@@ -47,7 +47,9 @@ def test_build_landing_page_includes_man_and_build_log(tmp_path: Path) -> None:
 
     html = index_path.read_text(encoding="utf-8")
     assert "brad(1)" in html
-    assert "NAME" in html
+    assert "DESCRIPTION" in html
+    assert "CONTACT" in html
+    assert "NAME" not in html  # NAME section removed from brad(1)
     assert "<h2>build</h2>" not in html  # build log excerpt hidden by default
     assert "line 0" not in html  # build log content not shown inline
     assert 'href="/vax-build.log"' in html  # link to full log is present
