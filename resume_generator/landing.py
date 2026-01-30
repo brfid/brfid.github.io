@@ -20,7 +20,8 @@ class LandingContext:  # pylint: disable=too-many-instance-attributes
     linkedin_url: str | None
     resume_html_path: str
     resume_pdf_path: str
-    man_text: str | None
+    man_description: str | None
+    man_contact: str | None
     vax_log_excerpt: str | None
     vax_log_path: str | None
 
@@ -47,6 +48,37 @@ def _excerpt_lines(text: str, *, max_lines: int = 14) -> str:
     return "\n".join(excerpt).rstrip()
 
 
+def _parse_man_sections(man_text: str) -> tuple[str | None, str | None]:
+    """Parse DESCRIPTION and CONTACT sections from brad.man.txt.
+
+    Args:
+        man_text: The raw brad.man.txt content.
+
+    Returns:
+        Tuple of (description, contact) text. Each is None if not found.
+    """
+    lines = man_text.splitlines()
+    current_section: str | None = None
+    description_lines: list[str] = []
+    contact_lines: list[str] = []
+
+    for line in lines:
+        stripped = line.strip()
+        if stripped == "DESCRIPTION":
+            current_section = "DESCRIPTION"
+        elif stripped == "CONTACT":
+            current_section = "CONTACT"
+        elif stripped:  # Non-empty content line
+            if current_section == "DESCRIPTION":
+                description_lines.append(line)
+            elif current_section == "CONTACT":
+                contact_lines.append(line)
+
+    description = "\n".join(description_lines).strip() if description_lines else None
+    contact = "\n".join(contact_lines).strip() if contact_lines else None
+    return description, contact
+
+
 def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
     """Build the landing template context.
 
@@ -63,6 +95,8 @@ def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
     label = label_raw or None
 
     man_text = _read_optional_text(out_dir / "brad.man.txt")
+    man_description, man_contact = _parse_man_sections(man_text) if man_text else (None, None)
+
     vax_log = _read_optional_text(out_dir / "vax-build.log")
     vax_log_excerpt = _excerpt_lines(vax_log) if vax_log else None
     vax_log_path = "/vax-build.log" if vax_log else None
@@ -73,7 +107,8 @@ def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
         linkedin_url=get_profile_url(basics, "LinkedIn"),
         resume_html_path="/resume/",
         resume_pdf_path="/resume.pdf",
-        man_text=man_text,
+        man_description=man_description,
+        man_contact=man_contact,
         vax_log_excerpt=vax_log_excerpt,
         vax_log_path=vax_log_path,
     )

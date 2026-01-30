@@ -103,10 +103,6 @@ def render_brad_man_txt(
 
     out_lines: list[str] = []
 
-    out_lines.append("NAME")
-    out_lines.append(f"{indent}{summary.name_line}".rstrip())
-    out_lines.append("")
-
     out_lines.append("DESCRIPTION")
     wrapped = textwrap.wrap(summary.description, width=body_width, break_long_words=False)
     if len(wrapped) > max_description_lines:
