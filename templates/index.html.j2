@@ -74,10 +74,17 @@
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.45rem 0.7rem;
+        padding: 0.4rem 0.65rem;
         border-radius: 999px;
-        border: 1px solid var(--border);
+        border: 1px solid rgba(232, 238, 252, 0.08);
+        background: rgba(255, 255, 255, 0.015);
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+      .pill:hover {
+        border-color: var(--border);
         background: rgba(255, 255, 255, 0.03);
+        color: var(--text);
       }
       .section {
         margin-top: 1.25rem;
@@ -95,8 +102,10 @@
           "Courier New", monospace;
         font-size: 0.9rem;
         line-height: 1.5;
-        white-space: pre-wrap;
         color: var(--text);
+      }
+      .section-content.multiline {
+        white-space: pre-wrap;
       }
       footer {
         margin-top: 1.25rem;
@@ -130,7 +139,7 @@
         {% if man_contact %}
           <div class="section">
             <h2>Contact</h2>
-            <div class="section-content">{{ man_contact }}</div>
+            <div class="section-content multiline">{{ man_contact }}</div>
           </div>
         {% endif %}
 
