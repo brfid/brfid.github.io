@@ -70,7 +70,7 @@ def extract_marked_region(text: str, *, begin_marker: str, end_marker: str) -> s
     return text[begin_end + 1 : end_idx]
 
 
-def decode_uuencode_block(block_text: str) -> UuDecodeResult:
+def decode_uuencode_block(block_text: str) -> UuDecodeResult:  # pylint: disable=too-many-branches
     """Decode a uuencode block into bytes.
 
     Args:
@@ -112,10 +112,10 @@ def decode_uuencode_block(block_text: str) -> UuDecodeResult:
         try:
             uu_len = (ord(line[0]) - 0x20) & 0x3F
             expected_len = 1 + ((uu_len + 2) // 3) * 4
-            if expected_len > 1 and len(line) > expected_len:
+            if 1 < expected_len < len(line):
                 line = line[:expected_len]
         except (IndexError, TypeError, ValueError):
-            line = line
+            pass  # Keep line as-is if length calculation fails
         try:
             decoded.extend(binascii.a2b_uu(line.encode("ascii")))
         except (binascii.Error, UnicodeEncodeError):
