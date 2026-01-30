@@ -90,19 +90,13 @@
         color: var(--muted);
         text-transform: uppercase;
       }
-      pre {
-        margin: 0;
-        padding: 0.9rem 1rem;
-        border-radius: 12px;
-        border: 1px solid var(--border);
-        background: rgba(0, 0, 0, 0.25);
-        color: var(--text);
-        overflow: auto;
+      .section-content {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
           "Courier New", monospace;
-        font-size: 0.92rem;
-        line-height: 1.35;
-        white-space: pre;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        color: var(--text);
       }
       footer {
         margin-top: 1.25rem;
@@ -124,17 +118,18 @@
         </header>
 
           <div class="section">
-            <h2>brad(1)</h2>
-            <pre><code>DESCRIPTION
-    Senior Technical Writer focused on API documentation and docs-
+            <h2>About</h2>
+            <div class="section-content">Senior Technical Writer focused on API documentation and docs-
     as-code. Lead docs strategy, content, and platform. Build
     OpenAPI and prose workflows that speed releases, encourage
-    subject-matter expert contributions, and prepare docs for AI...
+    subject-matter expert contributions, and prepare docs for AI...</div>
+          </div>
 
-CONTACT
-    Email: brfid@icloud.com
+          <div class="section">
+            <h2>Contact</h2>
+            <div class="section-content">Email: brfid@icloud.com
     Web: https://brfid.github.io
-    LinkedIn: https://www.linkedin.com/in/brfid/</code></pre>
+    LinkedIn: https://www.linkedin.com/in/brfid/</div>
           </div>
 
         <footer>
