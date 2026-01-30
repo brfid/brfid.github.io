@@ -70,12 +70,16 @@ def _parse_man_sections(man_text: str) -> tuple[str | None, str | None]:
             current_section = "CONTACT"
         elif stripped:  # Non-empty content line
             if current_section == "DESCRIPTION":
-                description_lines.append(line)
+                # Strip leading whitespace and join as continuous text
+                description_lines.append(stripped)
             elif current_section == "CONTACT":
-                contact_lines.append(line)
+                # Keep contact lines separate but strip indentation
+                contact_lines.append(stripped)
 
-    description = "\n".join(description_lines).strip() if description_lines else None
-    contact = "\n".join(contact_lines).strip() if contact_lines else None
+    # Join description as a single paragraph
+    description = " ".join(description_lines) if description_lines else None
+    # Keep contact lines separated
+    contact = "\n".join(contact_lines) if contact_lines else None
     return description, contact
 
 
