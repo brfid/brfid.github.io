@@ -141,7 +141,11 @@
         {% endif %}
 
         <footer>
-          <span>Built from source.</span>
+          {% if vax_log_path %}
+            <a href="{{ vax_log_path }}">Built from source.</a>
+          {% else %}
+            <span>Built from source.</span>
+          {% endif %}
         </footer>
       </section>
     </main>
