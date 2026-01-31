@@ -143,11 +143,12 @@ class VaxStageRunner:
         raise ValueError(f"Unsupported mode: {self._config.mode!r}")
 
     def _emit_resume_vax_yaml(self, *, build_date: date, log: VaxBuildLog) -> Resume:
-        log.add(f"emit resume.vax.yaml from {self._config.resume_path}")
+        log.add(f"[1/5] Generate resume.vax.yaml from {self._config.resume_path}")
         resume = load_resume(self._config.resume_path)
         built = build_vax_resume_v1(resume, build_date=build_date)
         text = emit_vax_yaml(built)
         self._paths.resume_vax_yaml_path.write_text(text, encoding="utf-8")
+        log.add(f"      Written: {self._paths.resume_vax_yaml_path}")
         return resume
 
     def _compile_bradman(self, *, log: VaxBuildLog) -> None:
@@ -159,16 +160,19 @@ class VaxStageRunner:
         if not compiler:
             raise RuntimeError("No C compiler found (expected one of: cc, clang, gcc)")
 
-        log.add(f"compile bradman.c with {Path(compiler).name}")
+        log.add("[2/5] Compile vax/bradman.c (man page generator)")
+        log.add(f"      Compiler: {Path(compiler).name}")
         subprocess.run(  # noqa: S603
             [compiler, "-O", "-o", str(self._paths.bradman_exe_path), str(bradman_c)],
             check=True,
             capture_output=True,
             text=True,
         )
+        log.add(f"      Binary: {self._paths.bradman_exe_path}")
 
     def _run_bradman(self, *, log: VaxBuildLog) -> None:
-        log.add("run bradman to generate brad.1")
+        log.add("[3/5] Generate brad.1 roff man page")
+        log.add(f"      Input: {self._paths.resume_vax_yaml_path.name}")
         subprocess.run(  # noqa: S603
             [
                 str(self._paths.bradman_exe_path),
@@ -181,52 +185,70 @@ class VaxStageRunner:
             capture_output=True,
             text=True,
         )
+        log.add(f"      Output: {self._paths.brad_1_path}")
 
     def _render_brad_man_txt(self, *, log: VaxBuildLog) -> None:
-        log.add("render brad.man.txt from brad.1 (host-side)")
+        log.add("[4/5] Render brad.man.txt (excerpt for landing page)")
+        log.add("      Parser: Python roff subset (host-side)")
         roff = self._paths.brad_1_path.read_text(encoding="utf-8")
         summary = parse_brad_roff_summary(roff)
         rendered = render_brad_man_txt(summary)
         self._paths.brad_man_txt_path.write_text(rendered, encoding="utf-8")
+        log.add(f"      Output: {self._paths.brad_man_txt_path}")
 
     def _write_build_log(self, log: VaxBuildLog) -> None:
         self._paths.vax_build_log_path.write_text(log.render(), encoding="utf-8")
 
     def _run_local(self) -> None:
         log = VaxBuildLog()
-        log.add("vax stage mode=local (host compilation)")
+        log.add("VAX Resume Build Pipeline")
+        log.add("GitHub: https://github.com/brfid/brfid.github.io")
+        log.add("")
+        log.add("Stage: VAX artifact generation (local mode)")
+        log.add("Platform: Host compilation (native C compiler)")
+        log.add("")
         resume = self._emit_resume_vax_yaml(build_date=date.today(), log=log)
         self._compile_bradman(log=log)
         self._run_bradman(log=log)
         self._render_brad_man_txt(log=log)
-        log.add("render landing page (index.html)")
+        log.add("[5/5] Render landing page")
         build_landing_page(
             resume=resume,
             out_dir=self._paths.site_dir,
             templates_dir=self._paths.repo_root / "templates",
         )
-        log.add("done")
+        log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
+        log.add("")
+        log.add("Build complete - all artifacts generated")
         self._write_build_log(log)
 
     def _run_docker(self) -> None:
         log = VaxBuildLog()
-        log.add("vax stage mode=docker")
+        log.add("VAX Resume Build Pipeline")
+        log.add("GitHub: https://github.com/brfid/brfid.github.io")
+        log.add("")
+        log.add("Stage: VAX artifact generation (docker mode)")
+        log.add("Platform: SIMH VAX/BSD emulation")
+        log.add("")
 
         resume = self._emit_resume_vax_yaml(build_date=date.today(), log=log)
 
         if self._config.transcript_path:
-            log.add(f"replay transcript: {self._config.transcript_path}")
+            log.add(f"[2/5] Replay mode: {self._config.transcript_path}")
             transcript = self._config.transcript_path.read_text(encoding="utf-8")
             brad_1_bytes = self._decode_brad_1_from_transcript(transcript)
             self._paths.brad_1_path.write_bytes(brad_1_bytes)
+            log.add(f"      Decoded: {self._paths.brad_1_path}")
             self._render_brad_man_txt(log=log)
-            log.add("render landing page (index.html)")
+            log.add("[5/5] Render landing page")
             build_landing_page(
                 resume=resume,
                 out_dir=self._paths.site_dir,
                 templates_dir=self._paths.repo_root / "templates",
             )
-            log.add("done")
+            log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
+            log.add("")
+            log.add("Build complete - all artifacts generated")
             self._write_build_log(log)
             return
 
@@ -246,7 +268,6 @@ class VaxStageRunner:
         if not docker_bin:
             raise RuntimeError("Docker is not available; install Docker or use --transcript")
 
-        log.add(f"docker image: {self._config.docker_image}")
         simh_dir_name = "simh-tape"
         simh_dir = (self._paths.vax_build_dir / simh_dir_name).resolve()
         simh_dir.mkdir(parents=True, exist_ok=True)
@@ -267,10 +288,14 @@ class VaxStageRunner:
             self._prepare_guest_session(session)
             self._write_diagnostics(session)
             if self._config.docker_quick:
-                log.add("docker quick mode: skipping transfer/compile")
+                log.add("      Quick mode: skipping transfer/compile")
                 transcript = ""
             else:
+                log.add("[3/5] Transfer sources to VAX via tape")
+                log.add("      Files: bradman.c, resume.vax.yaml")
                 self._transfer_guest_inputs_tape(session)
+                log.add("[4/5] Compile and run bradman on VAX")
+                log.add("      Compiler: cc (VAX BSD)")
                 transcript = self._compile_and_capture(session)
         finally:
             self._stop_docker_container(context)
@@ -281,14 +306,17 @@ class VaxStageRunner:
 
         brad_1_bytes = self._decode_brad_1_from_transcript(transcript)
         self._paths.brad_1_path.write_bytes(brad_1_bytes)
+        log.add(f"      Decoded: {self._paths.brad_1_path}")
         self._render_brad_man_txt(log=log)
-        log.add("render landing page (index.html)")
+        log.add("[5/5] Render landing page")
         build_landing_page(
             resume=resume,
             out_dir=self._paths.site_dir,
             templates_dir=self._paths.repo_root / "templates",
         )
-        log.add("done")
+        log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
+        log.add("")
+        log.add("Build complete - all artifacts generated")
         self._write_build_log(log)
 
     def _start_docker_container(
@@ -301,7 +329,10 @@ class VaxStageRunner:
         container_name = f"vaxbsd-{uuid.uuid4().hex[:8]}"
         host_port = _find_free_port()
 
-        log.add("docker run simh container")
+        log.add("[2/5] Start SIMH VAX/BSD container")
+        log.add(f"      Image: {self._config.docker_image.split('@')[0]}")
+        log.add(f"      Container: {container_name}")
+        log.add(f"      Port: {host_port}")
         subprocess.run(  # noqa: S603
             [
                 docker_bin,
