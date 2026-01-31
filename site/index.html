@@ -98,14 +98,15 @@
         text-transform: uppercase;
       }
       .section-content {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: var(--text);
+      }
+      .section-content.mono {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
           "Courier New", monospace;
         font-size: 0.9rem;
         line-height: 1.5;
-        color: var(--text);
-      }
-      .section-content.multiline {
-        white-space: pre-wrap;
       }
       footer {
         margin-top: 1.25rem;
@@ -121,6 +122,7 @@
           <h1>Bradley Fidler</h1>
 <p class="subtitle">Senior Technical Writer</p>          <ul class="nav" role="list" aria-label="Links">
               <li><a class="pill" href="https://www.linkedin.com/in/brfid/" rel="me noopener noreferrer">LinkedIn</a></li>
+              <li><a class="pill" href="https://github.com/brfid" rel="me noopener noreferrer">GitHub</a></li>
             <li><a class="pill" href="/resume/">Resume (HTML)</a></li>
             <li><a class="pill" href="/resume.pdf">Resume (PDF)</a></li>
           </ul>
@@ -133,9 +135,7 @@
 
           <div class="section">
             <h2>Contact</h2>
-            <div class="section-content multiline">Email: brfid@icloud.com
-Web: https://brfid.github.io
-LinkedIn: https://www.linkedin.com/in/brfid/</div>
+            <div class="section-content mono">brfid@icloud.com</div>
           </div>
 
         <footer>

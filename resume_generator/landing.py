@@ -18,10 +18,11 @@ class LandingContext:  # pylint: disable=too-many-instance-attributes
     name: str
     label: str | None
     linkedin_url: str | None
+    github_url: str | None
     resume_html_path: str
     resume_pdf_path: str
     man_description: str | None
-    man_contact: str | None
+    man_email: str | None
     vax_log_excerpt: str | None
     vax_log_path: str | None
 
@@ -55,12 +56,12 @@ def _parse_man_sections(man_text: str) -> tuple[str | None, str | None]:
         man_text: The raw brad.man.txt content.
 
     Returns:
-        Tuple of (description, contact) text. Each is None if not found.
+        Tuple of (description, email) text. Each is None if not found.
     """
     lines = man_text.splitlines()
     current_section: str | None = None
     description_lines: list[str] = []
-    contact_lines: list[str] = []
+    email: str | None = None
 
     for line in lines:
         stripped = line.strip()
@@ -72,15 +73,13 @@ def _parse_man_sections(man_text: str) -> tuple[str | None, str | None]:
             if current_section == "DESCRIPTION":
                 # Strip leading whitespace and join as continuous text
                 description_lines.append(stripped)
-            elif current_section == "CONTACT":
-                # Keep contact lines separate but strip indentation
-                contact_lines.append(stripped)
+            elif current_section == "CONTACT" and stripped.startswith("Email:"):
+                # Extract only email from contact section
+                email = stripped.replace("Email:", "").strip()
 
     # Join description as a single paragraph
     description = " ".join(description_lines) if description_lines else None
-    # Keep contact lines separated
-    contact = "\n".join(contact_lines) if contact_lines else None
-    return description, contact
+    return description, email
 
 
 def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
@@ -99,7 +98,7 @@ def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
     label = label_raw or None
 
     man_text = _read_optional_text(out_dir / "brad.man.txt")
-    man_description, man_contact = _parse_man_sections(man_text) if man_text else (None, None)
+    man_description, man_email = _parse_man_sections(man_text) if man_text else (None, None)
 
     vax_log = _read_optional_text(out_dir / "vax-build.log")
     vax_log_excerpt = _excerpt_lines(vax_log) if vax_log else None
@@ -109,10 +108,11 @@ def _build_context(*, resume: Resume, out_dir: Path) -> LandingContext:
         name=name,
         label=label,
         linkedin_url=get_profile_url(basics, "LinkedIn"),
+        github_url=get_profile_url(basics, "GitHub"),
         resume_html_path="/resume/",
         resume_pdf_path="/resume.pdf",
         man_description=man_description,
-        man_contact=man_contact,
+        man_email=man_email,
         vax_log_excerpt=vax_log_excerpt,
         vax_log_path=vax_log_path,
     )
