@@ -98,14 +98,15 @@
         text-transform: uppercase;
       }
       .section-content {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: var(--text);
+      }
+      .section-content.mono {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
           "Courier New", monospace;
         font-size: 0.9rem;
         line-height: 1.5;
-        color: var(--text);
-      }
-      .section-content.multiline {
-        white-space: pre-wrap;
       }
       footer {
         margin-top: 1.25rem;
@@ -124,6 +125,9 @@
             {% if linkedin_url %}
               <li><a class="pill" href="{{ linkedin_url }}" rel="me noopener noreferrer">LinkedIn</a></li>
             {% endif %}
+            {% if github_url %}
+              <li><a class="pill" href="{{ github_url }}" rel="me noopener noreferrer">GitHub</a></li>
+            {% endif %}
             <li><a class="pill" href="{{ resume_html_path }}">Resume (HTML)</a></li>
             <li><a class="pill" href="{{ resume_pdf_path }}">Resume (PDF)</a></li>
           </ul>
@@ -136,10 +140,10 @@
           </div>
         {% endif %}
 
-        {% if man_contact %}
+        {% if man_email %}
           <div class="section">
             <h2>Contact</h2>
-            <div class="section-content multiline">{{ man_contact }}</div>
+            <div class="section-content mono">{{ man_email }}</div>
           </div>
         {% endif %}
 
