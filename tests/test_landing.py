@@ -25,13 +25,16 @@ def test_build_landing_page_omits_optional_sections(tmp_path: Path) -> None:
     assert "<h2>build</h2>" not in html
 
 
-def test_build_landing_page_includes_man_and_build_log(tmp_path: Path) -> None:
+def test_build_landing_page_includes_man_sections(tmp_path: Path) -> None:
     templates_dir = Path("templates")
     resume = {
         "basics": {
             "name": "Test User",
             "label": "Engineer",
-            "profiles": [{"network": "LinkedIn", "url": "https://linkedin.com/in/test"}],
+            "profiles": [
+                {"network": "LinkedIn", "url": "https://linkedin.com/in/test"},
+                {"network": "GitHub", "url": "https://github.com/test"},
+            ],
         }
     }
     out_dir = tmp_path / "site"
@@ -56,3 +59,4 @@ def test_build_landing_page_includes_man_and_build_log(tmp_path: Path) -> None:
     assert "line 0" not in html  # build log content not shown inline
     assert 'href="/vax-build.log"' in html  # link to full log is present
     assert "linkedin.com/in/test" in html
+    assert "github.com/test" in html
