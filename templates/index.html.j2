@@ -62,6 +62,13 @@
         color: var(--muted);
         font-size: 0.98rem;
       }
+      .contact-email {
+        margin: 0.5rem 0 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
       nav {
         display: flex;
         flex-wrap: wrap;
@@ -118,33 +125,35 @@
   <body>
     <main class="wrap">
       <section class="card">
-        <header>
-          <h1>{{ name }}</h1>
-          {% if label %}<p class="subtitle">{{ label }}</p>{% endif %}
-          <ul class="nav" role="list" aria-label="Links">
-            {% if linkedin_url %}
-              <li><a class="pill" href="{{ linkedin_url }}" rel="me noopener noreferrer">LinkedIn</a></li>
-            {% endif %}
-            {% if github_url %}
-              <li><a class="pill" href="{{ github_url }}" rel="me noopener noreferrer">GitHub</a></li>
-            {% endif %}
-            <li><a class="pill" href="{{ resume_html_path }}">Resume (HTML)</a></li>
-            <li><a class="pill" href="{{ resume_pdf_path }}">Resume (PDF)</a></li>
-          </ul>
-        </header>
+        {% if contact_fragment %}
+          {{ contact_fragment }}
+          <script>
+            // Add resume links to VAX-generated nav
+            (function() {
+              var nav = document.querySelector('header nav');
+              if (nav) {
+                var resumeHtml = document.createElement('a');
+                resumeHtml.className = 'pill';
+                resumeHtml.href = '{{ resume_html_path }}';
+                resumeHtml.textContent = 'Resume (HTML)';
+                nav.appendChild(resumeHtml);
 
-        {% if man_description %}
-          <div class="section">
-            <h2>About</h2>
-            <div class="section-content">{{ man_description }}</div>
-          </div>
-        {% endif %}
-
-        {% if man_email %}
-          <div class="section">
-            <h2>Contact</h2>
-            <div class="section-content mono">{{ man_email }}</div>
-          </div>
+                var resumePdf = document.createElement('a');
+                resumePdf.className = 'pill';
+                resumePdf.href = '{{ resume_pdf_path }}';
+                resumePdf.textContent = 'Resume (PDF)';
+                nav.appendChild(resumePdf);
+              }
+            })();
+          </script>
+        {% else %}
+          <header>
+            <h1>{{ name }}</h1>
+            <nav>
+              <a class="pill" href="{{ resume_html_path }}">Resume (HTML)</a>
+              <a class="pill" href="{{ resume_pdf_path }}">Resume (PDF)</a>
+            </nav>
+          </header>
         {% endif %}
 
         <footer>
