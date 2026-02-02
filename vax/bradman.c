@@ -80,6 +80,14 @@ typedef struct {
   BRADMAN_SIZE_T skills_cap;
 } Resume;
 
+typedef struct {
+  char *name;
+  char *label;
+  char *email;
+  char *github;
+  char *linkedin;
+} ContactInfo;
+
 #ifdef BRADMAN_HAVE_STDARG
 static void die(const char *fmt, ...) {
   va_list ap;
@@ -506,6 +514,211 @@ static void parse_resume_vax_yaml(in, r)
   }
 }
 
+static char *html_escape(s)
+    const char *s;
+{
+  BRADMAN_SIZE_T cap;
+  BRADMAN_SIZE_T len;
+  char *out;
+  unsigned char c;
+  cap = strlen(s) * 6 + 16;
+  len = 0;
+  out = (char *)malloc(cap);
+  if (!out) die("out of memory");
+
+  for (; *s; s++) {
+    c = (unsigned char)*s;
+    if (c == '<') {
+      if (len + 5 > cap) {
+        cap *= 2;
+        out = (char *)xrealloc(out, cap);
+      }
+      out[len++] = '&';
+      out[len++] = 'l';
+      out[len++] = 't';
+      out[len++] = ';';
+    } else if (c == '>') {
+      if (len + 5 > cap) {
+        cap *= 2;
+        out = (char *)xrealloc(out, cap);
+      }
+      out[len++] = '&';
+      out[len++] = 'g';
+      out[len++] = 't';
+      out[len++] = ';';
+    } else if (c == '&') {
+      if (len + 6 > cap) {
+        cap *= 2;
+        out = (char *)xrealloc(out, cap);
+      }
+      out[len++] = '&';
+      out[len++] = 'a';
+      out[len++] = 'm';
+      out[len++] = 'p';
+      out[len++] = ';';
+    } else if (c == '"') {
+      if (len + 7 > cap) {
+        cap *= 2;
+        out = (char *)xrealloc(out, cap);
+      }
+      out[len++] = '&';
+      out[len++] = 'q';
+      out[len++] = 'u';
+      out[len++] = 'o';
+      out[len++] = 't';
+      out[len++] = ';';
+    } else {
+      if (len + 2 > cap) {
+        cap *= 2;
+        out = (char *)xrealloc(out, cap);
+      }
+      out[len++] = (char)c;
+    }
+  }
+  out[len] = '\0';
+  return out;
+}
+
+static void parse_contact_json(in, contact)
+    FILE *in;
+    ContactInfo *contact;
+{
+  char buf[4096];
+  char *line;
+  const char *key_start;
+  const char *colon;
+  const char *val_start;
+  const char *val_end;
+  BRADMAN_SIZE_T key_len;
+  char *key;
+  char *val;
+
+  /* Simple JSON parser for the contact.json format:
+   * { "name": "...", "label": "...", "email": "...", "github": "...", "linkedin": "..." }
+   * We expect one key-value pair per line with proper JSON string quoting. */
+
+  while (fgets(buf, (int)sizeof(buf), in)) {
+    rstrip(buf);
+    line = buf;
+    line = (char *)skip_ws(line);
+    if (*line == '{' || *line == '}' || *line == '\0') continue;
+
+    /* Find the key (expect: "key": "value"  or  "key": "value",) */
+    if (*line != '"') continue;
+    key_start = line + 1;
+    line++;
+    while (*line && *line != '"') line++;
+    if (*line != '"') die("malformed JSON: unterminated key string");
+    key_len = (BRADMAN_SIZE_T)(line - key_start);
+    key = (char *)malloc(key_len + 1);
+    if (!key) die("out of memory");
+    memcpy(key, key_start, key_len);
+    key[key_len] = '\0';
+    line++;
+
+    colon = strchr(line, ':');
+    if (!colon) {
+      free(key);
+      continue;
+    }
+    line = (char *)skip_ws(colon + 1);
+    if (*line != '"') {
+      free(key);
+      continue;
+    }
+
+    val_start = line + 1;
+    line++;
+    while (*line && *line != '"') {
+      if (*line == '\\') {
+        line++;
+        if (*line) line++;
+      } else {
+        line++;
+      }
+    }
+    if (*line != '"') die("malformed JSON: unterminated value string");
+    val_end = line;
+
+    /* Extract value (simple copy, no escape processing for now) */
+    val = (char *)malloc((BRADMAN_SIZE_T)(val_end - val_start) + 1);
+    if (!val) die("out of memory");
+    memcpy(val, val_start, (BRADMAN_SIZE_T)(val_end - val_start));
+    val[(BRADMAN_SIZE_T)(val_end - val_start)] = '\0';
+
+    if (strcmp(key, "name") == 0) {
+      set_field(&contact->name, val);
+    } else if (strcmp(key, "label") == 0) {
+      set_field(&contact->label, val);
+    } else if (strcmp(key, "email") == 0) {
+      set_field(&contact->email, val);
+    } else if (strcmp(key, "github") == 0) {
+      set_field(&contact->github, val);
+    } else if (strcmp(key, "linkedin") == 0) {
+      set_field(&contact->linkedin, val);
+    } else {
+      free(val);
+    }
+    free(key);
+  }
+}
+
+static void emit_html_fragment(out, contact)
+    FILE *out;
+    const ContactInfo *contact;
+{
+  char *name_esc;
+  char *label_esc;
+  char *email_esc;
+  char *github_esc;
+  char *linkedin_esc;
+
+  /* Generate semantic HTML fragment for the contact section */
+  fputs("<header>\n", out);
+
+  if (contact->name && contact->name[0]) {
+    name_esc = html_escape(contact->name);
+    fprintf(out, "  <h1>%s</h1>\n", name_esc);
+    free(name_esc);
+  }
+
+  if (contact->label && contact->label[0]) {
+    label_esc = html_escape(contact->label);
+    fprintf(out, "  <p class=\"subtitle\">%s</p>\n", label_esc);
+    free(label_esc);
+  }
+
+  if (contact->email && contact->email[0]) {
+    email_esc = html_escape(contact->email);
+    fprintf(out, "  <p class=\"contact-email\">%s</p>\n", email_esc);
+    free(email_esc);
+  }
+
+  fputs("  <nav>\n", out);
+  if (contact->linkedin && contact->linkedin[0]) {
+    linkedin_esc = html_escape(contact->linkedin);
+    fprintf(out, "    <a class=\"pill\" href=\"%s\" rel=\"me noopener noreferrer\">LinkedIn</a>\n", linkedin_esc);
+    free(linkedin_esc);
+  }
+  if (contact->github && contact->github[0]) {
+    github_esc = html_escape(contact->github);
+    fprintf(out, "    <a class=\"pill\" href=\"%s\" rel=\"me noopener noreferrer\">GitHub</a>\n", github_esc);
+    free(github_esc);
+  }
+  fputs("  </nav>\n", out);
+  fputs("</header>\n", out);
+}
+
+static void free_contact(c)
+    ContactInfo *c;
+{
+  free(c->name);
+  free(c->label);
+  free(c->email);
+  free(c->github);
+  free(c->linkedin);
+}
+
 static char *roff_escape_line(s, for_name_synopsis)
     const char *s;
     int for_name_synopsis;
@@ -701,7 +914,9 @@ static void free_resume(r)
 static void usage(argv0)
     const char *argv0;
 {
-  fprintf(stderr, "usage: %s -i resume.vax.yaml [-o brad.1]\n", argv0);
+  fprintf(stderr, "usage: %s -i INPUT [-o OUTPUT] [-mode roff|html]\n", argv0);
+  fprintf(stderr, "  roff mode (default): -i resume.vax.yaml -o brad.1\n");
+  fprintf(stderr, "  html mode: -i contact.json -o contact.html\n");
   exit(2);
 }
 
@@ -712,12 +927,15 @@ int main(argc, argv)
   int i;
   const char *in_path;
   const char *out_path;
+  const char *mode;
   FILE *in;
   FILE *out;
   Resume r;
+  ContactInfo c;
 
   in_path = NULL;
   out_path = NULL;
+  mode = "roff";
 
   for (i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-i") == 0) {
@@ -726,12 +944,19 @@ int main(argc, argv)
     } else if (strcmp(argv[i], "-o") == 0) {
       if (++i >= argc) usage(argv[0]);
       out_path = argv[i];
+    } else if (strcmp(argv[i], "-mode") == 0) {
+      if (++i >= argc) usage(argv[0]);
+      mode = argv[i];
     } else {
       usage(argv[0]);
     }
   }
 
   if (!in_path) usage(argv[0]);
+
+  if (strcmp(mode, "roff") != 0 && strcmp(mode, "html") != 0) {
+    die("invalid mode: %s (expected 'roff' or 'html')", mode);
+  }
 
   in = fopen(in_path, "r");
   if (!in) die("open %s: %s", in_path, strerror(errno));
@@ -742,18 +967,25 @@ int main(argc, argv)
     if (!out) die("open %s: %s", out_path, strerror(errno));
   }
 
-  memset(&r, 0, sizeof(r));
-  parse_resume_vax_yaml(in, &r);
-  fclose(in);
-
-  if (!r.schemaVersion || strcmp(r.schemaVersion, "v1") != 0) {
-    die("unsupported or missing schemaVersion (expected \"v1\")");
+  if (strcmp(mode, "html") == 0) {
+    memset(&c, 0, sizeof(c));
+    parse_contact_json(in, &c);
+    fclose(in);
+    emit_html_fragment(out, &c);
+    if (out != stdout) fclose(out);
+    free_contact(&c);
+  } else {
+    memset(&r, 0, sizeof(r));
+    parse_resume_vax_yaml(in, &r);
+    fclose(in);
+    if (!r.schemaVersion || strcmp(r.schemaVersion, "v1") != 0) {
+      die("unsupported or missing schemaVersion (expected \"v1\")");
+    }
+    if (!r.label) die("missing required field: label");
+    emit_roff(out, &r);
+    if (out != stdout) fclose(out);
+    free_resume(&r);
   }
-  if (!r.label) die("missing required field: label");
 
-  emit_roff(out, &r);
-
-  if (out != stdout) fclose(out);
-  free_resume(&r);
   return 0;
 }

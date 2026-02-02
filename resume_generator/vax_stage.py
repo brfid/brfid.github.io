@@ -25,6 +25,7 @@ from datetime import date
 from io import BytesIO
 from pathlib import Path
 
+from .contact_json import generate_contact_json
 from .landing import build_landing_page
 from .manpage import parse_brad_roff_summary, render_brad_man_txt
 from .render import load_resume
@@ -69,6 +70,14 @@ class VaxStagePaths:
     @property
     def vax_build_log_path(self) -> Path:
         return self.site_dir / "vax-build.log"
+
+    @property
+    def contact_json_path(self) -> Path:
+        return self.vax_build_dir / "contact.json"
+
+    @property
+    def contact_html_path(self) -> Path:
+        return self.site_dir / "contact.html"
 
 
 class VaxBuildLog:
@@ -143,7 +152,7 @@ class VaxStageRunner:
         raise ValueError(f"Unsupported mode: {self._config.mode!r}")
 
     def _emit_resume_vax_yaml(self, *, build_date: date, log: VaxBuildLog) -> Resume:
-        log.add(f"[1/5] Generate resume.vax.yaml from {self._config.resume_path}")
+        log.add(f"[1/7] Generate resume.vax.yaml from {self._config.resume_path}")
         resume = load_resume(self._config.resume_path)
         built = build_vax_resume_v1(resume, build_date=build_date)
         text = emit_vax_yaml(built)
@@ -160,7 +169,7 @@ class VaxStageRunner:
         if not compiler:
             raise RuntimeError("No C compiler found (expected one of: cc, clang, gcc)")
 
-        log.add("[2/5] Compile vax/bradman.c (man page generator)")
+        log.add("[2/7] Compile vax/bradman.c (HTML and man page generator)")
         log.add(f"      Compiler: {Path(compiler).name}")
         subprocess.run(  # noqa: S603
             [compiler, "-O", "-o", str(self._paths.bradman_exe_path), str(bradman_c)],
@@ -171,7 +180,7 @@ class VaxStageRunner:
         log.add(f"      Binary: {self._paths.bradman_exe_path}")
 
     def _run_bradman(self, *, log: VaxBuildLog) -> None:
-        log.add("[3/5] Generate brad.1 roff man page")
+        log.add("[3/7] Generate brad.1 roff man page")
         log.add(f"      Input: {self._paths.resume_vax_yaml_path.name}")
         subprocess.run(  # noqa: S603
             [
@@ -187,8 +196,32 @@ class VaxStageRunner:
         )
         log.add(f"      Output: {self._paths.brad_1_path}")
 
+    def _generate_contact_json(self, *, resume: Resume, log: VaxBuildLog) -> None:
+        log.add("[4/7] Generate contact.json (simplified for VAX HTML rendering)")
+        generate_contact_json(resume=resume, out_path=self._paths.contact_json_path)
+        log.add(f"      Output: {self._paths.contact_json_path}")
+
+    def _run_bradman_html(self, *, log: VaxBuildLog) -> None:
+        log.add("[5/7] Generate contact.html (VAX-rendered HTML fragment)")
+        log.add(f"      Input: {self._paths.contact_json_path.name}")
+        subprocess.run(  # noqa: S603
+            [
+                str(self._paths.bradman_exe_path),
+                "-i",
+                str(self._paths.contact_json_path),
+                "-mode",
+                "html",
+                "-o",
+                str(self._paths.contact_html_path),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        log.add(f"      Output: {self._paths.contact_html_path}")
+
     def _render_brad_man_txt(self, *, log: VaxBuildLog) -> None:
-        log.add("[4/5] Render brad.man.txt (excerpt for landing page)")
+        log.add("[6/7] Render brad.man.txt (man page text for reference)")
         log.add("      Parser: Python roff subset (host-side)")
         roff = self._paths.brad_1_path.read_text(encoding="utf-8")
         summary = parse_brad_roff_summary(roff)
@@ -210,8 +243,10 @@ class VaxStageRunner:
         resume = self._emit_resume_vax_yaml(build_date=date.today(), log=log)
         self._compile_bradman(log=log)
         self._run_bradman(log=log)
+        self._generate_contact_json(resume=resume, log=log)
+        self._run_bradman_html(log=log)
         self._render_brad_man_txt(log=log)
-        log.add("[5/5] Render landing page")
+        log.add("[7/7] Render landing page")
         build_landing_page(
             resume=resume,
             out_dir=self._paths.site_dir,
@@ -234,13 +269,20 @@ class VaxStageRunner:
         resume = self._emit_resume_vax_yaml(build_date=date.today(), log=log)
 
         if self._config.transcript_path:
-            log.add(f"[2/5] Replay mode: {self._config.transcript_path}")
+            log.add(f"[2/7] Replay mode: {self._config.transcript_path}")
             transcript = self._config.transcript_path.read_text(encoding="utf-8")
             brad_1_bytes = self._decode_brad_1_from_transcript(transcript)
             self._paths.brad_1_path.write_bytes(brad_1_bytes)
             log.add(f"      Decoded: {self._paths.brad_1_path}")
+
+            # Generate HTML fragment using host-compiled bradman
+            log.add("[3/7] Compile bradman (host-side for HTML generation)")
+            self._compile_bradman(log=log)
+            self._generate_contact_json(resume=resume, log=log)
+            self._run_bradman_html(log=log)
             self._render_brad_man_txt(log=log)
-            log.add("[5/5] Render landing page")
+
+            log.add("[7/7] Render landing page")
             build_landing_page(
                 resume=resume,
                 out_dir=self._paths.site_dir,
@@ -291,10 +333,10 @@ class VaxStageRunner:
                 log.add("      Quick mode: skipping transfer/compile")
                 transcript = ""
             else:
-                log.add("[3/5] Transfer sources to VAX via tape")
+                log.add("[3/7] Transfer sources to VAX via tape")
                 log.add("      Files: bradman.c, resume.vax.yaml")
                 self._transfer_guest_inputs_tape(session)
-                log.add("[4/5] Compile and run bradman on VAX")
+                log.add("[4/7] Compile and run bradman on VAX")
                 log.add("      Compiler: cc (VAX BSD)")
                 transcript = self._compile_and_capture(session)
         finally:
@@ -307,8 +349,15 @@ class VaxStageRunner:
         brad_1_bytes = self._decode_brad_1_from_transcript(transcript)
         self._paths.brad_1_path.write_bytes(brad_1_bytes)
         log.add(f"      Decoded: {self._paths.brad_1_path}")
+
+        # Generate HTML fragment using host-compiled bradman
+        log.add("[5/7] Compile bradman (host-side for HTML generation)")
+        self._compile_bradman(log=log)
+        self._generate_contact_json(resume=resume, log=log)
+        self._run_bradman_html(log=log)
         self._render_brad_man_txt(log=log)
-        log.add("[5/5] Render landing page")
+
+        log.add("[7/7] Render landing page")
         build_landing_page(
             resume=resume,
             out_dir=self._paths.site_dir,
