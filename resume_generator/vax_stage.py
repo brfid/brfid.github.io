@@ -247,15 +247,15 @@ class VaxStageRunner:
         self._run_bradman_html(log=log)
         self._render_brad_man_txt(log=log)
         log.add("[7/7] Render landing page")
+        log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
+        log.add("")
+        log.add("Build complete - all artifacts generated")
+        self._write_build_log(log)
         build_landing_page(
             resume=resume,
             out_dir=self._paths.site_dir,
             templates_dir=self._paths.repo_root / "templates",
         )
-        log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
-        log.add("")
-        log.add("Build complete - all artifacts generated")
-        self._write_build_log(log)
 
     def _run_docker(self) -> None:
         log = VaxBuildLog()
@@ -283,15 +283,15 @@ class VaxStageRunner:
             self._render_brad_man_txt(log=log)
 
             log.add("[7/7] Render landing page")
+            log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
+            log.add("")
+            log.add("Build complete - all artifacts generated")
+            self._write_build_log(log)
             build_landing_page(
                 resume=resume,
                 out_dir=self._paths.site_dir,
                 templates_dir=self._paths.repo_root / "templates",
             )
-            log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
-            log.add("")
-            log.add("Build complete - all artifacts generated")
-            self._write_build_log(log)
             return
 
         self._run_docker_live(resume=resume, log=log)
@@ -358,15 +358,15 @@ class VaxStageRunner:
         self._render_brad_man_txt(log=log)
 
         log.add("[7/7] Render landing page")
+        log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
+        log.add("")
+        log.add("Build complete - all artifacts generated")
+        self._write_build_log(log)
         build_landing_page(
             resume=resume,
             out_dir=self._paths.site_dir,
             templates_dir=self._paths.repo_root / "templates",
         )
-        log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
-        log.add("")
-        log.add("Build complete - all artifacts generated")
-        self._write_build_log(log)
 
     def _start_docker_container(
         self,

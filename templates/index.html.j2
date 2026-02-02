@@ -117,8 +117,14 @@
       }
       footer {
         margin-top: 1.25rem;
+        color: rgba(168, 179, 207, 0.4);
+        font-size: 0.8rem;
+      }
+      footer a {
+        color: rgba(168, 179, 207, 0.5);
+      }
+      footer a:hover {
         color: var(--muted);
-        font-size: 0.9rem;
       }
     </style>
   </head>
@@ -158,9 +164,7 @@
 
         <footer>
           {% if vax_log_path %}
-            <a href="{{ vax_log_path }}">Built from source.</a>
-          {% else %}
-            <span>Built from source.</span>
+            <a href="{{ vax_log_path }}">source</a>
           {% endif %}
         </footer>
       </section>
