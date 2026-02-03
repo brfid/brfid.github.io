@@ -91,8 +91,9 @@ def normalize_resume(resume: Resume) -> ResumeView:
     profiles = [p for p in profiles if isinstance(p, dict)]
 
     def _date_key(item: dict[str, Any]) -> tuple[str, str]:
-        # Sort descending by endDate then startDate; missing dates sort last.
-        end = item.get("endDate") or ""
+        # Sort descending by endDate then startDate.
+        # Missing endDate (current job) sorts as far future so it appears first.
+        end = item.get("endDate") or "9999-12-31"
         start = item.get("startDate") or ""
         return (end, start)
 
