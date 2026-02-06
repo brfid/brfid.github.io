@@ -2,7 +2,7 @@
 
 **Last Updated**: 2026-02-06
 **Branch**: `claude/arpanet-build-integration-uU9ZL`
-**Status**: Phase 1 implementation complete, debugging in progress
+**Status**: Phase 1 complete with testing infrastructure, ready for debugging
 
 ---
 
@@ -42,6 +42,15 @@ Add ARPANET network simulation to the build pipeline as a "quiet technical signa
    - Configured to use `$GITHUB_KEY` environment variable
    - Can check workflow runs, download artifacts, view logs
 
+5. **Testing Infrastructure**
+   - Created `test_infra/` directory structure
+   - Python test utilities (PEP 8, Google docstrings, Ken Thompson naming)
+   - Docker integration tests (`test_arpanet.py`)
+   - Local environment setup scripts
+   - Shared libraries: `docker_utils.py`, `network_utils.py`, `log_parser.py`
+   - Project Makefile for convenient commands
+   - Comprehensive documentation in each directory
+
 ### Current Issues ❌
 
 1. **IMP Container Build Failures**
@@ -80,6 +89,7 @@ Add ARPANET network simulation to the build pipeline as a "quiet technical signa
 ### Key Files
 ```
 docker-compose.arpanet.phase1.yml  # Orchestration
+Makefile                           # Convenient make commands
 arpanet/
 ├── Dockerfile.imp                 # Multi-stage: build h316 from source
 ├── configs/
@@ -90,6 +100,18 @@ arpanet/
 ├── h316ov                        # Pre-built binary (unused now)
 └── scripts/
     └── test-vax-imp.sh           # Connectivity test script
+test_infra/
+├── local/                        # Raspberry Pi / dev machine testing
+│   ├── README.md
+│   └── setup.sh                  # Environment setup script
+├── docker/                       # Docker integration tests
+│   ├── README.md
+│   └── test_arpanet.py          # Python test runner
+├── fixtures/                     # Test data (future)
+└── lib/                         # Shared Python utilities
+    ├── docker_utils.py          # Docker operations
+    ├── network_utils.py         # Network testing
+    └── log_parser.py            # SIMH log parsing
 ```
 
 ---
@@ -194,23 +216,38 @@ export GH_TOKEN="$GITHUB_KEY"
 ~/bin/gh run download <run_id> --repo brfid/brfid.github.io
 ```
 
-### Local Testing
+### Testing (Using Makefile)
 ```bash
+# Run all tests
+make test
+
+# Check environment
+make check_env
+
 # Build containers
+make build
+
+# Start network (with 70s wait)
+make up
+
+# View logs
+make logs
+
+# Stop and cleanup
+make clean
+```
+
+### Testing (Direct Commands)
+```bash
+# Run Python tests
+./test_infra/docker/test_arpanet.py
+
+# Setup local environment
+./test_infra/local/setup.sh
+
+# Manual Docker commands
 docker compose -f docker-compose.arpanet.phase1.yml build
-
-# Start network
 docker compose -f docker-compose.arpanet.phase1.yml up -d
-
-# Check status
-docker ps -a
-docker logs arpanet-vax
-docker logs arpanet-imp1
-
-# Run test
-./arpanet/scripts/test-vax-imp.sh
-
-# Cleanup
 docker compose -f docker-compose.arpanet.phase1.yml down -v
 ```
 
@@ -231,6 +268,7 @@ docker compose -f docker-compose.arpanet.phase1.yml down -v
 - `arpanet/README.md` - Architecture and usage
 - `arpanet/PHASE1-SUMMARY.md` - What was built
 - `WORKFLOWS.md` - 4-mode workflow documentation
+- `test_infra/README.md` - Testing approach overview
 - `~/.claude/projects/-home-user-brfid-github-io/memory/MEMORY.md` - Personal memory
 
 ---
@@ -244,6 +282,9 @@ docker compose -f docker-compose.arpanet.phase1.yml down -v
 5. **Base image configs should be respected** - Don't override unless necessary
 6. **Artifacts are crucial** - Even failed runs should save logs
 7. **gh CLI is essential** - Install and configure for all projects
+8. **Testing infrastructure as part of codebase** - Makes debugging respectable for public repos
+9. **Python + PEP 8 for test utilities** - Clear, maintainable, professional
+10. **Makefile improves DX** - Simple commands hide complexity
 
 ---
 
@@ -272,4 +313,28 @@ The goal is not just to build something that works, but to build something that 
 
 ---
 
-**Ready to resume**: SSH into Raspberry Pi and debug IMP build failure interactively.
+## 🧪 Testing Infrastructure
+
+### Design Philosophy
+- **Python preferred** when reasonable
+- **PEP 8** style and **Google docstrings** for all Python
+- **Ken Thompson naming** (lowercase, underscores)
+- **Well described** not "professional testing infrastructure"
+- **Part of the codebase** for public portfolio visibility
+
+### Structure
+- `test_infra/local/` - Raspberry Pi and development machine support
+- `test_infra/docker/` - Docker integration tests (used in CI/CD)
+- `test_infra/fixtures/` - Test data (future use)
+- `test_infra/lib/` - Shared utilities (docker, network, log parsing)
+
+### Usage
+```bash
+make test          # Run all tests
+make check_env     # Verify prerequisites
+make build && make up  # Start ARPANET network
+```
+
+---
+
+**Ready to resume**: Testing infrastructure complete. Next step is debugging IMP build failure on Raspberry Pi or AWS.
