@@ -62,6 +62,13 @@
         color: var(--muted);
         font-size: 0.98rem;
       }
+      .contact-email {
+        margin: 0.5rem 0 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+          "Courier New", monospace;
+        font-size: 0.9rem;
+        color: var(--text);
+      }
       nav {
         display: flex;
         flex-wrap: wrap;
@@ -110,36 +117,30 @@
       }
       footer {
         margin-top: 1.25rem;
+        color: rgba(168, 179, 207, 0.4);
+        font-size: 0.8rem;
+      }
+      footer a {
+        color: rgba(168, 179, 207, 0.5);
+      }
+      footer a:hover {
         color: var(--muted);
-        font-size: 0.9rem;
       }
     </style>
   </head>
   <body>
     <main class="wrap">
       <section class="card">
-        <header>
-          <h1>Bradley Fidler</h1>
-<p class="subtitle">Senior Technical Writer</p>          <ul class="nav" role="list" aria-label="Links">
-              <li><a class="pill" href="https://www.linkedin.com/in/brfid/" rel="me noopener noreferrer">LinkedIn</a></li>
-              <li><a class="pill" href="https://github.com/brfid" rel="me noopener noreferrer">GitHub</a></li>
-            <li><a class="pill" href="/resume/">Resume (HTML)</a></li>
-            <li><a class="pill" href="/resume.pdf">Resume (PDF)</a></li>
-          </ul>
-        </header>
-
-          <div class="section">
-            <h2>About</h2>
-            <div class="section-content">Senior Technical Writer specializing in API documentation and docs-as-code. I lead documentation strategy, content development, and platform architecture. I build OpenAPI and prose workflows that accelerate releases, enable SME contributions, and prepare documentation for AI applications. Experienced in Python automation for docs CI/CD, schema validation, and content pipelines.</div>
-          </div>
-
-          <div class="section">
-            <h2>Contact</h2>
-            <div class="section-content mono">brfid@icloud.com</div>
-          </div>
+          <header>
+            <h1>Bradley Fidler</h1>
+            <nav>
+              <a class="pill" href="/resume/">Resume (HTML)</a>
+              <a class="pill" href="/resume.pdf">Resume (PDF)</a>
+            </nav>
+          </header>
 
         <footer>
-            <a href="/vax-build.log">Built from source.</a>
+            <a href="/vax-build.log">source</a>
         </footer>
       </section>
     </main>

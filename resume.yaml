@@ -27,16 +27,18 @@ work:
   url: https://docs.domaintools.com
   location: Seattle (Remote), WA, US
   startDate: '2023-10-01'
-  summary: Lead documentation strategy, delivery, and platform for complex APIs, enabling
-    faster, safer launches across Product and Engineering
+  summary: Own docs.domaintools.com platform and Python tooling for a 150-person company.
+    Build OpenAPI workflows, PDF generation, and LLM integrations that enable same-day delivery.
   highlights:
-  - Deliver OpenAPI specifications, user guides, and runbooks as the source of record.
-  - Consolidate docs into a Static Site Generator (SSG) with Swagger support, CI/CD
-    pipelines, and SME contribution workflows.
-  - Scale from a single-writer model to cross-functional participation that aligns
-    engineering, product, and QA.
-  - 'Build GenAI-ready content: chunking, context enrichment, and Retrieval Augmented
-    Generation (RAG) resources.'
+  - Migrated 120+ documents into unified platform (mkdocs-material) with CI/CD, Swagger
+    UI, and SME contribution workflows.
+  - Completed OpenAPI specifications for production code generation and validation.
+  - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded
+    documentation.
+  - Created MCP server that guides LLMs through deterministic fixes using Vale, markdownlint,
+    spaCy, and custom linters.
+  - Developed FastMCP server with anti-hallucination features for context-aware editing
+    in production workflows.
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
@@ -130,6 +132,7 @@ skills:
   - schemathesis
 - name: Content Architecture and Generative AI
   keywords:
+  - MCP (Model Context Protocol)
   - Chunking
   - Embeddings
   - RAG metadata
@@ -150,17 +153,37 @@ languages:
 - language: English
   fluency: Native
 projects:
-- name: Eventlog
-  description: LLM-powered fitness and nutrition tracker for Obsidian
+- name: Documentation Diagnostic Tools (DDT)
+  description: MCP server integrating Vale, markdownlint, spaCy, and custom linters
+    to guide LLMs through deterministic documentation fixes. Provides context-aware
+    suggestions for style, structure, and technical accuracy.
+  keywords:
+  - Python
+  - MCP
+  - Vale
+  - pytest
+- name: PDF Documentation Generator
+  description: Python tooling using Jinja2 templates and LaTeX rendering to produce
+    branded PDF documentation with theming, dynamic table of contents, and automated
+    builds.
+  keywords:
+  - Python
+  - Jinja2
+  - LaTeX
+  - CI/CD
+- name: Event Log
+  description: Python demo project using OpenAI API for fitness and nutrition tracking
+    with natural language input and structured data extraction.
   url: https://github.com/brfid/event-log
+  keywords:
+  - Python
+  - OpenAI API
+  - LLM workflows
 - name: Promptfoo-evals
   description: Helper script for comparing LLM responses to a given technical writing
     prompt.
   url: https://github.com/brfid/promptfoo-evals
-- name: GenAI storytelling
-  description: 'Extra-diegetic context management for LLM-based interactive fiction:
-    full world description used to dynamically generate world background detail. In
-    progress.'
   keywords:
-  - SillyTavern
-  - NovelAI Lorebook JSON
+  - Python
+  - promptfoo
+  - LLM evaluation
