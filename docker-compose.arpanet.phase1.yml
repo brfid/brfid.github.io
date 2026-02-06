@@ -20,7 +20,7 @@ services:
     hostname: vax-host
     ports:
       - "2323:2323"  # telnet console for VAX login
-      - "2000:2000/udp"  # UDP port for IMP-to-host connection
+      # Note: UDP port 2000 is for inter-container communication only (not exposed to host)
     volumes:
       - ./build/vax/simh-tape:/machines
       - ./arpanet/configs/vax-network.ini:/machines/vax780.ini:ro
@@ -50,8 +50,7 @@ services:
       - HOST_LINK_0=172.20.0.10:2000  # Connection to VAX
     ports:
       - "2324:2323"  # telnet console for IMP debugging
-      - "2000:2000/udp"  # UDP port for host connection
-      - "3000:3000/udp"  # UDP port for IMP-to-IMP links (future)
+      # Note: UDP port 2000 is for inter-container communication only (not exposed to host)
     restart: unless-stopped
     depends_on:
       - vax
