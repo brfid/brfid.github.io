@@ -10,7 +10,7 @@ This directory contains tools for testing the ARPANET network simulation across 
 
 ```
 test_infra/
-├── local/          # Local environment testing (Raspberry Pi, dev machines)
+├── local/          # Local development machine testing
 ├── docker/         # Docker-based integration tests
 ├── fixtures/       # Test data and configuration files
 └── lib/            # Shared Python utilities
@@ -37,14 +37,21 @@ make check_env
 ## Testing Modes
 
 ### 1. Local Testing
-For development and debugging on physical hardware (Raspberry Pi, workstations).
+For development on local workstations with Docker installed.
+Quick iteration during development.
 See `local/README.md` for setup instructions.
 
-### 2. Docker Testing
-For CI/CD and consistent test environments.
+### 2. Cloud Testing (AWS)
+For interactive debugging when GitHub Actions feedback is too slow.
+Launch an EC2 instance (t3.medium, Ubuntu 22.04), run tests with full access.
+Recommended for debugging complex build issues.
+See `local/README.md` for AWS instructions.
+
+### 3. Docker Testing
+Automated integration tests that run locally or in CI/CD.
 See `docker/README.md` for test details.
 
-### 3. GitHub Actions
+### 4. GitHub Actions
 Automated testing on every push to feature branches.
 See `.github/workflows/test.yml`.
 

@@ -101,8 +101,8 @@ arpanet/
 └── scripts/
     └── test-vax-imp.sh           # Connectivity test script
 test_infra/
-├── local/                        # Raspberry Pi / dev machine testing
-│   ├── README.md
+├── local/                        # Local dev machine testing
+│   ├── README.md                 # Includes AWS cloud testing docs
 │   └── setup.sh                  # Environment setup script
 ├── docker/                       # Docker integration tests
 │   ├── README.md
@@ -169,23 +169,24 @@ COPY --from=builder /tmp/simh/BIN/h316 /usr/local/bin/
 ### Issue 4: Docker Build Failure (CURRENT ❌)
 - **Problem**: IMP container build failing in GitHub Actions
 - **Error**: Unknown - containers never start, no logs
-- **Next Step**: Debug on Raspberry Pi with interactive access
+- **Next Step**: Debug on AWS EC2 instance with interactive access
 
 ---
 
 ## 📋 Next Steps
 
-### Immediate (Debug on Raspberry Pi)
-1. SSH into Raspberry Pi
-2. Clone repo: `git clone https://github.com/brfid/brfid.github.io.git`
-3. Checkout branch: `git checkout claude/arpanet-build-integration-uU9ZL`
-4. Install Docker (if not present)
-5. Run: `docker compose -f docker-compose.arpanet.phase1.yml build --progress=plain`
-6. See exact error during build
-7. Fix issues interactively
-8. Verify containers start: `docker compose up -d`
-9. Check status: `docker ps -a`
-10. Commit working fixes to branch
+### Immediate (Debug on AWS)
+1. Launch EC2 instance (t3.medium, Ubuntu 22.04)
+2. SSH into instance
+3. Install Docker: `curl -fsSL https://get.docker.com | sh`
+4. Clone repo: `git clone https://github.com/brfid/brfid.github.io.git`
+5. Checkout branch: `git checkout claude/arpanet-build-integration-uU9ZL`
+6. Run: `docker compose -f docker-compose.arpanet.phase1.yml build --progress=plain`
+7. See exact error during build
+8. Fix issues interactively
+9. Verify containers start: `docker compose up -d`
+10. Check status: `docker ps -a`
+11. Commit working fixes to branch
 
 ### Phase 1 Completion Criteria
 - [ ] IMP container builds successfully
@@ -276,7 +277,7 @@ docker compose -f docker-compose.arpanet.phase1.yml down -v
 ## 🎓 Lessons Learned
 
 1. **GitHub Actions debugging is slow** - 10-15 min feedback loop
-2. **Interactive debugging is faster** - Use cloud instance or Raspberry Pi
+2. **Interactive debugging is faster** - Use AWS EC2 instance for full access
 3. **Pre-built binaries cause GLIBC issues** - Build from source in Dockerfile
 4. **Port conflicts are subtle** - Remove unnecessary host port mappings
 5. **Base image configs should be respected** - Don't override unless necessary
@@ -285,6 +286,7 @@ docker compose -f docker-compose.arpanet.phase1.yml down -v
 8. **Testing infrastructure as part of codebase** - Makes debugging respectable for public repos
 9. **Python + PEP 8 for test utilities** - Clear, maintainable, professional
 10. **Makefile improves DX** - Simple commands hide complexity
+11. **CGNAT blocks remote access** - Use AWS for remote debugging instead of local Pi
 
 ---
 
@@ -323,10 +325,11 @@ The goal is not just to build something that works, but to build something that 
 - **Part of the codebase** for public portfolio visibility
 
 ### Structure
-- `test_infra/local/` - Raspberry Pi and development machine support
+- `test_infra/local/` - Local development machine testing (includes AWS docs)
 - `test_infra/docker/` - Docker integration tests (used in CI/CD)
 - `test_infra/fixtures/` - Test data (future use)
 - `test_infra/lib/` - Shared utilities (docker, network, log parsing)
+- AWS EC2 for remote debugging (documented in local/README.md)
 
 ### Usage
 ```bash
@@ -337,4 +340,4 @@ make build && make up  # Start ARPANET network
 
 ---
 
-**Ready to resume**: Testing infrastructure complete. Next step is debugging IMP build failure on Raspberry Pi or AWS.
+**Ready to resume**: Testing infrastructure complete. Next step is debugging IMP build failure on AWS EC2 instance.
