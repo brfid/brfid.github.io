@@ -23,7 +23,7 @@ services:
       # Note: UDP port 2000 is for inter-container communication only (not exposed to host)
     volumes:
       - ./build/vax/simh-tape:/machines
-      - ./arpanet/configs/vax-network.ini:/machines/vax780.ini:ro
+      # Note: Using base image's default vax780.ini - custom config caused path errors
     networks:
       arpanet:
         ipv4_address: 172.20.0.10

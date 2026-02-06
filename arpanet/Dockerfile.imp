@@ -5,9 +5,27 @@
 # This container runs SIMH emulating a Honeywell 316/516 minicomputer
 # with the original IMP firmware from the obsolescence/arpanet project.
 
+# Build stage - compile SIMH from source
+FROM debian:bullseye-slim AS builder
+
+# Install build dependencies for compiling SIMH
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    libpcap-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone and build SIMH with H316 (IMP) support
+# This ensures binary compatibility with the container's GLIBC
+RUN git clone --depth 1 https://github.com/simh/simh.git /tmp/simh && \
+    cd /tmp/simh && \
+    make h316 && \
+    strip BIN/h316
+
+# Runtime stage - smaller final image
 FROM debian:bullseye-slim
 
-# Install runtime dependencies
+# Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpcap0.8 \
     telnet \
@@ -22,9 +40,8 @@ RUN mkdir -p /machines/imp \
 
 WORKDIR /machines
 
-# Copy the pre-built h316 SIMH binary from arpanet repo
-# This binary is specially built with IMP support
-COPY h316ov /usr/local/bin/h316
+# Copy the compiled h316 binary from builder stage
+COPY --from=builder /tmp/simh/BIN/h316 /usr/local/bin/h316
 RUN chmod +x /usr/local/bin/h316
 
 # Copy IMP firmware and base configuration
