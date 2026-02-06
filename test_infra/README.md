@@ -1,59 +1,55 @@
 # Testing Infrastructure
 
-Test utilities and environments for the ARPANET build integration.
-
-## Purpose
-
-This directory contains tools for testing the ARPANET network simulation across different environments. Tests verify that VAX and IMP containers start correctly, establish network connectivity, and can transfer data.
+Test utilities for the ARPANET build integration. All testing runs on AWS EC2 instances.
 
 ## Structure
 
 ```
 test_infra/
-├── local/          # Local development machine testing
-├── docker/         # Docker-based integration tests
+├── aws/            # AWS EC2 setup and documentation
+├── docker/         # Docker integration tests
 ├── fixtures/       # Test data and configuration files
 └── lib/            # Shared Python utilities
 ```
 
 ## Quick Start
 
-### Run all tests locally
+### 1. Launch AWS Instance
+```bash
+# Launch t3.medium with Ubuntu 22.04
+# SSH into instance
+# See aws/README.md for details
+```
+
+### 2. Run Setup
+```bash
+./test_infra/aws/setup.sh
+```
+
+### 3. Run Tests
 ```bash
 make test
+# or
+./test_infra/docker/test_arpanet.py
 ```
 
-### Run specific test suites
-```bash
-make test_docker      # Docker integration tests
-make test_local       # Local environment checks
-```
+## Why AWS?
 
-### Check environment readiness
-```bash
-make check_env
-```
+Testing ARPANET integration requires:
+- Full Docker access with build capabilities
+- Interactive debugging of container logs
+- Ability to connect to container consoles
+- Fast feedback loop (faster than GitHub Actions)
 
-## Testing Modes
+AWS provides a consistent, accessible environment for debugging when GitHub Actions fails.
 
-### 1. Local Testing
-For development on local workstations with Docker installed.
-Quick iteration during development.
-See `local/README.md` for setup instructions.
+## Testing Workflow
 
-### 2. Cloud Testing (AWS)
-For interactive debugging when GitHub Actions feedback is too slow.
-Launch an EC2 instance (t3.medium, Ubuntu 22.04), run tests with full access.
-Recommended for debugging complex build issues.
-See `local/README.md` for AWS instructions.
-
-### 3. Docker Testing
-Automated integration tests that run locally or in CI/CD.
-See `docker/README.md` for test details.
-
-### 4. GitHub Actions
-Automated testing on every push to feature branches.
-See `.github/workflows/test.yml`.
+1. **GitHub Actions** - Automated tests on every push
+2. **If Actions fail** → Launch AWS instance for interactive debugging
+3. **Debug on AWS** - Build with `--progress=plain`, view live logs
+4. **Fix issues** - Commit and push fixes
+5. **Verify** - Watch GitHub Actions pass
 
 ## Requirements
 
@@ -61,6 +57,12 @@ See `.github/workflows/test.yml`.
 - Python 3.8+
 - Standard Unix utilities (nc, telnet, timeout)
 
+## Cost
+
+Typical debugging session: ~$1-2 (1-2 hours on t3.medium)
+
 ## Documentation
 
-Each subdirectory contains a README.md with specific instructions.
+- `aws/README.md` - AWS setup and usage
+- `docker/README.md` - Test details
+- `lib/*.py` - Utility function documentation

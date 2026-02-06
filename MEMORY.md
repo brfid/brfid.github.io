@@ -42,14 +42,14 @@ Add ARPANET network simulation to the build pipeline as a "quiet technical signa
    - Configured to use `$GITHUB_KEY` environment variable
    - Can check workflow runs, download artifacts, view logs
 
-5. **Testing Infrastructure**
+5. **Testing Infrastructure (AWS-based)**
    - Created `test_infra/` directory structure
    - Python test utilities (PEP 8, Google docstrings, Ken Thompson naming)
    - Docker integration tests (`test_arpanet.py`)
-   - Local environment setup scripts
+   - AWS EC2 setup scripts and documentation
    - Shared libraries: `docker_utils.py`, `network_utils.py`, `log_parser.py`
    - Project Makefile for convenient commands
-   - Comprehensive documentation in each directory
+   - Simplified AWS-only testing approach
 
 ### Current Issues ❌
 
@@ -101,8 +101,8 @@ arpanet/
 └── scripts/
     └── test-vax-imp.sh           # Connectivity test script
 test_infra/
-├── local/                        # Local dev machine testing
-│   ├── README.md                 # Includes AWS cloud testing docs
+├── aws/                          # AWS EC2 setup and docs
+│   ├── README.md                 # EC2 setup guide
 │   └── setup.sh                  # Environment setup script
 ├── docker/                       # Docker integration tests
 │   ├── README.md
@@ -243,8 +243,8 @@ make clean
 # Run Python tests
 ./test_infra/docker/test_arpanet.py
 
-# Setup local environment
-./test_infra/local/setup.sh
+# Setup AWS environment
+./test_infra/aws/setup.sh
 
 # Manual Docker commands
 docker compose -f docker-compose.arpanet.phase1.yml build
@@ -286,7 +286,7 @@ docker compose -f docker-compose.arpanet.phase1.yml down -v
 8. **Testing infrastructure as part of codebase** - Makes debugging respectable for public repos
 9. **Python + PEP 8 for test utilities** - Clear, maintainable, professional
 10. **Makefile improves DX** - Simple commands hide complexity
-11. **CGNAT blocks remote access** - Use AWS for remote debugging instead of local Pi
+11. **Simplified to AWS-only testing** - Removed local/Pi confusion, AWS EC2 for all debugging
 
 ---
 
@@ -318,6 +318,7 @@ The goal is not just to build something that works, but to build something that 
 ## 🧪 Testing Infrastructure
 
 ### Design Philosophy
+- **AWS-only** - Simplified to EC2 testing only
 - **Python preferred** when reasonable
 - **PEP 8** style and **Google docstrings** for all Python
 - **Ken Thompson naming** (lowercase, underscores)
@@ -325,14 +326,20 @@ The goal is not just to build something that works, but to build something that 
 - **Part of the codebase** for public portfolio visibility
 
 ### Structure
-- `test_infra/local/` - Local development machine testing (includes AWS docs)
-- `test_infra/docker/` - Docker integration tests (used in CI/CD)
+- `test_infra/aws/` - AWS EC2 setup and documentation
+- `test_infra/docker/` - Docker integration tests
 - `test_infra/fixtures/` - Test data (future use)
 - `test_infra/lib/` - Shared utilities (docker, network, log parsing)
-- AWS EC2 for remote debugging (documented in local/README.md)
+
+### Workflow
+1. GitHub Actions runs automated tests
+2. If tests fail → Launch AWS EC2 (t3.medium)
+3. Debug interactively with full access
+4. Commit fixes and verify in Actions
 
 ### Usage
 ```bash
+# On AWS instance:
 make test          # Run all tests
 make check_env     # Verify prerequisites
 make build && make up  # Start ARPANET network

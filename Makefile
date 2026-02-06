@@ -10,7 +10,6 @@ help:
 	@echo "Testing:"
 	@echo "  make test          Run all tests"
 	@echo "  make test_docker   Run Docker integration tests"
-	@echo "  make test_local    Check local environment setup"
 	@echo "  make check_env     Verify prerequisites"
 	@echo ""
 	@echo "Docker Operations:"
@@ -33,9 +32,9 @@ test_docker:
 	@echo "Running Docker integration tests..."
 	@./test_infra/docker/test_arpanet.py
 
-test_local:
-	@echo "Checking local environment..."
-	@./test_infra/local/setup.sh
+test_aws:
+	@echo "Checking AWS environment..."
+	@./test_infra/aws/setup.sh
 
 check_env:
 	@echo "Checking prerequisites..."
