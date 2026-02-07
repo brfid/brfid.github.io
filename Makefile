@@ -53,21 +53,21 @@ check_env:
 # AWS Infrastructure
 aws-up:
 	@echo "Provisioning AWS test instance..."
-	@./test_infra/aws/scripts/provision.py
+	@./test_infra/scripts/provision.py
 
 aws-ssh:
-	@./test_infra/aws/scripts/connect.py
+	@./test_infra/scripts/connect.py
 
 aws-down:
 	@echo "Destroying AWS test instance..."
-	@./test_infra/aws/scripts/destroy.py
+	@./test_infra/scripts/destroy.py
 
 aws-test:
 	@echo "Running tests on AWS instance..."
-	@./test_infra/aws/scripts/test_remote.py
+	@./test_infra/scripts/test_remote.py
 
 aws-status:
-	@./test_infra/aws/scripts/status.py
+	@./test_infra/scripts/status.py
 
 # Docker operations
 build:

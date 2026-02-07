@@ -27,7 +27,7 @@ build/
 arpanet-upstream/
 
 # CDK
-test_infra/aws/cdk/cdk.out/
-test_infra/aws/cdk/cdk.context.json
-test_infra/aws/cdk/.venv/
-test_infra/aws/cdk/__pycache__/
+test_infra/cdk/cdk.out/
+test_infra/cdk/cdk.context.json
+test_infra/cdk/.venv/
+test_infra/cdk/__pycache__/
