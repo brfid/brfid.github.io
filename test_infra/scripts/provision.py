@@ -13,13 +13,8 @@ def main():
     print("=== Provisioning ARPANET Test Instance ===")
     print(f"CDK directory: {cdk_dir}")
 
-    # Install dependencies
-    print("\nInstalling Python dependencies...")
-    subprocess.run(
-        ["pip3", "install", "-q", "-r", "requirements.txt"],
-        cwd=cdk_dir,
-        check=True
-    )
+    # Dependencies already installed in venv during setup
+    # Skip pip install to avoid externally-managed-environment error
 
     # Deploy stack
     print("\nDeploying CDK stack...")

@@ -1,6 +1,51 @@
 # AWS Testing Environment
 
-Ephemeral EC2 infrastructure for ARPANET integration testing, managed with AWS CDK (Python).
+**Purpose**: Development and debugging environment for ARPANET orchestration that will run in the build pipeline.
+
+## Why AWS Testing?
+
+ARPANET integration requires x86_64 Docker images, but development happens on ARM devices (Raspberry Pi). AWS EC2 provides on-demand x86_64 instances for:
+- Testing ARPANET orchestration before deploying to GitHub Actions
+- Debugging pipeline issues interactively
+- Iterating on new ARPANET nodes or protocols
+
+**Workflow**: Develop on AWS EC2 → Deploy to GitHub Actions → Debug on AWS EC2 as needed
+
+This infrastructure remains in place as a permanent development tool whenever the pipeline is expanded or debugged.
+
+## Design: Orchestration from Small Linux Systems
+
+This infrastructure is **controlled from resource-constrained devices** (Raspberry Pi, low-power ARM systems, old laptops) while leveraging cloud computing for architecture-specific testing.
+
+**Architecture:**
+```
+┌─────────────────────────────┐
+│  Controller                 │
+│  (Pi, aarch64, low-power)   │
+│  ┌─────────────────────┐    │
+│  │ Python CDK Scripts  │    │
+│  │ AWS SDK (boto3)     │    │
+│  └─────────────────────┘    │
+│          │ API calls         │
+└──────────┼──────────────────┘
+           │ HTTPS
+┌──────────▼──────────────────┐
+│  AWS Cloud                  │
+│  ┌─────────────────────┐    │
+│  │ EC2 x86_64          │    │
+│  │ - Docker builds     │    │
+│  │ - ARPANET testing   │    │
+│  │ - Architecture work │    │
+│  └─────────────────────┘    │
+└─────────────────────────────┘
+```
+
+**Benefits:**
+- **No local resource constraints** - Heavy Docker builds run on EC2
+- **Architecture flexibility** - Test x86_64-specific code from ARM devices
+- **Cost-effective** - Pay only when running tests (~$0.04/hour)
+- **Pure Python** - All orchestration scripts use Python + boto3
+- **Portable** - Works from any system with Python + AWS CLI
 
 ## Quick Start
 
@@ -16,19 +61,20 @@ Ephemeral EC2 infrastructure for ARPANET integration testing, managed with AWS C
 
 ```bash
 # 1. Install CDK CLI
-npm install -g aws-cdk
+sudo npm install -g aws-cdk
 
 # 2. Create CDK context file
-cd test_infra/aws/cdk
+cd test_infra/cdk
 cp cdk.context.json.example cdk.context.json
 
 # 3. Edit cdk.context.json with your SSH key paths
 # Required: Update ssh_public_key_path and ssh_private_key_path
 
-# 4. Install Python dependencies
-pip3 install -r requirements.txt
+# 4. Install Python dependencies (in project venv)
+.venv/bin/pip install -r requirements.txt
 
 # 5. Bootstrap CDK (one-time per AWS account/region)
+cd ../../  # Back to project root
 cdk bootstrap
 
 # 6. Test CDK configuration
@@ -56,7 +102,7 @@ make aws-down
 ## How It Works
 
 1. **`make aws-up`** - CDK deploys CloudFormation stack with:
-   - EC2 instance (t3.medium, Ubuntu 22.04)
+   - EC2 instance (t3.medium, Ubuntu 22.04, x86_64)
    - Docker pre-installed
    - Repository cloned on correct branch
    - All dependencies ready
@@ -73,18 +119,22 @@ make aws-down
 
 ## Architecture
 
-See [DESIGN.md](DESIGN.md) for detailed architecture decisions.
-
-**Key Points**:
-- Ephemeral instances (created on-demand, destroyed when done)
-- Infrastructure as Code (AWS CDK in Python, not Terraform)
-- Cost: ~$0.042/hour, ~$0.50/month typical usage
-- Auto-configures via cloud-init (user-data script)
-- All Python (CDK + helper scripts)
+**Key Points:**
+- **Ephemeral instances** - Created on-demand, destroyed when done
+- **Infrastructure as Code** - AWS CDK in Python (not Terraform)
+- **Cost-effective** - ~$0.042/hour, ~$0.50/month typical usage
+- **Auto-configures** - cloud-init (user-data script) sets up environment
+- **All Python** - CDK + helper scripts + boto3
 
 ## Implementation
 
-See [IMPLEMENTATION.md](IMPLEMENTATION.md) for step-by-step build instructions.
+The test infrastructure uses:
+- **AWS CDK (Python)** for infrastructure definitions
+- **CloudFormation** for stack management (CDK transpiles to CFN)
+- **boto3** for AWS API interactions
+- **cloud-init** for instance bootstrapping
+
+See `cdk/` directory for implementation details.
 
 ## Typical Workflow
 
@@ -123,10 +173,8 @@ make aws-down
 ## File Structure
 
 ```
-test_infra/aws/
+test_infra/
 ├── README.md              # This file
-├── DESIGN.md              # Architecture decisions
-├── IMPLEMENTATION.md      # Build instructions
 ├── setup.sh               # Bootstrap script (runs on instance)
 ├── cdk/
 │   ├── app.py             # CDK entry point
@@ -135,11 +183,12 @@ test_infra/aws/
 │   ├── requirements.txt   # Python dependencies
 │   ├── user_data.sh       # Cloud-init script
 │   └── cdk.context.json.example  # Config template
-└── scripts/
-    ├── provision.py       # Deploy stack
-    ├── connect.py         # SSH helper
-    ├── destroy.py         # Destroy stack
-    └── status.py          # Check status
+├── scripts/
+│   ├── provision.py       # Deploy stack
+│   ├── connect.py         # SSH helper
+│   ├── destroy.py         # Destroy stack
+│   └── status.py          # Check status
+└── docker/                # Docker integration tests
 ```
 
 ## Configuration
@@ -148,12 +197,12 @@ Edit `cdk/cdk.context.json`:
 
 ```json
 {
-  "ssh_public_key_path": "~/.ssh/id_rsa.pub",
-  "ssh_private_key_path": "~/.ssh/id_rsa",
+  "ssh_public_key_path": "~/.ssh/id_ed25519.pub",
+  "ssh_private_key_path": "~/.ssh/id_ed25519",
   "instance_type": "t3.medium",
   "root_volume_size": 30,
   "allowed_ssh_cidrs": ["0.0.0.0/0"],
-  "git_branch": "claude/arpanet-build-integration-uU9ZL",
+  "git_branch": "main",
   "aws_region": "us-east-1"
 }
 ```
@@ -167,13 +216,15 @@ Edit `cdk/cdk.context.json`:
 **Monthly** (2 sessions/week):
 - ~$0.70/month
 
+**No charges when instances are destroyed**
+
 ## Troubleshooting
 
 ### CDK Issues
 
 **`cdk` command not found**
 ```bash
-npm install -g aws-cdk
+sudo npm install -g aws-cdk
 cdk --version
 ```
 
@@ -193,7 +244,7 @@ cdk bootstrap  # Re-run bootstrap
 **Can't connect**
 - Wait 3-4 minutes for user-data to complete
 - Check `make aws-status` shows CREATE_COMPLETE
-- Verify key permissions: `chmod 600 ~/.ssh/id_rsa`
+- Verify key permissions: `chmod 600 ~/.ssh/id_ed25519`
 
 ### CloudFormation Issues
 
@@ -202,12 +253,9 @@ cdk bootstrap  # Re-run bootstrap
 - View Events tab for error details
 - Check CloudWatch Logs for user-data output
 
-## Next Steps
+## Future Enhancements
 
-After getting instance working:
-1. Debug current ARPANET IMP build failure
-2. Document fix in MEMORY.md
-3. Consider enhancements:
-   - Auto-shutdown Lambda
-   - S3 artifact storage
-   - CloudWatch dashboards
+- Auto-shutdown Lambda (prevent forgotten instances)
+- S3 artifact storage (save build outputs)
+- CloudWatch dashboards (metrics and monitoring)
+- Multi-region support

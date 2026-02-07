@@ -8,11 +8,16 @@
 # Build stage - compile SIMH from source
 FROM debian:bullseye-slim AS builder
 
-# Install build dependencies for compiling SIMH
+# Install all build dependencies (including optional ones to avoid interactive prompts)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    make \
     git \
     libpcap-dev \
+    ca-certificates \
+    libedit-dev \
+    libpng-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone and build SIMH with H316 (IMP) support
