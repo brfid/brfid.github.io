@@ -1,0 +1,61 @@
+# SIMH IMP (Interface Message Processor) Docker Image
+# Based on the ARPANET reconstruction project
+#
+# The IMP was the packet-switching node (router) of the original ARPANET.
+# This container runs SIMH emulating a Honeywell 316/516 minicomputer
+# with the original IMP firmware from the obsolescence/arpanet project.
+
+# Build stage - compile SIMH from source
+FROM debian:bullseye-slim AS builder
+
+# Install build dependencies for compiling SIMH
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    libpcap-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone and build SIMH with H316 (IMP) support
+# This ensures binary compatibility with the container's GLIBC
+RUN git clone --depth 1 https://github.com/simh/simh.git /tmp/simh && \
+    cd /tmp/simh && \
+    make h316 && \
+    strip BIN/h316
+
+# Runtime stage - smaller final image
+FROM debian:bullseye-slim
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpcap0.8 \
+    telnet \
+    netcat \
+    tcpdump \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up IMP working directory
+RUN mkdir -p /machines/imp \
+    && mkdir -p /var/log/imp
+
+WORKDIR /machines
+
+# Copy the compiled h316 binary from builder stage
+COPY --from=builder /tmp/simh/BIN/h316 /usr/local/bin/h316
+RUN chmod +x /usr/local/bin/h316
+
+# Copy IMP firmware and base configuration
+COPY configs/impcode.simh /machines/impcode.simh
+COPY configs/impconfig.simh /machines/impconfig.simh
+
+# The specific IMP configuration (imp.ini) will be mounted as a volume
+# This allows different IMP instances to have different configs
+
+# Expose telnet port for console and UDP ports for networking
+EXPOSE 2323/tcp
+EXPOSE 2000/udp
+EXPOSE 3000/udp
+
+# Default command - run IMP simulator
+# The imp.ini file will be provided via volume mount
+CMD ["/usr/local/bin/h316", "/machines/imp.ini"]
