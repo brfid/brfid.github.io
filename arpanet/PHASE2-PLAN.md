@@ -1,7 +1,7 @@
 # ARPANET Phase 2 Plan: Multi-Hop Network Topology
 
-**Status**: In Progress (Step 2.1 complete, Step 2.2 bootstrap underway)
-**Prerequisite**: Phase 1 Complete ✅
+**Status**: In progress (Step 2.1 complete, Step 2.2 bootstrap underway)
+**Prerequisite**: Phase 1 complete
 **Goal**: Establish two-IMP network with multi-hop routing and file transfer capability
 
 ---
@@ -121,12 +121,12 @@ Phase 2 expands the ARPANET infrastructure from a single VAX-IMP connection to a
 - Routing table updates on both IMPs
 - Ping between IMPs (if available) or packet exchange visible in debug logs
 
-**Current Result (2026-02-07, AWS x86_64)**: ✅ Complete
+**Current Result (2026-02-07, AWS x86_64)**: Complete
 - `docker-compose.arpanet.phase2.yml` validated with `arpanet-vax`, `arpanet-imp1`, `arpanet-imp2`
 - `arpanet/scripts/test-phase2-imp-link.sh` passes
 - MI1 packet send/receive confirmed in both IMP logs
 
-**Step 2.2 bootstrap update (2026-02-07, AWS x86_64)**: 🟡 In progress
+**Step 2.2 bootstrap update (2026-02-07, AWS x86_64)**: In progress
 - Added `arpanet-pdp10` host stub at `172.20.0.40`
 - Wired IMP2 HI1 attach to `172.20.0.40:2000`
 - Observed IMP2 HI1 transmit markers in logs
@@ -389,14 +389,14 @@ networks:
 
 Phase 2 is complete when:
 
-1. ✅ All four containers start and run stably
-2. ✅ Both IMPs show modem interface connection established
-3. ✅ VAX can generate packets that reach PDP-10
-4. ✅ PDP-10 can generate packets that reach VAX
-5. ✅ IMP routing tables show correct topology
-6. ✅ File successfully transferred from VAX to PDP-10
-7. ✅ No packet loss or routing errors in IMP logs
-8. ✅ Documentation complete with test results
+1. All four containers start and run stably.
+2. Both IMPs show modem interface connection established.
+3. VAX can generate packets that reach PDP-10.
+4. PDP-10 can generate packets that reach VAX.
+5. IMP routing tables show correct topology.
+6. A file is successfully transferred from VAX to PDP-10.
+7. No packet loss or routing errors are observed in IMP logs.
+8. Documentation is complete with test results.
 
 ---
 
@@ -482,7 +482,7 @@ Once Phase 2 is validated, integrate ARPANET into the actual build pipeline:
 ---
 
 **Status**: Active implementation in progress
-**Prerequisites**: ✅ Phase 1 complete and validated
+**Prerequisites**: Phase 1 complete and validated
 **Next Action**: Replace PDP10 host stub with real PDP-10 guest (TOPS-20/ITS) and validate multi-hop host traffic
 
 ---

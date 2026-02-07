@@ -1,4 +1,4 @@
-# ARPANET Testing Guide (Phase 1 + Phase 2 Initial)
+# ARPANET Testing Guide (Phase 1 + Phase 2 Bootstrap)
 
 ## Prerequisites
 
@@ -6,7 +6,7 @@ This setup requires Docker with daemon access. Testing must be done on a machine
 
 ## Quick Start Testing
 
-### Phase 2 Initial (Current Recommended for next-step testing)
+### Phase 2 Bootstrap (Current recommended test path)
 
 This validates the current Phase 2 Step 2.2 bootstrap topology:
 
@@ -15,7 +15,7 @@ This validates the current Phase 2 Step 2.2 bootstrap topology:
 ```
 
 ```bash
-# Build and start phase 2 initial topology
+# Build and start phase 2 bootstrap topology
 docker compose -f docker-compose.arpanet.phase2.yml build
 docker compose -f docker-compose.arpanet.phase2.yml up -d
 
@@ -48,12 +48,12 @@ docker compose -f docker-compose.arpanet.phase2.yml down
 
 ### Phase 1 (Legacy baseline)
 
-### 1. Clone the Branch
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/brfid/brfid.github.io.git
 cd brfid.github.io
-git checkout claude/arpanet-build-integration-uU9ZL
+git checkout main
 ```
 
 ### 2. Build the Containers

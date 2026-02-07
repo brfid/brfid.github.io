@@ -101,7 +101,7 @@ telnet localhost 2324
 docker-compose -f docker-compose.arpanet.phase1.yml down
 ```
 
-### Phase 2 (Initial): Start VAX + IMP1 + IMP2
+### Phase 2 (Bootstrap): Start VAX + IMP1 + IMP2 + PDP10 stub
 
 ```bash
 # Build Phase 2 containers
@@ -204,7 +204,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 
 ## Development Status
 
-### Phase 1: ✅ Complete
+### Phase 1: Complete
 - [x] Docker Compose architecture designed
 - [x] VAX network configuration created
 - [x] IMP Dockerfile scaffolded
@@ -218,7 +218,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - [x] Validate ARPANET 1822 protocol communication (IMP sending 1822 messages)
 - [x] Document successful connection in build log (see PHASE1-VALIDATION.md)
 
-**✅ Phase 1 Validation Complete (2026-02-07):**
+**Phase 1 validation complete (2026-02-07):**
 - Fixed IMP Dockerfile build dependencies (added ca-certificates, libedit-dev, libpng-dev, curl)
 - Successfully built h316 simulator from source
 - Both VAX and IMP containers operational on AWS EC2 x86_64
@@ -227,7 +227,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - Docker network (172.20.0.0/16) with traffic flowing between containers
 - All Phase 1 success criteria met
 
-### Phase 2: 🟡 Step 2.2 Bootstrap In Progress
+### Phase 2: Step 2.2 bootstrap in progress
 
 - [x] Added IMP #2 container/config (`arpanet/configs/imp2.ini`)
 - [x] Added Phase 2 IMP #1 config (`arpanet/configs/imp1-phase2.ini`)
@@ -241,7 +241,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
   - MI1 packet send/receive visible in both IMP logs
   - HI1 packet send markers visible from IMP2
 
-**Status**: ✅ Phase 1 complete, 🟡 Phase 2 Step 2.1 complete + Step 2.2 host-link bootstrap validated
+**Status**: Phase 1 complete; Phase 2 Step 2.1 complete; Step 2.2 host-link bootstrap validated.
 
 See `PHASE1-VALIDATION.md` and `PHASE2-VALIDATION.md` for validation results, plus `PHASE1-SUMMARY.md` and `TESTING-GUIDE.md` for detailed procedures.
 

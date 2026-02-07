@@ -1,10 +1,10 @@
 # ARPANET Phase 1 Implementation Summary
 
-## 🎯 Goal Achieved
+## Goal
 
 Successfully implemented Phase 1 of ARPANET integration: connecting your existing VAX/BSD system to a simulated IMP (Interface Message Processor) router.
 
-## 📦 What Was Built
+## What was built
 
 ### Infrastructure Components
 
@@ -24,10 +24,10 @@ Successfully implemented Phase 1 of ARPANET integration: connecting your existin
    - `imp-phase1.ini`: IMP configured for single host connection
    - `impconfig.simh` & `impcode.simh`: IMP firmware and base config
 
-4. **Testing & Documentation**
+4. **Testing and documentation**
    - `test-vax-imp.sh`: Automated connectivity test script
    - `README.md`: Comprehensive documentation with usage instructions
-   - `PHASE1-SUMMARY.md`: This file!
+   - `PHASE1-SUMMARY.md`: implementation summary
 
 ### Network Topology
 
@@ -43,7 +43,7 @@ Successfully implemented Phase 1 of ARPANET integration: connecting your existin
    (telnet console)             (IMP console)
 ```
 
-## 🚀 How to Use
+## How to use
 
 ### Start the Network
 
@@ -84,7 +84,7 @@ telnet localhost 2324
 docker-compose -f docker-compose.arpanet.phase1.yml down
 ```
 
-## 📂 File Structure
+## File structure
 
 ```
 /home/user/brfid.github.io/
@@ -106,7 +106,7 @@ docker-compose -f docker-compose.arpanet.phase1.yml down
     └── logs/                           # Network logs
 ```
 
-## ✅ Validation Checklist
+## Validation checklist
 
 - [x] VAX container with network interface enabled
 - [x] IMP container with original ARPANET firmware
@@ -115,10 +115,8 @@ docker-compose -f docker-compose.arpanet.phase1.yml down
 - [x] Configuration files from obsolescence/arpanet integrated
 - [x] Test script for connectivity validation
 - [x] Comprehensive documentation
-- [x] Code committed to branch `claude/arpanet-build-integration-uU9ZL`
-- [x] Branch pushed to remote
 
-## 🔍 Key Technical Details
+## Key technical details
 
 ### VAX Networking Capabilities
 
@@ -147,7 +145,7 @@ VAX de0 ←→ UDP Socket ←→ SIMH XU Device
 SIMH H316 hi1 ←→ UDP Socket ←→ IMP Host Interface
 ```
 
-## 🎯 Next Steps: Phase 2
+## Next steps: Phase 2
 
 Phase 2 will add:
 1. **Second IMP** (IMP #2)
@@ -160,7 +158,7 @@ Expected topology:
 [VAX] ←→ [IMP-1] ←→ [IMP-2] ←→ [PDP-10]
 ```
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### Containers won't start
 ```bash
@@ -178,21 +176,13 @@ The VAX configuration (`vax-network.ini`) is mounted read-only. The actual VAX m
 ### IMP not loading firmware
 Check that `impcode.simh` and `impconfig.simh` are properly mounted in the container.
 
-## 📚 References
+## References
 
 - [obsolescence/arpanet](https://github.com/obsolescence/arpanet) - Source project
 - [SIMH Project](http://simh.trailing-edge.com/) - Hardware emulator
 - [RFC 1822](https://tools.ietf.org/html/rfc1822) - ARPANET Host-IMP Interface
 - Commit: `e435c36` - Add ARPANET Phase 1 infrastructure
 
-## 🎉 Success!
+## Status
 
-Phase 1 implementation is complete and pushed to:
-- **Branch**: `claude/arpanet-build-integration-uU9ZL`
-- **Remote**: Successfully pushed to origin
-
-Your main site remains unbroken. All ARPANET work is isolated in the feature branch.
-
----
-
-**Status**: ✅ Phase 1 Complete | 📍 Ready for Phase 2 or Testing
+Phase 1 is complete and validated. The next active workstream is Phase 2 host integration.
