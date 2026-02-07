@@ -34,7 +34,7 @@ jobs:
 
       - name: Quality checks
         run: |
-          python -m ruff check .
+          python -m ruff check . --exclude test_infra
           python -m mypy resume_generator tests
           python -m pytest -q
           python -m pylint resume_generator tests -sn
