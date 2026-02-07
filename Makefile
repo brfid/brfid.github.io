@@ -53,21 +53,21 @@ check_env:
 # AWS Infrastructure
 aws-up:
 	@echo "Provisioning AWS test instance..."
-	@./test_infra/aws/scripts/provision.sh
+	@./test_infra/aws/scripts/provision.py
 
 aws-ssh:
-	@./test_infra/aws/scripts/connect.sh
+	@./test_infra/aws/scripts/connect.py
 
 aws-down:
 	@echo "Destroying AWS test instance..."
-	@./test_infra/aws/scripts/teardown.sh
+	@./test_infra/aws/scripts/destroy.py
 
 aws-test:
 	@echo "Running tests on AWS instance..."
-	@./test_infra/aws/scripts/test_remote.sh
+	@./test_infra/aws/scripts/test_remote.py
 
 aws-status:
-	@cd test_infra/aws/terraform && terraform show -json 2>/dev/null | jq -r '.values.root_module.resources[] | select(.type=="aws_instance") | "Instance: \(.values.id)\nPublic IP: \(.values.public_ip)\nState: \(.values.instance_state)"' || echo "No active instance"
+	@./test_infra/aws/scripts/status.py
 
 # Docker operations
 build:

@@ -1,6 +1,6 @@
 # AWS Testing Infrastructure Design
 
-**Architecture**: Ephemeral EC2 instances with Infrastructure as Code (Terraform)
+**Architecture**: Ephemeral EC2 instances with Infrastructure as Code (AWS CDK in Python)
 
 ## Overview
 
@@ -21,14 +21,16 @@ Automated, on-demand EC2 testing environment for ARPANET integration debugging. 
 
 ### 2. Infrastructure as Code Tool
 
-**Choice**: Terraform
+**Choice**: AWS CDK (Cloud Development Kit) with Python
 
 **Rationale**:
-- Industry standard, portfolio-relevant skill
-- Declarative, version-controlled infrastructure
-- State management handles resource lifecycle
-- Provider-agnostic (could add other clouds later)
-- Better for portfolio visibility than CloudFormation
+- **Pure Python** - Aligns with project philosophy ("Python preferred when reasonable")
+- **Type safety** - IDE autocomplete, type hints, catch errors before deploy
+- **Modern** - AWS's recommended approach for infrastructure as code
+- **Portfolio value** - Shows cutting-edge AWS expertise
+- **Native AWS** - Better integration than provider-agnostic tools
+- **Testable** - Can unit test infrastructure code
+- **AWS-only constraint** - Project already decided on AWS-only testing
 
 ### 3. Instance Specifications
 
@@ -66,61 +68,50 @@ Automated, on-demand EC2 testing environment for ARPANET integration debugging. 
 
 ### 5. Auto-Shutdown
 
-**Method**: CloudWatch + Lambda (future) OR local timer script
+**Method**: Manual for Phase 1, CloudWatch + Lambda for Phase 2
 
-**Timing**: 2 hours after creation
-- Typical debugging session: 30-90 minutes
-- 2 hours provides buffer without excessive cost
-- User can extend if needed
-
-**Implementation**: Phase 1 uses manual shutdown, Phase 2 adds automation
+**Timing**: 2 hours typical session
+- User destroys with `make aws-down`
+- Future: Auto-shutdown after inactivity
 
 ### 6. State Management
 
-**Terraform State**: Local filesystem (project root ignored by git)
+**CDK State**: CloudFormation stack in AWS
 
 **Rationale**:
-- Single user, no team collaboration
-- S3 backend adds complexity without benefit
-- `.terraform/` and `*.tfstate` in `.gitignore`
-
-**Future**: Could add S3 backend if multi-user or CI/CD provisioning needed
+- CDK uses CloudFormation under the hood
+- State managed by AWS automatically
+- No local state files to manage
+- Built-in drift detection
+- Easy to see resources in AWS console
 
 ### 7. Access Management
 
 **SSH Key**: Existing key or generate new
-- User provides public key path in terraform.tfvars
-- Key pair created/imported in AWS
+- User provides public key path in cdk.context.json
+- Key pair created in AWS
 - Private key stored locally (not in repo)
-
-**Session Manager**: Not used (adds complexity)
-- Direct SSH simpler for debugging
-- No bastion host needed
 
 ### 8. Cost Controls
 
 **Estimated Monthly Cost** (2 hours/week usage):
 ```
 EC2 (t3.medium):  8 hrs/month × $0.042/hr  = $0.34
-EBS (30GB GP3):   30GB × $0.08/GB/month    = $2.40
-Data Transfer:    Minimal (~$0.10)
+EBS (30GB GP3):   Deleted on termination   = $0.00
+Data Transfer:    Minimal                  = $0.10
 ─────────────────────────────────────────────────
-Total:                                      ~$2.84/month
+Total:                                      ~$0.44/month
 ```
 
 **Peak Cost** (10 hours/month heavy debugging):
 ```
 EC2:              10 hrs × $0.042/hr        = $0.42
-EBS:              30GB × $0.08/GB/month     = $2.40
+Data Transfer:    Minimal                   = $0.10
 ─────────────────────────────────────────────────
-Total:                                      ~$2.82/month
+Total:                                      ~$0.52/month
 ```
 
-**Note**: EBS cost dominates because volume persists during Terraform destroy if not configured for deletion.
-
-**Optimization**: EBS volume deleted on instance termination (configured in Terraform)
-
-**Revised Monthly Cost**: ~$0.34 - $0.42 (EC2 only, ephemeral storage)
+**Note**: EBS deleted on instance termination (ephemeral storage)
 
 ## Architecture Diagram
 
@@ -134,7 +125,16 @@ Total:                                      ~$2.82/month
 ┌─────────────────────────────────────────────────┐
 │  Local Machine                                  │
 │  $ make aws-up                                  │
-│    └─> terraform apply                          │
+│    └─> cdk deploy (Python)                      │
+└─────────────────────────────────────────────────┘
+                      │
+                      ▼
+┌─────────────────────────────────────────────────┐
+│  AWS CloudFormation                             │
+│  Creates stack with:                            │
+│  - EC2 Instance (t3.medium)                     │
+│  - Security Group                               │
+│  - SSH Key Pair                                 │
 └─────────────────────────────────────────────────┘
                       │
                       ▼
@@ -154,38 +154,33 @@ Total:                                      ~$2.82/month
                       ▼
 ┌─────────────────────────────────────────────────┐
 │  $ make aws-ssh                                 │
-│    └─> SSH into instance                        │
+│    └─> SSH into instance (Python script)        │
 │    └─> Interactive debugging                    │
 └─────────────────────────────────────────────────┘
                       │
                       ▼
 ┌─────────────────────────────────────────────────┐
 │  $ make aws-down                                │
-│    └─> terraform destroy                        │
-│    └─> Instance terminated, EBS deleted         │
+│    └─> cdk destroy (Python)                     │
+│    └─> CloudFormation deletes all resources     │
 └─────────────────────────────────────────────────┘
 ```
 
 ## Implementation Phases
 
-### Phase 1: Manual Provisioning (Current)
-- Manual EC2 launch via AWS console
-- Manual Docker setup
-- Manual git clone
-- Status: Documented in aws/README.md
-
-### Phase 2: Basic IaC (Next)
-- Terraform configuration for EC2
-- User data script for automated setup
+### Phase 1: Basic CDK (Next)
+- CDK app and stack definition (Python)
+- EC2 instance with user data
+- Security group and SSH key
+- Python scripts: provision.py, connect.py, destroy.py
 - `make aws-up`, `make aws-ssh`, `make aws-down`
-- Local state file
-- Status: **Planned (this document)**
+- Status: **In Progress**
 
-### Phase 3: Enhanced Automation (Future)
+### Phase 2: Enhanced Automation (Future)
 - CloudWatch alarm for auto-shutdown
 - S3 bucket for artifacts
-- Terraform backend in S3
 - GitHub Actions integration (optional)
+- SNS notifications
 
 ## File Structure
 
@@ -193,17 +188,19 @@ Total:                                      ~$2.82/month
 test_infra/aws/
 ├── README.md              # User-facing documentation
 ├── DESIGN.md             # This file - architecture decisions
+├── IMPLEMENTATION.md     # Implementation guide
 ├── setup.sh              # Bootstrap script (runs on instance)
-├── terraform/
-│   ├── main.tf           # Primary Terraform configuration
-│   ├── variables.tf      # Input variables
-│   ├── outputs.tf        # Output values (IP address, etc)
-│   ├── terraform.tfvars.example  # Example configuration
-│   └── user-data.sh      # Cloud-init script
+├── cdk/
+│   ├── app.py            # CDK entry point
+│   ├── arpanet_stack.py  # Stack definition (EC2, SG, etc)
+│   ├── cdk.json          # CDK configuration
+│   ├── requirements.txt  # Python dependencies (aws-cdk-lib, etc)
+│   └── user_data.sh      # Cloud-init script
 └── scripts/
-    ├── provision.sh      # Wrapper for terraform apply
-    ├── connect.sh        # SSH connection helper
-    └── teardown.sh       # Wrapper for terraform destroy
+    ├── provision.py      # Deploy CDK stack
+    ├── connect.py        # SSH connection helper
+    ├── destroy.py        # Destroy CDK stack
+    └── status.py         # Check instance status
 ```
 
 ## Security Considerations
@@ -215,7 +212,7 @@ test_infra/aws/
   - Use strong SSH keys (not passwords)
   - Instance is ephemeral (short-lived)
   - No sensitive data on instance
-  - Could restrict to specific IP if needed (terraform.tfvars)
+  - Could restrict to specific IP in cdk.context.json
 
 ### IAM Permissions
 - No IAM role needed for basic setup
@@ -223,7 +220,7 @@ test_infra/aws/
 
 ### Secrets Management
 - GitHub token passed via environment variable
-- Not stored in Terraform or AMI
+- Not stored in CDK code or AMI
 - Injected at runtime via user data
 
 ## Usage Workflow
@@ -258,37 +255,27 @@ docker ps -a
 # 7. Exit and destroy instance
 exit
 make aws-down
-# Instance terminated, no ongoing cost
+# CloudFormation deletes all resources, no ongoing cost
 ```
 
-### Quick Test Without SSH
+## CDK Context Configuration
 
-```bash
-# Provision, run tests, destroy
-make aws-test
-# Runs: terraform apply → SSH → make test → terraform destroy
-# Returns: test results
-```
+Configurable via `cdk.context.json` (gitignored):
 
-## Terraform Variables
-
-Configurable via `terraform.tfvars`:
-
-```hcl
-# Required
-aws_region = "us-east-1"
-ssh_public_key_path = "~/.ssh/id_rsa.pub"
-
-# Optional
-instance_type = "t3.medium"        # Or t3.large for faster builds
-root_volume_size = 30              # GB
-allowed_ssh_cidrs = ["0.0.0.0/0"]  # Restrict if needed
-git_branch = "claude/arpanet-build-integration-uU9ZL"
+```json
+{
+  "ssh_public_key_path": "~/.ssh/id_rsa.pub",
+  "ssh_private_key_path": "~/.ssh/id_rsa",
+  "instance_type": "t3.medium",
+  "root_volume_size": 30,
+  "allowed_ssh_cidrs": ["0.0.0.0/0"],
+  "git_branch": "claude/arpanet-build-integration-uU9ZL"
+}
 ```
 
 ## Cost Optimization Strategies
 
-### Current (Phase 2)
+### Current (Phase 1)
 - Ephemeral instances (only pay when running)
 - EBS deletion on termination
 - Use smallest viable instance (t3.medium)
@@ -301,7 +288,7 @@ git_branch = "claude/arpanet-build-integration-uU9ZL"
 
 ## Success Criteria
 
-Phase 2 implementation is successful when:
+Phase 1 implementation is successful when:
 - [ ] `make aws-up` provisions working instance in <2 minutes
 - [ ] Instance has Docker pre-installed and configured
 - [ ] Repo is cloned and on correct branch
@@ -309,9 +296,23 @@ Phase 2 implementation is successful when:
 - [ ] `make aws-down` cleanly destroys all resources
 - [ ] No manual steps required
 - [ ] Cost remains under $5/month with typical usage
+- [ ] All code is Python (no HCL/Terraform)
+
+## CDK vs Terraform Comparison
+
+| Feature | CDK (Chosen) | Terraform |
+|---------|-------------|-----------|
+| Language | Python | HCL |
+| Type Safety | Yes (mypy) | Limited |
+| IDE Support | Full | Basic |
+| Cloud Support | AWS only | Multi-cloud |
+| State Management | CloudFormation | Local/Remote |
+| Learning Curve | Python devs: Easy | New language |
+| Portfolio Value | Modern/Cutting-edge | Industry standard |
+| Testing | Unit tests in Python | Limited |
 
 ## References
 
+- AWS CDK Python: https://docs.aws.amazon.com/cdk/v2/guide/work-with-cdk-python.html
 - AWS EC2 Pricing: https://aws.amazon.com/ec2/pricing/on-demand/
-- Terraform AWS Provider: https://registry.terraform.io/providers/hashicorp/aws/latest/docs
-- Ubuntu Cloud Images: https://cloud-images.ubuntu.com/locator/ec2/
+- CDK EC2 Module: https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2.html

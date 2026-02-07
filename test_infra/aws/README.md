@@ -1,6 +1,6 @@
 # AWS Testing Environment
 
-Ephemeral EC2 infrastructure for ARPANET integration testing, managed with Terraform.
+Ephemeral EC2 infrastructure for ARPANET integration testing, managed with AWS CDK (Python).
 
 ## Quick Start
 
@@ -8,21 +8,31 @@ Ephemeral EC2 infrastructure for ARPANET integration testing, managed with Terra
 
 1. AWS account with EC2 access
 2. AWS CLI configured (`aws configure`)
-3. Terraform installed (>= 1.0)
-4. SSH key pair available
+3. Python 3.8+ installed
+4. Node.js installed (for CDK CLI)
+5. SSH key pair available
 
 ### First-Time Setup
 
 ```bash
-# 1. Create Terraform configuration
-cd test_infra/aws/terraform
-cp terraform.tfvars.example terraform.tfvars
+# 1. Install CDK CLI
+npm install -g aws-cdk
 
-# 2. Edit terraform.tfvars with your SSH key paths
+# 2. Create CDK context file
+cd test_infra/aws/cdk
+cp cdk.context.json.example cdk.context.json
+
+# 3. Edit cdk.context.json with your SSH key paths
 # Required: Update ssh_public_key_path and ssh_private_key_path
 
-# 3. Initialize Terraform
-terraform init
+# 4. Install Python dependencies
+pip3 install -r requirements.txt
+
+# 5. Bootstrap CDK (one-time per AWS account/region)
+cdk bootstrap
+
+# 6. Test CDK configuration
+cdk synth
 ```
 
 ### Usage
@@ -30,26 +40,27 @@ terraform init
 ```bash
 # From project root
 
-# Provision test instance (~90 seconds)
+# Provision test instance (~2-3 minutes)
 make aws-up
 
 # SSH into instance (auto-connects)
 make aws-ssh
 
+# Check instance status
+make aws-status
+
 # Destroy instance when done
 make aws-down
-
-# Or run tests remotely without SSH
-make aws-test
 ```
 
 ## How It Works
 
-1. **`make aws-up`** - Terraform provisions EC2 instance with:
+1. **`make aws-up`** - CDK deploys CloudFormation stack with:
+   - EC2 instance (t3.medium, Ubuntu 22.04)
    - Docker pre-installed
    - Repository cloned on correct branch
    - All dependencies ready
-   - Takes ~90 seconds
+   - Takes ~2-3 minutes
 
 2. **`make aws-ssh`** - Connects automatically, ready for:
    ```bash
@@ -58,7 +69,7 @@ make aws-test
    make test
    ```
 
-3. **`make aws-down`** - Destroys instance, stops costs
+3. **`make aws-down`** - CDK destroys CloudFormation stack, stops costs
 
 ## Architecture
 
@@ -66,27 +77,14 @@ See [DESIGN.md](DESIGN.md) for detailed architecture decisions.
 
 **Key Points**:
 - Ephemeral instances (created on-demand, destroyed when done)
-- Infrastructure as Code (Terraform, version controlled)
-- Cost: ~$0.042/hour, ~$2-5/month typical usage
+- Infrastructure as Code (AWS CDK in Python, not Terraform)
+- Cost: ~$0.042/hour, ~$0.50/month typical usage
 - Auto-configures via cloud-init (user-data script)
+- All Python (CDK + helper scripts)
 
 ## Implementation
 
 See [IMPLEMENTATION.md](IMPLEMENTATION.md) for step-by-step build instructions.
-
-## Recommended Instance
-
-- **Type**: t3.medium (2 vCPU, 4GB RAM)
-- **OS**: Ubuntu 22.04 LTS
-- **Storage**: 20GB GP3
-- **Region**: us-east-1 (lowest cost)
-- **Security Group**: Allow SSH (port 22) from your IP
-
-## Cost Estimate
-
-- ~$0.04/hour for t3.medium
-- ~$0.10/GB/month for storage
-- Total: ~$1-2 for typical debugging session
 
 ## Typical Workflow
 
@@ -96,8 +94,8 @@ See [IMPLEMENTATION.md](IMPLEMENTATION.md) for step-by-step build instructions.
 # 1. GitHub Actions fails on ARPANET build
 # 2. Provision test instance
 make aws-up
-# Output: "Instance ready at: 3.45.67.89"
-# Time: ~90 seconds
+# Output: CloudFormation stack details, SSH command
+# Time: ~2-3 minutes
 
 # 3. SSH into instance
 make aws-ssh
@@ -107,7 +105,7 @@ cd brfid.github.io
 docker compose -f docker-compose.arpanet.phase1.yml build --progress=plain
 # Identify issue from build output
 
-# 5. Fix issue locally, commit, push
+# 5. Fix issue (either on instance or locally), commit, push
 git add arpanet/Dockerfile.imp
 git commit -m "Fix IMP build issue"
 git push
@@ -119,34 +117,97 @@ docker ps -a
 # 7. Exit and destroy instance
 exit
 make aws-down
-# No ongoing costs
+# CloudFormation deletes all resources, no ongoing costs
 ```
 
-### Quick Remote Test
+## File Structure
 
+```
+test_infra/aws/
+├── README.md              # This file
+├── DESIGN.md              # Architecture decisions
+├── IMPLEMENTATION.md      # Build instructions
+├── setup.sh               # Bootstrap script (runs on instance)
+├── cdk/
+│   ├── app.py             # CDK entry point
+│   ├── arpanet_stack.py   # Stack definition (EC2, SG, etc)
+│   ├── cdk.json           # CDK configuration
+│   ├── requirements.txt   # Python dependencies
+│   ├── user_data.sh       # Cloud-init script
+│   └── cdk.context.json.example  # Config template
+└── scripts/
+    ├── provision.py       # Deploy stack
+    ├── connect.py         # SSH helper
+    ├── destroy.py         # Destroy stack
+    └── status.py          # Check status
+```
+
+## Configuration
+
+Edit `cdk/cdk.context.json`:
+
+```json
+{
+  "ssh_public_key_path": "~/.ssh/id_rsa.pub",
+  "ssh_private_key_path": "~/.ssh/id_rsa",
+  "instance_type": "t3.medium",
+  "root_volume_size": 30,
+  "allowed_ssh_cidrs": ["0.0.0.0/0"],
+  "git_branch": "claude/arpanet-build-integration-uU9ZL",
+  "aws_region": "us-east-1"
+}
+```
+
+## Cost
+
+**Typical debugging session** (2 hours):
+- EC2: $0.084
+- **Total: ~$0.08 per session**
+
+**Monthly** (2 sessions/week):
+- ~$0.70/month
+
+## Troubleshooting
+
+### CDK Issues
+
+**`cdk` command not found**
 ```bash
-# Provision, test, destroy - all automated
-make aws-test
-# Returns test results, destroys instance
+npm install -g aws-cdk
+cdk --version
 ```
 
-## Common Issues
-
-**Slow builds**: Use `--progress=plain` to see detailed output:
+**Bootstrap fails**
 ```bash
-docker compose -f docker-compose.arpanet.phase1.yml build --progress=plain
+aws sts get-caller-identity  # Check credentials
+cdk bootstrap  # Re-run bootstrap
 ```
 
-**Out of memory**: Use larger instance type (t3.large has 8GB RAM).
+**`cdk synth` fails**
+- Verify cdk.context.json exists and is valid JSON
+- Check SSH key paths are correct
+- Check Python syntax in app.py, arpanet_stack.py
 
-**Network conflicts**: Check for existing Docker networks:
-```bash
-docker network ls
-docker network prune
-```
+### SSH Issues
 
-**Permission denied**: Ensure user is in docker group:
-```bash
-sudo usermod -aG docker $USER
-# Log out and back in
-```
+**Can't connect**
+- Wait 3-4 minutes for user-data to complete
+- Check `make aws-status` shows CREATE_COMPLETE
+- Verify key permissions: `chmod 600 ~/.ssh/id_rsa`
+
+### CloudFormation Issues
+
+**Stack creation fails**
+- Check AWS Console → CloudFormation → ArpanetTestStack
+- View Events tab for error details
+- Check CloudWatch Logs for user-data output
+
+## Next Steps
+
+After getting instance working:
+1. Debug current ARPANET IMP build failure
+2. Document fix in MEMORY.md
+3. Consider enhancements:
+   - Auto-shutdown Lambda
+   - S3 artifact storage
+   - CloudWatch dashboards

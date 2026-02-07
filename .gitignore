@@ -26,9 +26,8 @@ build/
 # ARPANET upstream repository (cloned for reference)
 arpanet-upstream/
 
-# Terraform
-test_infra/aws/terraform/.terraform/
-test_infra/aws/terraform/.terraform.lock.hcl
-test_infra/aws/terraform/terraform.tfstate
-test_infra/aws/terraform/terraform.tfstate.backup
-test_infra/aws/terraform/terraform.tfvars
+# CDK
+test_infra/aws/cdk/cdk.out/
+test_infra/aws/cdk/cdk.context.json
+test_infra/aws/cdk/.venv/
+test_infra/aws/cdk/__pycache__/
