@@ -1,10 +1,52 @@
-# ARPANET Phase 1 Testing Guide
+# ARPANET Testing Guide (Phase 1 + Phase 2 Initial)
 
 ## Prerequisites
 
 This setup requires Docker with daemon access. Testing must be done on a machine with Docker installed and running (not in this Claude Code environment).
 
 ## Quick Start Testing
+
+### Phase 2 Initial (Current Recommended for next-step testing)
+
+This validates the current Phase 2 Step 2.2 bootstrap topology:
+
+```
+[VAX] ←→ [IMP-1] ←MI1/UDP:3001→ [IMP-2] ←HI1/UDP:2000→ [PDP10 stub]
+```
+
+```bash
+# Build and start phase 2 initial topology
+docker compose -f docker-compose.arpanet.phase2.yml build
+docker compose -f docker-compose.arpanet.phase2.yml up -d
+
+# Automated validation
+bash arpanet/scripts/test-phase2-imp-link.sh
+
+# Optional helpers
+make build-phase2
+make up-phase2
+make test-phase2
+make logs-phase2
+
+# Consoles
+telnet localhost 2323  # VAX
+telnet localhost 2324  # IMP1
+telnet localhost 2325  # IMP2
+docker logs arpanet-pdp10 | tail -20  # PDP10 stub activity
+
+# Stop
+docker compose -f docker-compose.arpanet.phase2.yml down
+```
+
+**Phase 2 success criteria (bootstrap):**
+- `arpanet-vax`, `arpanet-imp1`, `arpanet-imp2`, `arpanet-pdp10` are running
+- IMP1 and IMP2 logs show MI1 startup markers
+- IMP1 and IMP2 logs show ongoing MI1 packet send/receive activity
+- IMP2 logs show HI1 startup markers / host-link activity for `172.20.0.40`
+
+---
+
+### Phase 1 (Legacy baseline)
 
 ### 1. Clone the Branch
 
@@ -292,8 +334,8 @@ Once Phase 1 is validated:
 
 1. **Document findings** - Note any issues or quirks
 2. **Capture logs** - Save successful boot/connection logs
-3. **Plan Phase 2** - Add second IMP and PDP-10
-4. **Consider build integration** - How to use in CI/CD
+3. **Proceed with Phase 2.2** - Attach PDP-10 host to IMP #2 HI1
+4. **Extend tests** - Verify multi-hop host traffic and eventual file transfer
 
 ## Phase 2 Preview
 
@@ -311,11 +353,16 @@ Testing will include:
 ## Reference Files
 
 - `docker-compose.arpanet.phase1.yml` - Main orchestration
+- `docker-compose.arpanet.phase2.yml` - Phase 2 bootstrap orchestration (VAX + IMP1 + IMP2 + PDP10 stub)
 - `arpanet/configs/vax-network.ini` - VAX network config
 - `arpanet/configs/imp-phase1.ini` - IMP configuration
+- `arpanet/configs/imp1-phase2.ini` - IMP #1 Phase 2 configuration
+- `arpanet/configs/imp2.ini` - IMP #2 Phase 2 configuration
 - `arpanet/scripts/test-vax-imp.sh` - Automated test script
+- `arpanet/scripts/test-phase2-imp-link.sh` - Phase 2 modem/host-link automated test script
 - `arpanet/README.md` - Full documentation
 - `arpanet/PHASE1-SUMMARY.md` - Implementation summary
+- `arpanet/PHASE2-VALIDATION.md` - Latest Phase 2 (2.1 + 2.2 bootstrap) validation findings
 
 ## Getting Help
 
@@ -329,6 +376,5 @@ If you encounter issues:
 
 ---
 
-**Last Updated**: 2026-02-06
-**Branch**: `claude/arpanet-build-integration-uU9ZL`
-**Status**: Ready for Testing
+**Last Updated**: 2026-02-07
+**Status**: Phase 1 complete, Phase 2 Step 2.2 host-link bootstrap validated on AWS x86_64

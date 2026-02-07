@@ -1,7 +1,7 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet
+.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet
 
 # Default target
 help:
@@ -24,6 +24,11 @@ help:
 	@echo "  make up            Start ARPANET network"
 	@echo "  make down          Stop ARPANET network"
 	@echo "  make logs          Show container logs"
+	@echo "  make build-phase2  Build Phase 2 containers (VAX+IMP1+IMP2+PDP10-stub)"
+	@echo "  make up-phase2     Start Phase 2 Step 2.2 bootstrap topology"
+	@echo "  make down-phase2   Stop Phase 2 bootstrap topology"
+	@echo "  make logs-phase2   Show Phase 2 IMP logs"
+	@echo "  make test-phase2   Run Phase 2 modem/host-link test"
 	@echo "  make clean         Remove containers and volumes"
 	@echo ""
 	@echo "Publishing:"
@@ -96,6 +101,37 @@ logs:
 	@echo ""
 	@echo "=== IMP Logs ==="
 	@docker logs arpanet-imp1 --tail 50
+
+build-phase2:
+	@echo "Building ARPANET Phase 2 containers..."
+	@docker compose -f docker-compose.arpanet.phase2.yml build
+
+up-phase2:
+	@echo "Starting ARPANET Phase 2 Step 2.2 bootstrap topology..."
+	@docker compose -f docker-compose.arpanet.phase2.yml up -d
+	@echo "Waiting for initial boot (75s)..."
+	@sleep 75
+	@echo "✅ Phase 2 bootstrap topology ready"
+	@echo ""
+	@echo "Connect to VAX console:  telnet localhost 2323"
+	@echo "Connect to IMP1 console: telnet localhost 2324"
+	@echo "Connect to IMP2 console: telnet localhost 2325"
+	@echo "PDP10 stub logs:        docker logs arpanet-pdp10 --tail 20"
+
+down-phase2:
+	@echo "Stopping ARPANET Phase 2 bootstrap topology..."
+	@docker compose -f docker-compose.arpanet.phase2.yml down
+
+logs-phase2:
+	@echo "=== IMP1 Logs ==="
+	@docker logs arpanet-imp1 --tail 50
+	@echo ""
+	@echo "=== IMP2 Logs ==="
+	@docker logs arpanet-imp2 --tail 50
+
+test-phase2:
+	@echo "Running ARPANET Phase 2 modem/host-link test..."
+	@bash arpanet/scripts/test-phase2-imp-link.sh
 
 clean:
 	@echo "Cleaning up containers and volumes..."

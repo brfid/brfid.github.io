@@ -1,6 +1,6 @@
 # ARPANET Phase 2 Plan: Multi-Hop Network Topology
 
-**Status**: Planning
+**Status**: In Progress (Step 2.1 complete, Step 2.2 bootstrap underway)
 **Prerequisite**: Phase 1 Complete ✅
 **Goal**: Establish two-IMP network with multi-hop routing and file transfer capability
 
@@ -120,6 +120,17 @@ Phase 2 expands the ARPANET infrastructure from a single VAX-IMP connection to a
 - IMP logs show modem interface enabled and connected
 - Routing table updates on both IMPs
 - Ping between IMPs (if available) or packet exchange visible in debug logs
+
+**Current Result (2026-02-07, AWS x86_64)**: ✅ Complete
+- `docker-compose.arpanet.phase2.yml` validated with `arpanet-vax`, `arpanet-imp1`, `arpanet-imp2`
+- `arpanet/scripts/test-phase2-imp-link.sh` passes
+- MI1 packet send/receive confirmed in both IMP logs
+
+**Step 2.2 bootstrap update (2026-02-07, AWS x86_64)**: 🟡 In progress
+- Added `arpanet-pdp10` host stub at `172.20.0.40`
+- Wired IMP2 HI1 attach to `172.20.0.40:2000`
+- Observed IMP2 HI1 transmit markers in logs
+- Full PDP-10 OS image/integration remains pending
 
 ### Step 2: PDP-10 Host Setup
 
@@ -470,9 +481,9 @@ Once Phase 2 is validated, integrate ARPANET into the actual build pipeline:
 
 ---
 
-**Status**: Ready to begin implementation
+**Status**: Active implementation in progress
 **Prerequisites**: ✅ Phase 1 complete and validated
-**Next Action**: Research PDP-10 SIMH configuration and available disk images
+**Next Action**: Replace PDP10 host stub with real PDP-10 guest (TOPS-20/ITS) and validate multi-hop host traffic
 
 ---
 

@@ -8,7 +8,7 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 
 ## Architecture
 
-### Phase 1: VAX + IMP (Current)
+### Phase 1: VAX + IMP (Complete)
 
 ```
 [VAX/BSD] ←→ [IMP #1]
@@ -26,13 +26,23 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 
 **Testing**: AWS EC2 x86_64 instances used for architecture-specific testing (see `test_infra/`)
 
-### Phase 2: Two Hosts + IMPs (Future)
+### Phase 2: Multi-IMP Network (In Progress)
 
 ```
 [VAX/BSD] ←→ [IMP-1] ←→ [IMP-2] ←→ [PDP-10/ITS]
 ```
 
 **Purpose**: Create minimal but authentic ARPANET topology with file transfer capability between hosts.
+
+**Current Phase 2 milestone**:
+```
+[VAX/BSD] ←→ [IMP-1] ←→ [IMP-2] ←→ [PDP10 host stub]
+```
+
+- IMP↔IMP modem link (MI1) validated on AWS EC2 x86_64
+- Active packet exchange visible in both IMP debug logs
+- IMP2 HI1 host-link is now attached to a PDP10 UDP stub (`172.20.0.40:2000`)
+- Full PDP-10 OS integration remains the next Phase 2 step
 
 ### Phase 3: Build Integration (Future)
 
@@ -49,13 +59,18 @@ arpanet/
 ├── README.md                    # This file
 ├── PHASE1-SUMMARY.md            # Phase 1 implementation details
 ├── TESTING-GUIDE.md             # Testing procedures
+├── PHASE2-PLAN.md               # Phase 2 implementation plan/status
+├── PHASE2-VALIDATION.md         # Phase 2 validation notes/findings
 ├── Dockerfile.imp               # IMP simulator container
+├── Dockerfile.pdp10stub         # Phase 2.2 bootstrap host stub
 ├── configs/
 │   ├── vax-network.ini         # SIMH VAX with networking enabled
-│   └── imp1.ini                # IMP #1 configuration
+│   ├── imp-phase1.ini          # Phase 1 IMP config
+│   ├── imp1-phase2.ini         # Phase 2 IMP #1 config (VAX + MI1)
+│   └── imp2.ini                # Phase 2 IMP #2 config (MI1 + future HI1)
 └── scripts/
     ├── test-vax-imp.sh         # Test VAX→IMP connectivity
-    └── start-arpanet.sh        # Launch full network
+    └── test-phase2-imp-link.sh # Test Phase 2 IMP↔IMP modem link
 
 build/arpanet/
 ├── imp1/                       # IMP #1 runtime data
@@ -84,6 +99,35 @@ telnet localhost 2324
 
 # Stop the network
 docker-compose -f docker-compose.arpanet.phase1.yml down
+```
+
+### Phase 2 (Initial): Start VAX + IMP1 + IMP2
+
+```bash
+# Build Phase 2 containers
+docker compose -f docker-compose.arpanet.phase2.yml build
+
+# Start the network
+docker compose -f docker-compose.arpanet.phase2.yml up -d
+
+# Run automated Phase 2 initial test
+bash arpanet/scripts/test-phase2-imp-link.sh
+
+# Show Phase 2 logs
+docker compose -f docker-compose.arpanet.phase2.yml logs -f imp1 imp2
+
+# Stop Phase 2 network
+docker compose -f docker-compose.arpanet.phase2.yml down
+```
+
+Equivalent Make targets:
+
+```bash
+make build-phase2
+make up-phase2
+make test-phase2
+make logs-phase2
+make down-phase2
 ```
 
 ### Testing VAX Connectivity
@@ -183,9 +227,23 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - Docker network (172.20.0.0/16) with traffic flowing between containers
 - All Phase 1 success criteria met
 
-**Status**: ✅ Phase 1 operational, ready for Phase 2 planning
+### Phase 2: 🟡 Step 2.2 Bootstrap In Progress
 
-See `PHASE1-VALIDATION.md` for complete validation results, `PHASE1-SUMMARY.md` and `TESTING-GUIDE.md` for detailed documentation.
+- [x] Added IMP #2 container/config (`arpanet/configs/imp2.ini`)
+- [x] Added Phase 2 IMP #1 config (`arpanet/configs/imp1-phase2.ini`)
+- [x] Added `docker-compose.arpanet.phase2.yml` for VAX + IMP1 + IMP2 (+ PDP10 stub)
+- [x] Added automated test script (`arpanet/scripts/test-phase2-imp-link.sh`) with HI1 checks
+- [x] Added PDP10 host stub container (`arpanet/Dockerfile.pdp10stub`)
+- [x] Wired IMP2 HI1 to host endpoint `172.20.0.40:2000`
+- [x] Validated on AWS EC2 x86_64:
+  - Containers up: `arpanet-vax`, `arpanet-imp1`, `arpanet-imp2`, `arpanet-pdp10`
+  - IPs: `172.20.0.10`, `172.20.0.20`, `172.20.0.30`, `172.20.0.40`
+  - MI1 packet send/receive visible in both IMP logs
+  - HI1 packet send markers visible from IMP2
+
+**Status**: ✅ Phase 1 complete, 🟡 Phase 2 Step 2.1 complete + Step 2.2 host-link bootstrap validated
+
+See `PHASE1-VALIDATION.md` and `PHASE2-VALIDATION.md` for validation results, plus `PHASE1-SUMMARY.md` and `TESTING-GUIDE.md` for detailed procedures.
 
 ## Notes
 

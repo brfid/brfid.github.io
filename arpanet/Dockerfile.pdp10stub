@@ -1,0 +1,14 @@
+FROM debian:bullseye-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    netcat-openbsd \
+    ca-certificates \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# Phase 2.2 bootstrap host stub:
+# - Listens on UDP/2000 so IMP2 HI1 can attach to a live endpoint
+# - Periodically emits small UDP probes to IMP2 for host-link evidence
+CMD ["/bin/sh", "-c", "set -e; \
+  (while true; do echo 'PDP10-STUB-HI1' | nc -u -w1 172.20.0.30 2000 || true; sleep 5; done) & \
+  while true; do nc -u -l -p 2000 >/tmp/pdp10stub-hi1.last || true; done"]
