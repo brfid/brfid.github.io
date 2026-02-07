@@ -25,3 +25,10 @@ build/
 
 # ARPANET upstream repository (cloned for reference)
 arpanet-upstream/
+
+# Terraform
+test_infra/aws/terraform/.terraform/
+test_infra/aws/terraform/.terraform.lock.hcl
+test_infra/aws/terraform/terraform.tfstate
+test_infra/aws/terraform/terraform.tfstate.backup
+test_infra/aws/terraform/terraform.tfvars

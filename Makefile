@@ -1,7 +1,7 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_local check_env clean build up down logs
+.PHONY: help test test_docker test_aws check_env clean build up down logs aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet
 
 # Default target
 help:
@@ -11,6 +11,13 @@ help:
 	@echo "  make test          Run all tests"
 	@echo "  make test_docker   Run Docker integration tests"
 	@echo "  make check_env     Verify prerequisites"
+	@echo ""
+	@echo "AWS Infrastructure:"
+	@echo "  make aws-up        Provision AWS test instance"
+	@echo "  make aws-ssh       SSH into AWS instance"
+	@echo "  make aws-down      Destroy AWS instance"
+	@echo "  make aws-test      Run tests on AWS (provision, test, destroy)"
+	@echo "  make aws-status    Show AWS instance status"
 	@echo ""
 	@echo "Docker Operations:"
 	@echo "  make build         Build ARPANET containers"
@@ -42,6 +49,25 @@ check_env:
 	@command -v docker compose >/dev/null 2>&1 || { echo "❌ Docker Compose not found"; exit 1; }
 	@command -v python3 >/dev/null 2>&1 || { echo "⚠️  Python 3 not found"; }
 	@echo "✅ Environment OK"
+
+# AWS Infrastructure
+aws-up:
+	@echo "Provisioning AWS test instance..."
+	@./test_infra/aws/scripts/provision.sh
+
+aws-ssh:
+	@./test_infra/aws/scripts/connect.sh
+
+aws-down:
+	@echo "Destroying AWS test instance..."
+	@./test_infra/aws/scripts/teardown.sh
+
+aws-test:
+	@echo "Running tests on AWS instance..."
+	@./test_infra/aws/scripts/test_remote.sh
+
+aws-status:
+	@cd test_infra/aws/terraform && terraform show -json 2>/dev/null | jq -r '.values.root_module.resources[] | select(.type=="aws_instance") | "Instance: \(.values.id)\nPublic IP: \(.values.public_ip)\nState: \(.values.instance_state)"' || echo "No active instance"
 
 # Docker operations
 build:
