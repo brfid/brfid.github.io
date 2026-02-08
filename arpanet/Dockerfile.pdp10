@@ -7,15 +7,17 @@
 # Build stage - compile SIMH from source and download TOPS-20
 FROM debian:bullseye-slim AS builder
 
-# Install build dependencies
+# Install build dependencies (including all optional ones to avoid interactive prompts)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     make \
     git \
     libpcap-dev \
-    ca-certificates \
+    libpcre3-dev \
     libedit-dev \
     libpng-dev \
+    libvdeplug-dev \
+    ca-certificates \
     curl \
     bzip2 \
     && rm -rf /var/lib/apt/lists/*
