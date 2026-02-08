@@ -35,6 +35,72 @@ Use this map to find the current source of truth quickly.
 - "How is logging structured?" → `arpanet_logging/README.md`
 - "What old approaches were removed?" → `docs/transport-archive.md`
 
+## Testing quick reference (for refactor safety)
+
+Run all tests and typing checks with the repo-local virtualenv:
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m mypy resume_generator arpanet_logging tests
+```
+
+CI lanes use marker-based selection:
+
+- Unit quality lane: `-m "unit and not docker and not slow"`
+- Integration lane: `-m "integration and not docker and not slow"`
+
+Recent high-priority characterization coverage additions are in:
+
+- `tests/test_vax_stage.py` (VAX stage helper utilities and tape/telnet edge behavior)
+- `tests/test_uudecode.py` (marker/header/end-line error handling and tolerant malformed input)
+- `tests/test_pdf.py` (Playwright success path and navigation failure propagation)
+
+Latest additions in this batch:
+
+- `tests/test_vax_stage.py`: `TelnetSession` internals (`_read_until`, `_read_until_any`,
+  `_ingest_data`, `_wait_for_xon`) plus `_pause()` and truncated telnet IAC handling.
+- `tests/test_uudecode.py`: direct `_decode_uu_line()` characterization for empty/zero-length
+  and truncated-line behavior.
+
+Additional runner-level characterization now covered:
+
+- `tests/test_vax_stage.py`: `_emit_resume_vax_yaml()` emission path, compiler/source failure
+  branches, subprocess command construction (`_compile_bradman`, `_run_bradman`,
+  `_run_bradman_html`), and docker-live quick-mode control flow with mocked container/session
+  hooks.
+
+Newest docker orchestration unit coverage in `tests/test_vax_stage.py`:
+
+- non-quick `_run_docker_live()` control flow (transfer/capture/decode/render ordering)
+- container cleanup on wait failure (`_stop_docker_container` in `finally` path)
+- `_start_docker_container()` command construction and context values
+- `_stop_docker_container()` best-effort behavior (`check=False`)
+- `_container_ip()` success and empty-output failure
+- `_compile_and_capture()` guest command sequencing and transcript markers
+
+Newest characterization batch adds:
+
+- `_write_diagnostics()` command/section loop verification
+- `_transfer_guest_inputs_tape()` success-path device selection and no-device failure
+- `_wait_for_console()` key branches:
+  - container exits before login
+  - inspect failure retry path + `vax-wait.log` evidence
+  - timeout when telnet never comes up
+- `TelnetSession._recv_filtered()` timeout/EOF handling
+
+Current targeted coverage snapshot after this batch:
+
+- `resume_generator/vax_stage.py`: **76%**
+- `resume_generator/uudecode.py`: **87%**
+- `resume_generator/pdf.py`: **100%**
+- targeted combined total: **78%**
+
+Highest-priority remaining test gap:
+
+- `resume_generator/vax_stage.py` deeper interactive telnet/session control paths (`login_root`,
+  `ensure_shell_prompt`, `_recover_prompt`, `_send_bytes_throttled`, and nuanced `_read_until*`
+  branching), plus select host-mode orchestration lines in `_run_local` / `_run_docker` wrappers.
+
 ## Local build (venv-only)
 
 Do not install dependencies globally or modify system Python. Use the repo-local virtualenv.

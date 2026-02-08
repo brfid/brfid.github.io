@@ -7,8 +7,8 @@ This file documents the workflows that currently exist in `.github/workflows/`.
 - Trigger: push to `main`, pull requests
 - Runs:
   - `ruff` (excluding `test_infra`)
-  - `mypy resume_generator tests`
-  - `pytest -q`
+  - `mypy resume_generator arpanet_logging tests`
+  - `pytest -q -m "unit and not docker and not slow"`
   - `pylint resume_generator tests -sn`
   - `vulture --config pyproject.toml resume_generator`
 
@@ -17,8 +17,21 @@ This file documents the workflows that currently exist in `.github/workflows/`.
 - Trigger: push to non-`main` branches, pull requests
 - Jobs:
   - quality checks (same toolchain as CI)
+  - integration lane:
+    - `pytest -q -m "integration and not docker and not slow"`
   - ARPANET Phase 1 docker bring-up test (`docker-compose.arpanet.phase1.yml`)
   - uploads test artifacts/logs
+
+## Test marker taxonomy
+
+Markers are auto-assigned in `tests/conftest.py`:
+
+- `tests/integration/**` → `integration`
+- `tests/system/**` → `docker` + `slow`
+- everything else under `tests/` → `unit`
+
+This keeps the default quality lane fast, while preserving higher-fidelity integration/docker
+coverage in separate jobs.
 
 ## 3) Publish workflow (`deploy.yml`)
 
