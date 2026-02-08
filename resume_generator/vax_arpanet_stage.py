@@ -54,6 +54,7 @@ class VaxArpanetStageRunner:
         steps.append("mode: execute")
         try:
             self._start_arpanet_network(steps)
+            self._validate_phase2_links(steps)
             self._run_transfer_script(steps)
             self._collect_arpanet_logs(steps)
             steps.append("status: scaffold commands completed")
@@ -72,6 +73,9 @@ class VaxArpanetStageRunner:
 
     def _transfer_exec_log_path(self) -> Path:
         return self.paths.vax_build_dir / "arpanet-transfer-exec.log"
+
+    def _phase2_link_test_script_path(self) -> Path:
+        return self.paths.repo_root / "arpanet" / "scripts" / "test-phase2-imp-link.sh"
 
     def _transfer_script_path(self) -> Path:
         candidates = [
@@ -124,6 +128,15 @@ class VaxArpanetStageRunner:
             ]
         )
         steps.append("network: started (phase2 stack)")
+
+    def _validate_phase2_links(self, steps: list[str]) -> None:
+        script_path = self._phase2_link_test_script_path()
+        if not script_path.exists():
+            raise RuntimeError(f"Missing phase2 link test script: {script_path}")
+
+        bash_bin = self._resolve_executable("bash")
+        self._run_command([bash_bin, str(script_path)])
+        steps.append("phase2_link_smoke: passed")
 
     def _run_transfer_script(self, steps: list[str]) -> None:
         script_path = self._transfer_script_path()

@@ -78,6 +78,10 @@ def test_arpanet_stage_run_writes_scaffold_log(
         calls["transfer"] += 1
         steps.append("transfer: executed via docker exec (SIMH automation)")
 
+    def _validate(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+        del self
+        steps.append("phase2_link_smoke: passed")
+
     def _collect(self: VaxArpanetStageRunner, steps: list[str]) -> None:
         del self
         calls["collect"] += 1
@@ -89,6 +93,7 @@ def test_arpanet_stage_run_writes_scaffold_log(
         steps.append("network: stopped")
 
     monkeypatch.setattr(VaxArpanetStageRunner, "_start_arpanet_network", _start)
+    monkeypatch.setattr(VaxArpanetStageRunner, "_validate_phase2_links", _validate)
     monkeypatch.setattr(VaxArpanetStageRunner, "_run_transfer_script", _transfer)
     monkeypatch.setattr(VaxArpanetStageRunner, "_collect_arpanet_logs", _collect)
     monkeypatch.setattr(VaxArpanetStageRunner, "_stop_arpanet_network", _stop)
@@ -115,6 +120,7 @@ def test_arpanet_stage_run_writes_scaffold_log(
     text = transfer_log.read_text(encoding="utf-8")
     assert "status: scaffold commands completed" in text
     assert "network: stopped" in text
+    assert "phase2_link_smoke: passed" in text
     assert "transfer: executed via docker exec" in text
 
 
@@ -146,6 +152,10 @@ def test_arpanet_stage_run_writes_failure_status_and_stops(
         del self, steps
         raise RuntimeError("transfer boom")
 
+    def _validate(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+        del self
+        steps.append("phase2_link_smoke: passed")
+
     def _collect(self: VaxArpanetStageRunner, steps: list[str]) -> None:
         del self, steps
         raise AssertionError("collect should not run after transfer failure")
@@ -157,6 +167,7 @@ def test_arpanet_stage_run_writes_failure_status_and_stops(
 
     monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
     monkeypatch.setattr(VaxArpanetStageRunner, "_start_arpanet_network", _start)
+    monkeypatch.setattr(VaxArpanetStageRunner, "_validate_phase2_links", _validate)
     monkeypatch.setattr(VaxArpanetStageRunner, "_run_transfer_script", _transfer)
     monkeypatch.setattr(VaxArpanetStageRunner, "_collect_arpanet_logs", _collect)
     monkeypatch.setattr(VaxArpanetStageRunner, "_stop_arpanet_network", _stop)
@@ -655,3 +666,59 @@ def test_collect_arpanet_logs_includes_pdp10_component(
         "pdp10",
     ]
     assert "logs: collected via arpanet_logging CLI (scaffold)" in steps
+
+
+def test_validate_phase2_links_runs_script(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeDelegate:
+        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+            del config, repo_root
+            self.paths = SimpleNamespace(
+                site_dir=tmp_path / "site",
+                repo_root=tmp_path,
+                build_dir=tmp_path / "build",
+            )
+
+        def run(self) -> None:
+            return
+
+    script_path = tmp_path / "arpanet" / "scripts" / "test-phase2-imp-link.sh"
+    script_path.parent.mkdir(parents=True, exist_ok=True)
+    script_path.write_text("#!/bin/bash\n", encoding="utf-8")
+
+    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+
+    commands: list[list[str]] = []
+
+    def _fake_run_command(
+        self: VaxArpanetStageRunner,
+        command: list[str],
+    ) -> subprocess.CompletedProcess[str]:
+        del self
+        commands.append(command)
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="")
+
+    monkeypatch.setattr(
+        VaxArpanetStageRunner,
+        "_resolve_executable",
+        lambda _s, _p: "/bin/bash",
+    )
+    monkeypatch.setattr(VaxArpanetStageRunner, "_run_command", _fake_run_command)
+
+    runner = VaxArpanetStageRunner(
+        config=VaxStageConfig(
+            resume_path=tmp_path / "resume.yaml",
+            site_dir=tmp_path / "site",
+            build_dir=tmp_path / "build",
+        ),
+        repo_root=tmp_path,
+        execute_commands=True,
+    )
+
+    steps: list[str] = []
+    runner._validate_phase2_links(steps)
+
+    assert commands == [["/bin/bash", str(script_path)]]
+    assert "phase2_link_smoke: passed" in steps
