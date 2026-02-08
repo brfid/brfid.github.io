@@ -144,6 +144,12 @@ jobs:
             --vax-mode ${{ steps.mode.outputs.vax_mode }} \
             ${EXTRA_ARGS}
 
+      - name: Verify ARPANET transfer artifacts (ARPANET mode only)
+        if: steps.mode.outputs.with_arpanet == 'true'
+        run: |
+          test -f site/arpanet-transfer.log
+          test -f build/vax/arpanet-transfer-exec.log
+
       - name: Capture ARPANET logs (ARPANET mode only)
         if: steps.mode.outputs.with_arpanet == 'true'
         run: |
