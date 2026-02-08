@@ -158,8 +158,22 @@ The AWS infrastructure provides on-demand x86_64 EC2 instances for testing ARPAN
 - **Phase 2**: CI/CD with GitHub Actions, hardening (wait loops, digest pinning)
 - **AWS testing infrastructure**: CDK-based ephemeral EC2 provisioning
 
+### ✅ Phase 2.5: Centralized Logging (Complete)
+
+- **Logging infrastructure**: Modular Python package for log collection
+- **Real-time collection**: Docker SDK streaming with background threads
+- **Persistent storage**: 20GB EBS volume ($2/month) mounted at `/mnt/arpanet-logs`
+- **VAX collector**: BSD 4.3 parser with event detection and tagging
+- **CLI tool**: Commands for collect, list, show, cleanup
+- **Data format**: JSON Lines for structured events, raw logs preserved
+- **Status**: Production-ready, validated on AWS
+
+See `arpanet_logging/README.md` for usage and architecture details.
+
 ### Phase 3: Future enhancements (when needed)
 
 - Additional ARPANET nodes (IMP, PDP-10, etc.)
+- IMP/PDP-10 log collectors
+- S3 archival for long-term log storage
 - Enhanced artifact verification
 - Build provenance attestation

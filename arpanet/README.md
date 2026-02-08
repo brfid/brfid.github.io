@@ -44,15 +44,33 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 - IMP2 HI1 host-link is now attached to a PDP10 UDP stub (`172.20.0.40:2000`)
 - Full PDP-10 OS integration remains the next Phase 2 step
 
+### Phase 2.5: Centralized Logging (Complete ✅)
+
+**Purpose**: Capture, parse, and persist logs from all ARPANET components for debugging and analysis.
+
+**Infrastructure**:
+- Modular Python package (`arpanet_logging/`)
+- Real-time Docker log streaming
+- 20GB persistent EBS volume ($2/month)
+- JSON Lines structured format
+- CLI management tool
+
+**Status**: Production-ready, validated on AWS
+- VAX collector with BSD 4.3 parser ✅
+- Event detection and tagging ✅
+- Statistics and indexing ✅
+
+See `../arpanet_logging/README.md` for usage details.
+
 ### Phase 3: Build Integration (Future)
 
 **Purpose**: Build pipeline depends on ARPANET for artifact movement:
 - Compile `bradman.c` on VAX
 - Transfer binary to PDP-10 via ARPANET FTP
 - Execute or transfer back artifacts
-- Include network logs in build output
+- Include ARPANET logs in build output
 
-**Planned prerequisite**: Implement centralized modular logging before deeper Phase 3 coupling. See `PHASE2-PLAN.md` → **Phase 2.5: Centralized Logging Foundation** for scope and success criteria.
+**Prerequisites**: Phase 2.5 logging ✅ complete, Phase 2 PDP-10 integration pending.
 
 ## Directory Structure
 
