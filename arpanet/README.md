@@ -63,7 +63,7 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 
 See `../arpanet_logging/README.md` for usage details.
 
-### Phase 3: Build Integration (In Progress - 60%)
+### Phase 3: Build Integration (In Progress)
 
 **Purpose**: Build pipeline depends on ARPANET for artifact movement:
 - Compile `bradman.c` on VAX
@@ -71,7 +71,7 @@ See `../arpanet_logging/README.md` for usage details.
 - Execute or transfer back artifacts
 - Include ARPANET logs in build output
 
-**Current Progress**:
+**Current status snapshot** (see `PHASE3-PROGRESS.md` for latest task counts):
 - ✅ IMP collectors with ARPANET 1822 parser (Task #27)
 - ✅ 3-container routing validated (VAX → IMP1 → IMP2)
 - ✅ Protocol analysis complete (269K events analyzed)
@@ -233,23 +233,20 @@ ping 172.20.0.20
 
 ### Automated Console Operations
 
-Use SIMH native automation for reliable console scripting:
+Use SIMH native automation for reliable console scripting.
 
 ```bash
-# Test console automation (login + basic commands)
-docker exec arpanet-vax /usr/bin/simh-vax \
-  /machines/data/simh-automation/test-login.ini
+# Start VAX container
+docker compose -f docker-compose.arpanet.phase1.yml up -d vax
 
-# Automated FTP transfer using authentic BSD 4.3 FTP client (1986)
-docker exec arpanet-vax /usr/bin/simh-vax \
-  /machines/data/simh-automation/authentic-ftp-transfer.ini
+# Copy a script into the running container
+docker cp arpanet/scripts/simh-automation/test-login.ini arpanet-vax:/tmp/test-login.ini
 
-# Automated network configuration
-docker exec arpanet-vax /usr/bin/simh-vax \
-  /machines/data/simh-automation/configure-network.ini
+# Execute script with SIMH
+docker exec arpanet-vax /usr/bin/simh-vax /tmp/test-login.ini
 ```
 
-See `arpanet/scripts/simh-automation/README.md` for detailed usage and custom script examples.
+See `arpanet/scripts/simh-automation/README.md` for additional scripts and mount-based usage.
 
 ### AWS Testing
 
@@ -371,7 +368,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - [x] IMP collectors with ARPANET 1822 protocol parser
 - [x] 3-container routing validated (269K events analyzed)
 
-### Phase 3: Build Integration (In Progress - 40%)
+### Phase 3: Build Integration (In Progress)
 
 - [x] IMP log collectors with ARPANET 1822 protocol parser (Task #27)
 - [x] 3-container routing validation (VAX → IMP1 → IMP2)
@@ -384,7 +381,9 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - [ ] Landing page display (Task #29)
 - [ ] Documentation (Task #30)
 
-**Status**: Phase 1 complete ✅; Phase 2 complete ✅; Phase 2.5 complete ✅; Phase 3 in progress (40%).
+**Status**: Phase 1 complete ✅; Phase 2 complete ✅; Phase 2.5 complete ✅; Phase 3 in progress.
+
+For the live Phase 3 checklist and percent-complete tracking, use `PHASE3-PROGRESS.md` as the source of truth.
 
 See `PHASE1-VALIDATION.md` and `PHASE2-VALIDATION.md` for validation results, plus `PHASE1-SUMMARY.md` and `TESTING-GUIDE.md` for detailed procedures.
 

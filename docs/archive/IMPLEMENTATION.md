@@ -1,5 +1,15 @@
 # AWS Testing Infrastructure - CDK Implementation Plan
 
+> **Archive notice (historical document)**
+>
+> This implementation plan documents an earlier migration stage and is retained
+> for history. Path references to `test_infra/aws/...` are outdated.
+>
+> For current implementation and commands, use:
+> - `test_infra/README.md`
+> - `test_infra/cdk/`
+> - `test_infra/scripts/`
+
 Step-by-step plan to build ephemeral EC2 testing with AWS CDK in Python.
 
 ## Prerequisites

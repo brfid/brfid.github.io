@@ -17,7 +17,8 @@ Tests basic console login automation.
 
 **Usage**:
 ```bash
-docker exec arpanet-vax /usr/bin/simh-vax /machines/data/test-login.ini
+docker cp arpanet/scripts/simh-automation/test-login.ini arpanet-vax:/tmp/test-login.ini
+docker exec arpanet-vax /usr/bin/simh-vax /tmp/test-login.ini
 ```
 
 **What it does**:
@@ -38,8 +39,9 @@ Automates file transfer using BSD 4.3's native FTP client (1986).
 # 1. Copy source file to VAX volume
 cp myfile.txt ./build/vax/source.txt
 
-# 2. Run automated transfer
-docker exec arpanet-vax /usr/bin/simh-vax /machines/data/authentic-ftp-transfer.ini
+# 2. Copy script and run automated transfer
+docker cp arpanet/scripts/simh-automation/authentic-ftp-transfer.ini arpanet-vax:/tmp/authentic-ftp-transfer.ini
+docker exec arpanet-vax /usr/bin/simh-vax /tmp/authentic-ftp-transfer.ini
 
 # 3. Check destination
 docker exec arpanet-vax cat /tmp/uploaded.txt
@@ -67,7 +69,8 @@ Configures VAX network interface automatically.
 
 **Usage**:
 ```bash
-docker exec arpanet-vax /usr/bin/simh-vax /machines/data/configure-network.ini
+docker cp arpanet/scripts/simh-automation/configure-network.ini arpanet-vax:/tmp/configure-network.ini
+docker exec arpanet-vax /usr/bin/simh-vax /tmp/configure-network.ini
 ```
 
 **What it does**:
@@ -116,7 +119,7 @@ docker exec arpanet-vax /usr/bin/simh-vax /tmp/test.ini
 
 ```bash
 # If script is in mounted volume:
-docker exec arpanet-vax /usr/bin/simh-vax /machines/data/test-login.ini
+docker exec arpanet-vax /usr/bin/simh-vax /machines/automation/test-login.ini
 ```
 
 ---
@@ -214,8 +217,10 @@ jobs:
       - name: Transfer via authentic FTP
         run: |
           cp build/resume.pdf ./build/vax/resume.pdf
+          docker cp arpanet/scripts/simh-automation/authentic-ftp-transfer.ini \
+            arpanet-vax:/tmp/authentic-ftp-transfer.ini
           docker exec arpanet-vax /usr/bin/simh-vax \
-            /machines/data/authentic-ftp-transfer.ini
+            /tmp/authentic-ftp-transfer.ini
 
       - name: Verify transfer
         run: |

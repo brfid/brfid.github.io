@@ -27,11 +27,17 @@ This file documents the workflows that currently exist in `.github/workflows/`.
   - manual dispatch
 - Runs quality checks, generates site artifacts, deploys to GitHub Pages.
 
-### Important mode note
+### Important mode note (current behavior)
 
-The CLI currently supports `--vax-mode local` and `--vax-mode docker`.
-If a workflow path sets `vax_mode=arpanet`, that is a workflow-level label, not a CLI mode.
-Use `local` for publish runs unless/until the workflow is updated to map labels to supported CLI modes.
+- `resume_generator` CLI currently supports `--vax-mode local` and `--vax-mode docker`.
+- `deploy.yml` currently derives a workflow mode named `arpanet` for `publish-arpanet*` / `publish-full*` tags
+  and passes it directly to `--vax-mode`.
+- That mode name does **not** match the CLI argument choices today.
+
+Operationally, that means:
+- `publish` / `publish-*` tags use `local` mode (supported).
+- `publish-arpanet*` / `publish-full*` tags and manual `vax_mode=arpanet` require workflow/CLI mapping
+  updates before they can run successfully end-to-end.
 
 ## Operational guidance
 

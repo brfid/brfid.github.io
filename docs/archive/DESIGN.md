@@ -1,5 +1,16 @@
 # AWS Testing Infrastructure Design
 
+> **Archive notice (historical document)**
+>
+> This file captures an earlier design phase and is kept for project history.
+> Some paths and status notes here are no longer current (for example references
+> to `test_infra/aws/...`).
+>
+> For current implementation and usage, use:
+> - `test_infra/README.md`
+> - `test_infra/cdk/`
+> - `test_infra/scripts/`
+
 **Architecture**: Ephemeral EC2 instances with Infrastructure as Code (AWS CDK in Python)
 
 ## Overview

@@ -1,5 +1,11 @@
 # Documentation Refactoring Summary
 
+> **Historical summary artifact**
+>
+> This document records a previous documentation refactoring pass (2026-02-08)
+> and is preserved for provenance. Treat current README and subsystem docs as
+> the authoritative sources for up-to-date guidance.
+
 **Date**: 2026-02-08
 **Scope**: Incorporate console automation solution, improve documentation structure
 

@@ -1,5 +1,14 @@
 # Codebase Refactoring Plan
 
+> **Historical planning artifact**
+>
+> This document captures a point-in-time refactoring proposal (2026-02-08).
+> It is preserved for context and provenance, but should not be treated as
+> the authoritative status of the current codebase.
+>
+> For current implementation status, prefer subsystem READMEs and active
+> phase/progress docs.
+
 **Date**: 2026-02-08
 **Goal**: Improve code clarity, eliminate duplication, simplify architecture
 **Priority**: Easy-to-understand, self-documenting code

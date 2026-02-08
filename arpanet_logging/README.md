@@ -5,7 +5,7 @@ Modular, DRY Python logging infrastructure for ARPANET integration testing.
 ## Features
 
 - **Real-time log collection** from Docker containers
-- **Component-specific parsers** (BSD, SIMH, ARPANET protocol)
+- **Component-specific parsers** (BSD and ARPANET 1822 protocol)
 - **Persistent storage** on EBS volume (survives instance termination)
 - **Structured events** (JSON Lines format)
 - **Statistics and indexing** for easy navigation
@@ -60,7 +60,7 @@ The package is already included in the main project dependencies:
 
 ```bash
 # Install project with dependencies
-pip install -e .
+.venv/bin/python -m pip install -e .
 ```
 
 ## Usage
@@ -69,29 +69,29 @@ pip install -e .
 
 ```bash
 # Collect from VAX only
-python -m arpanet_logging collect --components vax
+.venv/bin/python -m arpanet_logging collect --components vax
 
 # Collect from all Phase 2 components
-python -m arpanet_logging collect --components vax imp1 imp2
+.venv/bin/python -m arpanet_logging collect --components vax imp1 imp2
 
 # Collect for 60 seconds then stop
-python -m arpanet_logging collect --components vax imp1 imp2 --duration 60
+.venv/bin/python -m arpanet_logging collect --components vax imp1 imp2 --duration 60
 
 # Custom build ID
-python -m arpanet_logging collect --build-id test-build-001 --components vax
+.venv/bin/python -m arpanet_logging collect --build-id test-build-001 --components vax
 ```
 
 ### Manage Builds
 
 ```bash
 # List all builds
-python -m arpanet_logging list
+.venv/bin/python -m arpanet_logging list
 
 # Show details of specific build
-python -m arpanet_logging show build-20260207-221530
+.venv/bin/python -m arpanet_logging show build-20260207-221530
 
 # Clean up old builds (keep last 10)
-python -m arpanet_logging cleanup --keep 10
+.venv/bin/python -m arpanet_logging cleanup --keep 10
 ```
 
 ### Use in Scripts
@@ -127,14 +127,18 @@ orchestrator.stop()
 ### Collectors
 
 - **`collectors/vax.py`** - VAX/BSD collector
-- **`collectors/imp.py`** - IMP collector (TODO)
-- **`collectors/pdp10.py`** - PDP-10 collector (TODO)
+- **`collectors/imp.py`** - IMP collector
+
+Planned (not yet implemented):
+- `collectors/pdp10.py` - PDP-10 collector
 
 ### Parsers
 
 - **`parsers/bsd.py`** - BSD 4.3 log parser
-- **`parsers/simh.py`** - SIMH output parser (TODO)
-- **`parsers/arpanet.py`** - ARPANET 1822 protocol parser (TODO)
+- **`parsers/arpanet.py`** - ARPANET 1822 protocol parser
+
+Planned (not yet implemented):
+- `parsers/simh.py` - SIMH output parser
 
 ### Tools
 
@@ -225,7 +229,6 @@ If EBS volume is not available, the system falls back to `./logs/` in the curren
 
 ## Future Enhancements
 
-- [ ] IMP collector with ARPANET 1822 protocol parsing
 - [ ] PDP-10 collector
 - [ ] S3 sync for long-term archival
 - [ ] Real-time web dashboard
