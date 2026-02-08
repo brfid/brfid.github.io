@@ -149,6 +149,14 @@ jobs:
         run: |
           echo "📋 Capturing ARPANET network logs..."
           mkdir -p site/arpanet-logs
+          # Prefer logs collected by the ARPANET stage itself; these exist even
+          # if the stage has already brought the compose stack down.
+          if [[ -d build/arpanet-logs ]]; then
+            cp -r build/arpanet-logs/. site/arpanet-logs/
+          fi
+
+          # Best-effort direct container logs (may be unavailable if stack was
+          # stopped by the stage cleanup path).
           docker logs arpanet-vax > site/arpanet-logs/vax-full.log 2>&1 || true
           docker logs arpanet-imp1 > site/arpanet-logs/imp1-full.log 2>&1 || true
           docker logs arpanet-imp2 > site/arpanet-logs/imp2-full.log 2>&1 || true
