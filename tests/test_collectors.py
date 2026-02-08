@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+from _pytest.monkeypatch import MonkeyPatch
+
 from arpanet_logging.collectors.imp import IMPCollector
 from arpanet_logging.collectors.vax import VAXCollector
 from arpanet_logging.parsers.arpanet import ArpanetParser
@@ -28,17 +31,23 @@ class _FakeParser:
         return self._level
 
 
-def test_vax_collector_uses_default_parser_when_none_supplied() -> None:
+@pytest.fixture
+def mock_docker(monkeypatch: MonkeyPatch) -> None:
+    """Mock Docker client to avoid connection attempts in unit tests."""
+    monkeypatch.setattr("arpanet_logging.core.collector.docker", None)
+
+
+def test_vax_collector_uses_default_parser_when_none_supplied(mock_docker: None) -> None:
     collector = VAXCollector(build_id="b1", container_name="arpanet-vax", storage=object())
     assert isinstance(collector.parser, BSDParser)
 
 
-def test_imp_collector_uses_default_parser_when_none_supplied() -> None:
+def test_imp_collector_uses_default_parser_when_none_supplied(mock_docker: None) -> None:
     collector = IMPCollector(build_id="b1", container_name="arpanet-imp1", storage=object())
     assert isinstance(collector.parser, ArpanetParser)
 
 
-def test_vax_collector_parse_line_maps_parser_outputs_to_log_entry() -> None:
+def test_vax_collector_parse_line_maps_parser_outputs_to_log_entry(mock_docker: None) -> None:
     parser = _FakeParser(parsed={"event": "boot"}, tags=["boot", "simh"], level="DEBUG")
     collector = VAXCollector(
         build_id="build-123",
@@ -60,7 +69,7 @@ def test_vax_collector_parse_line_maps_parser_outputs_to_log_entry() -> None:
     assert [name for name, _ in parser.calls] == ["parse", "extract_tags", "detect_log_level"]
 
 
-def test_imp_collector_parse_line_maps_parser_outputs_to_log_entry() -> None:
+def test_imp_collector_parse_line_maps_parser_outputs_to_log_entry(mock_docker: None) -> None:
     parser = _FakeParser(parsed={"event": "route"}, tags=["routing"], level="INFO")
     collector = IMPCollector(
         build_id="build-456",

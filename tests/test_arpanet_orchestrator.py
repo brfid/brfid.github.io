@@ -54,8 +54,15 @@ class _FakeCollector:
 
 def test_orchestrator_start_creates_collectors_for_supported_components(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(orchestrator_module, "LogStorage", _FakeStorage)
-    monkeypatch.setattr(orchestrator_module, "VAXCollector", _FakeCollector)
-    monkeypatch.setattr(orchestrator_module, "IMPCollector", _FakeCollector)
+    monkeypatch.setattr(orchestrator_module, "COLLECTORS_AVAILABLE", True)
+
+    # Mock get_collector_class to return fake collector
+    def _mock_get_collector_class(component: str) -> type[_FakeCollector]:
+        if component in ("vax", "imp1"):
+            return _FakeCollector
+        raise ValueError(f"No collector for {component}")
+
+    monkeypatch.setattr(orchestrator_module, "get_collector_class", _mock_get_collector_class)
     monkeypatch.setattr(orchestrator_module.signal, "signal", lambda *_args, **_kwargs: None)
 
     orchestrator = orchestrator_module.LogOrchestrator(
@@ -81,8 +88,10 @@ def test_orchestrator_start_creates_collectors_for_supported_components(monkeypa
 
 def test_orchestrator_stop_stops_collectors_and_finalizes_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(orchestrator_module, "LogStorage", _FakeStorage)
-    monkeypatch.setattr(orchestrator_module, "VAXCollector", _FakeCollector)
-    monkeypatch.setattr(orchestrator_module, "IMPCollector", _FakeCollector)
+    monkeypatch.setattr(orchestrator_module, "COLLECTORS_AVAILABLE", True)
+
+    # Mock get_collector_class
+    monkeypatch.setattr(orchestrator_module, "get_collector_class", lambda _c: _FakeCollector)
     monkeypatch.setattr(orchestrator_module.signal, "signal", lambda *_args, **_kwargs: None)
 
     orchestrator = orchestrator_module.LogOrchestrator(

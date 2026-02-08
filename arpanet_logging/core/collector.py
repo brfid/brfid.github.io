@@ -5,7 +5,6 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - environment-dependent
     docker = None  # type: ignore[assignment]
 
-from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Optional, List
 import threading
@@ -15,7 +14,7 @@ from arpanet_logging.core.storage import LogStorage
 from arpanet_logging.core.parser import BaseParser
 
 
-class BaseCollector(ABC):
+class BaseCollector:
     """Base class for log collectors.
 
     Provides common functionality for streaming Docker logs and parsing them.
@@ -147,11 +146,11 @@ class BaseCollector(ABC):
             # Write structured event
             self.storage.write_event(entry)
 
-    @abstractmethod
     def parse_line(self, timestamp: str, message: str) -> Optional[LogEntry]:
         """Parse a log line into a structured entry.
 
-        Subclasses implement component-specific parsing logic.
+        Default implementation uses the collector's parser if available.
+        Subclasses can override for custom parsing logic.
 
         Args:
             timestamp: ISO 8601 timestamp
@@ -160,7 +159,19 @@ class BaseCollector(ABC):
         Returns:
             LogEntry if successfully parsed, None to skip
         """
-        pass
+        # Parse message using component parser
+        parsed = self.parser.parse(message) if self.parser else {}
+        tags = self.parser.extract_tags(message) if self.parser else []
+        log_level = self.parser.detect_log_level(message) if self.parser else "INFO"
+
+        # Create entry
+        return self.create_entry(
+            timestamp=timestamp,
+            message=message,
+            log_level=log_level,
+            tags=tags,
+            parsed=parsed
+        )
 
     def create_entry(
         self,

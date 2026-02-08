@@ -30,10 +30,11 @@ dev = [
 [project.scripts]
 resume-gen = "resume_generator.cli:main"
 arpanet-logging = "arpanet_logging.cli:main"
+arpanet-topology = "arpanet.topology.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["resume_generator*", "arpanet_logging*"]
+include = ["resume_generator*", "arpanet_logging*", "arpanet*"]
 
 [tool.mypy]
 python_version = "3.11"

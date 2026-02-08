@@ -108,103 +108,145 @@ See `PHASE3-PROGRESS.md`, `PROTOCOL-ANALYSIS.md`, and `CONSOLE-AUTOMATION-SOLUTI
 - `configure-network.ini` - Automated network configuration
 - `README.md` - Usage guide and examples
 
+## Topology Management
+
+As of 2026-02-08, ARPANET configurations use a **single-source-of-truth topology system**:
+
+```bash
+# Generate all configs from topology definitions
+arpanet-topology phase1  # Generates docker-compose + SIMH configs
+arpanet-topology phase2  # Generates phase2 configs
+
+# List available topologies
+arpanet-topology --list
+```
+
+All Docker Compose files and SIMH `.ini` configs are **generated** from Python topology definitions in `arpanet/topology/definitions.py`. To add a new host, edit one file and regenerate.
+
+See `arpanet/topology/README.md` for complete documentation.
+
 ## Directory Structure
 
 ```
 arpanet/
 ├── README.md                       # This file
-├── PHASE1-SUMMARY.md               # Phase 1 implementation details
-├── PHASE1-VALIDATION.md            # Phase 1 validation report
-├── PHASE2-PLAN.md                  # Phase 2 implementation plan
-├── PHASE2-VALIDATION.md            # Phase 2 validation notes/findings
-├── PHASE3-PLAN.md                  # Phase 3 implementation plan (509 lines)
-├── PHASE3-PROGRESS.md              # Phase 3 session progress tracking
-├── PROTOCOL-ANALYSIS.md            # ARPANET 1822 protocol analysis (450 lines)
-├── TESTING-GUIDE.md                # Testing procedures
+├── topology/                       # ⭐ Topology management (NEW)
+│   ├── README.md                  # Complete topology documentation
+│   ├── definitions.py             # Single source of truth for topologies
+│   ├── generators.py              # Config generation (Docker + SIMH)
+│   ├── registry.py                # Immutable dataclass models
+│   └── cli.py                     # arpanet-topology CLI
+├── configs/
+│   ├── phase1/                    # Generated Phase 1 SIMH configs
+│   │   └── imp1.ini              # Generated (do not edit manually)
+│   ├── phase2/                    # Generated Phase 2 SIMH configs
+│   │   ├── imp1.ini              # Generated (do not edit manually)
+│   │   ├── imp2.ini              # Generated (do not edit manually)
+│   │   └── pdp10.ini             # Generated (do not edit manually)
+│   ├── impcode.simh               # Shared IMP firmware
+│   └── impconfig.simh             # Shared IMP configuration
+├── scripts/
+│   ├── test_phase1.py             # ⭐ Phase 1 test (Python, NEW)
+│   ├── test_phase2.py             # ⭐ Phase 2 test (Python, NEW)
+│   ├── test_utils.py              # ⭐ Shared test utilities (NEW)
+│   ├── test-vax-imp.sh            # Legacy bash test (deprecated)
+│   ├── test-phase2-imp-link.sh    # Legacy bash test (deprecated)
+│   └── simh-automation/           # SIMH native automation scripts
+│       ├── README.md              # Usage guide
+│       ├── test-login.ini         # Test console automation
+│       ├── authentic-ftp-transfer.ini  # Automated FTP (1986 client)
+│       └── configure-network.ini  # Automated network config
 ├── Dockerfile.imp                  # IMP simulator container
 ├── Dockerfile.pdp10                # PDP-10 TOPS-20 container
-├── Dockerfile.pdp10stub            # Phase 2.2 bootstrap host stub
-├── configs/
-│   ├── vax-network.ini            # SIMH VAX with networking enabled
-│   ├── imp-phase1.ini             # Phase 1 IMP config
-│   ├── imp1-phase2.ini            # Phase 2 IMP #1 config (VAX + MI1)
-│   ├── imp2.ini                   # Phase 2 IMP #2 config (MI1 + HI1)
-│   └── pdp10.ini                  # PDP-10 TOPS-20 config
-└── scripts/
-    ├── test-vax-imp.sh            # Test VAX→IMP connectivity
-    ├── test-phase2-imp-link.sh    # Test Phase 2 IMP↔IMP modem link
-    ├── test-imp-logging.sh        # Test IMP log collection (30s)
-    ├── test-3container-routing.sh # Test 3-container routing (60s)
-    └── simh-automation/           # SIMH native automation scripts
-        ├── README.md              # Usage guide
-        ├── test-login.ini         # Test console automation
-        ├── authentic-ftp-transfer.ini  # Automated FTP (1986 client)
-        └── configure-network.ini  # Automated network config
+├── PHASE*.md                       # Phase documentation (see below)
+└── *.md                            # Technical documentation
 
 arpanet_logging/                   # Centralized logging package
 ├── README.md                      # Logging system documentation
-├── __main__.py                    # CLI entry point
-├── core/                          # Core logging infrastructure
-├── collectors/                    # Component-specific collectors
-│   ├── vax.py                    # VAX/BSD collector
-│   └── imp.py                    # IMP collector
-├── parsers/                       # Log parsers
-│   ├── bsd.py                    # BSD 4.3 parser
-│   └── arpanet.py                # ARPANET 1822 protocol parser
-└── orchestrator.py                # Multi-component orchestration
+├── collectors/
+│   ├── __init__.py                # Collector registry (DRY)
+│   ├── vax.py                     # VAX/BSD collector (refactored)
+│   └── imp.py                     # IMP collector (refactored)
+├── parsers/
+│   ├── bsd.py                     # BSD 4.3 parser
+│   └── arpanet.py                 # ARPANET 1822 protocol parser (refactored)
+└── orchestrator.py                # Multi-component orchestration (refactored)
 
 build/arpanet/                     # Runtime data (gitignored)
-├── imp1/                          # IMP #1 runtime data
-├── imp2/                          # IMP #2 runtime data
-├── pdp10/                         # PDP-10 runtime data
+├── imp1/, imp2/, pdp10/           # Component runtime data
 └── logs/                          # Local logs (if not using EBS)
 ```
 
+**Documentation Files** (DRY reference - see files for details):
+- **Phase Progress**: `PHASE1-VALIDATION.md`, `PHASE2-VALIDATION.md`, `PHASE3-PROGRESS.md`
+- **Phase Plans**: `PHASE1-SUMMARY.md`, `PHASE2-PLAN.md`, `PHASE3-PLAN.md`
+- **Technical Analysis**: `PROTOCOL-ANALYSIS.md`, `CONSOLE-AUTOMATION-SOLUTION.md`, `AUTHENTIC-FTP-STATUS.md`
+- **Testing**: `TESTING-GUIDE.md`, `FTP-TESTING.md`, `scripts/simh-automation/README.md`
+
 ## Usage
 
-### Phase 1: Start VAX + IMP
+### Quick Start
 
 ```bash
-# Build IMP container
-docker-compose -f docker-compose.arpanet.phase1.yml build
+# 1. Generate topology configurations
+arpanet-topology phase1  # or phase2
 
-# Start the network
-docker-compose -f docker-compose.arpanet.phase1.yml up -d
+# 2. Build and start
+docker compose -f docker-compose.arpanet.phase1.yml build
+docker compose -f docker-compose.arpanet.phase1.yml up -d
 
-# View logs
-docker-compose -f docker-compose.arpanet.phase1.yml logs -f
+# 3. Test connectivity
+python arpanet/scripts/test_phase1.py
 
-# Connect to VAX console
-telnet localhost 2323
+# 4. Connect to consoles
+telnet localhost 2323  # VAX console
+telnet localhost 2324  # IMP console
 
-# Connect to IMP console (debugging)
-telnet localhost 2324
-
-# Stop the network
-docker-compose -f docker-compose.arpanet.phase1.yml down
+# 5. Stop
+docker compose -f docker-compose.arpanet.phase1.yml down
 ```
 
-### Phase 2 (Bootstrap): Start VAX + IMP1 + IMP2 + PDP10 stub
+### Phase 1: VAX + IMP
 
 ```bash
-# Build Phase 2 containers
-docker compose -f docker-compose.arpanet.phase2.yml build
+# Generate configs (regenerate after topology changes)
+arpanet-topology phase1
 
-# Start the network
+# Build and start
+docker compose -f docker-compose.arpanet.phase1.yml build
+docker compose -f docker-compose.arpanet.phase1.yml up -d
+
+# Run automated connectivity test
+python arpanet/scripts/test_phase1.py
+
+# View logs
+docker compose -f docker-compose.arpanet.phase1.yml logs -f
+
+# Stop
+docker compose -f docker-compose.arpanet.phase1.yml down
+```
+
+### Phase 2: VAX + IMP1 + IMP2 + PDP-10
+
+```bash
+# Generate configs
+arpanet-topology phase2
+
+# Build and start
+docker compose -f docker-compose.arpanet.phase2.yml build
 docker compose -f docker-compose.arpanet.phase2.yml up -d
 
-# Run automated Phase 2 initial test
-bash arpanet/scripts/test-phase2-imp-link.sh
+# Run automated multi-hop test
+python arpanet/scripts/test_phase2.py
 
-# Show Phase 2 logs
+# Show IMP logs
 docker compose -f docker-compose.arpanet.phase2.yml logs -f imp1 imp2
 
-# Stop Phase 2 network
+# Stop
 docker compose -f docker-compose.arpanet.phase2.yml down
 ```
 
-Equivalent Make targets:
-
+**Equivalent Make targets** (if Makefile has them):
 ```bash
 make build-phase2
 make up-phase2

@@ -11,11 +11,10 @@ from arpanet_logging.core.models import BuildMetadata
 from arpanet_logging.core.storage import LogStorage
 
 try:
-    from arpanet_logging.collectors.vax import VAXCollector
-    from arpanet_logging.collectors.imp import IMPCollector
+    from arpanet_logging.collectors import get_collector_class
+    COLLECTORS_AVAILABLE = True
 except ModuleNotFoundError:  # pragma: no cover - environment-dependent
-    VAXCollector = None  # type: ignore[assignment]
-    IMPCollector = None  # type: ignore[assignment]
+    COLLECTORS_AVAILABLE = False
 
 
 class LogOrchestrator:
@@ -124,39 +123,34 @@ class LogOrchestrator:
         # Initialize storage
         self.storage.initialize(self.metadata)
 
-        # Create collectors for each component
+        # Create collectors for each component using registry
         for component in self.components:
             container_name = f"arpanet-{component}"
 
-            if component == "vax":
-                if VAXCollector is None:
-                    print("⚠️  VAX collector unavailable (missing docker SDK), skipping")
-                    continue
-                collector = VAXCollector(
-                    build_id=self.build_id,
-                    container_name=container_name,
-                    storage=self.storage,
-                    phase=self.phase
-                )
-            elif component in ("imp1", "imp2"):
-                if IMPCollector is None:
-                    print("⚠️  IMP collector unavailable (missing docker SDK), skipping")
-                    continue
-                collector = IMPCollector(
-                    build_id=self.build_id,
-                    container_name=container_name,
-                    storage=self.storage,
-                    phase=self.phase
-                )
-                # Override component name for storage
-                collector.component_name = component
-            else:
-                # For now, skip other components
-                print(f"⚠️  No specific collector for {component}, skipping")
-                continue
+            # Check if collectors are available
+            if not COLLECTORS_AVAILABLE:
+                print("⚠️  Collectors unavailable (missing docker SDK), skipping")
+                break
 
-            self.collectors.append(collector)
-            collector.start()
+            try:
+                # Get collector class from registry
+                collector_class = get_collector_class(component)
+                collector = collector_class(
+                    build_id=self.build_id,
+                    container_name=container_name,
+                    storage=self.storage,
+                    phase=self.phase
+                )
+                # Override component name for multi-instance components
+                collector.component_name = component
+
+                self.collectors.append(collector)
+                collector.start()
+
+            except ValueError as e:
+                # Component not in registry
+                print(f"⚠️  {e}, skipping")
+                continue
 
         print(f"\n✅ All collectors started\n")
 

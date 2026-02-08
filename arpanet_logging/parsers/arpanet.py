@@ -54,6 +54,26 @@ class ArpanetParser(BaseParser):
         "010000": "Error in leader",
     }
 
+    # Tag extraction patterns
+    # Maps tag names to (pattern, flags) tuples for extract_tags()
+    TAG_PATTERNS: Dict[str, re.Pattern[str]] = {
+        "host-interface": re.compile(r'\bhi\d+\b', re.IGNORECASE),
+        "modem-interface": re.compile(r'\bmi\d+\b', re.IGNORECASE),
+        "send": re.compile(r'\b(send|transmit)\b', re.IGNORECASE),
+        "receive": re.compile(r'\b(recv|receive)\b', re.IGNORECASE),
+        "packet": re.compile(r'\b(packet|message)\b', re.IGNORECASE),
+        "protocol": re.compile(r'\btype[\s=]+\d{6}\b', re.IGNORECASE),
+        "arpanet-1822": re.compile(r'\b1822\b'),
+        "routing": re.compile(r'\b(route|routing|forward)\b', re.IGNORECASE),
+        "connection": re.compile(r'\bconnect', re.IGNORECASE),
+        "attach": re.compile(r'\battach', re.IGNORECASE),
+        "simh": re.compile(r'\bh316\b', re.IGNORECASE),
+        "simulator": re.compile(r'\bsimulator\b', re.IGNORECASE),
+        "error": re.compile(r'\b(error|fail)\b', re.IGNORECASE),
+        "validation": re.compile(r'\bgood\s+registers\b', re.IGNORECASE),
+        "udp": re.compile(r'\budp\b', re.IGNORECASE),
+    }
+
     def parse(self, message: str) -> Optional[Dict[str, Any]]:
         """Parse ARPANET IMP log message.
 
@@ -124,60 +144,20 @@ class ArpanetParser(BaseParser):
     def extract_tags(self, message: str) -> List[str]:
         """Extract tags from ARPANET message.
 
+        Uses TAG_PATTERNS dictionary for efficient, maintainable tag extraction.
+
         Args:
             message: Log message
 
         Returns:
-            List of tags
+            List of tags matching the message content
         """
         tags = []
-        message_lower = message.lower()
 
-        # Interface tags
-        if re.search(r'\bhi\d+\b', message_lower):
-            tags.append("host-interface")
-        if re.search(r'\bmi\d+\b', message_lower):
-            tags.append("modem-interface")
-
-        # Action tags
-        if re.search(r'\b(send|transmit)\b', message_lower):
-            tags.append("send")
-        if re.search(r'\b(recv|receive)\b', message_lower):
-            tags.append("receive")
-        if re.search(r'\b(packet|message)\b', message_lower):
-            tags.append("packet")
-
-        # Protocol tags
-        if re.search(r'\btype[\s=]+\d{6}\b', message_lower):
-            tags.append("protocol")
-        if re.search(r'\b1822\b', message):
-            tags.append("arpanet-1822")
-
-        # Routing tags
-        if re.search(r'\b(route|routing|forward)\b', message_lower):
-            tags.append("routing")
-
-        # Connection tags
-        if re.search(r'\bconnect', message_lower):
-            tags.append("connection")
-        if re.search(r'\battach', message_lower):
-            tags.append("attach")
-
-        # SIMH simulator tags
-        if re.search(r'\bh316\b', message_lower):
-            tags.append("simh")
-        if re.search(r'\bsimulator\b', message_lower):
-            tags.append("simulator")
-
-        # Error/status tags
-        if re.search(r'\b(error|fail)\b', message_lower):
-            tags.append("error")
-        if re.search(r'\bgood\s+registers\b', message_lower):
-            tags.append("validation")
-
-        # UDP networking tags
-        if re.search(r'\budp\b', message_lower):
-            tags.append("udp")
+        # Check each pattern in TAG_PATTERNS
+        for tag_name, pattern in self.TAG_PATTERNS.items():
+            if pattern.search(message):
+                tags.append(tag_name)
 
         return tags
 
