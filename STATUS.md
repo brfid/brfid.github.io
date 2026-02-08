@@ -77,7 +77,9 @@ telnet localhost 2326
 - Test FTP file transfer (VAX ↔ PDP-10)
 - Integrate into build pipeline
 
-**Estimated timeline to completion**: 2-4 weeks
+**Timeline to GitHub Actions**: See `TIMELINE-TO-PRODUCTION.md` for detailed analysis
+- **MVP**: 2-3 weeks (working but rough)
+- **Production**: 4-6 weeks (portfolio-ready)
 
 ---
 
@@ -85,6 +87,7 @@ telnet localhost 2326
 
 ### Quick Reference
 - **Current status**: This file (`STATUS.md`)
+- **Timeline to production**: `TIMELINE-TO-PRODUCTION.md` (path to GitHub Actions)
 - **Memory/Commands**: `.claude/projects/-home-whf-brfid-github-io/memory/MEMORY.md`
 - **Refactoring summary**: `REFACTORING-COMPLETE.md`
 - **Phase 3 plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
