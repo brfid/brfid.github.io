@@ -60,6 +60,7 @@ Operationally, that means:
 - `publish-arpanet*` / `publish-full*` tags run docker VAX mode with ARPANET scaffold execution enabled.
 - ARPANET publish path uses the Phase 2 compose topology (`docker-compose.arpanet.phase2.yml`) and captures logs
   from `vax`, `imp1`, `imp2`, and `pdp10`.
+- ARPANET publish path runs `arpanet/scripts/test-phase2-imp-link.sh` as a runtime smoke gate before site generation.
 
 ## Operational guidance
 
