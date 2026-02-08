@@ -29,6 +29,7 @@ class ArpanetTestStack(Stack):
         # Get configuration from context
         instance_type = context.get("instance_type", "t3.medium")
         root_volume_size = context.get("root_volume_size", 30)
+        logs_volume_size = context.get("logs_volume_size", 20)  # 20GB for persistent logs
         ssh_public_key_path = os.path.expanduser(context["ssh_public_key_path"])
         allowed_ssh_cidrs = context.get("allowed_ssh_cidrs", ["0.0.0.0/0"])
         git_repo = context.get("git_repo", "https://github.com/brfid/brfid.github.io.git")
@@ -97,6 +98,15 @@ class ArpanetTestStack(Stack):
                         volume_size=root_volume_size,
                         volume_type=ec2.EbsDeviceVolumeType.GP3,
                         delete_on_termination=True,
+                        encrypted=True,
+                    )
+                ),
+                ec2.BlockDevice(
+                    device_name="/dev/sdf",  # Will appear as /dev/nvme1n1 on newer instances
+                    volume=ec2.BlockDeviceVolume.ebs(
+                        volume_size=logs_volume_size,
+                        volume_type=ec2.EbsDeviceVolumeType.GP3,
+                        delete_on_termination=False,  # Persist across instance terminations
                         encrypted=True,
                     )
                 )
