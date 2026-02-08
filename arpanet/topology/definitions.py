@@ -41,6 +41,7 @@ PHASE1_TOPOLOGY = TopologyDefinition(
             image="jguillaumes/simh-vaxbsd@sha256:1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215",
             volumes=[
                 ("./build/vax/simh-tape", "/machines"),
+                ("./arpanet/scripts/simh-automation", "/machines/automation:ro"),
             ],
             environment={
                 "SIMH_NETWORK": "enabled",
@@ -103,6 +104,7 @@ PHASE2_TOPOLOGY = TopologyDefinition(
             image="jguillaumes/simh-vaxbsd@sha256:1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215",
             volumes=[
                 ("./build/vax/simh-tape", "/machines"),
+                ("./arpanet/scripts/simh-automation", "/machines/automation:ro"),
             ],
             environment={
                 "SIMH_NETWORK": "enabled",

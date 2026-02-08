@@ -14,6 +14,7 @@ services:
     - 2323:2323
     volumes:
     - ./build/vax/simh-tape:/machines
+    - ./arpanet/scripts/simh-automation:/machines/automation:ro
     networks:
       arpanet:
         ipv4_address: 172.20.0.10
