@@ -20,11 +20,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bzip2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone and build SIMH with PDP-10 KS support
-RUN git clone --depth 1 https://github.com/simh/simh.git /tmp/simh && \
-    cd /tmp/simh && \
+# Download and build SIMH with PDP-10 KS support
+# Using tarball instead of git clone to avoid HTTPS auth issues in some environments
+RUN mkdir -p /tmp/simh && \
+    cd /tmp && \
+    curl -L https://github.com/simh/simh/archive/refs/heads/master.tar.gz -o simh.tar.gz && \
+    tar xzf simh.tar.gz && \
+    cd simh-master && \
     make pdp10-ks && \
-    strip BIN/pdp10-ks
+    strip BIN/pdp10-ks && \
+    mkdir -p /tmp/simh/BIN && \
+    cp BIN/pdp10-ks /tmp/simh/BIN/
 
 # Download TOPS-20 V4.1 installation tape
 # Source: http://pdp-10.trailing-edge.com/
