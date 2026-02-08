@@ -1,120 +1,34 @@
 # brfid.github.io
 
-This repo deploys a minimal GitHub Pages landing/redirect for `brfid.github.io`.
+This project generates and publishes a static resume site, with an optional VAX/ARPANET build stage as a technical signal.
 
-- LinkedIn: `https://linkedin.com/in/brfid/`
-- Architecture: see `ARCHITECTURE.md`.
+## How it works
 
-## Documentation Guide
+1. **Source input**: `resume.yaml`
+2. **Host build (`resume_generator`)**:
+   - renders resume HTML
+   - renders resume PDF
+   - prepares VAX-friendly YAML (`build/vax/resume.vax.yaml`)
+3. **VAX stage** (`--with-vax`):
+   - compiles/runs `vax/bradman.c`
+   - generates roff manpage output (`build/vax/brad.1`)
+   - host renders to `site/brad.man.txt`
+4. **Optional ARPANET wrapper** (`--with-arpanet`):
+   - orchestrates ARPANET scaffold path
+   - writes transfer logs (`site/arpanet-transfer.log`)
+   - in execute mode also writes `build/vax/arpanet-transfer-exec.log`
+5. **Publish artifacts** land in `site/` for GitHub Pages.
 
-Use this map to find the current source of truth quickly.
+For deeper component detail, see `ARCHITECTURE.md`.
 
-### Start here
+## Modes
 
-- `README.md` (this file): quickstart and build commands
-- `ARCHITECTURE.md`: end-to-end pipeline and artifact flow
-- `WORKFLOWS.md`: CI/test/publish workflow behavior
+- `--vax-mode local`: host-only VAX stage emulation path (fast iteration)
+- `--vax-mode docker`: SIMH/VAX Docker path
+- `--with-arpanet`: add ARPANET wrapper stage
+- `--arpanet-execute`: run scaffold execution commands (instead of dry-run scaffold only)
 
-### Subsystems
-
-- `vax/README.md`: VAX manpage generator contract (`resume.vax.yaml` → `brad.1`)
-- `arpanet/README.md`: ARPANET integration overview and links to phase docs
-- `arpanet_logging/README.md`: centralized logging package usage and layout
-- `test_infra/README.md`: AWS test infrastructure (CDK + helper scripts)
-
-### Historical / archived context
-
-- `docs/transport-archive.md`: removed console/FTP transfer paths and restoration notes
-- `docs/archive/`: historical design/implementation notes kept for provenance
-
-### “Which doc should I read?”
-
-- "How does the pipeline work?" → `ARCHITECTURE.md`
-- "How do I publish?" → `WORKFLOWS.md`
-- "What is current ARPANET status?" → `arpanet/README.md` then `arpanet/PHASE3-PROGRESS.md`
-- "How is logging structured?" → `arpanet_logging/README.md`
-- "What old approaches were removed?" → `docs/transport-archive.md`
-
-## Testing quick reference (for refactor safety)
-
-Run all tests and typing checks with the repo-local virtualenv:
-
-```bash
-.venv/bin/python -m pytest -q
-.venv/bin/python -m mypy resume_generator arpanet_logging tests
-.venv/bin/python -m ruff check .
-```
-
-Docstrings are linted with Ruff (`D` rules) using Google convention.
-
-Generate API docs from docstrings:
-
-```bash
-make docs
-```
-
-Output: `site/api/`
-
-CI lanes use marker-based selection:
-
-- Unit quality lane: `-m "unit and not docker and not slow"`
-- Integration lane: `-m "integration and not docker and not slow"`
-
-Recent high-priority characterization coverage additions are in:
-
-- `tests/test_vax_stage.py` (VAX stage helper utilities and tape/telnet edge behavior)
-- `tests/test_uudecode.py` (marker/header/end-line error handling and tolerant malformed input)
-- `tests/test_pdf.py` (Playwright success path and navigation failure propagation)
-
-Latest additions in this batch:
-
-- `tests/test_vax_stage.py`: `TelnetSession` internals (`_read_until`, `_read_until_any`,
-  `_ingest_data`, `_wait_for_xon`) plus `_pause()` and truncated telnet IAC handling.
-- `tests/test_uudecode.py`: direct `_decode_uu_line()` characterization for empty/zero-length
-  and truncated-line behavior.
-
-Additional runner-level characterization now covered:
-
-- `tests/test_vax_stage.py`: `_emit_resume_vax_yaml()` emission path, compiler/source failure
-  branches, subprocess command construction (`_compile_bradman`, `_run_bradman`,
-  `_run_bradman_html`), and docker-live quick-mode control flow with mocked container/session
-  hooks.
-
-Newest docker orchestration unit coverage in `tests/test_vax_stage.py`:
-
-- non-quick `_run_docker_live()` control flow (transfer/capture/decode/render ordering)
-- container cleanup on wait failure (`_stop_docker_container` in `finally` path)
-- `_start_docker_container()` command construction and context values
-- `_stop_docker_container()` best-effort behavior (`check=False`)
-- `_container_ip()` success and empty-output failure
-- `_compile_and_capture()` guest command sequencing and transcript markers
-
-Newest characterization batch adds:
-
-- `_write_diagnostics()` command/section loop verification
-- `_transfer_guest_inputs_tape()` success-path device selection and no-device failure
-- `_wait_for_console()` key branches:
-  - container exits before login
-  - inspect failure retry path + `vax-wait.log` evidence
-  - timeout when telnet never comes up
-- `TelnetSession._recv_filtered()` timeout/EOF handling
-
-Current targeted coverage snapshot after this batch:
-
-- `resume_generator/vax_stage.py`: **76%**
-- `resume_generator/uudecode.py`: **87%**
-- `resume_generator/pdf.py`: **100%**
-- targeted combined total: **78%**
-
-Highest-priority remaining test gap:
-
-- `resume_generator/vax_stage.py` deeper interactive telnet/session control paths (`login_root`,
-  `ensure_shell_prompt`, `_recover_prompt`, `_send_bytes_throttled`, and nuanced `_read_until*`
-  branching), plus select host-mode orchestration lines in `_run_local` / `_run_docker` wrappers.
-
-## Local build (venv-only)
-
-Do not install dependencies globally or modify system Python. Use the repo-local virtualenv.
+## Quickstart (venv only)
 
 ```bash
 python3 -m venv .venv
@@ -122,46 +36,81 @@ python3 -m venv .venv
 .venv/bin/python -m playwright install chromium
 ```
 
-Generate the site:
+### Build site (local VAX mode)
 
 ```bash
 .venv/bin/resume-gen --out site --with-vax --vax-mode local
 ```
 
-ARPANET stage scaffolding (Phase 3 incremental path):
+### Build site (docker VAX mode)
 
 ```bash
-# Safe default: dry-run scaffold only (writes site/arpanet-transfer.log)
-.venv/bin/resume-gen --out site --with-vax --with-arpanet --vax-mode local
-
-# Explicit execution mode (runs docker/logging scaffold commands)
-.venv/bin/resume-gen --out site --with-vax --with-arpanet --arpanet-execute --vax-mode local
+.venv/bin/resume-gen --out site --with-vax --vax-mode docker
 ```
 
-Notes:
-- `--with-arpanet` requires `--with-vax`.
-- `--arpanet-execute` requires `--with-arpanet`.
-- Execution mode currently targets scaffold orchestration and writes transfer details to:
-  - `site/arpanet-transfer.log`
-  - `build/vax/arpanet-transfer-exec.log`
-- Execute mode now includes basic resilience checks:
-  - one retry for transient `docker exec` transfer failures
-  - transfer output classification (empty/fatal marker detection)
-  - attempt-by-attempt status breadcrumbs in `site/arpanet-transfer.log`
+### Build site with ARPANET wrapper
 
-### VAX/SIMH transfer mode status
+```bash
+# Scaffold mode
+.venv/bin/resume-gen --out site --with-vax --with-arpanet --vax-mode docker
 
-Docker mode uses tape (TS11 image attached via SIMH).
-Console/FTP transports were removed from the active path and archived here:
-`docs/transport-archive.md`.
+# Execute scaffold commands
+.venv/bin/resume-gen --out site --with-vax --with-arpanet --arpanet-execute --vax-mode docker
+```
 
-Implementation notes:
+## Useful Make targets
 
-- VAX-side `vax/bradman.c` uses K&R-compatible fallbacks (varargs/stdlib/size_t/void* and `_doprnt`).
-- Host uuencode decoding is tolerant of trailing garbage in console output.
-- Docker image is pinned by digest in code for reproducibility.
+```bash
+make test-phase2
+make test-imp-logging
+make docs
+```
 
-Preview:
+## Quality checks
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m mypy resume_generator arpanet_logging tests
+.venv/bin/python -m ruff check .
+```
+
+## CI/CD overview
+
+- `ci.yml`: quality gate on `main` and PRs
+- `test.yml`: feature-branch + integration/docker smoke lanes
+- `deploy.yml`: publish/tag deployment to GitHub Pages
+
+Details: `WORKFLOWS.md`
+
+## Documentation map
+
+- `ARCHITECTURE.md` — end-to-end system flow
+- `WORKFLOWS.md` — CI/test/publish behavior
+- `arpanet/README.md` — ARPANET topology and operations
+- `arpanet/TESTING-GUIDE.md` — ARPANET test commands/troubleshooting
+- `arpanet_logging/README.md` — logging subsystem usage
+- `arpanet/topology/README.md` — topology generator and definitions
+- `vax/README.md` — VAX C tool contract
+
+## Retained records and archives
+
+Per project direction, historical and in-progress records are retained.
+
+- Transport history: `docs/transport-archive.md`
+- ARPANET implementation records (complete + in-progress):
+  - `arpanet/PHASE1-SUMMARY.md`
+  - `arpanet/PHASE2-PLAN.md`
+  - `arpanet/PHASE2-VALIDATION.md`
+  - `arpanet/PHASE3-PLAN.md`
+  - `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
+  - `arpanet/PHASE3-PROGRESS.md`
+- Technical investigation records:
+  - `arpanet/CONSOLE-AUTOMATION-PROBLEM.md`
+  - `arpanet/CONSOLE-AUTOMATION-SOLUTION.md`
+  - `arpanet/FTP-TESTING.md`
+  - `arpanet/PROTOCOL-ANALYSIS.md`
+
+## Local preview
 
 ```bash
 .venv/bin/python -m http.server --directory site 8000

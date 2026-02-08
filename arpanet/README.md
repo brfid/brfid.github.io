@@ -2,6 +2,19 @@
 
 This directory contains the infrastructure for integrating ARPANET components into the build pipeline. The goal is to create a phased approach that slowly adds ARPANET components until there's an authentic 1970s network connection inside the build process.
 
+## Record retention policy
+
+Transport archive and phase/investigation records are intentionally retained in this repository,
+including in-progress and not-yet-completed work documents. Key retained records include:
+
+- `../docs/transport-archive.md`
+- `PHASE2-PLAN.md`
+- `PHASE3-PLAN.md`
+- `PHASE3-IMPLEMENTATION-PLAN.md`
+- `PHASE3-PROGRESS.md`
+- `CONSOLE-AUTOMATION-PROBLEM.md`
+- `CONSOLE-AUTOMATION-SOLUTION.md`
+
 ## Overview
 
 The integration is based on the [obsolescence/arpanet](https://github.com/obsolescence/arpanet) project, which recreates the ARPANET circa 1972-73 using SIMH emulation of period-accurate hardware.

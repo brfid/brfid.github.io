@@ -1,5 +1,11 @@
 # Architecture (Beginner-Friendly)
 
+Canonical companion docs:
+- `README.md` (how it works + quickstart)
+- `WORKFLOWS.md` (CI/test/publish behavior)
+- `arpanet/README.md` (ARPANET runtime topology/ops)
+- `docs/transport-archive.md` (retained transport history)
+
 This project turns a single source resume (`resume.yaml`) into a small static website
 that includes:
 
@@ -118,8 +124,14 @@ flowchart LR
 Notes:
 - Docker mode runs a pinned SIMH image.
 - File transfer uses a TS11 tape image.
-- Console/FTP transports were removed from the active path and archived in
-  `docs/transport-archive.md`.
+- Console/FTP transports are not part of the active runtime path.
+- Historical transport notes are retained in `docs/transport-archive.md`.
+
+## Retained implementation records
+
+In-progress and historical implementation records are intentionally retained, especially under
+`arpanet/` (for example `PHASE2-PLAN.md`, `PHASE3-IMPLEMENTATION-PLAN.md`, and
+`PHASE3-PROGRESS.md`).
 
 ---
 
