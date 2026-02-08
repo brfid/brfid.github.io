@@ -1,9 +1,8 @@
-# ARPANET Build Integration - Phase 2 (Step 2.2 bootstrap)
-# Topology (current):
-#   [VAX/BSD] <-> [IMP #1] <-> [IMP #2] <-> [PDP10 host stub]
+# ARPANET Build Integration - Phase 2
+# Topology:
+#   [VAX/BSD] <-> [IMP #1] <-> [IMP #2] <-> [PDP-10/TOPS-20]
 #
-# NOTE: PDP10 host is currently a UDP host-link stub used to validate
-# IMP2 HI1 host attachment before full PDP-10 OS integration.
+# Full multi-hop ARPANET with two hosts and two IMPs
 
 version: '3.8'
 
@@ -67,12 +66,15 @@ services:
   pdp10:
     build:
       context: ./arpanet
-      dockerfile: Dockerfile.pdp10stub
+      dockerfile: Dockerfile.pdp10
     container_name: arpanet-pdp10
     hostname: pdp10-host
     networks:
       arpanet:
         ipv4_address: 172.20.0.40
+    volumes:
+      - ./build/arpanet/pdp10:/machines/data
+      - ./arpanet/configs/pdp10.ini:/machines/pdp10.ini:ro
     ports:
       - "2326:2323"
     restart: unless-stopped
