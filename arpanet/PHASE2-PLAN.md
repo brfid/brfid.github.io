@@ -467,6 +467,23 @@ Phase 2 is complete when:
 
 ## Next Steps After Phase 2
 
+### Phase 2.5: Centralized Logging Foundation
+
+Before deeper build-pipeline coupling, add centralized logging as a reusable platform layer.
+
+**Scope**:
+1. Define modular logging interfaces for each component (VAX, IMP1, IMP2, PDP10/stub, orchestration scripts).
+2. Add per-system collectors/forwarders where feasible.
+3. Normalize event metadata (build ID, phase, component, timestamp).
+4. Persist logs to durable storage (persistent EC2 volume or equivalent managed storage).
+5. Keep artifacts human-navigable: `build-id/component/timestamp` plus a lightweight index/manifest.
+6. Integrate collection into automated runs so each build emits retained artifacts.
+
+**Success criteria**:
+- One command/run captures logs from all ARPANET components.
+- Logs remain available after ephemeral host teardown/reprovision.
+- Humans can locate logs quickly by build ID, component, and phase.
+
 ### Phase 3: Build Pipeline Integration
 
 Once Phase 2 is validated, integrate ARPANET into the actual build pipeline:

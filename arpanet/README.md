@@ -52,6 +52,8 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 - Execute or transfer back artifacts
 - Include network logs in build output
 
+**Planned prerequisite**: Implement centralized modular logging before deeper Phase 3 coupling. See `PHASE2-PLAN.md` → **Phase 2.5: Centralized Logging Foundation** for scope and success criteria.
+
 ## Directory Structure
 
 ```
