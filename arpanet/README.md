@@ -57,12 +57,13 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 
 **Status**: Production-ready, validated on AWS
 - VAX collector with BSD 4.3 parser ✅
+- IMP collectors with ARPANET 1822 protocol parser ✅
 - Event detection and tagging ✅
 - Statistics and indexing ✅
 
 See `../arpanet_logging/README.md` for usage details.
 
-### Phase 3: Build Integration (Future)
+### Phase 3: Build Integration (In Progress - 40%)
 
 **Purpose**: Build pipeline depends on ARPANET for artifact movement:
 - Compile `bradman.c` on VAX
@@ -70,31 +71,65 @@ See `../arpanet_logging/README.md` for usage details.
 - Execute or transfer back artifacts
 - Include ARPANET logs in build output
 
-**Prerequisites**: Phase 2.5 logging ✅ complete, Phase 2 PDP-10 integration pending.
+**Current Progress**:
+- ✅ IMP collectors with ARPANET 1822 parser (Task #27)
+- ✅ 3-container routing validated (VAX → IMP1 → IMP2)
+- ✅ Protocol analysis complete (269K events analyzed)
+- ✅ Network performance measured (~970 pps, ~1 MB/s)
+- ⏳ PDP-10 integration (container running, TOPS-20 installation pending)
+- ⏳ 4-container routing test (Task #25)
+- ⏳ FTP file transfer (Task #26)
+- ⏳ Build pipeline integration (Task #28)
+
+**Key Findings**: Multi-hop routing operational, ARPANET 1822 protocol correctly implemented, 7% error rate from SIMH emulation but network functional.
+
+See `PHASE3-PROGRESS.md` and `PROTOCOL-ANALYSIS.md` for detailed results.
 
 ## Directory Structure
 
 ```
 arpanet/
-├── README.md                    # This file
-├── PHASE1-SUMMARY.md            # Phase 1 implementation details
-├── TESTING-GUIDE.md             # Testing procedures
-├── PHASE2-PLAN.md               # Phase 2 implementation plan/status
-├── PHASE2-VALIDATION.md         # Phase 2 validation notes/findings
-├── Dockerfile.imp               # IMP simulator container
-├── Dockerfile.pdp10stub         # Phase 2.2 bootstrap host stub
+├── README.md                       # This file
+├── PHASE1-SUMMARY.md               # Phase 1 implementation details
+├── PHASE1-VALIDATION.md            # Phase 1 validation report
+├── PHASE2-PLAN.md                  # Phase 2 implementation plan
+├── PHASE2-VALIDATION.md            # Phase 2 validation notes/findings
+├── PHASE3-PLAN.md                  # Phase 3 implementation plan (509 lines)
+├── PHASE3-PROGRESS.md              # Phase 3 session progress tracking
+├── PROTOCOL-ANALYSIS.md            # ARPANET 1822 protocol analysis (450 lines)
+├── TESTING-GUIDE.md                # Testing procedures
+├── Dockerfile.imp                  # IMP simulator container
+├── Dockerfile.pdp10                # PDP-10 TOPS-20 container
+├── Dockerfile.pdp10stub            # Phase 2.2 bootstrap host stub
 ├── configs/
-│   ├── vax-network.ini         # SIMH VAX with networking enabled
-│   ├── imp-phase1.ini          # Phase 1 IMP config
-│   ├── imp1-phase2.ini         # Phase 2 IMP #1 config (VAX + MI1)
-│   └── imp2.ini                # Phase 2 IMP #2 config (MI1 + future HI1)
+│   ├── vax-network.ini            # SIMH VAX with networking enabled
+│   ├── imp-phase1.ini             # Phase 1 IMP config
+│   ├── imp1-phase2.ini            # Phase 2 IMP #1 config (VAX + MI1)
+│   ├── imp2.ini                   # Phase 2 IMP #2 config (MI1 + HI1)
+│   └── pdp10.ini                  # PDP-10 TOPS-20 config
 └── scripts/
-    ├── test-vax-imp.sh         # Test VAX→IMP connectivity
-    └── test-phase2-imp-link.sh # Test Phase 2 IMP↔IMP modem link
+    ├── test-vax-imp.sh            # Test VAX→IMP connectivity
+    ├── test-phase2-imp-link.sh    # Test Phase 2 IMP↔IMP modem link
+    ├── test-imp-logging.sh        # Test IMP log collection (30s)
+    └── test-3container-routing.sh # Test 3-container routing (60s)
 
-build/arpanet/
-├── imp1/                       # IMP #1 runtime data
-└── logs/                       # Network logs and transcripts
+arpanet_logging/                   # Centralized logging package
+├── README.md                      # Logging system documentation
+├── __main__.py                    # CLI entry point
+├── core/                          # Core logging infrastructure
+├── collectors/                    # Component-specific collectors
+│   ├── vax.py                    # VAX/BSD collector
+│   └── imp.py                    # IMP collector
+├── parsers/                       # Log parsers
+│   ├── bsd.py                    # BSD 4.3 parser
+│   └── arpanet.py                # ARPANET 1822 protocol parser
+└── orchestrator.py                # Multi-component orchestration
+
+build/arpanet/                     # Runtime data (gitignored)
+├── imp1/                          # IMP #1 runtime data
+├── imp2/                          # IMP #2 runtime data
+├── pdp10/                         # PDP-10 runtime data
+└── logs/                          # Local logs (if not using EBS)
 ```
 
 ## Usage
@@ -247,21 +282,37 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - Docker network (172.20.0.0/16) with traffic flowing between containers
 - All Phase 1 success criteria met
 
-### Phase 2: Step 2.2 bootstrap in progress
+### Phase 2: Complete ✅
 
 - [x] Added IMP #2 container/config (`arpanet/configs/imp2.ini`)
 - [x] Added Phase 2 IMP #1 config (`arpanet/configs/imp1-phase2.ini`)
-- [x] Added `docker-compose.arpanet.phase2.yml` for VAX + IMP1 + IMP2 (+ PDP10 stub)
+- [x] Added `docker-compose.arpanet.phase2.yml` for VAX + IMP1 + IMP2 + PDP10
 - [x] Added automated test script (`arpanet/scripts/test-phase2-imp-link.sh`) with HI1 checks
-- [x] Added PDP10 host stub container (`arpanet/Dockerfile.pdp10stub`)
-- [x] Wired IMP2 HI1 to host endpoint `172.20.0.40:2000`
+- [x] Added PDP10 container (`arpanet/Dockerfile.pdp10`, TOPS-20 V4.1)
+- [x] Wired IMP2 HI1 to PDP-10 endpoint `172.20.0.40:2000`
 - [x] Validated on AWS EC2 x86_64:
   - Containers up: `arpanet-vax`, `arpanet-imp1`, `arpanet-imp2`, `arpanet-pdp10`
   - IPs: `172.20.0.10`, `172.20.0.20`, `172.20.0.30`, `172.20.0.40`
   - MI1 packet send/receive visible in both IMP logs
   - HI1 packet send markers visible from IMP2
+- [x] Phase 2.5: Centralized logging infrastructure (production-ready)
+- [x] IMP collectors with ARPANET 1822 protocol parser
+- [x] 3-container routing validated (269K events analyzed)
 
-**Status**: Phase 1 complete; Phase 2 Step 2.1 complete; Step 2.2 host-link bootstrap validated.
+### Phase 3: Build Integration (In Progress - 40%)
+
+- [x] IMP log collectors with ARPANET 1822 protocol parser (Task #27)
+- [x] 3-container routing validation (VAX → IMP1 → IMP2)
+- [x] Protocol analysis complete (PROTOCOL-ANALYSIS.md)
+- [x] Network performance measurement (~970 pps)
+- [ ] PDP-10 TOPS-20 installation (container ready, OS installation pending)
+- [ ] 4-container routing test (Task #25)
+- [ ] FTP file transfer VAX ↔ PDP-10 (Task #26)
+- [ ] Build pipeline integration (Task #28)
+- [ ] Landing page display (Task #29)
+- [ ] Documentation (Task #30)
+
+**Status**: Phase 1 complete ✅; Phase 2 complete ✅; Phase 2.5 complete ✅; Phase 3 in progress (40%).
 
 See `PHASE1-VALIDATION.md` and `PHASE2-VALIDATION.md` for validation results, plus `PHASE1-SUMMARY.md` and `TESTING-GUIDE.md` for detailed procedures.
 
