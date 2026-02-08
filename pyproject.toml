@@ -109,6 +109,10 @@ convention = "google"
   "S101", # assert
   "D",    # test docstrings are intentionally sparse
 ]
+"arpanet/scripts/*.py" = [
+  "E402", # sys.path.insert for project imports
+  "S603", # subprocess calls for internal CLI tools
+]
 
 [tool.pylint.main]
 py-version = "3.11"

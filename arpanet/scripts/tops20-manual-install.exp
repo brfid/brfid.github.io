@@ -1,0 +1,256 @@
+#!/usr/bin/expect -f
+# TOPS-20 V4.1 Installation - Manual Boot Version
+
+set timeout 60
+log_user 1
+
+send_user "\n=== Connecting to PDP-10 console ===\n"
+spawn telnet localhost 2326
+
+expect {
+    "sim>" {
+        send_user "\n=== At sim> prompt ===\n"
+    }
+    timeout {
+        send_user "\n!!! Timeout waiting for sim> prompt !!!\n"
+        exit 1
+    }
+}
+
+# Boot from tape
+send_user "\n=== Booting from installation tape ===\n"
+sleep 2
+send "boot tua0\r"
+
+# Wait for MTBOOT prompt
+set timeout 300
+expect {
+    "MTBOOT>" {
+        send_user "\n=== MTBOOT prompt reached! ===\n"
+    }
+    "BOOT" {
+        send_user "\n=== Boot process started ===\n"
+        expect "MTBOOT>"
+    }
+    timeout {
+        send_user "\n!!! Timeout waiting for MTBOOT !!!\n"
+        send_user "\nCurrent buffer: $expect_out(buffer)\n"
+        exit 1
+    }
+}
+
+send_user "\n========================================\n"
+send_user "=== MTBOOT REACHED - Pausing here ===\n"
+send_user "========================================\n"
+send_user "\nThe system is now at the MTBOOT> prompt.\n"
+send_user "Next steps will format disk and install TOPS-20.\n"
+send_user "\nWaiting 10 seconds before continuing...\n"
+sleep 10
+
+# Start disk formatter
+send_user "\n=== Starting disk formatter ===\n"
+sleep 2
+send "/L\r"
+expect "MTBOOT>"
+sleep 2
+send "/G143\r"
+
+# Wait for formatter to start
+set timeout 60
+expect {
+    "REPLACE" {
+        send_user "\n=== Disk formatter started ===\n"
+    }
+    "file system" {
+        send_user "\n=== Formatter question appeared ===\n"
+    }
+    timeout {
+        send_user "\n!!! Formatter start timeout !!!\n"
+        send_user "\nBuffer: $expect_out(buffer)\n"
+        exit 1
+    }
+}
+
+send_user "\n=== Answering formatter questions ===\n"
+
+# Replace file system?
+sleep 1
+send "Y\r"
+
+expect "STRUCTURE"
+sleep 1
+send "Y\r"
+
+expect "NAME"
+sleep 1
+send "PS\r"
+
+expect "PACKS"
+sleep 1
+send "1\r"
+
+expect "LOCATION"
+sleep 1
+send "0,0\r"
+
+expect "SWAPPING"
+sleep 1
+send "Y\r"
+
+expect "FRONT-END"
+sleep 1
+send "Y\r"
+
+expect "BOOTSTRAP"
+sleep 1
+send "Y\r"
+
+expect "BAT"
+sleep 1
+send "Y\r"
+
+expect "ENCRYPTION"
+sleep 1
+send "N\r"
+
+expect "DATE"
+sleep 1
+send "8-FEB-26 12:00:00\r"
+
+expect "CORRECT"
+sleep 1
+send "Y\r"
+
+expect "REASON"
+sleep 1
+send "INSTALLATION\r"
+
+send_user "\n=== Disk formatting started (5-10 minutes) ===\n"
+set timeout 900
+
+expect {
+    "RUNNING DDMP" {
+        send_user "\n=== Disk formatted! ===\n"
+    }
+    "MX>" {
+        send_user "\n=== Already at MX> ===\n"
+    }
+    timeout {
+        send_user "\n!!! Format timeout !!!\n"
+        exit 1
+    }
+}
+
+# Interrupt if needed
+sleep 2
+send "\003"
+expect "MX>"
+
+send_user "\n=== Loading monitor ===\n"
+sleep 2
+send "GET FILE MTA0:\r"
+sleep 3
+send "GET FILE MTA0:\r"
+sleep 2
+
+expect "MX>"
+sleep 2
+send "START\r"
+
+set timeout 300
+expect {
+    "@" {
+        send_user "\n=== TOPS-20 prompt! ===\n"
+    }
+    timeout {
+        send_user "\n!!! Monitor start timeout !!!\n"
+        exit 1
+    }
+}
+
+send_user "\n========================================\n"
+send_user "=== SYSTEM BOOTED - Ready for restoration ===\n"
+send_user "========================================\n"
+send_user "\nSystem is now running. Starting file restoration...\n"
+sleep 5
+
+# DUMPER restoration
+send "ENABLE\r"
+expect "@"
+sleep 2
+send "RUN DUMPER\r"
+expect "DUMPER>"
+
+send "TAPE MTA0:\r"
+expect "DUMPER>"
+send "REWIND\r"
+expect "DUMPER>"
+send "SKIP 2\r"
+expect "DUMPER>"
+
+send_user "\n========================================\n"
+send_user "=== STARTING FILE RESTORATION (30-60 MIN) ===\n"
+send_user "=== Started: [clock format [clock seconds]] ===\n"
+send_user "========================================\n"
+
+set timeout 7200
+send "RESTORE <*>*.*.*\r"
+
+expect {
+    "DUMPER>" {
+        send_user "\n=== Restoration complete! ===\n"
+        send_user "=== Finished: [clock format [clock seconds]] ===\n"
+    }
+    timeout {
+        send_user "\n!!! Restoration timeout !!!\n"
+        exit 1
+    }
+}
+
+send "EXIT\r"
+expect "@"
+
+# Create user account
+send_user "\n=== Creating OPERATOR account ===\n"
+send "ENABLE\r"
+expect "@"
+send "RUN DLUSER\r"
+expect "*"
+send "ADD OPERATOR 1,2\r"
+expect "Password:"
+send "operator\r"
+expect "Re-enter"
+send "operator\r"
+expect "*"
+send "EXIT\r"
+expect "@"
+
+# Write bootstrap
+send_user "\n=== Writing bootstrap ===\n"
+send "RUN SMFILE\r"
+expect "*"
+send "WRITE /BOOTSTRAP\r"
+expect "*"
+send "EXIT\r"
+expect "@"
+
+# Shutdown
+send_user "\n=== Shutting down ===\n"
+send "ENABLE\r"
+expect "@"
+send "SHUTDOWN\r"
+expect "Reason"
+send "Installation complete\r"
+expect "uptime"
+send "0\r"
+expect "minutes"
+send "0\r"
+expect "@"
+send "CEASE NOW\r"
+
+expect {
+    "sim>" { send_user "\n=== INSTALLATION COMPLETE! ===\n" }
+    timeout { send_user "\n=== System halted ===\n" }
+}
+
+exit 0
