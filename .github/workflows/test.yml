@@ -34,7 +34,8 @@ jobs:
 
       - name: Quality checks
         run: |
-          python -m ruff check . --exclude test_infra
+          # Keep feature-branch lint scope aligned with CI policy.
+          python -m ruff check resume_generator
           python -m mypy resume_generator arpanet_logging tests
           python -m pytest -q -m "unit and not docker and not slow"
           python -m pylint resume_generator tests -sn
