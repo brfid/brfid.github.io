@@ -1,0 +1,467 @@
+#!/usr/bin/expect -f
+# TOPS-20 V4.1 Interactive Installation via Docker TTY
+# Based on expert analysis and Gunkies recipe
+
+set timeout 7200
+log_user 1
+
+# Color output for visibility
+proc log_step {msg} {
+    send_user "\n\033\[1;34m=== $msg ===\033\[0m\n"
+}
+
+proc log_success {msg} {
+    send_user "\n\033\[1;32m✅ $msg\033\[0m\n"
+}
+
+proc log_error {msg} {
+    send_user "\n\033\[1;31m❌ $msg\033\[0m\n"
+}
+
+log_step "TOPS-20 V4.1 Interactive Installation"
+send_user "Using Docker TTY (no telnet) - following published recipes\n"
+
+# Start interactive Docker container with pdp10-ks
+log_step "Starting pdp10-ks with install.ini"
+
+spawn docker run --rm -it \
+  --name pdp10-install \
+  -v brfid.github.io_arpanet-pdp10-data:/machines/data \
+  -v brfid.github.io_arpanet-pdp10-config:/machines/pdp10 \
+  brfidgithubio-pdp10 \
+  /usr/local/bin/pdp10-ks /machines/pdp10/install.ini
+
+# Wait for sim> prompt
+log_step "Waiting for sim> prompt"
+set timeout 60
+expect {
+    "sim>" {
+        log_success "Got sim> prompt!"
+    }
+    "Ready for manual boot" {
+        send_user "\nSaw ready message, waiting for prompt...\n"
+        expect "sim>"
+        log_success "Got sim> prompt!"
+    }
+    timeout {
+        log_error "Timeout waiting for sim> prompt"
+        exit 1
+    }
+}
+
+# Boot from tape
+log_step "Booting from installation tape"
+send "boot tua0\r"
+
+# Wait for MTBOOT prompt
+set timeout 300
+expect {
+    "MTBOOT>" {
+        log_success "MTBOOT prompt reached!"
+    }
+    "BOOT" {
+        send_user "\nSaw BOOT message, waiting for MTBOOT prompt...\n"
+        expect "MTBOOT>"
+        log_success "MTBOOT prompt reached!"
+    }
+    timeout {
+        log_error "Timeout waiting for MTBOOT"
+        send_user "\nTrying to send CR to repaint prompt...\n"
+        send "\r"
+        expect "MTBOOT>"
+        log_success "MTBOOT prompt appeared after CR"
+    }
+}
+
+# Load disk formatter
+log_step "Loading disk formatter"
+sleep 2
+send "/L\r"
+
+set timeout 60
+expect {
+    "MTBOOT>" {
+        log_success "Formatter loader completed"
+    }
+    "\[BOOT:" {
+        send_user "\nLoader running...\n"
+        expect "MTBOOT>"
+    }
+    timeout {
+        log_error "Timeout after /L command"
+    }
+}
+
+# Start formatter
+log_step "Starting disk formatter at location 143"
+sleep 2
+send "/G143\r"
+
+# Wait for first formatter question
+set timeout 120
+expect {
+    -re "(REPLACE|file system)" {
+        log_success "Disk formatter started!"
+    }
+    timeout {
+        log_error "Formatter did not start"
+        exit 1
+    }
+}
+
+# Answer formatter questions
+log_step "Answering formatter questions"
+
+# Replace file system?
+sleep 1
+send "Y\r"
+send_user "  Replace file system: Y\n"
+
+# Define public structure?
+expect -re "(DEFINE|STRUCTURE)"
+sleep 1
+send "Y\r"
+send_user "  Define public structure: Y\n"
+
+# Structure name
+expect "NAME"
+sleep 1
+send "PS\r"
+send_user "  Structure name: PS\n"
+
+# Number of packs
+expect "PACKS"
+sleep 1
+send "1\r"
+send_user "  Number of packs: 1\n"
+
+# Logical pack location
+expect "LOCATION"
+sleep 1
+send "0,0\r"
+send_user "  Pack location: 0,0\n"
+
+# Swapping space
+expect "SWAPPING"
+sleep 1
+send "Y\r"
+send_user "  Swapping space: Y (default)\n"
+
+# Front-end file system
+expect "FRONT-END"
+sleep 1
+send "Y\r"
+send_user "  Front-end FS: Y (default)\n"
+
+# Bootstrap area
+expect "BOOTSTRAP"
+sleep 1
+send "Y\r"
+send_user "  Bootstrap area: Y (default)\n"
+
+# BAT blocks
+expect "BAT"
+sleep 1
+send "Y\r"
+send_user "  BAT blocks: Y\n"
+
+# Password encryption
+expect "ENCRYPTION"
+sleep 1
+send "N\r"
+send_user "  Password encryption: N\n"
+
+# Date and time
+expect "DATE"
+sleep 1
+send "8-FEB-26 12:00:00\r"
+send_user "  Date/time: 8-FEB-26 12:00:00\n"
+
+# Confirm date/time
+expect "CORRECT"
+sleep 1
+send "Y\r"
+send_user "  Confirm: Y\n"
+
+# Reason for reload
+expect "REASON"
+sleep 1
+send "INSTALLATION\r"
+send_user "  Reason: INSTALLATION\n"
+
+# Wait for disk formatting (can take 5-10 minutes)
+log_step "Disk formatting in progress (5-10 minutes)"
+set timeout 900
+
+expect {
+    "RUNNING DDMP" {
+        log_success "Disk formatting complete!"
+    }
+    "MX>" {
+        log_success "Already at MX> prompt"
+    }
+    timeout {
+        log_error "Disk formatting timeout"
+        exit 1
+    }
+}
+
+# Interrupt to MX prompt if at DDMP
+sleep 2
+send "\003"
+sleep 2
+
+expect "MX>"
+log_success "At MX> prompt"
+
+# Load monitor from tape
+log_step "Loading TOPS-20 monitor from tape"
+sleep 2
+send "GET FILE MTA0:\r"
+sleep 3
+
+expect {
+    "MX>" {
+        send_user "  First GET FILE completed\n"
+    }
+    timeout {
+        send_user "  Waiting for MX> prompt...\n"
+    }
+}
+
+sleep 2
+send "GET FILE MTA0:\r"
+sleep 3
+
+expect "MX>"
+send_user "  Second GET FILE completed\n"
+
+# Start the monitor
+log_step "Starting TOPS-20 monitor"
+sleep 2
+send "START\r"
+
+# Wait for TOPS-20 prompt (can take a few minutes)
+set timeout 300
+expect {
+    "@" {
+        log_success "TOPS-20 system prompt reached!"
+    }
+    "TOPS-20" {
+        send_user "\nSaw TOPS-20 banner, waiting for prompt...\n"
+        expect "@"
+        log_success "TOPS-20 system prompt reached!"
+    }
+    timeout {
+        log_error "Timeout waiting for TOPS-20 prompt"
+        exit 1
+    }
+}
+
+# Enable privileged mode
+log_step "Enabling privileged mode"
+sleep 2
+send "ENABLE\r"
+expect "@"
+log_success "Privileged mode enabled"
+
+# Run DUMPER for file restoration
+log_step "Starting DUMPER for file restoration"
+sleep 2
+send "RUN DUMPER\r"
+
+expect "DUMPER>"
+log_success "DUMPER started"
+
+# Configure tape
+send_user "  Configuring tape device...\n"
+sleep 2
+send "TAPE MTA0:\r"
+expect "DUMPER>"
+
+# Rewind tape
+send_user "  Rewinding tape...\n"
+sleep 2
+send "REWIND\r"
+expect "DUMPER>"
+
+# Skip to savesets
+send_user "  Skipping to savesets...\n"
+sleep 2
+send "SKIP 2\r"
+expect "DUMPER>"
+
+# Start restoration
+log_step "File restoration starting (30-60 minutes)"
+send_user "⏰ Started at: [clock format [clock seconds]]\n"
+send_user "☕ Go get coffee - this will take a while!\n"
+
+set timeout 7200
+send "RESTORE <*>*.*.*\r"
+
+# Wait for restoration to complete
+expect {
+    "DUMPER>" {
+        log_success "File restoration complete!"
+        send_user "⏰ Finished at: [clock format [clock seconds]]\n"
+    }
+    "RESTORING:" {
+        send_user "."
+        exp_continue
+    }
+    timeout {
+        log_error "File restoration timeout (2 hours)"
+        send_user "Check if still running manually\n"
+        exit 1
+    }
+}
+
+# Exit DUMPER
+log_step "Exiting DUMPER"
+sleep 2
+send "EXIT\r"
+expect "@"
+log_success "Back at TOPS-20 prompt"
+
+# Create OPERATOR account
+log_step "Creating OPERATOR user account"
+sleep 2
+send "ENABLE\r"
+expect "@"
+sleep 2
+send "RUN DLUSER\r"
+expect "*"
+
+sleep 2
+send "ADD OPERATOR 1,2\r"
+expect "Password:"
+sleep 1
+send "operator\r"
+expect "Re-enter"
+sleep 1
+send "operator\r"
+expect "*"
+log_success "OPERATOR account created"
+
+sleep 2
+send "EXIT\r"
+expect "@"
+
+# Write bootstrap to disk
+log_step "Writing bootstrap to disk"
+sleep 2
+send "RUN SMFILE\r"
+expect "*"
+sleep 2
+send "WRITE /BOOTSTRAP\r"
+expect "*"
+sleep 2
+send "EXIT\r"
+expect "@"
+log_success "Bootstrap written to disk"
+
+# Shutdown system
+log_step "Shutting down system"
+sleep 2
+send "ENABLE\r"
+expect "@"
+sleep 2
+send "SHUTDOWN\r"
+expect "Reason"
+sleep 1
+send "Installation complete\r"
+expect "uptime"
+sleep 1
+send "0\r"
+expect "minutes"
+sleep 1
+send "0\r"
+expect "@"
+
+sleep 2
+send "CEASE NOW\r"
+
+# Wait for system halt
+set timeout 60
+expect {
+    "sim>" {
+        log_success "System halted successfully"
+    }
+    "HALT" {
+        send_user "\nSystem halted\n"
+        expect "sim>"
+    }
+    timeout {
+        send_user "\nSystem may have halted\n"
+    }
+}
+
+# Test boot from disk
+log_step "Testing boot from installed disk"
+sleep 2
+send "boot rpa0\r"
+
+set timeout 300
+expect {
+    "@" {
+        log_success "TOPS-20 boots from disk!"
+    }
+    "TOPS-20" {
+        send_user "\nSaw TOPS-20 banner...\n"
+        expect "@"
+        log_success "TOPS-20 boots from disk!"
+    }
+    timeout {
+        log_error "Boot from disk failed"
+    }
+}
+
+# Verify system
+log_step "Verifying installation"
+sleep 2
+send "LOGIN OPERATOR\r"
+expect "Password:"
+sleep 1
+send "operator\r"
+
+expect {
+    "@" {
+        log_success "Login successful!"
+    }
+    timeout {
+        log_error "Login failed"
+    }
+}
+
+# Run some verification commands
+sleep 2
+send "SYSTAT\r"
+expect "@"
+
+sleep 2
+send "DIR\r"
+expect "@"
+
+sleep 2
+send "LOGOUT\r"
+sleep 3
+
+# Exit SIMH
+send "\005"
+sleep 2
+expect "sim>"
+send "exit\r"
+
+log_step "INSTALLATION COMPLETE!"
+send_user "\n"
+send_user "========================================\n"
+send_user "TOPS-20 Installation Successful!\n"
+send_user "========================================\n"
+send_user "\n"
+send_user "Next steps:\n"
+send_user "1. Run: bash reconfigure-production.sh\n"
+send_user "2. Start: docker compose up -d pdp10\n"
+send_user "3. Test: telnet localhost 2326\n"
+send_user "\n"
+
+exit 0
