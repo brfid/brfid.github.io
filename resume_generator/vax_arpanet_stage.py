@@ -234,6 +234,7 @@ class VaxArpanetStageRunner:
                 "vax",
                 "imp1",
                 "imp2",
+                "pdp10",
                 "--duration",
                 "1",
                 "--path",

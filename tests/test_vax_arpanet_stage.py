@@ -593,3 +593,65 @@ def test_transfer_script_path_raises_when_no_script_exists(
 
     with pytest.raises(RuntimeError, match="Missing transfer script"):
         runner._transfer_script_path()
+
+
+def test_collect_arpanet_logs_includes_pdp10_component(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeDelegate:
+        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+            del config, repo_root
+            self.paths = SimpleNamespace(
+                site_dir=tmp_path / "site",
+                repo_root=tmp_path,
+                build_dir=tmp_path / "build",
+            )
+
+        def run(self) -> None:
+            return
+
+    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+
+    commands: list[list[str]] = []
+
+    def _fake_run_command(
+        self: VaxArpanetStageRunner,
+        command: list[str],
+    ) -> subprocess.CompletedProcess[str]:
+        del self
+        commands.append(command)
+        return subprocess.CompletedProcess(args=command, returncode=0, stdout="")
+
+    monkeypatch.setattr(
+        VaxArpanetStageRunner,
+        "_resolve_executable",
+        lambda _s, _p: "/usr/bin/python",
+    )
+    monkeypatch.setattr(VaxArpanetStageRunner, "_run_command", _fake_run_command)
+
+    runner = VaxArpanetStageRunner(
+        config=VaxStageConfig(
+            resume_path=tmp_path / "resume.yaml",
+            site_dir=tmp_path / "site",
+            build_dir=tmp_path / "build",
+        ),
+        repo_root=tmp_path,
+        execute_commands=True,
+    )
+
+    steps: list[str] = []
+    runner._collect_arpanet_logs(steps)
+
+    assert len(commands) == 1
+    cmd = commands[0]
+    assert cmd[:4] == ["/usr/bin/python", "-m", "arpanet_logging", "collect"]
+
+    components_idx = cmd.index("--components")
+    assert cmd[components_idx + 1 : components_idx + 5] == [
+        "vax",
+        "imp1",
+        "imp2",
+        "pdp10",
+    ]
+    assert "logs: collected via arpanet_logging CLI (scaffold)" in steps
