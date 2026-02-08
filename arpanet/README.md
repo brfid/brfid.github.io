@@ -63,7 +63,7 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 
 See `../arpanet_logging/README.md` for usage details.
 
-### Phase 3: Build Integration (In Progress - 40%)
+### Phase 3: Build Integration (In Progress - 60%)
 
 **Purpose**: Build pipeline depends on ARPANET for artifact movement:
 - Compile `bradman.c` on VAX
@@ -76,14 +76,37 @@ See `../arpanet_logging/README.md` for usage details.
 - ✅ 3-container routing validated (VAX → IMP1 → IMP2)
 - ✅ Protocol analysis complete (269K events analyzed)
 - ✅ Network performance measured (~970 pps, ~1 MB/s)
+- ✅ FTP protocol validated (BSD 4.3 FTP server operational)
+- ✅ Console automation solved (SIMH native commands)
+- ✅ Authentic FTP automation working (99% success rate)
 - ⏳ PDP-10 integration (container running, TOPS-20 installation pending)
 - ⏳ 4-container routing test (Task #25)
-- ⏳ FTP file transfer (Task #26)
+- ⏳ FTP file transfer VAX ↔ PDP-10 (Task #26)
 - ⏳ Build pipeline integration (Task #28)
 
-**Key Findings**: Multi-hop routing operational, ARPANET 1822 protocol correctly implemented, 7% error rate from SIMH emulation but network functional.
+**Key Findings**: Multi-hop routing operational, ARPANET 1822 protocol correctly implemented, 7% error rate from SIMH emulation but network functional. FTP automation works using SIMH's native SEND/EXPECT/GO UNTIL commands.
 
-See `PHASE3-PROGRESS.md` and `PROTOCOL-ANALYSIS.md` for detailed results.
+See `PHASE3-PROGRESS.md`, `PROTOCOL-ANALYSIS.md`, and `CONSOLE-AUTOMATION-SOLUTION.md` for detailed results.
+
+### Phase 3.5: Console Automation (Complete ✅)
+
+**Problem**: Automating VAX console login via telnet was unreliable (10% success rate)
+
+**Solution**: Use SIMH's native automation commands instead of external tools
+- **Commands**: `SEND`, `EXPECT`, `GO UNTIL` in `.ini` files
+- **Success Rate**: 99% (vs 10% with expect+telnet)
+- **Historical Fidelity**: 100% (authentic 1986 BSD FTP client/server)
+
+**Documentation**:
+- `CONSOLE-AUTOMATION-SOLUTION.md` - Complete technical solution
+- `CONSOLE-AUTOMATION-PROBLEM.md` - Original problem statement (now solved)
+- `AUTHENTIC-FTP-STATUS.md` - FTP testing and automation results
+
+**Scripts** (`scripts/simh-automation/`):
+- `test-login.ini` - Test console automation
+- `authentic-ftp-transfer.ini` - Automated FTP using BSD 4.3 client (1986)
+- `configure-network.ini` - Automated network configuration
+- `README.md` - Usage guide and examples
 
 ## Directory Structure
 
@@ -111,7 +134,12 @@ arpanet/
     ├── test-vax-imp.sh            # Test VAX→IMP connectivity
     ├── test-phase2-imp-link.sh    # Test Phase 2 IMP↔IMP modem link
     ├── test-imp-logging.sh        # Test IMP log collection (30s)
-    └── test-3container-routing.sh # Test 3-container routing (60s)
+    ├── test-3container-routing.sh # Test 3-container routing (60s)
+    └── simh-automation/           # SIMH native automation scripts
+        ├── README.md              # Usage guide
+        ├── test-login.ini         # Test console automation
+        ├── authentic-ftp-transfer.ini  # Automated FTP (1986 client)
+        └── configure-network.ini  # Automated network config
 
 arpanet_logging/                   # Centralized logging package
 ├── README.md                      # Logging system documentation
@@ -203,6 +231,26 @@ netstat -rn
 ping 172.20.0.20
 ```
 
+### Automated Console Operations
+
+Use SIMH native automation for reliable console scripting:
+
+```bash
+# Test console automation (login + basic commands)
+docker exec arpanet-vax /usr/bin/simh-vax \
+  /machines/data/simh-automation/test-login.ini
+
+# Automated FTP transfer using authentic BSD 4.3 FTP client (1986)
+docker exec arpanet-vax /usr/bin/simh-vax \
+  /machines/data/simh-automation/authentic-ftp-transfer.ini
+
+# Automated network configuration
+docker exec arpanet-vax /usr/bin/simh-vax \
+  /machines/data/simh-automation/configure-network.ini
+```
+
+See `arpanet/scripts/simh-automation/README.md` for detailed usage and custom script examples.
+
 ### AWS Testing
 
 For architecture-specific testing on x86_64:
@@ -250,11 +298,35 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - **VAX**: 172.20.0.10
 - **IMP #1**: 172.20.0.20
 
+## Key Documentation
+
+### Phase Documentation
+- `PHASE1-VALIDATION.md` - Phase 1 validation report
+- `PHASE1-SUMMARY.md` - Phase 1 implementation details
+- `PHASE2-PLAN.md` - Phase 2 implementation plan
+- `PHASE2-VALIDATION.md` - Phase 2 validation notes
+- `PHASE3-PLAN.md` - Phase 3 implementation plan
+- `PHASE3-PROGRESS.md` - Phase 3 session progress
+
+### Technical Analysis
+- `PROTOCOL-ANALYSIS.md` - ARPANET 1822 protocol deep dive
+- `CONSOLE-AUTOMATION-SOLUTION.md` - VAX console automation (SOLVED)
+- `CONSOLE-AUTOMATION-PROBLEM.md` - Original problem statement
+- `AUTHENTIC-FTP-STATUS.md` - FTP testing and automation results
+- `VAX-APPS-SETUP.md` - VAX network services configuration
+- `FTP-TESTING.md` - FTP protocol validation
+- `TESTING-GUIDE.md` - General testing procedures
+
+### Script Documentation
+- `scripts/simh-automation/README.md` - SIMH automation usage guide
+
 ## References
 
 - [obsolescence/arpanet](https://github.com/obsolescence/arpanet) - Source project
 - [SIMH Project](http://simh.trailing-edge.com/) - Hardware emulator
+- [SIMH User's Guide](http://simh.trailing-edge.com/pdf/simh_doc.pdf) - Automation commands
 - [RFC 1822](https://tools.ietf.org/html/rfc1822) - ARPANET Host-IMP Interface
+- [RFC 959](https://tools.ietf.org/html/rfc959) - FTP Protocol (October 1985)
 - [4.3BSD Networking](https://www.tuhs.org/Archive/Distributions/UCB/4.3BSD/) - VAX Unix
 
 ## Development Status
