@@ -490,3 +490,106 @@ def test_classify_transfer_output_detects_fatal_markers(
         == "fatal-marker-detected"
     )
     assert runner._classify_transfer_output("transfer finished cleanly") == "ok"
+
+
+def test_transfer_script_path_prefers_build_artifact_script(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeDelegate:
+        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+            del config, repo_root
+            self.paths = SimpleNamespace(
+                site_dir=tmp_path / "site",
+                repo_root=tmp_path,
+                build_dir=tmp_path / "build",
+            )
+
+        def run(self) -> None:
+            return
+
+    simh_dir = tmp_path / "arpanet" / "scripts" / "simh-automation"
+    simh_dir.mkdir(parents=True, exist_ok=True)
+    build_script = simh_dir / "build-artifact-transfer.ini"
+    fallback_script = simh_dir / "authentic-ftp-transfer.ini"
+    build_script.write_text("; build artifact\n", encoding="utf-8")
+    fallback_script.write_text("; fallback\n", encoding="utf-8")
+
+    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+
+    runner = VaxArpanetStageRunner(
+        config=VaxStageConfig(
+            resume_path=tmp_path / "resume.yaml",
+            site_dir=tmp_path / "site",
+            build_dir=tmp_path / "build",
+        ),
+        repo_root=tmp_path,
+    )
+
+    assert runner._transfer_script_path() == build_script
+
+
+def test_transfer_script_path_falls_back_to_authentic_script(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeDelegate:
+        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+            del config, repo_root
+            self.paths = SimpleNamespace(
+                site_dir=tmp_path / "site",
+                repo_root=tmp_path,
+                build_dir=tmp_path / "build",
+            )
+
+        def run(self) -> None:
+            return
+
+    simh_dir = tmp_path / "arpanet" / "scripts" / "simh-automation"
+    simh_dir.mkdir(parents=True, exist_ok=True)
+    fallback_script = simh_dir / "authentic-ftp-transfer.ini"
+    fallback_script.write_text("; fallback\n", encoding="utf-8")
+
+    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+
+    runner = VaxArpanetStageRunner(
+        config=VaxStageConfig(
+            resume_path=tmp_path / "resume.yaml",
+            site_dir=tmp_path / "site",
+            build_dir=tmp_path / "build",
+        ),
+        repo_root=tmp_path,
+    )
+
+    assert runner._transfer_script_path() == fallback_script
+
+
+def test_transfer_script_path_raises_when_no_script_exists(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeDelegate:
+        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+            del config, repo_root
+            self.paths = SimpleNamespace(
+                site_dir=tmp_path / "site",
+                repo_root=tmp_path,
+                build_dir=tmp_path / "build",
+            )
+
+        def run(self) -> None:
+            return
+
+    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+
+    runner = VaxArpanetStageRunner(
+        config=VaxStageConfig(
+            resume_path=tmp_path / "resume.yaml",
+            site_dir=tmp_path / "site",
+            build_dir=tmp_path / "build",
+        ),
+        repo_root=tmp_path,
+    )
+
+    with pytest.raises(RuntimeError, match="Missing transfer script"):
+        runner._transfer_script_path()

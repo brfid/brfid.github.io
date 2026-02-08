@@ -73,6 +73,27 @@ class VaxArpanetStageRunner:
     def _transfer_exec_log_path(self) -> Path:
         return self.paths.vax_build_dir / "arpanet-transfer-exec.log"
 
+    def _transfer_script_path(self) -> Path:
+        candidates = [
+            self.paths.repo_root
+            / "arpanet"
+            / "scripts"
+            / "simh-automation"
+            / "build-artifact-transfer.ini",
+            self.paths.repo_root
+            / "arpanet"
+            / "scripts"
+            / "simh-automation"
+            / "authentic-ftp-transfer.ini",
+        ]
+        for path in candidates:
+            if path.exists():
+                return path
+        raise RuntimeError(
+            "Missing transfer script: expected one of "
+            f"{', '.join(str(p) for p in candidates)}"
+        )
+
     def _run_command(self, command: Sequence[str]) -> subprocess.CompletedProcess[str]:
         return subprocess.run(command, check=True, capture_output=True, text=True)  # noqa: S603
 
@@ -105,15 +126,7 @@ class VaxArpanetStageRunner:
         steps.append("network: started (phase2 stack)")
 
     def _run_transfer_script(self, steps: list[str]) -> None:
-        script_path = (
-            self.paths.repo_root
-            / "arpanet"
-            / "scripts"
-            / "simh-automation"
-            / "authentic-ftp-transfer.ini"
-        )
-        if not script_path.exists():
-            raise RuntimeError(f"Missing transfer script: {script_path}")
+        script_path = self._transfer_script_path()
         docker_bin = self._resolve_executable("docker")
         container_name = "arpanet-vax"
         guest_script_path = "/machines/data/arpanet-transfer.ini"

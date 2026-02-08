@@ -64,6 +64,34 @@ docker exec arpanet-vax cat /tmp/uploaded.txt
 
 ---
 
+### build-artifact-transfer.ini
+Automates transfer of the generated build artifact (`resume.pdf`) via authentic BSD FTP.
+
+**Usage**:
+```bash
+# 1. Ensure build artifact is present in VAX shared volume
+cp site/resume.pdf ./build/vax/resume.pdf
+
+# 2. Run transfer automation
+docker cp arpanet/scripts/simh-automation/build-artifact-transfer.ini \
+  arpanet-vax:/tmp/build-artifact-transfer.ini
+docker exec arpanet-vax /usr/bin/simh-vax /tmp/build-artifact-transfer.ini
+
+# 3. Verify destination inside guest
+docker exec arpanet-vax ls -l /tmp/resume-via-arpanet.pdf
+```
+
+**What it does**:
+- Logs into VAX console
+- Validates `/machines/data/resume.pdf` exists
+- Starts FTP session to localhost
+- Transfers to `/tmp/resume-via-arpanet.pdf` in binary mode
+- Verifies output file exists and runs `cmp` for quick integrity signal
+
+**Time**: ~45 seconds
+
+---
+
 ### configure-network.ini
 Configures VAX network interface automatically.
 
