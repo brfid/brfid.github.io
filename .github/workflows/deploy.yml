@@ -112,9 +112,9 @@ jobs:
       - name: Start ARPANET network (ARPANET mode only)
         if: steps.mode.outputs.with_arpanet == 'true'
         run: |
-          echo "🌐 Starting ARPANET Phase 1 network..."
-          docker compose -f docker-compose.arpanet.phase1.yml build
-          docker compose -f docker-compose.arpanet.phase1.yml up -d
+          echo "🌐 Starting ARPANET Phase 2 network (VAX + IMP1 + IMP2 + PDP10)..."
+          docker compose -f docker-compose.arpanet.phase2.yml build
+          docker compose -f docker-compose.arpanet.phase2.yml up -d
 
           echo "⏳ Waiting for VAX boot (60s)..."
           sleep 60
@@ -143,6 +143,8 @@ jobs:
           mkdir -p site/arpanet-logs
           docker logs arpanet-vax > site/arpanet-logs/vax-full.log 2>&1 || true
           docker logs arpanet-imp1 > site/arpanet-logs/imp1-full.log 2>&1 || true
+          docker logs arpanet-imp2 > site/arpanet-logs/imp2-full.log 2>&1 || true
+          docker logs arpanet-pdp10 > site/arpanet-logs/pdp10-full.log 2>&1 || true
           docker network inspect arpanet-build > site/arpanet-logs/network.json 2>&1 || true
           docker ps -a > site/arpanet-logs/containers.txt 2>&1 || true
           echo "✅ Logs captured to site/arpanet-logs/"
@@ -151,7 +153,7 @@ jobs:
         if: always() && steps.mode.outputs.with_arpanet == 'true'
         run: |
           echo "🧹 Cleaning up ARPANET network..."
-          docker compose -f docker-compose.arpanet.phase1.yml down -v
+          docker compose -f docker-compose.arpanet.phase2.yml down -v
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
