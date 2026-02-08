@@ -10,6 +10,7 @@ import sys
 from arpanet_logging.core.models import BuildMetadata
 from arpanet_logging.core.storage import LogStorage
 from arpanet_logging.collectors.vax import VAXCollector
+from arpanet_logging.collectors.imp import IMPCollector
 
 
 class LogOrchestrator:
@@ -124,9 +125,17 @@ class LogOrchestrator:
                     storage=self.storage,
                     phase=self.phase
                 )
+            elif component in ("imp1", "imp2"):
+                collector = IMPCollector(
+                    build_id=self.build_id,
+                    container_name=container_name,
+                    storage=self.storage,
+                    phase=self.phase
+                )
+                # Override component name for storage
+                collector.component_name = component
             else:
-                # For now, use base collector for other components
-                # TODO: Implement IMP collector
+                # For now, skip other components
                 print(f"⚠️  No specific collector for {component}, skipping")
                 continue
 
