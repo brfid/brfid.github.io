@@ -37,7 +37,7 @@ include = ["resume_generator*", "arpanet_logging*"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["resume_generator", "tests"]
+files = ["resume_generator", "arpanet_logging", "tests"]
 warn_unused_configs = true
 warn_return_any = true
 warn_redundant_casts = true
@@ -57,8 +57,21 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+  "arpanet_logging",
+  "arpanet_logging.*",
+]
+ignore_errors = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+  "unit: Fast unit tests with no external system dependencies",
+  "integration: Integration tests crossing module boundaries",
+  "docker: Tests requiring Docker or containerized services",
+  "slow: Long-running tests excluded from default quality gate",
+]
 
 [tool.coverage.run]
 branch = true

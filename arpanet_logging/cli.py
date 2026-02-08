@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import json
 
@@ -15,7 +15,7 @@ def generate_build_id() -> str:
     Returns:
         Build ID string (e.g., "build-20260207-221530")
     """
-    return datetime.utcnow().strftime("build-%Y%m%d-%H%M%S")
+    return datetime.now(timezone.utc).strftime("build-%Y%m%d-%H%M%S")
 
 
 def cmd_collect(args):

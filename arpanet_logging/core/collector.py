@@ -1,10 +1,13 @@
 """Base collector class for DRY logging infrastructure."""
 
-import docker
+try:
+    import docker
+except ModuleNotFoundError:  # pragma: no cover - environment-dependent
+    docker = None  # type: ignore[assignment]
+
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
-from queue import Queue
 import threading
 
 from arpanet_logging.core.models import LogEntry
@@ -18,6 +21,11 @@ class BaseCollector(ABC):
     Provides common functionality for streaming Docker logs and parsing them.
     Subclasses implement component-specific parsing logic.
     """
+
+    @staticmethod
+    def _utc_now_isoz() -> str:
+        """Return a UTC ISO-8601 timestamp with trailing Z."""
+        return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     # Component name (override in subclass)
     component_name: str = "unknown"
@@ -48,7 +56,7 @@ class BaseCollector(ABC):
         self.phase = phase
         self.parser = parser
 
-        self.docker_client = docker.from_env()
+        self.docker_client = docker.from_env() if docker is not None else None
         self.running = False
         self.thread: Optional[threading.Thread] = None
 
@@ -79,6 +87,10 @@ class BaseCollector(ABC):
 
     def _collect_loop(self):
         """Main collection loop (runs in background thread)."""
+        if self.docker_client is None:
+            print(f"❌ Docker SDK unavailable, cannot collect {self.component_name} logs")
+            return
+
         try:
             container = self.docker_client.containers.get(self.container_name)
 
@@ -102,10 +114,11 @@ class BaseCollector(ABC):
                     print(f"Error processing log line from {self.component_name}: {e}")
                     continue
 
-        except docker.errors.NotFound:
-            print(f"❌ Container {self.container_name} not found")
-        except Exception as e:
-            print(f"❌ Error in {self.component_name} collector: {e}")
+        except Exception as exc:
+            if docker is not None and isinstance(exc, docker.errors.NotFound):
+                print(f"❌ Container {self.container_name} not found")
+                return
+            print(f"❌ Error in {self.component_name} collector: {exc}")
 
     def _process_line(self, line: str):
         """Process a single log line.
@@ -118,10 +131,10 @@ class BaseCollector(ABC):
             if ' ' in line:
                 timestamp_str, message = line.split(' ', 1)
             else:
-                timestamp_str = datetime.utcnow().isoformat() + 'Z'
+                timestamp_str = self._utc_now_isoz()
                 message = line
         except ValueError:
-            timestamp_str = datetime.utcnow().isoformat() + 'Z'
+            timestamp_str = self._utc_now_isoz()
             message = line
 
         # Write raw message

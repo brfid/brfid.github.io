@@ -1,0 +1,10 @@
+de0 at uba0 csr 174510 vec 120, ipl 15
+de0: hardware address 08:00:2b:92:49:19
+de0: flags=43<UP,BROADCAST,RUNNING>
+inet 172.20.0.10 netmask ffff0000 broadcast 172.20.255.255
+4.3 BSD UNIX #2: Fri May 22 19:08:31 MET DST 2015
+starting network daemons: rwhod inetd printer
+login: root
+Connected to the VAX 11/780 simulator DZ device
+fatal error panic in kernel
+unstructured console output line

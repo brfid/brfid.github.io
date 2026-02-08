@@ -1,7 +1,7 @@
 """Log collection orchestrator for multiple components."""
 
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any
 import time
 import signal
@@ -9,8 +9,13 @@ import sys
 
 from arpanet_logging.core.models import BuildMetadata
 from arpanet_logging.core.storage import LogStorage
-from arpanet_logging.collectors.vax import VAXCollector
-from arpanet_logging.collectors.imp import IMPCollector
+
+try:
+    from arpanet_logging.collectors.vax import VAXCollector
+    from arpanet_logging.collectors.imp import IMPCollector
+except ModuleNotFoundError:  # pragma: no cover - environment-dependent
+    VAXCollector = None  # type: ignore[assignment]
+    IMPCollector = None  # type: ignore[assignment]
 
 
 class LogOrchestrator:
@@ -19,6 +24,11 @@ class LogOrchestrator:
     Manages lifecycle of collectors, coordinates storage, and handles
     graceful shutdown.
     """
+
+    @staticmethod
+    def _utc_now_isoz() -> str:
+        """Return a UTC ISO-8601 timestamp with trailing Z."""
+        return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     def __init__(
         self,
@@ -50,7 +60,7 @@ class LogOrchestrator:
         self.metadata = BuildMetadata(
             build_id=build_id,
             phase=phase,
-            start_time=datetime.utcnow().isoformat() + 'Z',
+            start_time=self._utc_now_isoz(),
             components=components,
             git_commit=self._get_git_commit(),
             git_branch=self._get_git_branch(),
@@ -119,6 +129,9 @@ class LogOrchestrator:
             container_name = f"arpanet-{component}"
 
             if component == "vax":
+                if VAXCollector is None:
+                    print("⚠️  VAX collector unavailable (missing docker SDK), skipping")
+                    continue
                 collector = VAXCollector(
                     build_id=self.build_id,
                     container_name=container_name,
@@ -126,6 +139,9 @@ class LogOrchestrator:
                     phase=self.phase
                 )
             elif component in ("imp1", "imp2"):
+                if IMPCollector is None:
+                    print("⚠️  IMP collector unavailable (missing docker SDK), skipping")
+                    continue
                 collector = IMPCollector(
                     build_id=self.build_id,
                     container_name=container_name,
@@ -155,7 +171,7 @@ class LogOrchestrator:
             collector.stop()
 
         # Update metadata with end time
-        self.metadata.end_time = datetime.utcnow().isoformat() + 'Z'
+        self.metadata.end_time = self._utc_now_isoz()
         self.metadata.status = "success"
 
         # Finalize storage
