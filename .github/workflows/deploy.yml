@@ -127,6 +127,12 @@ jobs:
           echo "✅ ARPANET network ready"
           docker ps -a
 
+      - name: Validate ARPANET phase 2 links (ARPANET mode only)
+        if: steps.mode.outputs.with_arpanet == 'true'
+        run: |
+          chmod +x arpanet/scripts/test-phase2-imp-link.sh
+          ./arpanet/scripts/test-phase2-imp-link.sh
+
       - name: Generate site (HTML + PDF + VAX artifacts)
         run: |
           EXTRA_ARGS=""
