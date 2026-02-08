@@ -46,18 +46,17 @@ coverage in separate jobs.
 
 ### Important mode note (current behavior)
 
-- `resume_generator` CLI currently supports `--vax-mode local` and `--vax-mode docker`.
+- `resume_generator` CLI supports `--vax-mode local` and `--vax-mode docker`.
 - ARPANET Phase 3 scaffold is toggled by:
   - `--with-arpanet` (dry-run scaffold; safe default)
   - `--arpanet-execute` (explicitly enables scaffold command execution)
-- `deploy.yml` currently derives a workflow mode named `arpanet` for `publish-arpanet*` / `publish-full*` tags
-  and passes it directly to `--vax-mode`.
-- That mode name does **not** match the CLI argument choices today.
+- `deploy.yml` now maps ARPANET publish modes to CLI-compatible arguments:
+  - workflow/tag mode `arpanet` → `--vax-mode docker --with-arpanet --arpanet-execute`
+  - workflow/tag mode `local` → `--vax-mode local`
 
 Operationally, that means:
-- `publish` / `publish-*` tags use `local` mode (supported).
-- `publish-arpanet*` / `publish-full*` tags and manual `vax_mode=arpanet` require workflow/CLI mapping
-  updates before they can run successfully end-to-end.
+- `publish` / `publish-*` tags run local mode.
+- `publish-arpanet*` / `publish-full*` tags run docker VAX mode with ARPANET scaffold execution enabled.
 
 ## Operational guidance
 

@@ -17,7 +17,7 @@ on:
   workflow_dispatch:
     inputs:
       vax_mode:
-        description: 'VAX mode (local or arpanet)'
+        description: 'Build mode (local or arpanet)'
         required: true
         default: 'local'
         type: choice
@@ -73,15 +73,27 @@ jobs:
           TAG_NAME="${{ github.ref_name }}"
 
           if [[ "$TAG_NAME" == *"arpanet"* ]] || [[ "$TAG_NAME" == *"full"* ]]; then
-            echo "vax_mode=arpanet" >> $GITHUB_OUTPUT
+            echo "vax_mode=docker" >> $GITHUB_OUTPUT
+            echo "with_arpanet=true" >> $GITHUB_OUTPUT
+            echo "arpanet_execute=true" >> $GITHUB_OUTPUT
             echo "mode_name=ARPANET (full stack)" >> $GITHUB_OUTPUT
             echo "🚀 Building with ARPANET mode (full stack)"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "vax_mode=${{ inputs.vax_mode }}" >> $GITHUB_OUTPUT
+            if [[ "${{ inputs.vax_mode }}" == "arpanet" ]]; then
+              echo "vax_mode=docker" >> $GITHUB_OUTPUT
+              echo "with_arpanet=true" >> $GITHUB_OUTPUT
+              echo "arpanet_execute=true" >> $GITHUB_OUTPUT
+            else
+              echo "vax_mode=local" >> $GITHUB_OUTPUT
+              echo "with_arpanet=false" >> $GITHUB_OUTPUT
+              echo "arpanet_execute=false" >> $GITHUB_OUTPUT
+            fi
             echo "mode_name=Manual (${{ inputs.vax_mode }})" >> $GITHUB_OUTPUT
             echo "🎮 Building with manual mode: ${{ inputs.vax_mode }}"
           else
             echo "vax_mode=local" >> $GITHUB_OUTPUT
+            echo "with_arpanet=false" >> $GITHUB_OUTPUT
+            echo "arpanet_execute=false" >> $GITHUB_OUTPUT
             echo "mode_name=Local (fast)" >> $GITHUB_OUTPUT
             echo "⚡ Building with local mode (fast)"
           fi
@@ -98,7 +110,7 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Start ARPANET network (ARPANET mode only)
-        if: steps.mode.outputs.vax_mode == 'arpanet'
+        if: steps.mode.outputs.with_arpanet == 'true'
         run: |
           echo "🌐 Starting ARPANET Phase 1 network..."
           docker compose -f docker-compose.arpanet.phase1.yml build
@@ -115,11 +127,17 @@ jobs:
 
       - name: Generate site (HTML + PDF + VAX artifacts)
         run: |
+          EXTRA_ARGS=""
+          if [[ "${{ steps.mode.outputs.with_arpanet }}" == "true" ]]; then
+            EXTRA_ARGS="--with-arpanet --arpanet-execute"
+          fi
+
           python -m resume_generator --out site --with-vax \
-            --vax-mode ${{ steps.mode.outputs.vax_mode }}
+            --vax-mode ${{ steps.mode.outputs.vax_mode }} \
+            ${EXTRA_ARGS}
 
       - name: Capture ARPANET logs (ARPANET mode only)
-        if: steps.mode.outputs.vax_mode == 'arpanet'
+        if: steps.mode.outputs.with_arpanet == 'true'
         run: |
           echo "📋 Capturing ARPANET network logs..."
           mkdir -p site/arpanet-logs
@@ -130,7 +148,7 @@ jobs:
           echo "✅ Logs captured to site/arpanet-logs/"
 
       - name: Cleanup ARPANET network (ARPANET mode only)
-        if: always() && steps.mode.outputs.vax_mode == 'arpanet'
+        if: always() && steps.mode.outputs.with_arpanet == 'true'
         run: |
           echo "🧹 Cleaning up ARPANET network..."
           docker compose -f docker-compose.arpanet.phase1.yml down -v
