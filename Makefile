@@ -1,7 +1,7 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet
+.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet docs
 
 # Default target
 help:
@@ -34,6 +34,9 @@ help:
 	@echo "Publishing:"
 	@echo "  make publish       Fast publish (Mode 3)"
 	@echo "  make publish_arpanet  Full ARPANET publish (Mode 4)"
+	@echo ""
+	@echo "Documentation:"
+	@echo "  make docs          Generate API docs from docstrings into site/api"
 	@echo ""
 
 # Testing
@@ -144,3 +147,6 @@ publish:
 
 publish_arpanet:
 	@./scripts/publish-arpanet.sh
+
+docs:
+	@.venv/bin/pdoc resume_generator arpanet_logging arpanet -o site/api --docformat google

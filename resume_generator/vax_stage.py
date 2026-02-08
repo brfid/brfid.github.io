@@ -49,34 +49,42 @@ class VaxStagePaths:
 
     @property
     def vax_build_dir(self) -> Path:
+        """Return the VAX-specific build directory."""
         return self.build_dir / "vax"
 
     @property
     def resume_vax_yaml_path(self) -> Path:
+        """Return the generated ``resume.vax.yaml`` path."""
         return self.vax_build_dir / "resume.vax.yaml"
 
     @property
     def brad_1_path(self) -> Path:
+        """Return the generated ``brad.1`` path."""
         return self.vax_build_dir / "brad.1"
 
     @property
     def bradman_exe_path(self) -> Path:
+        """Return the host-built ``bradman`` executable path."""
         return self.vax_build_dir / "bradman"
 
     @property
     def brad_man_txt_path(self) -> Path:
+        """Return the published ``brad.man.txt`` path."""
         return self.site_dir / "brad.man.txt"
 
     @property
     def vax_build_log_path(self) -> Path:
+        """Return the published ``vax-build.log`` path."""
         return self.site_dir / "vax-build.log"
 
     @property
     def contact_json_path(self) -> Path:
+        """Return the intermediate ``contact.json`` path."""
         return self.vax_build_dir / "contact.json"
 
     @property
     def contact_html_path(self) -> Path:
+        """Return the published ``contact.html`` path."""
         return self.site_dir / "contact.html"
 
 
@@ -84,6 +92,7 @@ class VaxBuildLog:
     """Small timestamped log for publication as "build evidence"."""
 
     def __init__(self) -> None:
+        """Initialize an empty elapsed-time build log."""
         self._lines: list[str] = []
         self._t0 = time.time()
 
@@ -126,6 +135,12 @@ class VaxStageRunner:
     """Runs the VAX stage in local or docker mode."""
 
     def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        """Initialize a VAX stage runner.
+
+        Args:
+            config: Stage configuration.
+            repo_root: Repository root path.
+        """
         self._config = config
         self._paths = VaxStagePaths(
             repo_root=repo_root,
@@ -639,6 +654,14 @@ class TelnetSession:
         log: VaxBuildLog,
         send_timeout: int = 180,
     ) -> None:
+        """Initialize a telnet session to the SIMH console.
+
+        Args:
+            host: Console host.
+            port: Console port.
+            log: Build log sink.
+            send_timeout: Max seconds to wait for XON flow-control resume.
+        """
         self._log = log
         self._sock = socket.create_connection((host, port), timeout=10)
         self._sock.settimeout(5)
@@ -649,10 +672,20 @@ class TelnetSession:
         self._log.add("telnet connected")
 
     def wait_for_login(self, timeout: int = 120) -> None:
+        """Wait until the BSD login prompt is visible.
+
+        Args:
+            timeout: Max seconds to wait.
+        """
         self._send_line("")
         self._read_until(b"login:", timeout=timeout)
 
     def login_root(self, timeout: int = 60) -> None:
+        """Authenticate as ``root`` and wait for a shell prompt.
+
+        Args:
+            timeout: Max seconds per prompt wait.
+        """
         for _ in range(3):
             self._send_line("root")
             output = self._read_until_any(
@@ -670,12 +703,22 @@ class TelnetSession:
         raise RuntimeError("Login failed; received login prompt again")
 
     def ensure_shell_prompt(self) -> None:
+        """Normalize to a deterministic shell prompt."""
         self._send_line("sh")
         self._read_until_any([b"#", b"$"], timeout=30)
         self._send_line("PS1='BRAD# '")
         self._read_until(self._prompt, timeout=30)
 
     def exec_cmd(self, command: str, timeout: int = 120) -> str:
+        """Execute one command and return captured terminal output.
+
+        Args:
+            command: Shell command line.
+            timeout: Max seconds to wait for the prompt.
+
+        Returns:
+            Decoded command output including echoed content.
+        """
         self._drain()
         self._read_buffer.clear()
         self._send_line(command)

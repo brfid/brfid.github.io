@@ -41,7 +41,6 @@ def _unescape_roff_text(value: str) -> str:
 
 def parse_brad_roff_summary(roff: str) -> BradManSummary:
     """Parse the minimal summary from a `brad.1` roff source string."""
-
     section: str | None = None
     name_lines: list[str] = []
     description_lines: list[str] = []
@@ -96,7 +95,6 @@ def render_brad_man_txt(
     width: int = 66,
 ) -> str:
     """Render a stable, manpage-style text excerpt for embedding on the landing page."""
-
     indent = " " * 4
     body_width = max(10, width - len(indent))
 
@@ -135,6 +133,14 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the manpage conversion CLI.
+
+    Args:
+        argv: Optional CLI args; defaults to ``sys.argv`` behavior.
+
+    Returns:
+        Process exit code.
+    """
     args = _parse_args(argv)
     src = Path(args.src)
     out = Path(args.out)

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from .landing import build_landing_page
 from .manifest import write_manifest
@@ -58,6 +59,8 @@ class BuildRequest:
     build_dir: Path
     html_only: bool
     vax: VaxOptions
+    arpanet: bool = False
+    arpanet_execute: bool = False
 
 
 def build_site(req: BuildRequest) -> None:
@@ -82,16 +85,25 @@ def build_site(req: BuildRequest) -> None:
         # pylint: disable=import-outside-toplevel
         from .vax_stage import VaxStageConfig, VaxStageRunner
 
-        runner = VaxStageRunner(
-            config=VaxStageConfig(
-                resume_path=req.src,
-                site_dir=req.out_dir,
-                build_dir=req.build_dir,
-                mode=req.vax.mode,
-                transcript_path=req.vax.transcript,
-            ),
-            repo_root=Path.cwd(),
+        config = VaxStageConfig(
+            resume_path=req.src,
+            site_dir=req.out_dir,
+            build_dir=req.build_dir,
+            mode=req.vax.mode,
+            transcript_path=req.vax.transcript,
         )
+        runner: Any
+        if req.arpanet:
+            # pylint: disable=import-outside-toplevel
+            from .vax_arpanet_stage import VaxArpanetStageRunner
+
+            runner = VaxArpanetStageRunner(
+                config=config,
+                repo_root=Path.cwd(),
+                execute_commands=req.arpanet_execute,
+            )
+        else:
+            runner = VaxStageRunner(config=config, repo_root=Path.cwd())
         runner.run()
         print(f"Wrote: {runner.paths.brad_man_txt_path}")
         print(f"Wrote: {runner.paths.vax_build_log_path}")
@@ -153,6 +165,16 @@ def main(argv: list[str] | None = None) -> int:
         help="Run the VAX stage after generating the resume (local compile or docker).",
     )
     parser.add_argument(
+        "--with-arpanet",
+        action="store_true",
+        help="Enable ARPANET transfer-stage scaffolding (requires --with-vax).",
+    )
+    parser.add_argument(
+        "--arpanet-execute",
+        action="store_true",
+        help="Execute ARPANET scaffold commands (requires --with-arpanet).",
+    )
+    parser.add_argument(
         "--vax-mode",
         choices=["local", "docker"],
         default="local",
@@ -170,6 +192,11 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
+    if args.with_arpanet and not args.with_vax:
+        parser.error("--with-arpanet requires --with-vax")
+    if args.arpanet_execute and not args.with_arpanet:
+        parser.error("--arpanet-execute requires --with-arpanet")
+
     build_site(
         BuildRequest(
             src=Path(args.src),
@@ -182,6 +209,8 @@ def main(argv: list[str] | None = None) -> int:
                 mode=str(args.vax_mode),
                 transcript=Path(args.vax_transcript) if args.vax_transcript else None,
             ),
+            arpanet=bool(args.with_arpanet),
+            arpanet_execute=bool(args.arpanet_execute),
         )
     )
     return 0

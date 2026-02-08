@@ -63,6 +63,21 @@ flowchart LR
   - **transcript:** replay a saved console transcript.
 - Docker mode uses **tape by default** to pass files into the guest.
 
+**4) ARPANET stage wrapper (Phase 3 scaffold)**
+- `resume_generator/vax_arpanet_stage.py`
+- Activated through CLI flags:
+  - `--with-arpanet` (dry-run scaffold by default)
+  - `--arpanet-execute` (explicit command execution mode)
+- Current behavior:
+  - wraps the normal VAX stage
+  - emits `site/arpanet-transfer.log`
+  - in execute mode, runs scaffold command hooks and captures transfer execution output to
+    `build/vax/arpanet-transfer-exec.log`
+  - execute mode includes initial resiliency controls:
+    - retries transfer `docker exec` once on command failure
+    - classifies transfer output (`ok`, `empty-output`, `fatal-marker-detected`)
+    - records attempt + validation breadcrumbs in `site/arpanet-transfer.log`
+
 ---
 
 ## Data Formats
@@ -90,6 +105,16 @@ flowchart LR
 .venv/bin/resume-gen --out site --with-vax --vax-mode docker
 ```
 
+**ARPANET scaffold (dry-run)**
+```
+.venv/bin/resume-gen --out site --with-vax --with-arpanet --vax-mode local
+```
+
+**ARPANET scaffold (execute mode)**
+```
+.venv/bin/resume-gen --out site --with-vax --with-arpanet --arpanet-execute --vax-mode local
+```
+
 Notes:
 - Docker mode runs a pinned SIMH image.
 - File transfer uses a TS11 tape image.
@@ -106,10 +131,12 @@ Notes:
 - `site/resume.pdf`
 - `site/brad.man.txt`
 - `site/vax-build.log`
+- `site/arpanet-transfer.log` (when `--with-arpanet` is enabled)
 
 **Internal (in `build/`)**
 - `build/vax/resume.vax.yaml`
 - `build/vax/brad.1`
+- `build/vax/arpanet-transfer-exec.log` (execute mode scaffold output)
 
 ---
 

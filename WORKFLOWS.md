@@ -6,11 +6,15 @@ This file documents the workflows that currently exist in `.github/workflows/`.
 
 - Trigger: push to `main`, pull requests
 - Runs:
-  - `ruff` (excluding `test_infra`)
+  - `ruff` on primary portfolio module: `resume_generator`
   - `mypy resume_generator arpanet_logging tests`
   - `pytest -q -m "unit and not docker and not slow"`
   - `pylint resume_generator tests -sn`
   - `vulture --config pyproject.toml resume_generator`
+
+Early-development note:
+- CI intentionally does **not** enforce full-repo Ruff yet.
+- `arpanet_logging` and legacy/experimental areas (for example parts of `arpanet/`) are handled incrementally.
 
 ## 2) Feature-branch test workflow (`test.yml`)
 
@@ -43,6 +47,9 @@ coverage in separate jobs.
 ### Important mode note (current behavior)
 
 - `resume_generator` CLI currently supports `--vax-mode local` and `--vax-mode docker`.
+- ARPANET Phase 3 scaffold is toggled by:
+  - `--with-arpanet` (dry-run scaffold; safe default)
+  - `--arpanet-execute` (explicitly enables scaffold command execution)
 - `deploy.yml` currently derives a workflow mode named `arpanet` for `publish-arpanet*` / `publish-full*` tags
   and passes it directly to `--vax-mode`.
 - That mode name does **not** match the CLI argument choices today.

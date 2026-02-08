@@ -25,7 +25,7 @@ def _flatten_whitespace(value: str) -> str:
 
 
 def _quote_vax_yaml_string(value: str) -> str:
-    """Quote a string as required by the VAX-YAML subset.
+    r"""Quote a string as required by the VAX-YAML subset.
 
     The subset requires:
     - Double-quoted scalars only

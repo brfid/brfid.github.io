@@ -42,7 +42,18 @@ Run all tests and typing checks with the repo-local virtualenv:
 ```bash
 .venv/bin/python -m pytest -q
 .venv/bin/python -m mypy resume_generator arpanet_logging tests
+.venv/bin/python -m ruff check .
 ```
+
+Docstrings are linted with Ruff (`D` rules) using Google convention.
+
+Generate API docs from docstrings:
+
+```bash
+make docs
+```
+
+Output: `site/api/`
 
 CI lanes use marker-based selection:
 
@@ -116,6 +127,27 @@ Generate the site:
 ```bash
 .venv/bin/resume-gen --out site --with-vax --vax-mode local
 ```
+
+ARPANET stage scaffolding (Phase 3 incremental path):
+
+```bash
+# Safe default: dry-run scaffold only (writes site/arpanet-transfer.log)
+.venv/bin/resume-gen --out site --with-vax --with-arpanet --vax-mode local
+
+# Explicit execution mode (runs docker/logging scaffold commands)
+.venv/bin/resume-gen --out site --with-vax --with-arpanet --arpanet-execute --vax-mode local
+```
+
+Notes:
+- `--with-arpanet` requires `--with-vax`.
+- `--arpanet-execute` requires `--with-arpanet`.
+- Execution mode currently targets scaffold orchestration and writes transfer details to:
+  - `site/arpanet-transfer.log`
+  - `build/vax/arpanet-transfer-exec.log`
+- Execute mode now includes basic resilience checks:
+  - one retry for transient `docker exec` transfer failures
+  - transfer output classification (empty/fatal marker detection)
+  - attempt-by-attempt status breadcrumbs in `site/arpanet-transfer.log`
 
 ### VAX/SIMH transfer mode status
 
