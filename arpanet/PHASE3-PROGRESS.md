@@ -1,7 +1,7 @@
 # Phase 3 Implementation Progress
 
 **Status**: Incremental approach - building on Phase 2.5 logging foundation
-**Date**: 2026-02-08
+**Date**: 2026-02-09
 **Approach**: Test incrementally without waiting for PDP-10
 
 ---
@@ -438,8 +438,48 @@ ARPANET 1822 protocol parser proved critical:
 
 ---
 
-**Status**: Sessions 2-4 complete - VAX applications operational! 🎯
-**Achievements**: IMP collectors, protocol analysis, VAX FTP/telnet ready
-**Progress**: 5/10 Phase 3 tasks complete (50%)
-**Next**: PDP-10 integration OR test FTP file transfer
-**Updated**: 2026-02-08
+## Session 5: AWS ITS Build/Runtime Validation
+
+### Achievements
+
+#### 5. ITS Build Path Validation on AWS ✅ COMPLETE
+
+**Validated on AWS host** (`ubuntu@34.227.223.186`):
+- `docker compose -f docker-compose.arpanet.phase2.yml build pdp10` completes after long ITS bootstrap runtime.
+- Build process confirmed authentic ITS internals (not stale TOPS-20 path).
+- Phase2 stack can be recreated from the newly built image.
+
+#### 6. Runtime Validation Outcome ⚠️ BLOCKED
+
+After clean restart of phase2 stack:
+
+```bash
+docker compose -f docker-compose.arpanet.phase2.yml down --remove-orphans
+docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax imp1 pdp10 imp2
+```
+
+**Observed**:
+- Host ports/listeners present and reachable (`2326`, `10004`) ✅
+- `arpanet-pdp10` enters restart loop ❌
+- Restart count increases (`Restarting (0)` in compose ps)
+
+**Critical runtime errors** (`docker logs arpanet-pdp10`):
+- `%SIM-ERROR: No such Unit: RP0`
+- `%SIM-ERROR: Non-existent device: RP0`
+- `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+
+**Interpretation**:
+- Runtime simulator/device capability does not match assumptions in `arpanet/configs/phase2/pdp10.ini`.
+- Build is no longer the blocker; simulator/config compatibility is now the primary blocker.
+
+**Handoff Brief**:
+- Root-level focused summary for fixing this blocker:
+  - `../LLM-PROBLEM-SUMMARY.md`
+
+---
+
+**Status**: Sessions 2-5 complete - ITS build validated, runtime stabilization blocked on PDP-10 simulator/config mismatch ⚠️
+**Achievements**: IMP collectors, protocol analysis, VAX FTP/telnet ready, ITS image build completion on AWS
+**Progress**: 6/11 Phase 3 tasks complete (build done; runtime still blocked)
+**Next**: Fix `pdp10.ini`/simulator compatibility (`RP0` + CPU/memory directives), then re-run phase2 validation
+**Updated**: 2026-02-09

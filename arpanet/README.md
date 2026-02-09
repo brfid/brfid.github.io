@@ -92,7 +92,8 @@ See `../arpanet_logging/README.md` for usage details.
 - ✅ FTP protocol validated (BSD 4.3 FTP server operational)
 - ✅ Console automation solved (SIMH native commands)
 - ✅ Authentic FTP automation working (99% success rate)
-- ⏳ PDP-10 integration (container running, TOPS-20 installation pending)
+- ⏳ PDP-10 integration (ITS migration in progress)
+- ⚠️ Latest AWS runtime validation (2026-02-09): ITS image build completes, but `arpanet-pdp10` restart-loops due to simulator/config mismatch (`RP0` missing, `set cpu 2048k` unsupported)
 - ⏳ 4-container routing test (Task #25)
 - ⏳ FTP file transfer VAX ↔ PDP-10 (Task #26)
 - ⏳ Build pipeline integration (Task #28)
@@ -170,7 +171,8 @@ arpanet/
 │       ├── authentic-ftp-transfer.ini  # Automated FTP (1986 client)
 │       └── configure-network.ini  # Automated network config
 ├── Dockerfile.imp                  # IMP simulator container
-├── Dockerfile.pdp10                # PDP-10 TOPS-20 container
+├── Dockerfile.pdp10                # PDP-10 TOPS-20 container (legacy)
+├── Dockerfile.pdp10-its            # PDP-10 ITS container
 ├── PHASE*.md                       # Phase documentation (see below)
 └── *.md                            # Technical documentation
 
@@ -413,6 +415,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - [x] Added `docker-compose.arpanet.phase2.yml` for VAX + IMP1 + IMP2 + PDP10
 - [x] Added automated test script (`arpanet/scripts/test-phase2-imp-link.sh`) with HI1 checks
 - [x] Added PDP10 container (`arpanet/Dockerfile.pdp10`, TOPS-20 V4.1)
+- [x] Added ITS migration path (`arpanet/Dockerfile.pdp10-its`, generated ITS SIMH config)
 - [x] Wired IMP2 HI1 to PDP-10 endpoint `172.20.0.40:2000`
 - [x] Validated on AWS EC2 x86_64:
   - Containers up: `arpanet-vax`, `arpanet-imp1`, `arpanet-imp2`, `arpanet-pdp10`
@@ -429,7 +432,8 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - [x] 3-container routing validation (VAX → IMP1 → IMP2)
 - [x] Protocol analysis complete (PROTOCOL-ANALYSIS.md)
 - [x] Network performance measurement (~970 pps)
-- [ ] PDP-10 TOPS-20 installation (container ready, OS installation pending)
+- [x] PDP-10 ITS build validated in Docker on AWS (long-running build completes)
+- [ ] PDP-10 ITS runtime stabilization in Docker (current blocker: restart-loop with RP0/CPU parameter errors)
 - [ ] 4-container routing test (Task #25)
 - [ ] FTP file transfer VAX ↔ PDP-10 (Task #26)
 - [ ] Build pipeline integration (Task #28)
@@ -439,6 +443,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 **Status**: Phase 1 complete ✅; Phase 2 complete ✅; Phase 2.5 complete ✅; Phase 3 in progress.
 
 For the live Phase 3 checklist and percent-complete tracking, use `PHASE3-PROGRESS.md` as the source of truth.
+For a concise handoff problem brief targeted at debugging/fix work, see `../LLM-PROBLEM-SUMMARY.md`.
 
 See `PHASE1-VALIDATION.md` and `PHASE2-VALIDATION.md` for validation results, plus `PHASE1-SUMMARY.md` and `TESTING-GUIDE.md` for detailed procedures.
 

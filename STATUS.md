@@ -1,6 +1,6 @@
 # Current Project Status
 
-**Last Updated**: 2026-02-08
+**Last Updated**: 2026-02-09
 **Current Phase**: Phase 3 - Build Pipeline Integration
 **Recent Work**: Major refactoring complete (Python-first DRY improvements)
 
@@ -37,21 +37,22 @@
 
 ### 🔄 In Progress
 
-**Phase 3** (Build Pipeline Integration): Starting
-- **Blocker**: TOPS-20 installation on PDP-10 (manual, 1-2 hours)
+**Phase 3** (Build Pipeline Integration): Active
+- **Focus**: ITS migration on PDP-10 KS10 path (replacing TOPS-20 install blocker)
 - **Plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
 - **Progress**: `arpanet/PHASE3-PROGRESS.md`
+- **Latest runtime result (AWS)**: ITS image build completes, but `arpanet-pdp10` restart-loops at runtime due to simulator/config mismatch (`RP0` missing, `set cpu 2048k` unsupported)
 
 ---
 
 ## 📋 Next Action
 
-**Immediate**: Install TOPS-20 on PDP-10 container
+**Immediate**: Resolve PDP-10 ITS runtime restart-loop (post-build)
 
 **Required**:
 1. AWS EC2 x86_64 instance (t3.medium)
 2. 2-3 uninterrupted hours
-3. TOPS-20 documentation (optional but helpful)
+3. ITS runtime stabilization (container stays up; no RP0/CPU parameter errors)
 
 **Commands**:
 ```bash
@@ -67,12 +68,18 @@ arpanet-topology phase2
 docker compose -f docker-compose.arpanet.phase2.yml build pdp10
 docker compose -f docker-compose.arpanet.phase2.yml up -d
 
-# Connect to PDP-10
+# Check PDP-10 health
+docker compose -f docker-compose.arpanet.phase2.yml ps
+docker logs arpanet-pdp10 --tail 220
+
+# Connect to PDP-10 console (after stable boot)
 telnet localhost 2326
-# Follow TOPS-20 installation wizard
+
+# Connect to ITS DZ user lines
+telnet localhost 10004
 ```
 
-**After TOPS-20 installation**:
+**After ITS runtime stabilization**:
 - Validate 4-container routing
 - Test FTP file transfer (VAX ↔ PDP-10)
 - Integrate into build pipeline
@@ -178,7 +185,7 @@ cdk destroy --force
 │       │                                          ┌──────▼─────┴┐
 │       │                                          │   PDP-10    │
 │  Compile bradman                                 │172.20.0.40  │
-│  Generate brad.1                                 │  TOPS-20    │
+│  Generate brad.1                                 │    ITS      │
 │  FTP transfer ────────────────── ARPANET ──────► │ (PENDING)   │
 │                                                  └─────────────┘
 │                                                                 │
@@ -190,7 +197,7 @@ cdk destroy --force
 - ✅ VAX operational (BSD 4.3, de0 interface)
 - ✅ IMP #1 operational (HI1 to VAX, MI1 to IMP2)
 - ✅ IMP #2 operational (MI1 to IMP1, HI1 to PDP-10)
-- ⏳ PDP-10 container built, **TOPS-20 needs installation**
+- ⏳ PDP-10 ITS container migration in progress (build/boot validation pending)
 
 ---
 
@@ -218,11 +225,11 @@ cdk destroy --force
 
 ## 🚨 Known Issues / Blockers
 
-1. **TOPS-20 Installation** (BLOCKER)
-   - Status: Manual process, not started
-   - Duration: 1-2 hours
-   - Requires: AWS x86_64 instance, uninterrupted time
-   - Blocking: All Phase 3 work
+1. **ITS Runtime Restart-Loop** (ACTIVE)
+   - Status: AWS validation confirms build completes, but runtime is unstable
+   - Symptoms: `%SIM-ERROR: No such Unit: RP0`, `%SIM-ERROR: Non-existent device: RP0`, `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+   - Impact: `arpanet-pdp10` continuously restarts; Phase 3 transfer validation blocked
+   - Handoff brief: `LLM-PROBLEM-SUMMARY.md`
 
 2. **Docker not on Raspberry Pi**
    - SIMH requires x86_64 architecture
@@ -281,4 +288,4 @@ cdk destroy --force
 
 ---
 
-**Remember**: The refactoring work built a solid foundation. Now we finish the mission - get TOPS-20 installed and complete the ARPANET build pipeline! 🚀
+**Remember**: The refactoring work built a solid foundation. Now we finish the mission - get ITS stable on PDP-10 and complete the ARPANET build pipeline! 🚀
