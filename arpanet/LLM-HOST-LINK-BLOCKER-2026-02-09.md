@@ -87,6 +87,26 @@ Observed outcome:
 
 Conclusion: mode toggle alone is insufficient; root cause remains framing/protocol incompatibility at HI1 contract boundary.
 
+### E. Packet capture confirms Ethernet-like payload on PDP-10→IMP2 UDP path
+Captured live UDP/2000 traffic from `172.20.0.40 -> 172.20.0.30` while restarting PDP-10. Representative payload words:
+
+```text
+0x0030: feff ffff fffe feff ffff fffe 9000 0000
+0x0040: 0200 feff ffff fffe 0100 3939 3939 3939
+
+0x0030: 0000 0219 9e8f 0000 0219 9e8f 9000 0000
+0x0040: 0200 0000 0219 9e8f 0100 9494 9494 9494
+
+0x0030: ffff ffff ffff 0000 0219 9e8f 0806 0001
+0x0040: 0800 0604 0001 0000 0219 9e8f ac14 0028
+```
+
+Notes:
+- `0806 0001 0800 0604 ...` is ARP structure (Ethernet+IPv4 ARP request format).
+- First words align with IMP2 bad-magic values (`feffffff`, `00000219`, `ffffffff`) seen in logs.
+
+Interpretation: PDP-10 side is emitting Ethernet/IP-style frames over the UDP attach path, while IMP2 HI1 parser expects 1822-oriented host-interface framing.
+
 ---
 
 ## 4) Most Likely Root Cause
@@ -127,9 +147,10 @@ Until IMP2 can parse PDP-10 host-side packets correctly:
 
 1. **Capture and decode first bytes** of PDP-10→IMP2 UDP payloads on port 2000 to map observed magic fields.
 2. ✅ **A/B test `set imp uni` vs `set imp simp`** with identical static IP settings, comparing IMP2 HI1 parse outcome (completed; no fix).
-3. **Pinpoint expected HI1 header format** from H316 code/docs and construct a packet-level compatibility matrix.
-4. If mismatch is fundamental, **prototype a tiny UDP translator** that rewrites headers only and validate with IMP2 logs.
-5. Re-run first host probe (VAX→PDP10 path) after framing compatibility is achieved.
+3. ✅ **Confirm payload family by packet capture** (completed; Ethernet/ARP-like payload observed).
+4. **Pinpoint expected HI1 header format** from H316 code/docs and construct a packet-level compatibility matrix.
+5. If mismatch is fundamental, **prototype a tiny UDP translator** that rewrites headers only and validate with IMP2 logs.
+6. Re-run first host probe (VAX→PDP10 path) after framing compatibility is achieved.
 
 ---
 

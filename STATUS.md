@@ -41,7 +41,7 @@
 - **Focus**: ITS migration on PDP-10 KS10 path (replacing TOPS-20 install blocker)
 - **Plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
 - **Progress**: `arpanet/PHASE3-PROGRESS.md`
-- **Latest runtime result (AWS)**: UNI vs SIMP A/B completed; both attach and boot to `DSKDMP`, but host-link mismatch remains (IMP2 HI1 `bad magic number`). Baseline now pinned to static `set imp simp` + `set imp ip/gw/host` + `set imp nodhcp` in phase2 PDP-10 config while proceeding to packet/header mapping.
+- **Latest runtime result (AWS)**: UNI vs SIMP A/B completed; both attach and boot to `DSKDMP`, but host-link mismatch remains (IMP2 HI1 `bad magic number`). Packet capture on PDP-10→IMP2 UDP/2000 shows Ethernet/ARP-style payload (`0806 0001 0800 0604 ...`), reinforcing a framing-contract mismatch vs IMP2 HI1 expectations. Baseline remains pinned to static `set imp simp` + `set imp ip/gw/host` + `set imp nodhcp` while proceeding to compatibility-matrix + shim prototype work.
 
 ---
 
@@ -230,6 +230,7 @@ cdk destroy --force
    - Status: runtime is stable enough to reach `DSKDMP`; MI1 between IMP1/IMP2 is healthy
    - Symptoms: IMP2 logs show `HI1 UDP: link 1 - received packet w/bad magic number` (`feffffff`, `00000219`, `ffffffff`)
    - A/B evidence: changing KS-10 IMP mode (`UNI` vs `SIMP`) does not resolve the parser failure
+   - Packet evidence: PDP-10 UDP/2000 payload includes ARP/Ethernet signatures (`0806 0001 0800 0604`) rather than expected HI1 1822 framing
    - Impact: transport is up but host-level ARPANET payload exchange fails; VAX↔PDP-10 transfer remains blocked
    - Handoff brief: `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
 

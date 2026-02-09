@@ -549,6 +549,31 @@ Conclusion:
 - Mode toggle alone does not resolve the host-link contract mismatch.
 - Runtime baseline is now pinned to static `SIMP + NODHCP` in `arpanet/configs/phase2/pdp10.ini` to reduce noise while proceeding to packet-capture/header-mapping work.
 
+#### 11. UDP payload capture confirms Ethernet/ARP framing on KS-10 path ✅
+
+Captured live PDP-10→IMP2 UDP/2000 packets during PDP-10 restart and inspected payload words. Representative bytes:
+
+```text
+0x0030: feff ffff fffe feff ffff fffe 9000 0000
+0x0040: 0200 feff ffff fffe 0100 3939 3939 3939
+
+0x0030: 0000 0219 9e8f 0000 0219 9e8f 9000 0000
+0x0040: 0200 0000 0219 9e8f 0100 9494 9494 9494
+
+0x0030: ffff ffff ffff 0000 0219 9e8f 0806 0001
+0x0040: 0800 0604 0001 0000 0219 9e8f ac14 0028
+```
+
+Correlated evidence:
+- IMP2 logs simultaneously report bad magic values `feffffff`, `00000219`, `ffffffff`.
+- Packet body contains ARP signature (`0806 0001 0800 0604 ...`) consistent with Ethernet/IP stack traffic.
+
+Interpretation:
+- KS-10 IMP attach path is emitting Ethernet-style frames over UDP.
+- IMP2 HI1 expects 1822-oriented host framing, so parsing fails at ingress before host-level exchange.
+
+Next technical action: construct an explicit HI1-vs-KS10 header compatibility matrix and prototype a minimal UDP shim translator if no native compatibility mode exists.
+
 ---
 
-**Updated**: 2026-02-09 (Session 6 + UNI/SIMP A/B)
+**Updated**: 2026-02-09 (Session 6 + A/B + packet-capture evidence)
