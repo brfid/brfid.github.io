@@ -214,3 +214,47 @@ Given packet evidence and repository state (current PDP-10 path pinned to `pdp10
 - `tests/test_topology_generators.py` (assertions around generated PDP-10 config)
 - `arpanet/scripts/test-phase2-imp-link.sh` (infrastructure validation script)
 - `arpanet/Dockerfile.pdp10-its` (runtime image and KS-10 provenance)
+
+---
+
+## 11) Review of External Assessment (Way Forward + Open Issues)
+
+### Verdict on proposed direction
+
+The external assessment is aligned with observed evidence and offers a valid path forward:
+
+- KS-10 `ATTACH IMP udp:...` behaves as Ethernet-frame transport over UDP.
+- IMP2 HI1 expects a different framing contract (magic/header + host-interface semantics).
+- `UNI`/`SIMP` tuning does not change the on-wire contract sufficiently to fix parsing.
+
+Therefore this is a structural framing mismatch, not a parameter-tuning problem.
+
+### Recommended route from this point
+
+1. Complete HI1 header compatibility matrix (expected magic/fields/length semantics).
+2. Run native emulator-path feasibility check (authentic-first gate).
+3. If native path is not viable in scope, implement minimal UDP framing shim at PDP10↔IMP2 boundary.
+
+### Outstanding issues to resolve before implementation
+
+1. **HI1 header details still need concrete extraction**
+   - Exact magic constant(s), field order, length encoding, checksum/flags behavior.
+
+2. **Payload mapping contract needs explicit decision**
+   - What bytes from Ethernet side are tunneled as HI1 body (full L3 payload vs selected subset).
+   - Reverse-direction encapsulation policy (source/dest MAC synthesis and EtherType rules).
+
+3. **Host identity/link mapping must be pinned**
+   - Static host ID/link strategy for first milestone and how it maps to IMP2 expectations.
+
+4. **Safety constraints for fallback shim**
+   - Keep MI1 untouched.
+   - Keep shim state-light and reversible.
+   - Provide explicit retirement trigger if native route later becomes viable.
+
+5. **Acceptance instrumentation**
+   - Log predicates for “no bad magic”, “valid HI1 parse”, and first host payload round-trip.
+
+### Practical conclusion
+
+Yes — this offers a clear way forward. The only remaining uncertainty is implementation detail, not diagnosis. The next technical decision is no longer “what is broken” but “native path now vs interim shim,” gated by feasibility and authenticity goals already documented above.
