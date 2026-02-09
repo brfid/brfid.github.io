@@ -88,8 +88,10 @@ def _generate_service(host: HostConfig, topology: TopologyDefinition) -> Dict[st
             "dockerfile": host.dockerfile.replace("./arpanet/", ""),
         }
 
-    # Ports (console)
+    # Ports (console + optional extras)
     service["ports"] = [f"{host.console_port}:2323"]
+    if host.extra_ports:
+        service["ports"].extend([f"{port}:{port}" for port in host.extra_ports])
 
     # Volumes
     if host.volumes:
@@ -148,7 +150,7 @@ def generate_simh_config(host: HostConfig, topology: TopologyDefinition) -> str:
     """
     if host.component_type == "imp":
         return _generate_imp_config(host, topology)
-    elif host.component_type == "pdp10":
+    elif host.component_type in ("pdp10", "its"):
         return _generate_pdp10_config(host, topology)
     elif host.component_type == "vax":
         # VAX uses base image config, no custom .ini needed
@@ -303,33 +305,70 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
         (iface for iface in host.interfaces if iface.device == "imp"), None
     )
 
+    is_its = host.component_type == "its"
+
     config_lines = [
-        "; SIMH PDP-10 KS Configuration - TOPS-20 V4.1",
+        "; SIMH PDP-10 KS Configuration - ITS"
+        if is_its
+        else "; SIMH PDP-10 KS Configuration - TOPS-20 V4.1",
         f"; {topology.name.title()}: ARPANET host for file transfer testing",
         ";",
         f"; This PDP-10 connects to IMP via network interface (UDP {imp_interface.udp_port if imp_interface else 'N/A'})",
         "",
         "set debug stdout",
         "",
-        "; Configure CPU (pdp10-ks defaults are fine for TOPS-20)",
-        "; Note: pdp10-ks doesn't have \"tops20v41\" parameter, uses defaults",
+        "; Configure CPU",
         "set console wru=034",
         "",
-        "; Disable unused devices for minimal config",
-        "set dz disabled",
-        "set lp20 disabled",
-        "",
-        "; Configure tape drive (TUA) for installation/distribution media",
-        "set tua enable",
-        "set tua0 locked",
-        "attach tua0 /machines/pdp10/tops20_v41.tap",
-        "",
-        "; Configure disk drive (RPA = RP06) for system disk",
-        "set rpa enable",
-        "set rpa0 rp06",
-        "attach rpa0 /machines/data/tops20.dsk",
-        "",
     ]
+
+    if is_its:
+        config_lines.extend(
+            [
+                "; ITS-specific CPU and memory configuration",
+                "set cpu its",
+                "; set cpu 2048k",
+                "; NOTE: disabled by default; some pdp10-ks builds reject this parameter",
+                "; and abort before boot. Re-enable only after validating accepted syntax",
+                "; via: show version / show devices / help set cpu inside the runtime image.",
+                "set tim y2k",
+                "",
+                "; Console and terminal multiplexer",
+                "set console telnet=2323",
+                "set dz enable",
+                "set dz lines=8",
+                "attach dz 10004",
+                "",
+                "; Configure disk drive (RP = RP06) for ITS system disk",
+                "set rp enable",
+                "set rp0 enable",
+                "set rp0 rp06",
+                "attach rp0 /machines/data/its.dsk",
+                "",
+            ]
+        )
+    else:
+        config_lines.extend(
+            [
+                "; Disable unused devices for minimal config",
+                "set dz disabled",
+                "set lp20 disabled",
+                "",
+                "; Configure tape drive (TUA) for installation/distribution media",
+                "set tua enable",
+                "set tua0 locked",
+                "attach tua0 /machines/pdp10/tops20_v41.tap",
+                "",
+                "; Configure disk drive (RPA = RP06) for system disk",
+                "set rpa enable",
+                "set rpa0 rp06",
+                "attach rpa0 /machines/data/tops20.dsk",
+                "",
+                "; Telnet console on port 2323",
+                "set console telnet=2323",
+                "",
+            ]
+        )
 
     if imp_interface:
         config_lines.extend(
@@ -338,7 +377,7 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
                 f"; This is the PDP-10's network interface that connects to IMP at {imp_interface.remote_host}",
                 "set imp enabled",
                 "set imp debug",
-                f"; Attach IMP interface via SIMH UDP bridge (eth4 syntax)",
+                "; Attach IMP interface via SIMH UDP bridge",
                 f"; Local UDP {imp_interface.udp_port} <-> remote {imp_interface.remote_host}:{imp_interface.remote_port}",
                 f"attach imp udp:{imp_interface.udp_port}:{imp_interface.remote_host}:{imp_interface.remote_port}",
                 "",
@@ -347,10 +386,7 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
 
     config_lines.extend(
         [
-            "; Telnet console on port 2323",
-            "set console telnet=2323",
-            "",
-            "echo PDP-10 TOPS-20 V4.1 starting...",
+            "echo PDP-10 ITS starting..." if is_its else "echo PDP-10 TOPS-20 V4.1 starting...",
         ]
     )
 
@@ -361,17 +397,21 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
 
     config_lines.extend(
         [
-            f"echo Telnet console on port 2323",
-            "echo Installation tape: tops20_v41.tap on TUA0",
-            "echo System disk: /machines/data/tops20.dsk on RPA0",
+            "echo Telnet console on port 2323",
+            "echo DZ lines attached on port 10004"
+            if is_its
+            else "echo Installation tape: tops20_v41.tap on TUA0",
+            "echo System disk: /machines/data/its.dsk on RP0"
+            if is_its
+            else "echo System disk: /machines/data/tops20.dsk on RPA0",
             "echo",
-            "echo Booting from installation tape...",
+            "echo Booting ITS from disk..." if is_its else "echo Booting from installation tape...",
             f"echo Connect via: telnet localhost {host.console_port}",
             "echo",
             "",
-            "; Boot from installation tape",
+            "; Boot from system disk" if is_its else "; Boot from installation tape",
             "; SIMH will wait for console connection before proceeding",
-            "boot tua0",
+            "boot rp0" if is_its else "boot tua0",
         ]
     )
 
@@ -423,7 +463,7 @@ def write_generated_configs(topology: TopologyDefinition, output_dir: Path) -> N
     configs_dir.mkdir(parents=True, exist_ok=True)
 
     for host_name, host in topology.hosts.items():
-        if host.component_type in ("imp", "pdp10"):
+        if host.component_type in ("imp", "pdp10", "its"):
             config_content = generate_simh_config(host, topology)
             if config_content:
                 config_file = configs_dir / f"{host_name}.ini"
@@ -444,6 +484,6 @@ def _describe_topology(topology: TopologyDefinition) -> str:
     if topology.name == "phase1":
         return "[VAX/BSD] <-> [IMP #1]"
     elif topology.name == "phase2":
-        return "[VAX/BSD] <-> [IMP #1] <-> [IMP #2] <-> [PDP-10/TOPS-20]"
+        return "[VAX/BSD] <-> [IMP #1] <-> [IMP #2] <-> [PDP-10/ITS]"
     else:
         return " <-> ".join(f"[{name.upper()}]" for name in host_names)

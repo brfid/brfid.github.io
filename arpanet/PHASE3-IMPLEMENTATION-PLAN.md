@@ -2,7 +2,7 @@
 
 **Created**: 2026-02-08
 **Status**: Ready to execute
-**Blocker**: TOPS-20 installation (manual, 1-2 hours)
+**Blocker**: PDP-10 ITS runtime restart-loop (SIMH config/device mismatch)
 **Platform**: AWS EC2 x86_64 (required for SIMH compatibility)
 
 ---
@@ -10,17 +10,78 @@
 ## Executive Summary
 
 Phase 3 completes the ARPANET build integration by:
-1. Installing TOPS-20 on PDP-10 container
+1. Stabilizing PDP-10 ITS runtime (container stays `Up`)
 2. Validating 4-container routing (VAX → IMP1 → IMP2 → PDP-10)
 3. Implementing FTP file transfer between VAX and PDP-10
 4. Integrating ARPANET into resume build pipeline
 
 **Estimated Timeline**: 2-4 weeks
-**Critical Path**: TOPS-20 installation (prerequisite for everything else)
+**Critical Path**: SIMH capability/config reconciliation (`pdp10-ks` + `pdp10.ini`)
 
 ---
 
-## Phase 3.1: PDP-10 TOPS-20 Installation
+## Phase 3.0: PDP-10 ITS Runtime Stabilization (NEW immediate priority)
+
+### Why this is first
+
+Recent AWS validation confirms ITS image build completes, but `arpanet-pdp10` restart-loops at runtime with:
+
+- `%SIM-ERROR: No such Unit: RP0`
+- `%SIM-ERROR: Non-existent device: RP0`
+- `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+
+These errors strongly indicate simulator capability mismatch (device naming/availability and CPU memory syntax), not ARPANET topology failure.
+
+### Stabilization workflow
+
+1. **Interrogate SIMH in the runtime image (without startup ini):**
+
+```bash
+docker compose -f docker-compose.arpanet.phase2.yml run --rm \
+  --entrypoint /bin/sh pdp10 -lc "printf 'show version\nshow cpu\nshow devices\nhelp set cpu\nshow rp\nshow rpa\nquit\n' | /usr/local/bin/pdp10-ks -q"
+```
+
+Capture and save:
+- `show version`
+- disk device family names (`RP` vs `RPA` or other)
+- accepted `set cpu` parameter syntax
+
+2. **Reconcile `arpanet/configs/phase2/pdp10.ini` with observed capabilities:**
+   - Start from minimal safe defaults:
+     - keep `set cpu its`
+     - disable `set cpu 2048k` unless explicitly accepted by this binary
+     - explicitly enable disk controller/unit before attach (`set rp enable`, `set rp0 enable`)
+   - If simulator exposes `RPA*` instead of `RP*`, rename disk commands accordingly.
+
+3. **Re-test cleanly:**
+
+```bash
+docker compose -f docker-compose.arpanet.phase2.yml build pdp10
+docker compose -f docker-compose.arpanet.phase2.yml down -v
+docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax imp1 pdp10 imp2
+docker compose -f docker-compose.arpanet.phase2.yml ps
+docker logs arpanet-pdp10 --tail 260
+```
+
+Success = no RP0/CPU parameter hard errors and `arpanet-pdp10` remains `Up`.
+
+4. **If still failing, run ini interactively line-by-line:**
+
+```bash
+docker compose -f docker-compose.arpanet.phase2.yml run --rm \
+  --entrypoint /usr/local/bin/pdp10-ks pdp10 -q
+```
+
+Then at `sim>`:
+```text
+do /machines/pdp10.ini
+```
+
+Fix first failing line, repeat until `do` completes and boot command succeeds.
+
+---
+
+## Phase 3.1: PDP-10 Runtime Validation (post-stabilization)
 
 ### Prerequisites
 
@@ -70,7 +131,16 @@ docker compose -f docker-compose.arpanet.phase2.yml ps
 # arpanet-pdp10  (172.20.0.40:2326) ← Focus here
 ```
 
-#### Step 3: Connect to PDP-10 Console
+#### Step 3: Check container health first
+
+```bash
+docker compose -f docker-compose.arpanet.phase2.yml ps
+docker logs arpanet-pdp10 --tail 220
+```
+
+Expected: `arpanet-pdp10` shows `Up` (not `Restarting`).
+
+#### Step 4: Connect to PDP-10 Console
 
 ```bash
 # Connect to PDP-10 telnet console
@@ -92,19 +162,15 @@ Booting from installation tape...
 Connect via: telnet localhost 2326
 ```
 
-#### Step 4: TOPS-20 Installation Wizard
+#### Step 5: ITS runtime verification
 
-**⚠️ This is a manual, interactive process (~1-2 hours)**
+At this phase the objective is stable ITS boot/runtime, not TOPS-20 installation.
 
-The PDP-10 will boot from the installation tape and present an installation wizard. You'll need to:
-
-1. **Boot from tape**: Follow SIMH prompts
-2. **Create system disk**: Format RP06 disk drive (RPA0)
-3. **Install OS**: Copy TOPS-20 from tape to disk
-4. **Configure networking**: Set up ARPANET interface
-5. **Create users**: At minimum, create `OPERATOR` and `ANONYMOUS`
-6. **Enable services**: Start FTP daemon, ARPANET stack
-7. **Save configuration**: Ensure system boots from disk next time
+Verify:
+1. SIMH starts without `RP0`/CPU parameter hard errors
+2. ITS boot path proceeds from disk
+3. DZ and console ports remain available (`2326`, `10004`)
+4. IMP attach remains active to `172.20.0.30:2000`
 
 **Reference documentation**:
 - TOPS-20 V4.1 Installation Guide (if available)
@@ -128,9 +194,9 @@ script pdp10-installation-$(date +%Y%m%d).log
 exit
 ```
 
-#### Step 5: Post-Installation Validation
+#### Step 6: Post-stabilization validation
 
-After installation completes and TOPS-20 is running:
+After runtime stabilization completes and ITS is running:
 
 ```bash
 # 1. Verify system boots successfully
@@ -139,17 +205,7 @@ sleep 30
 telnet localhost 2326
 
 # 2. Login and check services
-@LOGIN OPERATOR
-Password: <your_password>
-
-@SYSTAT                    # System status
-@DIR                       # Directory listing
-@ENABLE                    # Enable privileged mode
-@INFORMATION FTP-SERVER    # Check FTP daemon
-
-# 3. Test ARPANET interface
-@INFORMATION NET           # Network status
-@SHOW CONFIGURATION        # System configuration
+# Continue with ITS-specific service and network checks used in Phase 3 tests
 ```
 
 **Success criteria**:
@@ -159,17 +215,16 @@ Password: <your_password>
 - ✅ FTP daemon running
 - ✅ ARPANET interface configured
 
-### Troubleshooting
+### Troubleshooting (runtime mismatch class)
 
-**Problem**: Installation tape won't boot
-- Check SIMH config: `cat arpanet/configs/phase2/pdp10.ini`
-- Verify tape file exists: `docker exec arpanet-pdp10 ls -lh /machines/pdp10/tops20_v41.tap`
-- Check SIMH logs: `docker logs arpanet-pdp10`
+**Problem**: `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+- Remove/comment `set cpu 2048k`
+- Re-run `help set cpu` interactively to discover accepted syntax
 
-**Problem**: Disk initialization fails
-- Ensure disk file exists: `docker exec arpanet-pdp10 ls -lh /machines/data/tops20.dsk`
-- Check disk size (should be large enough for TOPS-20)
-- Verify RPA0 configuration in SIMH
+**Problem**: `%SIM-ERROR: No such Unit: RP0` / `Non-existent device: RP0`
+- Validate device names via `show devices`
+- If `RP` exists, explicitly enable before attach (`set rp enable`, `set rp0 enable`)
+- If only `RPA*` exists, update ini to `rpa` naming consistently
 
 **Problem**: Network interface not working
 - Check IMP #2 logs: `docker logs arpanet-imp2 | grep HI1`
@@ -463,7 +518,8 @@ grep "Transfer complete" site/arpanet-transfer.log
 ### Validation Checklist
 
 Before marking Phase 3 complete:
-
+- [ ] ITS runtime stable (no restart-loop)
+- [ ] `pdp10.ini` reconciled to simulator capability set
 - [ ] TOPS-20 installed and stable
 - [ ] 4-container routing validated
 - [ ] FTP transfers working (99%+ success)
@@ -479,7 +535,7 @@ Before marking Phase 3 complete:
 
 | Task | Duration | Dependencies |
 |------|----------|--------------|
-| TOPS-20 Installation | 1-2 hours | AWS instance |
+| ITS runtime stabilization | 1-3 hours | AWS instance |
 | 4-Container Routing | 1 hour | TOPS-20 complete |
 | FTP Transfer Testing | 2-3 hours | Routing validated |
 | SIMH Automation Scripts | 3-4 hours | FTP working |
@@ -487,7 +543,7 @@ Before marking Phase 3 complete:
 | Testing & Documentation | 1-2 days | Integration complete |
 | **Total** | **2-4 weeks** | Includes debugging time |
 
-**Critical path**: TOPS-20 installation is blocking everything else
+**Critical path**: PDP-10 runtime stabilization is blocking everything else
 
 ---
 
@@ -500,9 +556,9 @@ Before marking Phase 3 complete:
 3. ✅ Sync latest code: `git pull`
 4. ✅ Install dependencies in venv
 5. ✅ Verify topology generation works: `arpanet-topology phase2`
-6. ✅ Read TOPS-20 documentation (at least skim installation guide)
-7. ✅ Set aside 2-3 hours for uninterrupted TOPS-20 installation
-8. ✅ Prepare to take installation notes (screen capture recommended)
+6. ✅ Run simulator capability interrogation (`show version`, `show devices`, `help set cpu`)
+7. ✅ Set aside 2-3 hours for stabilization/retest loop
+8. ✅ Capture logs and exact failing ini lines for iteration
 
 **First commands to run:**
 
@@ -521,14 +577,15 @@ docker compose -f docker-compose.arpanet.phase2.yml build pdp10
 docker compose -f docker-compose.arpanet.phase2.yml up -d
 docker compose -f docker-compose.arpanet.phase2.yml ps
 
-# Connect to PDP-10 and BEGIN INSTALLATION
-telnet localhost 2326
+# Verify runtime health first
+docker compose -f docker-compose.arpanet.phase2.yml ps
+docker logs arpanet-pdp10 --tail 220
 ```
 
-**Remember**: Take detailed notes during TOPS-20 installation. This is a one-time process and the disk image will be preserved, but documentation helps troubleshooting and future reference.
+**Remember**: Capture simulator capability output (`show version/devices`) and keep it with session notes. It is the fastest way to align `pdp10.ini` with the actual binary.
 
 ---
 
 **Status**: Plan complete, ready to execute
-**Blocker**: TOPS-20 installation (manual process)
+**Blocker**: PDP-10 ITS runtime mismatch (`RP0`/CPU parameter errors)
 **Confidence**: High (clear path, proven infrastructure)

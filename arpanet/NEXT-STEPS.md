@@ -1,7 +1,7 @@
 # ARPANET Integration - Next Steps
 
-**Date**: 2026-02-08
-**Status**: Console automation solved, ready for build pipeline integration
+**Date**: 2026-02-09
+**Status**: ITS build validated; immediate blocker is PDP-10 runtime restart-loop
 
 ---
 
@@ -18,6 +18,42 @@ See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) for compl
 ---
 
 ## Immediate Next Steps (High Priority)
+
+### 0. Stabilize PDP-10 ITS Runtime (Critical blocker)
+
+**Goal**: Stop `arpanet-pdp10` restart-loop by reconciling `pdp10.ini` with actual `pdp10-ks` simulator capabilities.
+
+**Current failure markers**:
+- `%SIM-ERROR: No such Unit: RP0`
+- `%SIM-ERROR: Non-existent device: RP0`
+- `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+
+**Tasks**:
+```bash
+# 1) Inspect simulator capabilities inside runtime image
+docker compose -f docker-compose.arpanet.phase2.yml run --rm \
+  --entrypoint /bin/sh pdp10 -lc "printf 'show version\nshow cpu\nshow devices\nhelp set cpu\nshow rp\nshow rpa\nquit\n' | /usr/local/bin/pdp10-ks -q"
+
+# 2) Rebuild and clean restart
+docker compose -f docker-compose.arpanet.phase2.yml build pdp10
+docker compose -f docker-compose.arpanet.phase2.yml down -v
+docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax imp1 pdp10 imp2
+
+# 3) Validate stability
+docker compose -f docker-compose.arpanet.phase2.yml ps
+docker logs arpanet-pdp10 --tail 260
+```
+
+**Initial config hardening already applied**:
+- `set cpu 2048k` disabled pending `help set cpu` validation
+- explicit disk enable lines added before attach (`set rp enable`, `set rp0 enable`)
+
+**Success criteria**:
+- [ ] `arpanet-pdp10` remains `Up` (no restart loop)
+- [ ] No RP0 / CPU parameter hard errors in logs
+- [ ] Console and DZ ports still reachable (2326, 10004)
+
+---
 
 ### 1. Test SIMH Automation Scripts (15 minutes)
 
@@ -154,26 +190,25 @@ docker-compose -f docker-compose.arpanet.phase1.yml run vax \
 
 ## Short-Term Goals (1-2 hours)
 
-### 4. PDP-10 TOPS-20 Installation
+### 4. PDP-10 Runtime Validation
 
-**Status**: Container ready, OS installation pending
+**Status**: ITS image build complete, runtime stability pending
 
-**Goal**: Complete TOPS-20 installation on PDP-10 container
+**Goal**: Confirm stable ITS boot/runtime on PDP-10 container
 
 **Tasks**:
-1. Boot PDP-10 container
-2. Install TOPS-20 V4.1 from tape
-3. Configure network (172.20.0.40)
-4. Enable FTP server
-5. Create test user accounts
+1. Boot PDP-10 container without restart-loop
+2. Confirm disk boot path works with current SIMH build
+3. Verify IMP network attachment (172.20.0.40 ↔ 172.20.0.30)
+4. Validate service reachability for next FTP tests
 
 **Success Criteria**:
-- [ ] TOPS-20 boots to prompt
+- [ ] ITS boots to prompt / stable runtime
 - [ ] Network interface configured
-- [ ] FTP server accessible
+- [ ] Ports 2326/10004 reachable
 - [ ] Can transfer file to/from PDP-10
 
-**Blockers**: Requires manual TOPS-20 installation process
+**Blockers**: Requires SIMH ini/device reconciliation against running `pdp10-ks`
 
 **Reference**: See `TESTING-PDP10.md` for installation notes
 
@@ -408,7 +443,7 @@ GitHub Actions Workflow
 ## Blockers and Dependencies
 
 ### Current Blockers
-- **None** - Console automation solved, all prerequisites met for next steps
+- **PDP-10 ITS restart-loop** due to SIMH config/device mismatch (`RP0` + CPU memory parameter)
 
 ### Dependencies
 1. **PDP-10 installation** blocks:
