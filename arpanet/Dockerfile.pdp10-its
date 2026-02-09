@@ -1,0 +1,63 @@
+# SIMH PDP-10 ITS Docker Image
+#
+# Builds a KS10-targeted ITS image using the maintained PDP-10/its repository.
+# This replaces the previous TOPS-20 installation path for Phase 2/3 networking.
+
+FROM debian:bookworm-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    autoconf \
+    build-essential \
+    ca-certificates \
+    curl \
+    expect \
+    git \
+    libncurses-dev \
+    libsdl2-dev \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp
+
+# Build ITS for SIMH KS10
+RUN git clone --recursive https://github.com/PDP-10/its.git && \
+    cd its && \
+    make EMULATOR=pdp10-ks
+
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpcap0.8 \
+    netcat-openbsd \
+    procps \
+    telnet \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /machines/data /var/log/pdp10
+
+WORKDIR /machines
+
+# Copy emulator binary and build output from builder stage
+COPY --from=builder /tmp/its/out/pdp10-ks/pdp10-ks /usr/local/bin/pdp10-ks
+COPY --from=builder /tmp/its/out/pdp10-ks/ /tmp/its-out/
+
+RUN chmod +x /usr/local/bin/pdp10-ks && \
+    mkdir -p /opt/its-seed && \
+    sh -eu -c 'find /tmp/its-out -maxdepth 1 -type f -name "*.dsk" -exec cp {} /opt/its-seed/ \; && seed="" && for candidate in its.dsk rp0.dsk system.dsk; do if [ -f "/opt/its-seed/$candidate" ]; then seed="/opt/its-seed/$candidate"; break; fi; done && if [ -z "$seed" ]; then seed="$(ls /opt/its-seed/*.dsk | head -n1)"; fi && cp "$seed" /opt/its-seed/its.dsk && sha256sum /opt/its-seed/its.dsk > /opt/its-seed/its.dsk.sha256'
+
+RUN printf '%s\n' '#!/bin/sh' \
+    'set -eu' \
+    'mkdir -p /machines/data' \
+    'if [ "${ITS_FORCE_RESEED:-0}" = "1" ] || [ ! -f /machines/data/its.dsk ]; then cp /opt/its-seed/its.dsk /machines/data/its.dsk; fi' \
+    'disk_sum=$(sha256sum /machines/data/its.dsk | awk "{print \$1}")' \
+    'seed_sum=$(awk "{print \$1}" /opt/its-seed/its.dsk.sha256 2>/dev/null || true)' \
+    'echo "ITS disk checksum: ${disk_sum} (seed: ${seed_sum:-unknown})"' \
+    'exec /usr/local/bin/pdp10-ks /machines/pdp10.ini' \
+    > /usr/local/bin/start-pdp10-its && chmod +x /usr/local/bin/start-pdp10-its
+
+EXPOSE 2323/tcp
+EXPOSE 10004/tcp
+EXPOSE 2000/udp
+
+CMD ["/usr/local/bin/start-pdp10-its"]

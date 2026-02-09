@@ -79,7 +79,7 @@ PHASE1_TOPOLOGY = TopologyDefinition(
     },
 )
 
-# Phase 2: VAX + IMP #1 + IMP #2 + PDP-10 (multi-hop routing)
+# Phase 2: VAX + IMP #1 + IMP #2 + PDP-10/ITS (multi-hop routing)
 PHASE2_TOPOLOGY = TopologyDefinition(
     name="phase2",
     subnet="172.20.0.0/16",
@@ -178,10 +178,11 @@ PHASE2_TOPOLOGY = TopologyDefinition(
         ),
         "pdp10": HostConfig(
             name="pdp10",
-            component_type="pdp10",
+            component_type="its",
             hostname="pdp10-host",
             container_name="arpanet-pdp10",
             console_port=2326,
+            extra_ports=[10004],
             interfaces=[
                 NetworkInterface(
                     network_type="arpanet",
@@ -192,11 +193,14 @@ PHASE2_TOPOLOGY = TopologyDefinition(
                     remote_port=2000,
                 )
             ],
-            dockerfile="./arpanet/Dockerfile.pdp10",
+            dockerfile="./arpanet/Dockerfile.pdp10-its",
             volumes=[
                 ("./build/arpanet/pdp10", "/machines/data"),
-                ("./arpanet/configs/pdp10.ini", "/machines/pdp10.ini:ro"),
+                ("./arpanet/configs/phase2/pdp10.ini", "/machines/pdp10.ini:ro"),
             ],
+            environment={
+                "ITS_FORCE_RESEED": "0",
+            },
         ),
     },
 )

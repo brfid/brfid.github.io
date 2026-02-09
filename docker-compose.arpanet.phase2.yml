@@ -2,7 +2,7 @@
 # Generated from arpanet/topology/definitions.py - DO NOT EDIT MANUALLY
 # To regenerate: arpanet-topology phase2
 #
-# Topology: [VAX/BSD] <-> [IMP #1] <-> [IMP #2] <-> [PDP-10/TOPS-20]
+# Topology: [VAX/BSD] <-> [IMP #1] <-> [IMP #2] <-> [PDP-10/ITS]
 
 version: '3.8'
 services:
@@ -65,15 +65,18 @@ services:
     hostname: pdp10-host
     build:
       context: ./arpanet
-      dockerfile: Dockerfile.pdp10
+      dockerfile: Dockerfile.pdp10-its
     ports:
     - 2326:2323
+    - 10004:10004
     volumes:
     - ./build/arpanet/pdp10:/machines/data
-    - ./arpanet/configs/pdp10.ini:/machines/pdp10.ini:ro
+    - ./arpanet/configs/phase2/pdp10.ini:/machines/pdp10.ini:ro
     networks:
       arpanet:
         ipv4_address: 172.20.0.40
+    environment:
+    - ITS_FORCE_RESEED=0
     restart: unless-stopped
 networks:
   arpanet:

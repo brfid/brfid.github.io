@@ -140,6 +140,13 @@ class TestPredefinedTopologies:
         assert PHASE2_TOPOLOGY.hosts["vax"].depends_on == []
         assert PHASE2_TOPOLOGY.hosts["pdp10"].depends_on == []
 
+    def test_phase2_pdp10_uses_its_artifacts(self) -> None:
+        """Phase2 PDP-10 should use ITS docker/runtime configuration."""
+        pdp10 = PHASE2_TOPOLOGY.hosts["pdp10"]
+        assert pdp10.component_type == "its"
+        assert pdp10.dockerfile == "./arpanet/Dockerfile.pdp10-its"
+        assert 10004 in pdp10.extra_ports
+
     def test_phase1_imp1_interfaces(self) -> None:
         """Phase1 IMP1 should have only host interface."""
         imp1 = PHASE1_TOPOLOGY.hosts["imp1"]

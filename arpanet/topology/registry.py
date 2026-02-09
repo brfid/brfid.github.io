@@ -65,6 +65,7 @@ class HostConfig:
         volumes: Volume mounts as (host_path, container_path) tuples.
         environment: Environment variables for the container.
         depends_on: Container dependencies (must start after these).
+        extra_ports: Additional TCP port mappings exposed as host:container.
 
     Example:
         >>> HostConfig(
@@ -89,6 +90,7 @@ class HostConfig:
     volumes: List[tuple[str, str]] = field(default_factory=list)
     environment: Dict[str, str] = field(default_factory=dict)
     depends_on: List[str] = field(default_factory=list)
+    extra_ports: List[int] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

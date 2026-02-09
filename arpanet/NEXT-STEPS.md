@@ -41,11 +41,17 @@ docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax i
 # 3) Validate stability
 docker compose -f docker-compose.arpanet.phase2.yml ps
 docker logs arpanet-pdp10 --tail 260
+
+# 4) Force reseed ITS disk from image seed (debug stale host volume)
+ITS_FORCE_RESEED=1 docker compose -f docker-compose.arpanet.phase2.yml \
+  up -d --force-recreate --no-deps pdp10
+docker logs arpanet-pdp10 --tail 80 | grep -i "ITS disk checksum"
 ```
 
 **Initial config hardening already applied**:
 - `set cpu 2048k` disabled (unsupported on current KS-10 build)
 - disk configuration migrated to `RPA` family (`set rpa0 ...`, `attach rpa0 ...`, `boot rpa0`)
+- runtime entrypoint supports `ITS_FORCE_RESEED=1` and logs disk checksum provenance
 
 **Success criteria**:
 - [ ] `arpanet-pdp10` remains `Up` (no restart loop)
