@@ -165,7 +165,49 @@ Blocker considered resolved only when all are true:
 
 ---
 
-## 9) Relevant Files
+## 9) Post-Matrix Decision Path (Authenticity-First)
+
+Once the header compatibility matrix is complete, use this decision order.
+
+### Priority A — Native protocol compatibility (most authentic)
+
+If matrix confirms KS-10 emits Ethernet/IP-family frames while IMP2 HI1 requires 1822 host framing, preferred route is:
+
+1. Move PDP-10 side to an emulator/device path that natively matches IMP HI1 host framing expectations.
+2. Validate without translation middleware first.
+
+Rationale:
+- Preserves historical protocol boundaries end-to-end.
+- Avoids introducing modern glue logic into the “core story”.
+- Produces strongest evidence for historically accurate host↔IMP behavior.
+
+### Priority B — Thin UDP shim (fallback)
+
+Use only if native compatibility route is blocked by tooling/time in this phase:
+
+1. Keep KS-10 runtime as-is.
+2. Insert minimal stateless/state-light translator between PDP-10 UDP and IMP2 HI1 UDP.
+3. Rewrite only framing/header boundary required for HI1 parse acceptance.
+
+Constraints:
+- No behavior beyond framing adaptation.
+- Document as temporary bridge with explicit retirement criterion.
+
+### Acceptance gate between A and B
+
+Before choosing fallback, require explicit evidence that native route is currently infeasible in scope (missing emulator capability, unbuildable image path, or disproportionate schedule risk).
+
+### Current recommendation
+
+Given packet evidence and repository state (current PDP-10 path pinned to `pdp10-ks` in ITS build/container), proceed with:
+
+1. Finish matrix with concrete expected HI1 header schema from H316 side.
+2. Run a native-path feasibility pass (KA/KI/KL-capable path in available toolchain/images).
+3. Choose native path if viable; otherwise build minimal shim as an interim unblocker.
+
+---
+
+## 10) Relevant Files
 
 - `arpanet/configs/phase2/pdp10.ini` (current IMP settings under test)
 - `arpanet/topology/generators.py` (source-of-truth for generated PDP-10 config)
