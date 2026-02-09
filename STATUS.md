@@ -41,7 +41,7 @@
 - **Focus**: ITS migration on PDP-10 KS10 path (replacing TOPS-20 install blocker)
 - **Plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
 - **Progress**: `arpanet/PHASE3-PROGRESS.md`
-- **Latest runtime result (AWS)**: PDP-10 now stays up and reaches `DSKDMP` with a valid ITS disk; current blocker is host-link protocol mismatch between KS-10 IMP traffic and IMP2 HI1 1822 framing (`bad magic number` on IMP2)
+- **Latest runtime result (AWS)**: UNI vs SIMP A/B completed; both attach and boot to `DSKDMP`, but host-link mismatch remains (IMP2 HI1 `bad magic number`). Baseline now pinned to static `set imp simp` + `set imp ip/gw/host` + `set imp nodhcp` in phase2 PDP-10 config while proceeding to packet/header mapping.
 
 ---
 
@@ -229,6 +229,7 @@ cdk destroy --force
 1. **PDP-10 ↔ IMP2 Host-Link Framing Mismatch** (ACTIVE)
    - Status: runtime is stable enough to reach `DSKDMP`; MI1 between IMP1/IMP2 is healthy
    - Symptoms: IMP2 logs show `HI1 UDP: link 1 - received packet w/bad magic number` (`feffffff`, `00000219`, `ffffffff`)
+   - A/B evidence: changing KS-10 IMP mode (`UNI` vs `SIMP`) does not resolve the parser failure
    - Impact: transport is up but host-level ARPANET payload exchange fails; VAX↔PDP-10 transfer remains blocked
    - Handoff brief: `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
 

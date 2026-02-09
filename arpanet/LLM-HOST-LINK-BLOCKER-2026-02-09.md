@@ -74,6 +74,19 @@ Result:
 - Attach succeeds (`Eth: opened OS device udp:2000:172.20.0.30:2000`)
 - But HI1 bad-magic on IMP2 persists.
 
+### D. A/B result: `UNI` vs `SIMP` does not clear HI1 parsing failure
+Direct A/B test was executed on AWS with identical static IMP IP/GW/HOST settings and `NODHCP`, changing only transfer mode:
+
+- `set imp uni`
+- `set imp simp`
+
+Observed outcome:
+- Both modes boot to `DSKDMP` and attach IMP successfully.
+- `UNI` still produces IMP2 HI1 bad-magic errors (`feffffff`, `00000219`, `ffffffff`).
+- `SIMP` does not produce evidence of successful HI1 parsing either; no positive host-link parse signal was observed.
+
+Conclusion: mode toggle alone is insufficient; root cause remains framing/protocol incompatibility at HI1 contract boundary.
+
 ---
 
 ## 4) Most Likely Root Cause
@@ -113,7 +126,7 @@ Until IMP2 can parse PDP-10 host-side packets correctly:
 ## 7) Recommended Next Experiments (Ordered)
 
 1. **Capture and decode first bytes** of PDP-10→IMP2 UDP payloads on port 2000 to map observed magic fields.
-2. **A/B test `set imp uni` vs `set imp simp`** with identical static IP settings, comparing IMP2 HI1 parse outcome.
+2. ✅ **A/B test `set imp uni` vs `set imp simp`** with identical static IP settings, comparing IMP2 HI1 parse outcome (completed; no fix).
 3. **Pinpoint expected HI1 header format** from H316 code/docs and construct a packet-level compatibility matrix.
 4. If mismatch is fundamental, **prototype a tiny UDP translator** that rewrites headers only and validate with IMP2 logs.
 5. Re-run first host probe (VAX→PDP10 path) after framing compatibility is achieved.

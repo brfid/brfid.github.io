@@ -533,6 +533,22 @@ Interpretation: transport path is present, but protocol/framing contract between
 Detailed handoff for research LLMs:
 - `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
 
+#### 10. UNI vs SIMP A/B completed on AWS (no protocol-level fix) ✅
+
+Ran controlled A/B with identical static IMP settings (`ip/gw/host`, `nodhcp`) and only mode changed:
+
+- Case A: `set imp uni`
+- Case B: `set imp simp`
+
+Observed:
+- Both cases attach IMP successfully and boot to `DSKDMP`.
+- `UNI` still triggers IMP2 HI1 bad-magic (`feffffff`, `00000219`, `ffffffff`).
+- `SIMP` does not yield positive HI1 parse/success evidence.
+
+Conclusion:
+- Mode toggle alone does not resolve the host-link contract mismatch.
+- Runtime baseline is now pinned to static `SIMP + NODHCP` in `arpanet/configs/phase2/pdp10.ini` to reduce noise while proceeding to packet-capture/header-mapping work.
+
 ---
 
-**Updated**: 2026-02-09 (Session 6)
+**Updated**: 2026-02-09 (Session 6 + UNI/SIMP A/B)
