@@ -483,3 +483,56 @@ docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax i
 **Progress**: 6/11 Phase 3 tasks complete (build done; runtime still blocked)
 **Next**: Fix `pdp10.ini`/simulator compatibility (`RP0` + CPU/memory directives), then re-run phase2 validation
 **Updated**: 2026-02-09
+
+---
+
+## Session 6: Host-Link Protocol Blocker Isolation (AWS)
+
+### Achievements
+
+#### 7. Runtime moved beyond prior restart-loop blocker ✅
+
+Observed on AWS:
+- `arpanet-pdp10` stays `Up` and reaches ITS `DSKDMP`.
+- IMP1↔IMP2 `MI1` link remains healthy with sustained packet activity.
+
+This confirms we are now past the earlier RP/CPU parse blocker as the immediate critical path.
+
+#### 8. PDP-10 IMP behavior characterized against IMP2 HI1 ⚠️
+
+Validated KS-10 `IMP` capabilities in-container (`help set imp`, `help imp attach`) and tested targeted settings in `arpanet/configs/phase2/pdp10.ini`:
+
+```ini
+set imp enabled
+set imp simp
+set imp ip=172.20.0.40/16
+set imp gw=172.20.0.1
+set imp host=172.20.0.40
+set imp nodhcp
+set imp debug
+attach imp udp:2000:172.20.0.30:2000
+```
+
+Result:
+- IMP attach succeeds; runtime remains up.
+- DHCP dependency is removed/controlled.
+- IMP2 still reports HI1 parsing failures from PDP-10 ingress.
+
+#### 9. Current blocker made explicit (research handoff) ✅
+
+IMP2 logs now show repeated host-link framing failures:
+
+```text
+HI1 UDP: link 1 - received packet w/bad magic number (magic=feffffff)
+HI1 UDP: link 1 - received packet w/bad magic number (magic=00000219)
+HI1 UDP: link 1 - received packet w/bad magic number (magic=ffffffff)
+```
+
+Interpretation: transport path is present, but protocol/framing contract between KS-10 IMP output and IMP2 HI1 input is mismatched.
+
+Detailed handoff for research LLMs:
+- `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
+
+---
+
+**Updated**: 2026-02-09 (Session 6)

@@ -334,7 +334,9 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
                 "set tim y2k",
                 "",
                 "; Console and terminal multiplexer",
-                "set console telnet=2323",
+                "; Keep console on stdio for stability. Current pdp10-ks exits",
+                "; after boot if no telnet console client attaches quickly.",
+                "set console notelnet",
                 "set dz enable",
                 "set dz lines=8",
                 "attach dz 10004",
@@ -398,7 +400,9 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
 
     config_lines.extend(
         [
-            "echo Telnet console on port 2323",
+            "echo Console on stdio (telnet disabled for stability)"
+            if is_its
+            else "echo Telnet console on port 2323",
             "echo DZ lines attached on port 10004"
             if is_its
             else "echo Installation tape: tops20_v41.tap on TUA0",

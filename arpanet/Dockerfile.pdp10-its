@@ -20,8 +20,38 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /tmp
 
 # Build ITS for SIMH KS10
-RUN git clone --recursive https://github.com/PDP-10/its.git && \
-    cd its && \
+RUN set -eu; \
+    for attempt in 1 2 3 4 5; do \
+      echo "[ITS clone] attempt ${attempt}/5"; \
+      rm -rf /tmp/its; \
+      if git clone https://github.com/PDP-10/its.git /tmp/its; then \
+        break; \
+      fi; \
+      if [ "$attempt" -eq 5 ]; then \
+        echo "[ITS clone] failed after 5 attempts" >&2; \
+        exit 1; \
+      fi; \
+      sleep $((attempt * 5)); \
+    done; \
+    cd /tmp/its; \
+    # Fallback to alternate SIMH upstream if open-simh endpoint is unstable.
+    sed -i 's#https://github.com/open-simh/simh#https://github.com/simh/simh#' .gitmodules || true; \
+    git submodule sync --recursive; \
+    # Build path only needs the SIMH submodule for EMULATOR=pdp10-ks.
+    # Avoid recursive submodule fetches for unrelated tools (which are noisy/flaky).
+    git config -f .gitmodules submodule.tools/simh.shallow true || true; \
+    git submodule sync -- tools/simh || true; \
+    for attempt in 1 2 3 4 5; do \
+      echo "[ITS submodule tools/simh] attempt ${attempt}/5"; \
+      if git submodule update --init --depth 1 tools/simh; then \
+        break; \
+      fi; \
+      if [ "$attempt" -eq 5 ]; then \
+        echo "[ITS submodule tools/simh] failed after 5 attempts" >&2; \
+        exit 1; \
+      fi; \
+      sleep $((attempt * 5)); \
+    done; \
     make EMULATOR=pdp10-ks
 
 

@@ -41,18 +41,18 @@
 - **Focus**: ITS migration on PDP-10 KS10 path (replacing TOPS-20 install blocker)
 - **Plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
 - **Progress**: `arpanet/PHASE3-PROGRESS.md`
-- **Latest runtime result (AWS)**: RP/CPU parse blockers were resolved (`RPA0` + disabled `2048k`), but boot now fails at `boot rpa0` with `Internal error, PC: 000100`, and `arpanet-pdp10` still restart-loops
+- **Latest runtime result (AWS)**: PDP-10 now stays up and reaches `DSKDMP` with a valid ITS disk; current blocker is host-link protocol mismatch between KS-10 IMP traffic and IMP2 HI1 1822 framing (`bad magic number` on IMP2)
 
 ---
 
 ## 📋 Next Action
 
-**Immediate**: Resolve PDP-10 ITS runtime restart-loop (post-build)
+**Immediate**: Resolve PDP-10 ↔ IMP2 host-link protocol mismatch (post-runtime-stabilization)
 
 **Required**:
 1. AWS EC2 x86_64 instance (t3.medium)
 2. 2-3 uninterrupted hours
-3. ITS runtime stabilization (container stays up; no RP0/CPU parameter errors)
+3. Validate IMP framing compatibility for PDP-10 host-link (KS-10 IMP vs IMP2 HI1)
 
 **Commands**:
 ```bash
@@ -79,7 +79,7 @@ telnet localhost 2326
 telnet localhost 10004
 ```
 
-**After ITS runtime stabilization**:
+**After host-link compatibility is resolved**:
 - Validate 4-container routing
 - Test FTP file transfer (VAX ↔ PDP-10)
 - Integrate into build pipeline
@@ -98,6 +98,7 @@ telnet localhost 10004
 - **Memory/Commands**: `.claude/projects/-home-whf-brfid-github-io/memory/MEMORY.md`
 - **Refactoring summary**: `REFACTORING-COMPLETE.md`
 - **Phase 3 plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
+- **Current blocker handoff (research LLM)**: `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
 
 ### ARPANET Subsystem
 - **Overview**: `arpanet/README.md`
@@ -197,7 +198,7 @@ cdk destroy --force
 - ✅ VAX operational (BSD 4.3, de0 interface)
 - ✅ IMP #1 operational (HI1 to VAX, MI1 to IMP2)
 - ✅ IMP #2 operational (MI1 to IMP1, HI1 to PDP-10)
-- ⏳ PDP-10 ITS container migration in progress (build/boot validation pending)
+- ⚠️ PDP-10 boots to `DSKDMP`, but IMP2 HI1 reports bad-magic host-link framing from PDP-10
 
 ---
 
@@ -225,11 +226,11 @@ cdk destroy --force
 
 ## 🚨 Known Issues / Blockers
 
-1. **ITS Runtime Restart-Loop** (ACTIVE)
-   - Status: AWS validation confirms build completes and RP/CPU config mismatch has been reconciled (`RPA` device family, no unsupported `2048k` setting), but runtime is still unstable at disk boot
-   - Symptoms: startup reaches `boot rpa0`, then aborts with `Internal error, PC: 000100`
-   - Impact: `arpanet-pdp10` continuously restarts; Phase 3 transfer validation blocked
-   - Handoff brief: `LLM-PROBLEM-SUMMARY.md`
+1. **PDP-10 ↔ IMP2 Host-Link Framing Mismatch** (ACTIVE)
+   - Status: runtime is stable enough to reach `DSKDMP`; MI1 between IMP1/IMP2 is healthy
+   - Symptoms: IMP2 logs show `HI1 UDP: link 1 - received packet w/bad magic number` (`feffffff`, `00000219`, `ffffffff`)
+   - Impact: transport is up but host-level ARPANET payload exchange fails; VAX↔PDP-10 transfer remains blocked
+   - Handoff brief: `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
 
 2. **Docker not on Raspberry Pi**
    - SIMH requires x86_64 architecture

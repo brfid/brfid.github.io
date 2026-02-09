@@ -285,6 +285,7 @@ class TestGeneratedConfigAccuracy:
         config = generate_simh_config(pdp10_host, PHASE2_TOPOLOGY)
 
         assert "set cpu its" in config
+        assert "set console notelnet" in config
         assert "boot rpa0" in config
 
     def test_imp_config_echo_messages(self) -> None:
