@@ -340,10 +340,11 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
                 "attach dz 10004",
                 "",
                 "; Configure disk drive (RP = RP06) for ITS system disk",
-                "set rp enable",
-                "set rp0 enable",
-                "set rp0 rp06",
-                "attach rp0 /machines/data/its.dsk",
+                "; KS-10 simulator uses RPA devices (RPA0..RPA7), not RP0",
+                "set rpa enable",
+                "set rpa0 enable",
+                "set rpa0 rp06",
+                "attach rpa0 /machines/data/its.dsk",
                 "",
             ]
         )
@@ -401,7 +402,7 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
             "echo DZ lines attached on port 10004"
             if is_its
             else "echo Installation tape: tops20_v41.tap on TUA0",
-            "echo System disk: /machines/data/its.dsk on RP0"
+            "echo System disk: /machines/data/its.dsk on RPA0"
             if is_its
             else "echo System disk: /machines/data/tops20.dsk on RPA0",
             "echo",
@@ -411,7 +412,7 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
             "",
             "; Boot from system disk" if is_its else "; Boot from installation tape",
             "; SIMH will wait for console connection before proceeding",
-            "boot rp0" if is_its else "boot tua0",
+            "boot rpa0" if is_its else "boot tua0",
         ]
     )
 

@@ -24,9 +24,8 @@ See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) for compl
 **Goal**: Stop `arpanet-pdp10` restart-loop by reconciling `pdp10.ini` with actual `pdp10-ks` simulator capabilities.
 
 **Current failure markers**:
-- `%SIM-ERROR: No such Unit: RP0`
-- `%SIM-ERROR: Non-existent device: RP0`
-- `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+- `./pdp10.ini-52> boot rpa0`
+- `Internal error, PC: 000100`
 
 **Tasks**:
 ```bash
@@ -45,12 +44,12 @@ docker logs arpanet-pdp10 --tail 260
 ```
 
 **Initial config hardening already applied**:
-- `set cpu 2048k` disabled pending `help set cpu` validation
-- explicit disk enable lines added before attach (`set rp enable`, `set rp0 enable`)
+- `set cpu 2048k` disabled (unsupported on current KS-10 build)
+- disk configuration migrated to `RPA` family (`set rpa0 ...`, `attach rpa0 ...`, `boot rpa0`)
 
 **Success criteria**:
 - [ ] `arpanet-pdp10` remains `Up` (no restart loop)
-- [ ] No RP0 / CPU parameter hard errors in logs
+- [ ] Boot proceeds past `boot rpa0` (no `Internal error, PC: 000100`)
 - [ ] Console and DZ ports still reachable (2326, 10004)
 
 ---
@@ -443,7 +442,7 @@ GitHub Actions Workflow
 ## Blockers and Dependencies
 
 ### Current Blockers
-- **PDP-10 ITS restart-loop** due to SIMH config/device mismatch (`RP0` + CPU memory parameter)
+- **PDP-10 ITS restart-loop** at disk boot (`boot rpa0` → `Internal error, PC: 000100`) after resolving prior RP/CPU mismatch
 
 ### Dependencies
 1. **PDP-10 installation** blocks:

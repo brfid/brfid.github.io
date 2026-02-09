@@ -41,7 +41,7 @@
 - **Focus**: ITS migration on PDP-10 KS10 path (replacing TOPS-20 install blocker)
 - **Plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
 - **Progress**: `arpanet/PHASE3-PROGRESS.md`
-- **Latest runtime result (AWS)**: ITS image build completes, but `arpanet-pdp10` restart-loops at runtime due to simulator/config mismatch (`RP0` missing, `set cpu 2048k` unsupported)
+- **Latest runtime result (AWS)**: RP/CPU parse blockers were resolved (`RPA0` + disabled `2048k`), but boot now fails at `boot rpa0` with `Internal error, PC: 000100`, and `arpanet-pdp10` still restart-loops
 
 ---
 
@@ -226,8 +226,8 @@ cdk destroy --force
 ## 🚨 Known Issues / Blockers
 
 1. **ITS Runtime Restart-Loop** (ACTIVE)
-   - Status: AWS validation confirms build completes, but runtime is unstable
-   - Symptoms: `%SIM-ERROR: No such Unit: RP0`, `%SIM-ERROR: Non-existent device: RP0`, `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+   - Status: AWS validation confirms build completes and RP/CPU config mismatch has been reconciled (`RPA` device family, no unsupported `2048k` setting), but runtime is still unstable at disk boot
+   - Symptoms: startup reaches `boot rpa0`, then aborts with `Internal error, PC: 000100`
    - Impact: `arpanet-pdp10` continuously restarts; Phase 3 transfer validation blocked
    - Handoff brief: `LLM-PROBLEM-SUMMARY.md`
 

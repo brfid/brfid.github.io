@@ -2,7 +2,7 @@
 
 **Created**: 2026-02-08
 **Status**: Ready to execute
-**Blocker**: PDP-10 ITS runtime restart-loop (SIMH config/device mismatch)
+**Blocker**: PDP-10 ITS runtime restart-loop (boot-time failure at `boot rpa0`)
 **Platform**: AWS EC2 x86_64 (required for SIMH compatibility)
 
 ---
@@ -24,13 +24,12 @@ Phase 3 completes the ARPANET build integration by:
 
 ### Why this is first
 
-Recent AWS validation confirms ITS image build completes, but `arpanet-pdp10` restart-loops at runtime with:
+Recent AWS validation confirms ITS image build completes, and the initial simulator capability mismatches were fixed (`RPA` device family, no unsupported `2048k` CPU setting). The container still restart-loops, but failure has moved to boot-time:
 
-- `%SIM-ERROR: No such Unit: RP0`
-- `%SIM-ERROR: Non-existent device: RP0`
-- `%SIM-ERROR: CPU device: Non-existent parameter - 2048K`
+- `./pdp10.ini-52> boot rpa0`
+- `Internal error, PC: 000100`
 
-These errors strongly indicate simulator capability mismatch (device naming/availability and CPU memory syntax), not ARPANET topology failure.
+This indicates command-level compatibility is reconciled; current work is now focused on disk/runtime state at boot.
 
 ### Stabilization workflow
 
@@ -63,7 +62,7 @@ docker compose -f docker-compose.arpanet.phase2.yml ps
 docker logs arpanet-pdp10 --tail 260
 ```
 
-Success = no RP0/CPU parameter hard errors and `arpanet-pdp10` remains `Up`.
+Success = boot proceeds past `boot rpa0` without internal error and `arpanet-pdp10` remains `Up`.
 
 4. **If still failing, run ini interactively line-by-line:**
 
@@ -167,7 +166,7 @@ Connect via: telnet localhost 2326
 At this phase the objective is stable ITS boot/runtime, not TOPS-20 installation.
 
 Verify:
-1. SIMH starts without `RP0`/CPU parameter hard errors
+1. SIMH starts without `RP0`/CPU parameter hard errors (already achieved)
 2. ITS boot path proceeds from disk
 3. DZ and console ports remain available (`2326`, `10004`)
 4. IMP attach remains active to `172.20.0.30:2000`
@@ -587,5 +586,5 @@ docker logs arpanet-pdp10 --tail 220
 ---
 
 **Status**: Plan complete, ready to execute
-**Blocker**: PDP-10 ITS runtime mismatch (`RP0`/CPU parameter errors)
+**Blocker**: PDP-10 ITS runtime boot failure (`boot rpa0` → `Internal error, PC: 000100`)
 **Confidence**: High (clear path, proven infrastructure)

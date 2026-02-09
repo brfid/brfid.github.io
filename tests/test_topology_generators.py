@@ -103,6 +103,13 @@ class TestDockerComposeGeneration:
         assert "depends_on" in imp2_service
         assert set(imp2_service["depends_on"]) == {"imp1", "pdp10"}
 
+    def test_phase2_pdp10_exposes_dz_terminal_port(self) -> None:
+        """ITS PDP-10 should expose DZ login terminal port."""
+        config = generate_docker_compose(PHASE2_TOPOLOGY)
+        pdp10_service = config["services"]["pdp10"]
+        assert "2326:2323" in pdp10_service["ports"]
+        assert "10004:10004" in pdp10_service["ports"]
+
 
 class TestSIMHConfigGeneration:
     """Test SIMH .ini configuration generation."""
@@ -277,7 +284,8 @@ class TestGeneratedConfigAccuracy:
         pdp10_host = PHASE2_TOPOLOGY.hosts["pdp10"]
         config = generate_simh_config(pdp10_host, PHASE2_TOPOLOGY)
 
-        assert "boot tua0" in config
+        assert "set cpu its" in config
+        assert "boot rpa0" in config
 
     def test_imp_config_echo_messages(self) -> None:
         """IMP configs should have informative echo messages."""
