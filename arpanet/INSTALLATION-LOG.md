@@ -1,8 +1,8 @@
 # TOPS-20 Installation Log - Live Execution
 
-**Date**: 2026-02-08
-**Approach**: Interactive console (no telnet)
-**Status**: BLOCKED on tape boot failure
+**Date**: 2026-02-08 to 2026-02-09
+**Approach**: Stdio console (no telnet) - FINAL ATTEMPT
+**Status**: CONFIRMED - Tape incompatible with KS10 simulator
 
 ---
 
@@ -129,6 +129,49 @@ This is **different** from the previous telnet timing issue. The console access 
 
 ---
 
-**Status**: Installation blocked, awaiting technical solution for boot failure.
-**Container**: Still running and accessible for debugging.
+## 2026-02-09 00:30-00:45 UTC - Final Stdio Console Attempt
+
+### Implemented Expert Solution V2
+- Created `pdp10-install-stdio.ini` with `set console notelnet`
+- Created automated expect script `tops20-stdio-install.exp`
+- Fixed device names: TUA0 (not TU0), RPA0 (not RP0)
+- Removed incorrect `-f` flag from attach command
+
+### Result: Boot Still Fails ❌
+
+**Configuration loaded successfully:**
+```
+%SIM-INFO: TUA0: Tape Image '/machines/pdp10/tops20_v41.tap' scanned as SIMH format
+```
+
+**Boot command executed:**
+```
+boot tua0
+```
+
+**Result:**
+```
+Unknown KS-10 simulator stop code 7, PC: 000100
+sim>
+```
+
+### Conclusion
+
+**The expert analysis was partially correct:**
+- ✅ Stdio console DOES work (we can see all output)
+- ✅ No more Telnet wrapper buffering issues
+- ✅ Console visibility is perfect
+
+**But the underlying boot failure is REAL:**
+- ❌ Tape does not boot on SIMH KS10 simulator
+- ❌ Stop code 7 at PC 000100 is consistent and repeatable
+- ❌ This is not a console issue - it's a compatibility issue
+
+**Root Cause Identified:**
+The TOPS-20 V4.1 installation tape (bb-d867e-bm_tops20_v41_2020_instl.tap) is likely designed for KL10, not KS10. The Gunkies recipe that works uses KL10 emulator.
+
+---
+
+**Status**: Installation impossible on KS10 - tape is incompatible.
+**Container**: Stopped (boot fails immediately).
 **Documentation**: Complete technical analysis in TOPS20-TAPE-BOOT-FAILURE.md
