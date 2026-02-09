@@ -138,7 +138,7 @@ class TestSIMHConfigGeneration:
         pdp10_host = PHASE2_TOPOLOGY.hosts["pdp10"]
         config = generate_simh_config(pdp10_host, PHASE2_TOPOLOGY)
         assert "set imp enabled" in config
-        assert "attach -u imp" in config
+        assert "attach imp udp:" in config
         assert "172.20.0.30:2000" in config
 
     def test_config_has_header_comment(self) -> None:

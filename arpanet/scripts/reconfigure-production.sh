@@ -47,7 +47,7 @@ attach rpa0 /machines/data/tops20.dsk
 ; IMP Network Interface for ARPANET
 set imp enabled
 set imp debug
-attach -u imp 2000:172.20.0.30:2000
+attach imp udp:2000:172.20.0.30:2000
 
 ; Telnet console for remote access
 set console telnet=2323

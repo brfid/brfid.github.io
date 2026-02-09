@@ -338,8 +338,9 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
                 f"; This is the PDP-10's network interface that connects to IMP at {imp_interface.remote_host}",
                 "set imp enabled",
                 "set imp debug",
-                f"; Attach to local UDP {imp_interface.udp_port}, connect to IMP at {imp_interface.remote_host}:{imp_interface.remote_port}",
-                f"attach -u imp {imp_interface.udp_port}:{imp_interface.remote_host}:{imp_interface.remote_port}",
+                f"; Attach IMP interface via SIMH UDP bridge (eth4 syntax)",
+                f"; Local UDP {imp_interface.udp_port} <-> remote {imp_interface.remote_host}:{imp_interface.remote_port}",
+                f"attach imp udp:{imp_interface.udp_port}:{imp_interface.remote_host}:{imp_interface.remote_port}",
                 "",
             ]
         )
