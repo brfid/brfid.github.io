@@ -47,7 +47,12 @@
 
 ## 📋 Next Action
 
-**Immediate**: Resolve PDP-10 ↔ IMP2 host-link protocol mismatch (post-runtime-stabilization)
+**Immediate**: Execute native-first feasibility spike for translator-free PDP-10↔IMP path
+
+**Decision policy (authenticity-first)**:
+1. Attempt KA10/KL10 + ITS NCP + H316 IMP-native compatibility path first.
+2. Use a thin UDP framing shim only if native path is proven infeasible in current scope.
+3. Keep shim reversible and explicitly temporary if used.
 
 **Required**:
 1. AWS EC2 x86_64 instance (t3.medium)

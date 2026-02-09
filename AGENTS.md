@@ -14,11 +14,11 @@ Commit at significant milestones so the history stays readable and bisectable. E
 - CI workflow changes
 - Artifact format changes (`resume.vax.yaml`, transcript parsing, manifest format)
 
-Before committing:
+Pre-commit checks are optional by default in this repo workflow.
 
-- Run `.venv/bin/python -m pytest -q`
-- Run `.venv/bin/python -m ruff check .`
-- Run `.venv/bin/python -m mypy resume_generator tests`
+- Run `.venv/bin/python -m pytest -q`, `.venv/bin/python -m ruff check .`, and
+  `.venv/bin/python -m mypy resume_generator tests` when a task or reviewer
+  explicitly requests validation.
 
 ## No accidental publishing
 

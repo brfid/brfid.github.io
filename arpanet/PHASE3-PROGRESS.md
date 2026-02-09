@@ -577,3 +577,38 @@ Next technical action: construct an explicit HI1-vs-KS10 header compatibility ma
 ---
 
 **Updated**: 2026-02-09 (Session 6 + A/B + packet-capture evidence)
+
+---
+
+## Session 7: Native-First (No-Translator) Strategy Selection
+
+### Achievements
+
+#### 12. Strategy pivot documented: native 1822/NCP path first ✅
+
+Based on packet evidence and external research synthesis, project strategy is now explicitly:
+
+1. Attempt native compatibility path first (KA10/KL10 + ITS NCP + H316 IMP behavior alignment).
+2. Use translator/shim only as fallback if native route is proven infeasible in current scope.
+
+Reasoning:
+- Current KS-10 path emits Ethernet/IP-style payloads on UDP attach.
+- IMP2 HI1 expects different host-interface framing semantics.
+- This mismatch is structural; toggles (`UNI`/`SIMP`) do not resolve it.
+
+#### 13. Fallback policy constrained to framing-only adapter ✅
+
+If fallback is required, shim scope is constrained:
+- Boundary-only framing adaptation (no application-layer behavior).
+- Keep MI1 and IMP routing core untouched.
+- Reversible deployment with explicit retirement trigger once native path is viable.
+
+#### 14. Repo workflow updated: pre-commit checks now optional-by-default ✅
+
+Root `AGENTS.md` now reflects workflow policy:
+- Pytest/ruff/mypy are optional by default.
+- Run full check set when task/reviewer explicitly requests validation.
+
+---
+
+**Updated**: 2026-02-09 (Session 7 native-first decision)
