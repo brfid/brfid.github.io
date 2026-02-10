@@ -1027,3 +1027,65 @@ Note on counting behavior:
 ---
 
 **Updated**: 2026-02-10 (Session 15 dual-window harness validated; recurrence quantified at 3/3 failures)
+
+---
+
+## Session 16: Delta-Oriented Dual-Window Metric + Host-to-Host Readiness Clarification
+
+### Achievements
+
+#### 35. Added per-run delta metric to dual-window manifest ✅
+
+Updated `test_infra/scripts/run_hi1_gate_remote.py` so dual-window output now includes a `delta_summary` block computed as:
+
+- restart-window counts minus steady-window counts within the same run
+
+Fields added:
+- `bad_magic_counts_delta`
+- `bad_magic_total_delta`
+- `bad_magic_unique_delta`
+- `hi1_line_count_delta`
+- steady/restart totals for context
+- method label (`restart_minus_steady_within_same_dual_window_run`)
+
+This addresses prior ambiguity where absolute tail-based totals could drift upward between runs.
+
+#### 36. Validated delta metric on live AWS dual-window run ✅
+
+Executed:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py --dual-window
+```
+
+Observed manifest highlights:
+- `steady_bad_magic_total=0`
+- `restart_bad_magic_total=3`
+- `bad_magic_total_delta=3`
+- `bad_magic_counts_delta={feffffff:1, 00000219:1, ffffffff:1}`
+- `hi1_line_count_delta=3`
+- `final_exit=2`
+
+Interpretation:
+- New bad-magic evidence appears specifically in the restart window (not present in steady window), confirming a per-cycle recurrence signal.
+
+#### 37. Host-to-host implication clarified (gating policy) ✅
+
+Current status relative to host-to-host milestone:
+
+1. We are still moving toward host-to-host.
+2. But host-link acceptance gate remains red under dual-window strict checks.
+3. Therefore host-to-host transfer testing should remain blocked until native HI1 compatibility passes this gate.
+
+Practical policy:
+- promote to host-to-host only when dual-window runs show stable zero-delta bad-magic (`bad_magic_total_delta=0`) across repeated cycles.
+
+### Why this batch matters
+
+- Keeps progress moving forward with more trustworthy metrics.
+- Distinguishes historical tail noise from newly-triggered restart-window regressions.
+- Tightens decision quality for when to advance from protocol compatibility work to host-to-host transfer tests.
+
+---
+
+**Updated**: 2026-02-10 (Session 16 delta metric added; host-to-host gate criteria clarified)

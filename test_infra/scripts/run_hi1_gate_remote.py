@@ -106,6 +106,16 @@ def _cat_remote_json(ssh_key: str, target: str, remote_json: str) -> dict[str, o
         return None
 
 
+def _compute_delta_counts(
+    steady_counts: dict[str, object] | None,
+    restart_counts: dict[str, object] | None,
+) -> dict[str, int]:
+    steady = {str(k): int(v) for k, v in (steady_counts or {}).items()}
+    restart = {str(k): int(v) for k, v in (restart_counts or {}).items()}
+    keys = set(steady) | set(restart)
+    return {k: max(0, restart.get(k, 0) - steady.get(k, 0)) for k in sorted(keys)}
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
@@ -177,12 +187,39 @@ def main(argv: list[str] | None = None) -> int:
 
         final_exit = gate.returncode if gate.returncode != 0 else restart_exit
 
+    delta_summary: dict[str, object] | None = None
+    if args.dual_window:
+        steady_counts = (steady_summary or {}).get("bad_magic_counts") if isinstance(steady_summary, dict) else {}
+        restart_counts = (restart_summary or {}).get("bad_magic_counts") if isinstance(restart_summary, dict) else {}
+        steady_total = int((steady_summary or {}).get("bad_magic_total", 0)) if isinstance(steady_summary, dict) else 0
+        restart_total = int((restart_summary or {}).get("bad_magic_total", 0)) if isinstance(restart_summary, dict) else 0
+        steady_hi1 = int((steady_summary or {}).get("hi1_line_count", 0)) if isinstance(steady_summary, dict) else 0
+        restart_hi1 = int((restart_summary or {}).get("hi1_line_count", 0)) if isinstance(restart_summary, dict) else 0
+
+        delta_counts = _compute_delta_counts(
+            steady_counts if isinstance(steady_counts, dict) else {},
+            restart_counts if isinstance(restart_counts, dict) else {},
+        )
+        delta_total = sum(delta_counts.values())
+        delta_summary = {
+            "bad_magic_counts_delta": delta_counts,
+            "bad_magic_total_delta": delta_total,
+            "bad_magic_unique_delta": sum(1 for v in delta_counts.values() if v > 0),
+            "hi1_line_count_delta": max(0, restart_hi1 - steady_hi1),
+            "steady_bad_magic_total": steady_total,
+            "restart_bad_magic_total": restart_total,
+            "steady_hi1_line_count": steady_hi1,
+            "restart_hi1_line_count": restart_hi1,
+            "method": "restart_minus_steady_within_same_dual_window_run",
+        }
+
     manifest = {
         "dual_window": args.dual_window,
         "steady_exit": gate.returncode,
         "restart_exit": restart_exit if args.dual_window else None,
         "steady_summary": steady_summary,
         "restart_summary": restart_summary,
+        "delta_summary": delta_summary,
         "final_exit": final_exit,
     }
     print("---REMOTE_HI1_GATE_MANIFEST---")
