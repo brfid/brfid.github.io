@@ -1,7 +1,7 @@
 # ARPANET Integration - Next Steps
 
 **Date**: 2026-02-09
-**Status**: ITS build validated; immediate blocker is PDP-10 runtime restart-loop
+**Status**: ITS runtime is stable; immediate blocker is PDP-10 ↔ IMP2 HI1 host-link framing mismatch
 
 ---
 
@@ -19,44 +19,42 @@ See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) for compl
 
 ## Immediate Next Steps (High Priority)
 
-### 0. Stabilize PDP-10 ITS Runtime (Critical blocker)
+### 0. Resolve PDP-10 ↔ IMP2 HI1 Framing Mismatch (Critical blocker)
 
-**Goal**: Stop `arpanet-pdp10` restart-loop by reconciling `pdp10.ini` with actual `pdp10-ks` simulator capabilities.
+**Goal**: Achieve native-compatible host-link framing between PDP-10 and IMP2 HI1 (no translator by default).
 
 **Current failure markers**:
-- `./pdp10.ini-52> boot rpa0`
-- `Internal error, PC: 000100`
+- `HI1 UDP: link 1 - received packet w/bad magic number (magic=feffffff)`
+- `HI1 UDP: link 1 - received packet w/bad magic number (magic=00000219)`
+- `HI1 UDP: link 1 - received packet w/bad magic number (magic=ffffffff)`
 
 **Tasks**:
 ```bash
-# 1) Inspect simulator capabilities inside runtime image
-docker compose -f docker-compose.arpanet.phase2.yml run --rm \
-  --entrypoint /bin/sh pdp10 -lc "printf 'show version\nshow cpu\nshow devices\nhelp set cpu\nshow rp\nshow rpa\nquit\n' | /usr/local/bin/pdp10-ks -q"
-
-# 2) Rebuild and clean restart
-docker compose -f docker-compose.arpanet.phase2.yml build pdp10
-docker compose -f docker-compose.arpanet.phase2.yml down -v
-docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax imp1 pdp10 imp2
-
-# 3) Validate stability
+# 1) Confirm runtime baseline + IMP attach settings
+docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax imp1 imp2 pdp10
 docker compose -f docker-compose.arpanet.phase2.yml ps
-docker logs arpanet-pdp10 --tail 260
+docker logs arpanet-pdp10 --tail 200
 
-# 4) Force reseed ITS disk from image seed (debug stale host volume)
-ITS_FORCE_RESEED=1 docker compose -f docker-compose.arpanet.phase2.yml \
-  up -d --force-recreate --no-deps pdp10
-docker logs arpanet-pdp10 --tail 80 | grep -i "ITS disk checksum"
+# 2) Capture PDP-10 -> IMP2 UDP payloads for framing analysis
+sudo tcpdump -nn -i any udp port 2000 -c 120 -w /tmp/pdp10-imp2-hi1.pcap
+
+# 3) Correlate packet headers with IMP2 bad-magic logs
+docker logs arpanet-imp2 --tail 400 | grep -i "bad magic\|HI1 UDP"
+
+# 4) Test native-mode variants only (UNI/SIMP and documented IMP options)
+# (keep topology fixed; no shim in primary path)
 ```
 
-**Initial config hardening already applied**:
+**Baseline already validated**:
 - `set cpu 2048k` disabled (unsupported on current KS-10 build)
 - disk configuration migrated to `RPA` family (`set rpa0 ...`, `attach rpa0 ...`, `boot rpa0`)
-- runtime entrypoint supports `ITS_FORCE_RESEED=1` and logs disk checksum provenance
+- runtime reaches stable `DSKDMP` state
+- remaining blocker is HI1 bad-magic framing mismatch
 
 **Success criteria**:
-- [ ] `arpanet-pdp10` remains `Up` (no restart loop)
-- [ ] Boot proceeds past `boot rpa0` (no `Internal error, PC: 000100`)
-- [ ] Console and DZ ports still reachable (2326, 10004)
+- [ ] IMP2 HI1 accepts PDP-10 ingress frames (no repeated bad-magic errors)
+- [ ] Native path selected and documented (translator remains fallback-only)
+- [ ] Evidence captured in `PHASE3-PROGRESS.md` with packet/log correlation
 
 ---
 
@@ -215,7 +213,7 @@ docker-compose -f docker-compose.arpanet.phase1.yml run vax \
 
 **Blockers**: Requires SIMH ini/device reconciliation against running `pdp10-ks`
 
-**Reference**: See `TESTING-PDP10.md` for installation notes
+**Reference**: See `archive/tops20/TESTING-PDP10.md` for historical TOPS-20 installation notes
 
 ---
 
@@ -448,7 +446,7 @@ GitHub Actions Workflow
 ## Blockers and Dependencies
 
 ### Current Blockers
-- **PDP-10 ITS restart-loop** at disk boot (`boot rpa0` → `Internal error, PC: 000100`) after resolving prior RP/CPU mismatch
+- **PDP-10 ↔ IMP2 HI1 framing mismatch** (`bad magic` markers) despite stable ITS runtime and healthy IMP↔IMP routing
 
 ### Dependencies
 1. **PDP-10 installation** blocks:
@@ -527,7 +525,7 @@ GitHub Actions Workflow
 2. **Short-term**: Complete PDP-10 integration and routing (3-4 hours)
 3. **Medium-term**: Integrate into build pipeline (2-3 hours)
 
-**No blockers.** All prerequisites for build pipeline integration are now met. The main remaining work is PDP-10 installation and GitHub Actions workflow setup.
+**Known blocker remains.** ITS runtime stability is no longer the issue; host-link framing compatibility is now the critical path before full PDP-10 transfer validation.
 
 **Historical fidelity maintained**: 100% authentic 1986 BSD FTP client/server throughout.
 

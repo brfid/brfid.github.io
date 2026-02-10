@@ -11,7 +11,7 @@ and this project uses date-based release headings in `YYYY-DD-MM` format.
 - ARPANET stage scaffold execute-path resilience: one retry on `docker exec` failure.
 - Transfer-output classification (`ok`, `empty-output`, `fatal-marker-detected`) with hard fail on non-`ok`.
 - Execution attempt breadcrumbs and validation markers in `site/arpanet-transfer.log`.
-- Root-level handoff brief for ITS runtime debugging: `LLM-PROBLEM-SUMMARY.md`.
+- Runtime boot-loop handoff brief archived at `arpanet/archive/handoffs/LLM-RUNTIME-BOOT-LOOP-2026-02-09.md`.
 
 ### Changed
 - ARPANET stage wraps unexpected exceptions with explicit stage context.

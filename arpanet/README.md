@@ -93,7 +93,7 @@ See `../arpanet_logging/README.md` for usage details.
 - ✅ Console automation solved (SIMH native commands)
 - ✅ Authentic FTP automation working (99% success rate)
 - ⏳ PDP-10 integration (ITS migration in progress)
-- ⚠️ Latest AWS runtime validation (2026-02-09): ITS image build completes, but `arpanet-pdp10` restart-loops due to simulator/config mismatch (`RP0` missing, `set cpu 2048k` unsupported)
+- ⚠️ Latest AWS validation (2026-02-09): PDP-10 runtime is stable past earlier RP/CPU parser issues, but IMP2 HI1 rejects PDP-10 ingress due to host-link framing mismatch (`bad magic`)
 - ⏳ 4-container routing test (Task #25)
 - ⏳ FTP file transfer VAX ↔ PDP-10 (Task #26)
 - ⏳ Build pipeline integration (Task #28)
@@ -434,6 +434,7 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - [x] Network performance measurement (~970 pps)
 - [x] PDP-10 ITS build validated in Docker on AWS (long-running build completes)
 - [ ] PDP-10 ITS runtime stabilization in Docker (current blocker: restart-loop with RP0/CPU parameter errors)
+- [ ] PDP-10 ↔ IMP2 HI1 native framing compatibility (current blocker: bad-magic host-link mismatch)
 - [ ] 4-container routing test (Task #25)
 - [ ] FTP file transfer VAX ↔ PDP-10 (Task #26)
 - [ ] Build pipeline integration (Task #28)
@@ -443,7 +444,8 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 **Status**: Phase 1 complete ✅; Phase 2 complete ✅; Phase 2.5 complete ✅; Phase 3 in progress.
 
 For the live Phase 3 checklist and percent-complete tracking, use `PHASE3-PROGRESS.md` as the source of truth.
-For a concise handoff problem brief targeted at debugging/fix work, see `../LLM-PROBLEM-SUMMARY.md`.
+For the archived runtime boot-loop handoff, see `archive/handoffs/LLM-RUNTIME-BOOT-LOOP-2026-02-09.md`.
+For the current host-link framing blocker, see `LLM-HOST-LINK-BLOCKER-2026-02-09.md`.
 
 See `PHASE1-VALIDATION.md` and `PHASE2-VALIDATION.md` for validation results, plus `PHASE1-SUMMARY.md` and `TESTING-GUIDE.md` for detailed procedures.
 

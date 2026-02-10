@@ -474,7 +474,7 @@ docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax i
 
 **Handoff Brief**:
 - Root-level focused summary for fixing this blocker:
-  - `../LLM-PROBLEM-SUMMARY.md`
+  - `archive/handoffs/LLM-RUNTIME-BOOT-LOOP-2026-02-09.md`
 
 ---
 
