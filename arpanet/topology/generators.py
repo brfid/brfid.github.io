@@ -374,11 +374,20 @@ def _generate_pdp10_config(host: HostConfig, topology: TopologyDefinition) -> st
         )
 
     if imp_interface:
+        imp_ip = host.interfaces[0].ip_address
         config_lines.extend(
             [
                 "; IMP Network Interface for ARPANET connection",
                 f"; This is the PDP-10's network interface that connects to IMP at {imp_interface.remote_host}",
                 "set imp enabled",
+                "; Keep static addressing to avoid DHCP dependency/noise during",
+                "; host-link debugging. UNI/SIMP toggles are tested explicitly",
+                "; in runtime experiments; baseline remains SIMP + NODHCP.",
+                "set imp simp",
+                f"set imp ip={imp_ip}/16",
+                f"set imp gw={topology.gateway}",
+                f"set imp host={imp_ip}",
+                "set imp nodhcp",
                 "set imp debug",
                 "; Attach IMP interface via SIMH UDP bridge",
                 f"; Local UDP {imp_interface.udp_port} <-> remote {imp_interface.remote_host}:{imp_interface.remote_port}",

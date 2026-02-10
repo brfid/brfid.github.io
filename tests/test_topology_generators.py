@@ -145,6 +145,11 @@ class TestSIMHConfigGeneration:
         pdp10_host = PHASE2_TOPOLOGY.hosts["pdp10"]
         config = generate_simh_config(pdp10_host, PHASE2_TOPOLOGY)
         assert "set imp enabled" in config
+        assert "set imp simp" in config
+        assert "set imp ip=172.20.0.40/16" in config
+        assert "set imp gw=172.20.0.1" in config
+        assert "set imp host=172.20.0.40" in config
+        assert "set imp nodhcp" in config
         assert "attach imp udp:" in config
         assert "172.20.0.30:2000" in config
 
