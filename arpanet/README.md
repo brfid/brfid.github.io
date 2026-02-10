@@ -263,7 +263,8 @@ python arpanet/scripts/test_phase2_hi1_framing.py \
   --imp2-tail 5000 \
   --pdp10-tail 1500 \
   --sample-limit 50 \
-  --output build/arpanet/analysis/hi1-framing-matrix-latest.md
+  --output build/arpanet/analysis/hi1-framing-matrix-latest.md \
+  --json-output build/arpanet/analysis/hi1-framing-matrix-latest.json
 
 # Show IMP logs
 docker compose -f docker-compose.arpanet.phase2.yml logs -f imp1 imp2

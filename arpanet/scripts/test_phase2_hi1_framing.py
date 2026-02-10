@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from collections import Counter
@@ -74,7 +75,33 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Optional artifact output path. Defaults to build/arpanet/analysis/hi1-framing-matrix-<timestamp>.md",
     )
+    parser.add_argument(
+        "--json-output",
+        type=Path,
+        default=None,
+        help="Optional JSON summary output path for automation/reporting",
+    )
     return parser.parse_args(argv)
+
+
+def _build_summary(
+    bad_magic_counts: Counter[str],
+    hi1_lines: list[str],
+    pdp10_markers: list[str],
+) -> dict[str, object]:
+    return {
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "bad_magic_counts": dict(bad_magic_counts),
+        "bad_magic_total": sum(bad_magic_counts.values()),
+        "bad_magic_unique": len(bad_magic_counts),
+        "hi1_line_count": len(hi1_lines),
+        "pdp10_marker_count": len(pdp10_markers),
+    }
+
+
+def _write_summary_json(path: Path, summary: dict[str, object]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
 
 
 def _artifact_path() -> Path:
@@ -215,6 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     print_step(4, "Writing HI1 mismatch artifact...")
     out_path = args.output or _artifact_path()
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    summary = _build_summary(bad_magic_counts, hi1_lines, pdp10_markers)
     _write_artifact(
         out_path,
         bad_magic_counts=bad_magic_counts,
@@ -227,6 +255,16 @@ def main(argv: list[str] | None = None) -> int:
         ],
     )
     print_success(f"Wrote evidence artifact: {out_path}")
+    print_info(
+        "Summary: "
+        f"bad_magic_total={summary['bad_magic_total']} "
+        f"(unique={summary['bad_magic_unique']}), "
+        f"hi1_lines={summary['hi1_line_count']}, "
+        f"pdp10_markers={summary['pdp10_marker_count']}"
+    )
+    if args.json_output:
+        _write_summary_json(args.json_output, summary)
+        print_success(f"Wrote JSON summary: {args.json_output}")
     print()
 
     print_info("Next: append artifact findings into arpanet/PHASE3-PROGRESS.md Session notes.")

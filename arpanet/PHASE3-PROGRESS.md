@@ -711,3 +711,58 @@ Validation:
 ---
 
 **Updated**: 2026-02-09 (Session 9 parameterized capture workflow)
+
+---
+
+## Session 10: Machine-Readable HI1 Summary Output
+
+### Achievements
+
+#### 20. HI1 collector now emits optional JSON summary for automation ✅
+
+Enhanced `arpanet/scripts/test_phase2_hi1_framing.py` with optional:
+
+- `--json-output <path>`
+
+When set, the script now writes a structured summary containing:
+
+- `bad_magic_counts`
+- `bad_magic_total`
+- `bad_magic_unique`
+- `hi1_line_count`
+- `pdp10_marker_count`
+- generation timestamp
+
+This supports downstream automation/report ingestion without parsing markdown.
+
+#### 21. Deep capture target now emits paired Markdown + JSON artifacts ✅
+
+`make test-phase2-hi1-framing-deep` now writes:
+
+- `build/arpanet/analysis/hi1-framing-matrix-latest.md`
+- `build/arpanet/analysis/hi1-framing-matrix-latest.json`
+
+#### 22. Tests expanded for JSON summary path ✅
+
+`tests/test_arpanet_phase_scripts.py` now covers:
+
+- `--json-output` argument parsing
+- summary aggregate calculation helper
+- JSON file writing behavior
+
+Validation:
+
+```bash
+.venv/bin/python -m pytest -q tests/test_arpanet_phase_scripts.py
+# 13 passed
+```
+
+### Why this batch matters
+
+- Enables stable machine-readable telemetry from non-orchestrating evidence runs.
+- Reduces friction for appending measured counts into progress/handoff docs.
+- Preserves native-first workflow while improving operational repeatability.
+
+---
+
+**Updated**: 2026-02-09 (Session 10 JSON summary output)

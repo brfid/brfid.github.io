@@ -270,10 +270,12 @@ def test_phase2_hi1_parse_args_defaults() -> None:
     assert args.pdp10_tail == 500
     assert args.sample_limit == 20
     assert args.output is None
+    assert args.json_output is None
 
 
 def test_phase2_hi1_parse_args_custom_values(tmp_path: pytest.TempPathFactory) -> None:
     output_path = tmp_path / "custom-output.md"
+    json_output_path = tmp_path / "custom-output.json"
 
     args = phase2_hi1_script._parse_args(
         [
@@ -285,6 +287,8 @@ def test_phase2_hi1_parse_args_custom_values(tmp_path: pytest.TempPathFactory) -
             "40",
             "--output",
             str(output_path),
+            "--json-output",
+            str(json_output_path),
         ]
     )
 
@@ -292,3 +296,34 @@ def test_phase2_hi1_parse_args_custom_values(tmp_path: pytest.TempPathFactory) -
     assert args.pdp10_tail == 1200
     assert args.sample_limit == 40
     assert args.output == output_path
+    assert args.json_output == json_output_path
+
+
+def test_phase2_hi1_build_summary_counts() -> None:
+    summary = phase2_hi1_script._build_summary(
+        phase2_hi1_script.Counter({"feffffff": 2, "00000219": 1}),
+        hi1_lines=["a", "b", "c"],
+        pdp10_markers=["m1"],
+    )
+
+    assert summary["bad_magic_total"] == 3
+    assert summary["bad_magic_unique"] == 2
+    assert summary["hi1_line_count"] == 3
+    assert summary["pdp10_marker_count"] == 1
+
+
+def test_phase2_hi1_write_summary_json(tmp_path: pytest.TempPathFactory) -> None:
+    output_path = tmp_path / "summary" / "hi1-summary.json"
+    summary = {
+        "bad_magic_total": 3,
+        "bad_magic_unique": 2,
+        "bad_magic_counts": {"feffffff": 2, "00000219": 1},
+        "hi1_line_count": 9,
+        "pdp10_marker_count": 4,
+    }
+
+    phase2_hi1_script._write_summary_json(output_path, summary)
+
+    content = output_path.read_text()
+    assert '"bad_magic_total": 3' in content
+    assert '"feffffff": 2' in content

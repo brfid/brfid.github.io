@@ -149,7 +149,8 @@ test-phase2-hi1-framing-deep:
 		--imp2-tail 5000 \
 		--pdp10-tail 1500 \
 		--sample-limit 50 \
-		--output build/arpanet/analysis/hi1-framing-matrix-latest.md
+		--output build/arpanet/analysis/hi1-framing-matrix-latest.md \
+		--json-output build/arpanet/analysis/hi1-framing-matrix-latest.json
 
 test-imp-logging:
 	@echo "Running ARPANET IMP log collection/parsing test..."
