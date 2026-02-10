@@ -5,12 +5,14 @@ This helper is intentionally non-interactive:
 - discovers the instance SSH command from CloudFormation outputs
 - syncs the latest local HI1 gate script to the remote workspace
 - executes strict gate parameters remotely
+- optionally executes a second restart-window run for dual-window validation
 - prints JSON summary (if present)
 """
 
 from __future__ import annotations
 
 import json
+import argparse
 import shlex
 import subprocess
 import sys
@@ -21,6 +23,7 @@ STACK_NAME = "ArpanetTestStack"
 REMOTE_REPO = "/home/ubuntu/brfid.github.io"
 REMOTE_SCRIPT = f"{REMOTE_REPO}/arpanet/scripts/test_phase2_hi1_framing.py"
 REMOTE_JSON = f"{REMOTE_REPO}/build/arpanet/analysis/hi1-framing-matrix-latest.json"
+REMOTE_JSON_RESTART = f"{REMOTE_REPO}/build/arpanet/analysis/hi1-framing-matrix-restart-window.json"
 LOCAL_SCRIPT = Path(__file__).resolve().parents[2] / "arpanet" / "scripts" / "test_phase2_hi1_framing.py"
 
 
@@ -67,7 +70,45 @@ def _parse_ssh_command(ssh_command: str) -> tuple[str, str]:
     return key_path, target
 
 
-def main() -> int:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run remote HI1 strict gate on AWS test host")
+    parser.add_argument(
+        "--dual-window",
+        action="store_true",
+        help="Run both steady-state and restart-window checks",
+    )
+    parser.add_argument(
+        "--restart-sleep",
+        type=int,
+        default=6,
+        help="Seconds to wait after restarting arpanet-pdp10 in dual-window mode (default: 6)",
+    )
+    return parser.parse_args(argv)
+
+
+def _run_remote(ssh_key: str, target: str, command: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["ssh", "-i", ssh_key, target, command], capture_output=True, text=True)
+
+
+def _cat_remote_json(ssh_key: str, target: str, remote_json: str) -> dict[str, object] | None:
+    show = _run_remote(
+        ssh_key,
+        target,
+        f"if [ -f {remote_json} ]; then cat {remote_json}; fi",
+    )
+    payload = show.stdout.strip()
+    if not payload:
+        return None
+    print(payload)
+    try:
+        return json.loads(payload)
+    except json.JSONDecodeError:
+        return None
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
+
     if not LOCAL_SCRIPT.exists():
         print(f"❌ Local script not found: {LOCAL_SCRIPT}", file=sys.stderr)
         return 1
@@ -94,7 +135,7 @@ def main() -> int:
     )
 
     print("Running strict HI1 gate on AWS host...")
-    gate = subprocess.run(["ssh", "-i", key_path, target, remote_gate], capture_output=True, text=True)
+    gate = _run_remote(key_path, target, remote_gate)
     if gate.stdout:
         print(gate.stdout, end="")
     if gate.stderr:
@@ -102,13 +143,52 @@ def main() -> int:
 
     print(f"REMOTE_GATE_EXIT_CODE={gate.returncode}")
 
-    json_cmd = f"if [ -f {REMOTE_JSON} ]; then cat {REMOTE_JSON}; fi"
-    summary = subprocess.run(["ssh", "-i", key_path, target, json_cmd], capture_output=True, text=True)
-    if summary.stdout.strip():
-        print("---REMOTE_HI1_JSON---")
-        print(summary.stdout.strip())
+    print("---REMOTE_HI1_JSON---")
+    steady_summary = _cat_remote_json(key_path, target, REMOTE_JSON)
 
-    return gate.returncode
+    final_exit = gate.returncode
+
+    restart_summary: dict[str, object] | None = None
+    restart_exit = 0
+    if args.dual_window:
+        restart_gate = (
+            f"cd {REMOTE_REPO} && "
+            "docker restart arpanet-pdp10 >/dev/null && "
+            f"sleep {args.restart_sleep} && "
+            "python3 arpanet/scripts/test_phase2_hi1_framing.py "
+            "--imp2-tail 12000 "
+            "--pdp10-tail 3000 "
+            "--sample-limit 80 "
+            "--output build/arpanet/analysis/hi1-framing-matrix-restart-window.md "
+            "--json-output build/arpanet/analysis/hi1-framing-matrix-restart-window.json "
+            "--fail-on-bad-magic"
+        )
+        print("Running restart-window HI1 gate on AWS host...")
+        restart = _run_remote(key_path, target, restart_gate)
+        if restart.stdout:
+            print(restart.stdout, end="")
+        if restart.stderr:
+            print(restart.stderr, end="", file=sys.stderr)
+        restart_exit = restart.returncode
+        print(f"REMOTE_RESTART_WINDOW_EXIT_CODE={restart_exit}")
+
+        print("---REMOTE_HI1_RESTART_JSON---")
+        restart_summary = _cat_remote_json(key_path, target, REMOTE_JSON_RESTART)
+
+        final_exit = gate.returncode if gate.returncode != 0 else restart_exit
+
+    manifest = {
+        "dual_window": args.dual_window,
+        "steady_exit": gate.returncode,
+        "restart_exit": restart_exit if args.dual_window else None,
+        "steady_summary": steady_summary,
+        "restart_summary": restart_summary,
+        "final_exit": final_exit,
+    }
+    print("---REMOTE_HI1_GATE_MANIFEST---")
+    print(json.dumps(manifest, indent=2, sort_keys=True))
+
+    return final_exit
 
 
 if __name__ == "__main__":

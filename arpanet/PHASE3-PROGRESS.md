@@ -955,3 +955,75 @@ Conclusion:
 ---
 
 **Updated**: 2026-02-09 (Session 14 restart-window recheck confirms persistent HI1 framing mismatch)
+
+---
+
+## Session 15: Dual-Window Harness Validation + Recurrence Quantification
+
+### Achievements
+
+#### 32. Dual-window AWS harness validated in baseline mode ✅
+
+Validated that the refactored remote harness still supports the existing single-window strict path via:
+
+```bash
+make aws-verify-phase2-hi1-clean
+```
+
+Observed baseline manifest:
+- `dual_window=false`
+- `steady_exit=0`
+- `steady_summary.bad_magic_total=0`
+- `steady_summary.hi1_line_count=0`
+
+Interpretation: baseline path is intact after refactor and remains capable of yielding a clean-but-inconclusive steady-state window.
+
+#### 33. Executed 3 dual-window runs with manifest capture ✅
+
+Executed three runs (with log capture):
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py --dual-window
+```
+
+Per-run manifests (`build/arpanet/analysis/hi1-dual-window-run-{1..3}.log`) summarize as:
+
+| run | final_exit | steady bad_magic_total / hi1_line_count | restart bad_magic_total / hi1_line_count |
+|---|---:|---:|---:|
+| 1 | 2 | 0 / 0 | 3 / 3 |
+| 2 | 2 | 3 / 3 | 6 / 6 |
+| 3 | 2 | 6 / 6 | 9 / 9 |
+
+Known recurring magic signatures across restart windows:
+- `feffffff`
+- `00000219`
+- `ffffffff`
+
+#### 34. Quantified implication for fail-fast planning ✅
+
+Key result from this batch:
+- `3/3` dual-window runs failed strict gating (`final_exit=2`).
+
+Operational interpretation:
+1. Restart-window validation is consistently high-signal for reproducing the blocker.
+2. Steady-state windows can begin clean, then become contaminated by bad-magic as log tails include later traffic.
+3. Host-link compatibility remains unresolved; blocker is reproducible and not a one-off transient.
+
+Note on counting behavior:
+- Current summaries are log-window totals, so counts can increase run-over-run as inspected tails include previously emitted bad-magic lines. This is acceptable for fail-fast detection, but not a pure per-restart delta metric.
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-run-1.log`
+- `build/arpanet/analysis/hi1-dual-window-run-2.log`
+- `build/arpanet/analysis/hi1-dual-window-run-3.log`
+
+### Next
+
+1. Preserve dual-window strict gate as the acceptance path for native HI1 compatibility checks.
+2. For per-cycle precision, add delta-oriented correlation (e.g., timestamp-anchored extraction or log-since markers) so each restart window is measured independently.
+3. Continue native header-contract/mode matrix experiments under this same dual-window gate.
+
+---
+
+**Updated**: 2026-02-10 (Session 15 dual-window harness validated; recurrence quantified at 3/3 failures)
