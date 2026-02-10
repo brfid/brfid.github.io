@@ -78,6 +78,21 @@ services:
     environment:
     - ITS_FORCE_RESEED=0
     restart: unless-stopped
+  hi1shim:
+    container_name: arpanet-hi1shim
+    hostname: hi1-host-imp-interface
+    build:
+      context: ./arpanet
+      dockerfile: Dockerfile.hi1shim
+    ports:
+    - 2327:2323
+    networks:
+      arpanet:
+        ipv4_address: 172.20.0.50
+    restart: unless-stopped
+    depends_on:
+    - imp2
+    - pdp10
 networks:
   arpanet:
     name: arpanet-build

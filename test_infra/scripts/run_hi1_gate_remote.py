@@ -89,6 +89,14 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Optionally force remote phase2 pdp10.ini IMP mode before running gate",
     )
+    parser.add_argument(
+        "--manifest-output",
+        default=None,
+        help=(
+            "Optional local path to write the final gate manifest JSON "
+            "(useful for preserving per-run evidence snapshots)"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -270,6 +278,12 @@ def main(argv: list[str] | None = None) -> int:
     }
     print("---REMOTE_HI1_GATE_MANIFEST---")
     print(json.dumps(manifest, indent=2, sort_keys=True))
+
+    if args.manifest_output:
+        output_path = Path(args.manifest_output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+        print(f"Wrote local manifest: {output_path}")
 
     return final_exit
 

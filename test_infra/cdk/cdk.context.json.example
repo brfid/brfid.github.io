@@ -3,8 +3,11 @@
   "ssh_private_key_path": "~/.ssh/id_rsa",
   "instance_type": "t3.medium",
   "root_volume_size": 30,
+  "logs_volume_size": 8,
+  "persist_logs_volume": true,
+  "logs_retention_days": 14,
   "allowed_ssh_cidrs": ["0.0.0.0/0"],
   "git_repo": "https://github.com/brfid/brfid.github.io.git",
-  "git_branch": "claude/arpanet-build-integration-uU9ZL",
+  "git_branch": "main",
   "aws_region": "us-east-1"
 }

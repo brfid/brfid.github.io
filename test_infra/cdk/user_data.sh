@@ -28,49 +28,25 @@ chmod +x /usr/local/bin/docker-compose
 echo "Installing additional tools..."
 apt-get install -y git make python3 python3-pip telnet netcat-openbsd
 
-# Set up persistent logs volume
-echo "Setting up persistent logs volume..."
-# Find the logs volume (should be /dev/nvme1n1 on newer instances)
-LOGS_DEVICE=$(lsblk -o NAME,SIZE | grep "20G" | awk '{print "/dev/"$1}' | grep nvme | head -1)
-if [ -z "$LOGS_DEVICE" ]; then
-    # Fallback for older instance types
-    LOGS_DEVICE="/dev/xvdf"
-fi
-
-echo "Logs device detected: $LOGS_DEVICE"
-
-# Check if volume already has a filesystem
-if ! blkid "$LOGS_DEVICE"; then
-    echo "Formatting logs volume as ext4..."
-    mkfs.ext4 -L arpanet-logs "$LOGS_DEVICE"
-else
-    echo "Logs volume already formatted"
-fi
-
-# Create mount point
-mkdir -p /mnt/arpanet-logs
-chown ubuntu:ubuntu /mnt/arpanet-logs
-
-# Mount the volume
-echo "Mounting logs volume..."
-mount "$LOGS_DEVICE" /mnt/arpanet-logs
-chown ubuntu:ubuntu /mnt/arpanet-logs
-
-# Add to fstab for persistence across reboots
-if ! grep -q "/mnt/arpanet-logs" /etc/fstab; then
-    echo "LABEL=arpanet-logs /mnt/arpanet-logs ext4 defaults,nofail 0 2" >> /etc/fstab
-fi
-
-# Create directory structure
-su - ubuntu -c "mkdir -p /mnt/arpanet-logs/builds"
-su - ubuntu -c "mkdir -p /mnt/arpanet-logs/active"
-
-echo "Logs volume mounted at /mnt/arpanet-logs"
-
 # Clone repository as ubuntu user
 echo "Cloning repository..."
 su - ubuntu -c "git clone ${git_repo} /home/ubuntu/brfid.github.io"
 su - ubuntu -c "cd /home/ubuntu/brfid.github.io && git checkout ${git_branch}"
+
+# Set up logs volume and retention policy via Python manager
+echo "Configuring logs volume and retention policy..."
+python3 /home/ubuntu/brfid.github.io/test_infra/scripts/manage_logs_volume.py \
+  --mode setup \
+  --logs-enabled ${logs_volume_enabled} \
+  --retention-days ${logs_retention_days}
+
+cat >/etc/cron.d/arpanet-log-retention <<CRON
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+17 3 * * * root /usr/bin/python3 /home/ubuntu/brfid.github.io/test_infra/scripts/manage_logs_volume.py --mode cleanup --retention-days ${logs_retention_days} >> /var/log/arpanet-log-retention.log 2>&1
+CRON
+chmod 0644 /etc/cron.d/arpanet-log-retention
+echo "Daily log retention cleanup scheduled (3:17 AM)"
 
 # Run setup script
 echo "Running setup script..."

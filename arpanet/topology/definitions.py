@@ -163,7 +163,7 @@ PHASE2_TOPOLOGY = TopologyDefinition(
                     ip_address="172.20.0.30",
                     udp_port=2000,
                     device="hi1",
-                    remote_host="172.20.0.40",
+                    remote_host="172.20.0.50",
                     remote_port=2000,
                 ),
             ],
@@ -189,8 +189,8 @@ PHASE2_TOPOLOGY = TopologyDefinition(
                     ip_address="172.20.0.40",
                     udp_port=2000,
                     device="imp",
-                    remote_host="172.20.0.30",
-                    remote_port=2000,
+                    remote_host="172.20.0.50",
+                    remote_port=2001,
                 )
             ],
             dockerfile="./arpanet/Dockerfile.pdp10-its",
@@ -201,6 +201,25 @@ PHASE2_TOPOLOGY = TopologyDefinition(
             environment={
                 "ITS_FORCE_RESEED": "0",
             },
+        ),
+        "hi1shim": HostConfig(
+            name="hi1shim",
+            component_type="shim",
+            hostname="hi1-host-imp-interface",
+            container_name="arpanet-hi1shim",
+            console_port=2327,
+            interfaces=[
+                NetworkInterface(
+                    network_type="arpanet",
+                    ip_address="172.20.0.50",
+                    udp_port=2000,
+                    device="shim",
+                    remote_host="172.20.0.30",
+                    remote_port=2000,
+                )
+            ],
+            dockerfile="./arpanet/Dockerfile.hi1shim",
+            depends_on=["imp2", "pdp10"],
         ),
     },
 )

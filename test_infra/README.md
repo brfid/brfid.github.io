@@ -124,7 +124,7 @@ make aws-down
 - **Infrastructure as Code** - AWS CDK in Python (not Terraform)
 - **Cost-effective** - ~$0.042/hour, ~$0.50/month typical usage
 - **Auto-configures** - cloud-init (user-data script) sets up environment
-- **All Python** - CDK + helper scripts + boto3
+- **Python-first ops** - CDK + helper scripts + boto3, including logs-volume management
 
 ## Implementation
 
@@ -187,7 +187,8 @@ test_infra/
 │   ├── provision.py       # Deploy stack
 │   ├── connect.py         # SSH helper
 │   ├── destroy.py         # Destroy stack
-│   └── status.py          # Check status
+│   ├── status.py          # Check status
+│   └── manage_logs_volume.py # Logs volume setup/retention cleanup
 └── docker/                # Docker integration tests
 ```
 
@@ -201,11 +202,23 @@ Edit `cdk/cdk.context.json`:
   "ssh_private_key_path": "~/.ssh/id_ed25519",
   "instance_type": "t3.medium",
   "root_volume_size": 30,
+  "logs_volume_size": 8,
+  "persist_logs_volume": true,
+  "logs_retention_days": 14,
   "allowed_ssh_cidrs": ["0.0.0.0/0"],
   "git_branch": "main",
   "aws_region": "us-east-1"
 }
 ```
+
+### Logs Volume Configuration
+
+- `logs_volume_size` (GB): set to `0` to disable the dedicated logs volume.
+- `persist_logs_volume`: when `true`, logs volume survives instance termination.
+- `logs_retention_days`: delete entries older than N days from `builds/` and `active/`.
+
+The bootstrap now uses `test_infra/scripts/manage_logs_volume.py` for disk discovery and cleanup.
+It does **not** rely on hardcoded disk size matching.
 
 ## Cost
 

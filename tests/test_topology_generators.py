@@ -35,14 +35,15 @@ class TestDockerComposeGeneration:
         assert len(config["services"]) == 2
 
     def test_generate_phase2_services(self) -> None:
-        """Phase2 should generate all four services."""
+        """Phase2 should generate all five services."""
         config = generate_docker_compose(PHASE2_TOPOLOGY)
         assert "services" in config
         assert "vax" in config["services"]
         assert "imp1" in config["services"]
         assert "imp2" in config["services"]
         assert "pdp10" in config["services"]
-        assert len(config["services"]) == 4
+        assert "hi1shim" in config["services"]
+        assert len(config["services"]) == 5
 
     def test_vax_uses_image_not_build(self) -> None:
         """VAX should use pre-built image."""
@@ -103,6 +104,10 @@ class TestDockerComposeGeneration:
         assert "depends_on" in imp2_service
         assert set(imp2_service["depends_on"]) == {"imp1", "pdp10"}
 
+        shim_service = config["services"]["hi1shim"]
+        assert "depends_on" in shim_service
+        assert set(shim_service["depends_on"]) == {"imp2", "pdp10"}
+
     def test_phase2_pdp10_exposes_dz_terminal_port(self) -> None:
         """ITS PDP-10 should expose DZ login terminal port."""
         config = generate_docker_compose(PHASE2_TOPOLOGY)
@@ -151,7 +156,7 @@ class TestSIMHConfigGeneration:
         assert "set imp host=172.20.0.40" in config
         assert "set imp nodhcp" in config
         assert "attach imp udp:" in config
-        assert "172.20.0.30:2000" in config
+        assert "172.20.0.50:2001" in config
 
     def test_config_has_header_comment(self) -> None:
         """Generated configs should have descriptive headers."""

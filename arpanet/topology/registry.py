@@ -80,7 +80,7 @@ class HostConfig:
     """
 
     name: str
-    component_type: Literal["vax", "pdp10", "pdp11", "its", "imp"]
+    component_type: Literal["vax", "pdp10", "pdp11", "its", "imp", "shim"]
     hostname: str
     container_name: str
     console_port: int

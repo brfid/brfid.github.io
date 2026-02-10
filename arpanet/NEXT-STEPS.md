@@ -1,7 +1,7 @@
 # ARPANET Integration - Next Steps
 
-**Date**: 2026-02-09
-**Status**: ITS runtime is stable; immediate blocker is PDP-10 ↔ IMP2 HI1 host-link framing mismatch
+**Date**: 2026-02-10
+**Status**: ITS runtime is stable; host-link gate remains green (including post-transfer-attempt check), but end-to-end host transfer is currently blocked by PDP-10 FTP endpoint/service reachability
 
 ---
 
@@ -19,45 +19,113 @@ See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) for compl
 
 ## Immediate Next Steps (High Priority)
 
-### 0. Resolve PDP-10 ↔ IMP2 HI1 Framing Mismatch (Critical blocker)
+### 0. Validate Host-IMP Interface fallback path (Critical)
 
-**Goal**: Achieve native-compatible host-link framing between PDP-10 and IMP2 HI1 (no translator by default).
+**Goal**: Prove stable host-link behavior using the Host-IMP Interface adapter while preserving native-first strategy and clear retirement criteria.
 
-**Current failure markers**:
-- `HI1 UDP: link 1 - received packet w/bad magic number (magic=feffffff)`
-- `HI1 UDP: link 1 - received packet w/bad magic number (magic=00000219)`
-- `HI1 UDP: link 1 - received packet w/bad magic number (magic=ffffffff)`
+**Current implementation status**:
+- Host-IMP Interface is now integrated into Phase 2 topology as `hi1shim` (`172.20.0.50`).
+- IMP2 HI1 now targets shim (`172.20.0.50:2000`).
+- PDP-10 IMP now targets shim ingress (`172.20.0.50:2001`).
+- New shim runtime/service files:
+  - `arpanet/scripts/hi1_shim.py`
+  - `arpanet/Dockerfile.hi1shim`
 
-**Tasks**:
+**Validation status (local code/tests)**:
+- Focused test suite passed: `62 passed` across shim + topology/generator/phase script tests.
+- Mounted/runtime config consistency confirmed:
+  - `arpanet/configs/imp2.ini` points HI1 to `172.20.0.50:2000`
+  - `arpanet/configs/phase2/imp2.ini` matches generated topology endpoint
+  - `arpanet/configs/phase2/pdp10.ini` points IMP attach to `172.20.0.50:2001`
+
+**Tasks (next operator run on active stack)**:
 ```bash
-# 1) Non-orchestrating deep evidence capture (running stack only)
-make test-phase2-hi1-framing-deep
+# 1) Rebuild/restart phase2 with Host-IMP Interface in path
+docker compose -f docker-compose.arpanet.phase2.yml up -d --build
 
-# 2) Review machine-readable summary
-cat build/arpanet/analysis/hi1-framing-matrix-latest.json
+# 2) Confirm link-level wiring and shim activity
+.venv/bin/python arpanet/scripts/test_phase2.py
+docker logs arpanet-hi1shim --tail 200
+docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic"
 
-# 3) Correlate with IMP2 stream and packet capture when needed
-docker logs arpanet-imp2 --tail 500 | grep -i "bad magic\|HI1 UDP"
-sudo tcpdump -nn -i any udp port 2000 -c 120 -w /tmp/pdp10-imp2-hi1.pcap
-
-# 4) Test native-mode variants only (UNI/SIMP and documented IMP options)
-# (keep topology fixed; no shim in primary path)
+# 3) Capture strict evidence manifests for handoff
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-default-manifest.json || true
 ```
 
-**Baseline already validated**:
-- `set cpu 2048k` disabled (unsupported on current KS-10 build)
-- disk configuration migrated to `RPA` family (`set rpa0 ...`, `attach rpa0 ...`, `boot rpa0`)
-- runtime reaches stable `DSKDMP` state
-- remaining blocker is HI1 bad-magic framing mismatch
+**Latest outcome (2026-02-10)**:
+- ✅ Host-IMP Interface counters show active wrap/unwrap traffic (`parse_errors=0`)
+- ✅ Remote attach endpoints confirmed on shim path (`172.20.0.50:2000/2001`)
+- ✅ Dual-window manifests (default/SIMP/UNI) all produced `final_exit=0`, `bad_magic_total_delta=0`
 
-**Success criteria**:
-- [ ] IMP2 HI1 accepts PDP-10 ingress frames (no repeated bad-magic errors)
-- [ ] Native path selected and documented (translator remains fallback-only)
-- [ ] Evidence captured in `PHASE3-PROGRESS.md` with packet/log correlation
+**Success criteria (ongoing)**:
+- [x] Host-IMP Interface counters show active wrap/unwrap traffic
+- [x] IMP2 HI1 startup/link markers are stable with shim endpoint in path
+- [x] Dual-window evidence shows improved bad-magic behavior vs pre-shim baseline
+- [ ] Maintain clean dual-window results across repeated cycles (regression watch)
+- [ ] Retirement trigger for fallback remains documented (native-compatible path replaces shim)
+
+**Decision policy (unchanged)**:
+- Keep native-path framing alignment as long-term target.
+- Keep Host-IMP Interface as temporary boundary adapter only.
 
 ---
 
-### 1. Test SIMH Automation Scripts (15 minutes)
+### 1. Controlled host-to-host transfer validation (Next milestone)
+
+**Goal**: Advance from link-level gating to end-to-end host transfer checks now that the current gate batch is green.
+
+**Tasks**:
+```bash
+# Re-run at least one confirmatory dual-window gate before transfer attempt
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-pre-transfer-check.json
+
+# Then execute Phase 2 runtime validation (includes shim path checks)
+.venv/bin/python arpanet/scripts/test_phase2.py
+
+# Capture shim/IMP2 evidence around transfer window
+docker logs arpanet-hi1shim --tail 200
+docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic" || true
+```
+
+**Success criteria**:
+- [ ] Pre-transfer dual-window manifest stays clean (`final_exit=0`, `bad_magic_total_delta=0`)
+- [ ] Phase2 validation script passes with shim in path
+- [ ] No HI1 bad-magic recurrence during transfer-timed window
+- [ ] PDP-10 transfer target service is reachable from VAX (current blocker)
+
+**Latest attempt outcome (Session 23)**:
+- Transfer command reached VAX FTP client stage and failed at connect step:
+  - `ftp 172.20.0.40`
+  - `ftp: connect: Connection timed out`
+- Post-attempt dual-window evidence remained green:
+  - `build/arpanet/analysis/hi1-dual-window-post-transfer-attempt.json`
+  - `final_exit=0`, `bad_magic_total_delta=0`
+
+**Immediate next actions**:
+```bash
+# 1) Verify/bring up FTP-capable service on PDP-10 target path
+docker logs arpanet-pdp10 --tail 200
+
+# 2) Re-run controlled transfer attempt after service readiness
+expect arpanet/scripts/authentic-ftp-transfer.exp \
+  localhost 2323 \
+  /usr/guest/operator/arpanet-test.txt \
+  /tmp/pdp10-received.txt \
+  172.20.0.40
+
+# 3) Re-check regression gate immediately after attempt
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-post-transfer-attempt-rerun.json
+```
+
+---
+
+### 2. Test SIMH Automation Scripts (15 minutes)
 
 **Goal**: Validate the new automation scripts work in current setup
 
@@ -88,7 +156,7 @@ docker exec arpanet-vax ls -l /tmp/uploaded.txt
 
 ---
 
-### 2. Create Build Artifact Transfer Script (30 minutes)
+### 3. Create Build Artifact Transfer Script (30 minutes)
 
 **Goal**: Create production script for transferring build artifacts via ARPANET FTP
 
@@ -147,7 +215,7 @@ exit
 
 ---
 
-### 3. Update Docker Compose for Automation (15 minutes)
+### 4. Update Docker Compose for Automation (15 minutes)
 
 **Goal**: Make SIMH automation scripts easily accessible in containers
 
@@ -445,7 +513,8 @@ GitHub Actions Workflow
 ## Blockers and Dependencies
 
 ### Current Blockers
-- **PDP-10 ↔ IMP2 HI1 framing mismatch** (`bad magic` markers) despite stable ITS runtime and healthy IMP↔IMP routing
+- No active HI1 bad-magic blocker in latest aligned batch; primary risk is **regression** if remote runtime drifts from shim-aligned topology.
+- Active transfer blocker is PDP-10 target endpoint/service readiness for FTP from VAX (`172.20.0.40:21` timed out in Session 23).
 
 ### Dependencies
 1. **PDP-10 installation** blocks:
@@ -524,7 +593,7 @@ GitHub Actions Workflow
 2. **Short-term**: Complete PDP-10 integration and routing (3-4 hours)
 3. **Medium-term**: Integrate into build pipeline (2-3 hours)
 
-**Known blocker remains.** ITS runtime stability is no longer the issue; host-link framing compatibility is now the critical path before full PDP-10 transfer validation.
+**Host-link gate is currently green in aligned runs.** ITS runtime is stable and latest dual-window manifests show no bad-magic recurrence; focus now moves to sustained host-to-host transfer validation and regression monitoring.
 
 **Historical fidelity maintained**: 100% authentic 1986 BSD FTP client/server throughout.
 
@@ -533,5 +602,5 @@ GitHub Actions Workflow
 ---
 
 **Status**: Ready to proceed
-**Next Action**: Run `make test-phase2-hi1-framing-deep` on the active AWS phase2 stack and append findings into `arpanet/PHASE3-PROGRESS.md`
+**Next Action**: Run one pre-transfer dual-window confirmatory gate, then execute controlled host-to-host transfer validation and append findings into `arpanet/PHASE3-PROGRESS.md`
 **Timeline**: 12-15 hours total to complete build pipeline integration

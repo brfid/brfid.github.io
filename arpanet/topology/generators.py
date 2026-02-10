@@ -152,6 +152,9 @@ def generate_simh_config(host: HostConfig, topology: TopologyDefinition) -> str:
         return _generate_imp_config(host, topology)
     elif host.component_type in ("pdp10", "its"):
         return _generate_pdp10_config(host, topology)
+    elif host.component_type == "shim":
+        # Host-IMP Interface shim is an app-level UDP helper; no SIMH config.
+        return ""
     elif host.component_type == "vax":
         # VAX uses base image config, no custom .ini needed
         return ""

@@ -117,12 +117,13 @@ class TestPredefinedTopologies:
         assert len(PHASE1_TOPOLOGY.hosts) == 2
 
     def test_phase2_has_required_hosts(self) -> None:
-        """Phase2 should have VAX, IMP #1, IMP #2, and PDP-10."""
+        """Phase2 should have VAX, IMP #1, IMP #2, PDP-10, and Host-IMP Interface."""
         assert "vax" in PHASE2_TOPOLOGY.hosts
         assert "imp1" in PHASE2_TOPOLOGY.hosts
         assert "imp2" in PHASE2_TOPOLOGY.hosts
         assert "pdp10" in PHASE2_TOPOLOGY.hosts
-        assert len(PHASE2_TOPOLOGY.hosts) == 4
+        assert "hi1shim" in PHASE2_TOPOLOGY.hosts
+        assert len(PHASE2_TOPOLOGY.hosts) == 5
 
     def test_phase1_topology_subnet(self) -> None:
         """Phase1 should use correct subnet."""
@@ -136,6 +137,8 @@ class TestPredefinedTopologies:
         assert PHASE2_TOPOLOGY.hosts["imp1"].depends_on == ["vax"]
         # IMP2 depends on IMP1 and PDP10
         assert set(PHASE2_TOPOLOGY.hosts["imp2"].depends_on) == {"imp1", "pdp10"}
+        # Host-IMP Interface waits for both endpoints
+        assert set(PHASE2_TOPOLOGY.hosts["hi1shim"].depends_on) == {"imp2", "pdp10"}
         # VAX and PDP10 have no dependencies
         assert PHASE2_TOPOLOGY.hosts["vax"].depends_on == []
         assert PHASE2_TOPOLOGY.hosts["pdp10"].depends_on == []

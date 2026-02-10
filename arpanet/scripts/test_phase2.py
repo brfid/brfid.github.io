@@ -52,6 +52,7 @@ def main() -> int:
         "arpanet-imp1",
         "arpanet-imp2",
         "arpanet-pdp10",
+        "arpanet-hi1shim",
     ]
 
     if not check_containers_running(client, required_containers):
@@ -60,7 +61,7 @@ def main() -> int:
             "Start with: docker compose -f docker-compose.arpanet.phase2.yml up -d"
         )
 
-    print_success("VAX, IMP1, IMP2, and PDP10 containers are running")
+    print_success("VAX, IMP1, IMP2, PDP10, and Host-IMP Interface containers are running")
     print()
 
     # Get container objects
@@ -68,8 +69,9 @@ def main() -> int:
     imp1 = get_container(client, "arpanet-imp1")
     imp2 = get_container(client, "arpanet-imp2")
     pdp10 = get_container(client, "arpanet-pdp10")
+    hi1shim = get_container(client, "arpanet-hi1shim")
 
-    if not all([vax, imp1, imp2, pdp10]):
+    if not all([vax, imp1, imp2, pdp10, hi1shim]):
         fail_with_message("Failed to get container objects")
 
     # Step 2: Check assigned IPs
@@ -79,6 +81,7 @@ def main() -> int:
         "IMP1": get_container_ip(imp1),
         "IMP2": get_container_ip(imp2),
         "PDP10": get_container_ip(pdp10),
+        "HI1SHIM": get_container_ip(hi1shim),
     }
 
     for name, ip in ips.items():
@@ -90,6 +93,7 @@ def main() -> int:
         "IMP1": "172.20.0.20",
         "IMP2": "172.20.0.30",
         "PDP10": "172.20.0.40",
+        "HI1SHIM": "172.20.0.50",
     }
 
     all_ips_correct = True
@@ -128,7 +132,7 @@ def main() -> int:
 
     # Step 5: Check IMP2 host-link (HI1) configuration
     print_step(5, "Checking IMP2 host-link (HI1) configuration evidence...")
-    imp2_hi1_patterns = [r"HI1", r"172\.20\.0\.40", r"PDP-10 host"]
+    imp2_hi1_patterns = [r"HI1", r"172\.20\.0\.50", r"Host-IMP Interface"]
     imp2_hi1_ok = any(
         check_logs_for_pattern(imp2, pattern) for pattern in imp2_hi1_patterns
     )
@@ -156,6 +160,7 @@ def main() -> int:
     print_next_steps([
         "telnet localhost 2324   # IMP1 console",
         "telnet localhost 2325   # IMP2 console",
+        "docker logs arpanet-hi1shim | tail -20  # Host-IMP Interface activity",
         "docker logs arpanet-pdp10 | tail -20  # PDP10 activity",
         "Look for MI1 modem traffic and HI1 host-link markers in IMP logs",
     ])

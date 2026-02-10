@@ -166,7 +166,9 @@ AWS Graviton2 (ARM) instances are 20-40% cheaper.
 {
   "instance_type": "t3.small",        // ← Changed from t3.medium
   "root_volume_size": 20,             // ← Changed from 30
-  "logs_volume_size": 0,              // ← Removed (or use S3)
+  "logs_volume_size": 8,              // ← Smaller persistent logs volume
+  "persist_logs_volume": true,
+  "logs_retention_days": 14,          // ← auto-delete old logs/artifacts
   // ... rest unchanged
 }
 ```
@@ -174,9 +176,9 @@ AWS Graviton2 (ARM) instances are 20-40% cheaper.
 **Monthly cost:**
 - EC2: $0.33 (16 hours × $0.0208)
 - Root EBS: $1.60 (20 GB × $0.08)
-- Logs EBS: $0.00 (removed)
-- **Total: $1.93/month** (was $4.70)
-- **Savings: $2.77/month (59% reduction)** ✅
+- Logs EBS: $0.64 (8 GB × $0.08)
+- **Total: $2.57/month** (was $4.70)
+- **Savings: $2.13/month (45% reduction)** ✅
 
 ---
 
@@ -205,7 +207,7 @@ AWS Graviton2 (ARM) instances are 20-40% cheaper.
 | Configuration | Instance | Storage | Monthly Cost | Savings | Risk |
 |---------------|----------|---------|--------------|---------|------|
 | **Current** | t3.medium | 30+20 GB | **$4.70** | - | - |
-| **Conservative** | t3.small | 20 GB | **$1.93** | $2.77 (59%) | ⭐ Low |
+| **Conservative** | t3.small | 20+8 GB | **$2.57** | $2.13 (45%) | ⭐ Low |
 | **Aggressive** | t3.micro | 20 GB | **$1.77** | $2.93 (62%) | ⭐⭐ Medium |
 | **With Spot** | t3.small spot | 20 GB | **$1.00** | $3.70 (79%) | ⭐⭐⭐ High |
 
@@ -214,14 +216,14 @@ AWS Graviton2 (ARM) instances are 20-40% cheaper.
 ## 🎯 Recommended Action Plan
 
 ### Phase 1: Low-Hanging Fruit (No Risk)
-1. **Remove persistent logs volume** → Save $1.60/month
-2. **Reduce root volume to 20 GB** → Save $0.80/month
-3. **Test savings:** ~$2.40/month (51% reduction)
+1. **Shrink persistent logs volume + enable retention** (e.g. 20 GB → 8 GB, 14-day retention)
+2. **Reduce root volume to 20 GB**
+3. **Test savings:** ~$1.76/month (37% reduction)
 
 ### Phase 2: Instance Downsize (Low Risk)
 1. **Switch to t3.small** → Save additional $0.34/month
-2. **Total savings:** $2.77/month (59% reduction)
-3. **Cost:** $1.93/month
+2. **Total savings:** $2.13/month (45% reduction)
+3. **Cost:** $2.57/month
 
 ### Phase 3: Aggressive Savings (If Builds Work)
 1. **Try t3.micro** → Save additional $0.16/month
@@ -276,8 +278,19 @@ vim cdk.context.json
 # Change these lines:
   "instance_type": "t3.small",
   "root_volume_size": 20,
-  # Remove logs_volume_size or set to 0
+  "logs_volume_size": 8,
+  "persist_logs_volume": true,
+  "logs_retention_days": 14,
 ```
+
+### Retention policy + hardcoding fix
+
+The infrastructure now supports a smaller persistent logs volume plus retention cleanup,
+and no longer depends on hardcoded logs-disk size detection.
+
+- Logs setup/cleanup is managed by `test_infra/scripts/manage_logs_volume.py` (Python)
+- Disk discovery is based on non-root disk detection + filesystem label (`arpanet-logs`)
+- Cleanup removes entries older than `logs_retention_days`
 
 ### 2. Deploy and Test
 ```bash
@@ -319,7 +332,7 @@ At $4.70/month, you're spending **$56/year**. Even with optimizations ($1.77/mon
 | Option | Monthly Cost | Pros | Cons |
 |--------|-------------|------|------|
 | **Current AWS** | $4.70 | On-demand, easy | Ongoing costs |
-| **Optimized AWS** | $1.77 | Cheaper, still easy | Still ongoing |
+| **Optimized AWS** | $2.57 (conservative) / $1.77 (aggressive) | Cheaper, still easy | Still ongoing |
 | **GitHub Actions** | $0 (free tier) | Free for public repos | Limited minutes |
 | **Local x86 VM** | $0 | No cloud costs | Need x86 hardware |
 
@@ -328,12 +341,13 @@ At $4.70/month, you're spending **$56/year**. Even with optimizations ($1.77/mon
 ---
 
 ## 📋 Implementation Checklist
-
-- [ ] Backup any important logs from persistent volume (if exists)
+- [ ] Backup any important logs from persistent volume (if needed)
 - [ ] Update `cdk.context.json`:
   - [ ] Change `instance_type` to `t3.small`
   - [ ] Change `root_volume_size` to `20`
-  - [ ] Remove or zero `logs_volume_size`
+  - [ ] Set `logs_volume_size` to `8`
+  - [ ] Set `persist_logs_volume` to `true`
+  - [ ] Set `logs_retention_days` to `14`
 - [ ] Test build on t3.small
 - [ ] Monitor memory usage during builds
 - [ ] If successful, try t3.micro
@@ -345,14 +359,14 @@ At $4.70/month, you're spending **$56/year**. Even with optimizations ($1.77/mon
 ## Summary
 
 **Current:** $4.70/month
-**Optimized:** $1.93/month (conservative) or $1.77/month (aggressive)
-**Savings:** $2.77-$2.93/month (59-62% reduction)
+**Optimized:** $2.57/month (conservative) or $1.77/month (aggressive)
+**Savings:** $2.13-$2.93/month (45-62% reduction)
 
 **Key changes:**
-1. ⭐⭐⭐ Remove persistent logs volume → $1.60/month saved
+1. ⭐⭐⭐ Shrink persistent logs volume (20→8 GB) + retention policy → lower steady EBS cost
 2. ⭐⭐⭐ Downsize to t3.small → $0.34/month saved
 3. ⭐ Reduce root volume to 20 GB → $0.80/month saved
 
-**Lowest risk, highest impact: Remove logs volume and try t3.small**
+**Lowest risk, highest impact: smaller persistent logs volume + retention, then try t3.small**
 
 Would you like me to implement these changes?

@@ -1151,3 +1151,455 @@ Interpretation from this autonomous pass:
 ---
 
 **Updated**: 2026-02-10 (Session 17 autonomous SIMP/UNI matrix pass under delta gating)
+
+---
+
+## Session 18: Host-to-Host Readiness Recheck + Manifested Evidence Capture
+
+### Achievements
+
+#### 41. Added local manifest persistence to remote HI1 gate harness ✅
+
+Extended `test_infra/scripts/run_hi1_gate_remote.py` with:
+
+- `--manifest-output <path>`
+
+Behavior:
+- writes the final gate manifest JSON locally (repo workspace) after each run
+- preserves dual-window + mode-specific outcomes as explicit artifacts for handoff/review
+
+Validation:
+
+```bash
+.venv/bin/python -m py_compile test_infra/scripts/run_hi1_gate_remote.py
+```
+
+#### 42. Captured fresh dual-window evidence snapshots (default/SIMP/UNI) ✅
+
+Executed on active AWS stack:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-default-manifest.json || true
+
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --imp-mode simp \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-simp-manifest.json || true
+
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --imp-mode uni \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-uni-manifest.json || true
+```
+
+Observed manifests:
+
+| profile | final_exit | steady bad_magic_total | restart bad_magic_total | bad_magic_total_delta | hi1_line_count_delta |
+|---|---:|---:|---:|---:|---:|
+| default | 2 | 0 | 3 | 3 | 3 |
+| simp    | 2 | 6 | 9 | 3 | 3 |
+| uni     | 2 | 6 | 15 | 9 | 9 |
+
+Recurring signatures remain stable:
+- `feffffff`
+- `00000219`
+- `ffffffff`
+
+#### 43. Verified steady SIMP baseline still fails under strict gate ✅
+
+Executed:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --imp-mode simp \
+  --manifest-output build/arpanet/analysis/hi1-steady-simp-baseline-manifest.json || true
+```
+
+Result:
+- `final_exit=2`
+- `steady_bad_magic_total=3`
+- confirms blocker can now appear even in non-dual steady windows depending on current log window/traffic state
+
+### Why this batch matters
+
+- Converts ad-hoc terminal output into stable JSON evidence artifacts for each comparison profile.
+- Confirms host-to-host gate remains red with fresh data (not only historical sessions).
+- Reinforces prior finding: `UNI` worsens restart-window deltas and is not a remediation path.
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-default-manifest.json`
+- `build/arpanet/analysis/hi1-dual-window-simp-manifest.json`
+- `build/arpanet/analysis/hi1-dual-window-uni-manifest.json`
+- `build/arpanet/analysis/hi1-steady-simp-baseline-manifest.json`
+
+### Next (requires intervention)
+
+1. **Native header-contract implementation decision**
+   - choose the native compatibility route/toolchain to make KS-10 IMP egress match H316 HI1 UDP framing contract
+   - current evidence strongly indicates Ethernet/IP payload over UDP vs H316 UDP wrapper (`MAGIC='H316'`) mismatch
+
+2. **If native route is not currently feasible, authorize fallback shim spike**
+   - minimal boundary adapter only (PDP10↔IMP2 UDP framing)
+   - no MI1/routing behavior changes
+   - explicit retirement trigger once native path is available
+
+3. **Keep promotion gate policy unchanged**
+   - do not advance to host-to-host transfer until repeated dual-window manifests show:
+     - `final_exit=0`
+     - `bad_magic_total_delta=0`
+
+---
+
+**Updated**: 2026-02-10 (Session 18 manifested recheck; blocker still reproducible)
+
+---
+
+## Session 19: Host-IMP Interface Integration + Local Validation Sweep
+
+### Achievements
+
+#### 44. Host-IMP Interface fallback integrated into Phase 2 topology/runtime path ✅
+
+Implemented and wired the temporary Host-IMP Interface boundary adapter between PDP-10 and IMP2:
+
+- Added shim service implementation:
+  - `arpanet/scripts/hi1_shim.py`
+  - H316 framing helpers (`wrap_h316`, `unwrap_h316`) with `MAGIC='H316'`
+- Added shim container image:
+  - `arpanet/Dockerfile.hi1shim`
+- Topology wiring updated:
+  - `arpanet/topology/definitions.py`
+  - new host `hi1shim` (`172.20.0.50`)
+  - IMP2 HI1 -> `172.20.0.50:2000`
+  - PDP-10 IMP -> `172.20.0.50:2001`
+- Generator support updated for shim component:
+  - `arpanet/topology/generators.py` (shim emits no SIMH config)
+
+#### 45. Compose + config + tests updated to reflect Host-IMP Interface path ✅
+
+Updated generated/runtime/test artifacts for consistency with shim topology:
+
+- `docker-compose.arpanet.phase2.yml` includes `hi1shim` service
+- `arpanet/scripts/test_phase2.py` now requires `arpanet-hi1shim` and checks HI1 markers via shim endpoint
+- Added shim unit tests:
+  - `tests/test_hi1_shim.py`
+- Updated topology and phase-script tests:
+  - `tests/test_topology_registry.py`
+  - `tests/test_topology_generators.py`
+  - `tests/test_arpanet_phase_scripts.py`
+
+#### 46. Focused local validation passed (62 tests) ✅
+
+Executed:
+
+```bash
+.venv/bin/python -m pytest -q \
+  tests/test_hi1_shim.py \
+  tests/test_topology_registry.py \
+  tests/test_topology_generators.py \
+  tests/test_arpanet_phase_scripts.py
+```
+
+Result:
+- `62 passed in 0.42s`
+
+#### 47. Runtime wiring consistency check completed ✅
+
+Verified mounted and generated endpoints are aligned for shim path:
+
+- `arpanet/configs/imp2.ini` -> `attach -u hi1 2000:172.20.0.50:2000`
+- `arpanet/configs/phase2/imp2.ini` -> `attach -u hi1 2000:172.20.0.50:2000`
+- `arpanet/configs/phase2/pdp10.ini` -> `attach imp udp:2000:172.20.0.50:2001`
+
+#### 48. Next-steps document aligned with new fallback phase ✅
+
+Updated `arpanet/NEXT-STEPS.md` to:
+
+- make Host-IMP Interface validation the immediate critical track
+- include concrete operator commands for shim-path bring-up and inspection
+- preserve native-first policy with explicit fallback/retirement intent
+
+### Current State After Session 19
+
+- Code integration and local validation for Host-IMP Interface are complete.
+- Immediate remaining work is runtime evidence capture on active stack (dual-window manifests and shim counter/log behavior under live traffic).
+- Host-to-host promotion gate remains evidence-driven (`final_exit=0` and stable zero-delta recurrence).
+
+---
+
+**Updated**: 2026-02-10 (Session 19 Host-IMP Interface integrated; local validation complete, runtime evidence run pending)
+
+---
+
+## Session 20: Post-Integration Runtime Evidence Recheck (Dual-Window Matrix)
+
+### Achievements
+
+#### 49. Executed fresh dual-window manifest captures after Host-IMP Interface rollout ✅
+
+Ran three remote evidence passes from local workspace via:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-default-manifest.json || true
+
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --imp-mode simp \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-simp-manifest.json || true
+
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --imp-mode uni \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-uni-manifest.json || true
+```
+
+#### 50. Captured current matrix outcomes (default/SIMP/UNI) ✅
+
+Latest local manifests show:
+
+| profile | final_exit | steady bad_magic_total | restart bad_magic_total | bad_magic_total_delta | hi1_line_count_delta |
+|---|---:|---:|---:|---:|---:|
+| default | 2 | 0 | 3 | 3 | 3 |
+| simp    | 2 | 6 | 9 | 3 | 3 |
+| uni     | 2 | 6 | 15 | 9 | 9 |
+
+Recurring signatures remain unchanged:
+- `feffffff`
+- `00000219`
+- `ffffffff`
+
+#### 51. Operator environment note recorded (local Docker unavailable) ✅
+
+On this local runner, direct Docker validation commands cannot run:
+
+```text
+/bin/bash: line 1: docker: command not found
+```
+
+Accordingly, runtime checks were executed through the existing remote AWS gate harness, with manifests preserved locally under `build/arpanet/analysis/`.
+
+### Interpretation
+
+- Host-link gate remains red (`final_exit=2` for all three profiles).
+- Restart-window recurrence still reproduces bad-magic signatures.
+- `UNI` remains worse than `SIMP` in delta terms for this batch (`9` vs `3`).
+- Host-to-host promotion should remain blocked pending repeated zero-delta dual-window runs.
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-default-manifest.json`
+- `build/arpanet/analysis/hi1-dual-window-simp-manifest.json`
+- `build/arpanet/analysis/hi1-dual-window-uni-manifest.json`
+
+---
+
+**Updated**: 2026-02-10 (Session 20 dual-window recheck complete; blocker still reproducible across profiles)
+
+---
+
+## Session 21: Remote Stack Misalignment Fix + Post-Alignment Gate Recovery
+
+### Achievements
+
+#### 52. Isolated root cause of persistent failures: stale remote runtime path ✅
+
+During follow-up dual-window runs, failure signatures appeared to persist despite local Host-IMP Interface integration. Remote inspection on AWS then showed the active stack was not fully aligned to the intended shim path:
+
+- `arpanet-hi1shim` container absent in running set
+- remote configs still reflected pre-shim direct PDP10/IMP2 endpoints
+- `arpanet-imp2` mount path remained tied to `arpanet/configs/imp2.ini` and required explicit refresh from local workspace
+
+This identified an operational drift issue (deployment alignment), not a new protocol regression in local code.
+
+#### 53. Applied remote alignment and activated Host-IMP Interface runtime ✅
+
+Synchronized updated compose/config/shim files to AWS workspace and brought up shim path explicitly. Post-fix remote validation confirms:
+
+- compose services include `hi1shim`
+- running container present: `arpanet-hi1shim` (`Up`)
+- active IMP2 mount:
+  - `/home/ubuntu/brfid.github.io/arpanet/configs/imp2.ini -> /machines/imp.ini`
+- active attach endpoints now point through shim:
+  - IMP2 HI1: `attach -u hi1 2000:172.20.0.50:2000`
+  - PDP10 IMP: `attach imp udp:2000:172.20.0.50:2001`
+
+#### 54. Re-ran dual-window manifests after alignment (default/SIMP/UNI) ✅
+
+Executed fresh evidence captures via remote harness:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-default-manifest.json
+
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window --imp-mode simp \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-simp-manifest.json
+
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window --imp-mode uni \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-uni-manifest.json
+```
+
+Post-alignment outcomes:
+
+| profile | final_exit | steady bad_magic_total | restart bad_magic_total | bad_magic_total_delta | hi1_line_count_delta |
+|---|---:|---:|---:|---:|---:|
+| default | 0 | 0 | 0 | 0 | 3 |
+| simp    | 0 | 0 | 0 | 0 | 13 |
+| uni     | 0 | 0 | 0 | 0 | 9 |
+
+Key delta from prior sessions:
+- recurring bad-magic markers (`feffffff`, `00000219`, `ffffffff`) were not observed in these aligned runs.
+- strict gate no longer fails in any of the three tested profiles for this batch.
+
+#### 55. Confirmed shim runtime activity counters and clean parsing ✅
+
+`arpanet-hi1shim` runtime logs show bidirectional traffic and no parser faults, e.g.:
+
+- increasing counters for `pdp10_in`, `imp_in`, `wrapped`, `unwrapped`
+- `parse_errors=0`
+
+This is consistent with a functioning Host-IMP Interface boundary adapter under live traffic.
+
+### Interpretation
+
+This batch indicates the previously red gate was heavily influenced by remote deployment misalignment. After aligning the active AWS stack to the intended shim topology, strict dual-window bad-magic gating recovered to green (`final_exit=0`) across default/SIMP/UNI in this run set.
+
+Host-link framing evidence is therefore now favorable for advancing to the next milestone: controlled end-to-end host-to-host transfer validation (while continuing to monitor dual-window manifests for regression).
+
+---
+
+**Updated**: 2026-02-10 (Session 21 remote alignment fixed; post-fix dual-window gates green across profiles)
+
+---
+
+## Session 22: Pre-Transfer Confirmation Pass (Gate + Phase2 Validation)
+
+### Achievements
+
+#### 56. Ran confirmatory pre-transfer dual-window gate ✅
+
+Executed:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-pre-transfer-check.json
+```
+
+Observed manifest:
+- `final_exit=0`
+- `steady_bad_magic_total=0`
+- `restart_bad_magic_total=0`
+- `bad_magic_total_delta=0`
+- `hi1_line_count_delta=4`
+
+Interpretation:
+- pre-transfer acceptance gate remains green in this confirmatory run.
+
+#### 57. Executed remote Phase 2 link validation successfully ✅
+
+Executed on AWS host:
+
+```bash
+python3 arpanet/scripts/test_phase2.py
+```
+
+Result highlights:
+- all required containers running (`VAX`, `IMP1`, `IMP2`, `PDP10`)
+- expected phase2 IP assignment validated
+- IMP1/IMP2 MI1 startup/link evidence present
+- IMP2 HI1 startup evidence present
+- script completed successfully
+
+#### 58. Collected follow-up shim/IMP2 evidence around validation window ✅
+
+Runtime evidence after confirmation pass:
+
+- `arpanet-hi1shim` counters show active traffic movement (`pdp10_in`, `imp_in`, `wrapped`, `unwrapped` increasing)
+- `parse_errors=0`
+- no `bad magic` lines found in the inspected recent IMP2 log scan window
+
+### Interpretation
+
+This follow-up pass keeps the post-alignment state green and supports advancing into controlled host-to-host transfer testing. Remaining risk is operational drift/regression over time (not current gate failure), so repeated dual-window checks should remain part of transfer-test cadence.
+
+---
+
+**Updated**: 2026-02-10 (Session 22 pre-transfer confirmation gate + phase2 validation passed)
+
+---
+
+## Session 23: Controlled Host-to-Host Transfer Attempt + Post-Attempt Regression Check
+
+### Achievements
+
+#### 59. Executed first controlled host-to-host transfer attempt on aligned stack ✅
+
+Ran the authentic automation path from VAX console to PDP-10 target:
+
+```bash
+expect arpanet/scripts/authentic-ftp-transfer.exp \
+  localhost 2323 \
+  /usr/guest/operator/arpanet-test.txt \
+  /tmp/pdp10-received.txt \
+  172.20.0.40
+```
+
+Notes from this run:
+- Initial source-path variant under `/tmp` was corrected to a known existing file (`/usr/guest/operator/arpanet-test.txt`).
+- VAX-side source validation succeeded (file listed/read; size captured).
+- FTP connect stage to PDP-10 (`ftp 172.20.0.40`) timed out before login (`ftp: connect: Connection timed out`).
+
+#### 60. Captured post-attempt HI1 regression evidence (dual-window) ✅
+
+Executed:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-post-transfer-attempt.json
+```
+
+Observed post-attempt manifest:
+- `final_exit=0`
+- `steady_bad_magic_total=0`
+- `restart_bad_magic_total=0`
+- `bad_magic_total_delta=0`
+- `hi1_line_count_delta=4`
+
+Interpretation:
+- No HI1 bad-magic regression was introduced by the transfer attempt workflow.
+- Link-layer gate remains green after this attempt.
+
+#### 61. Runtime evidence indicates app/service-level blocker on PDP-10 side ⚠️
+
+Collected follow-up runtime evidence around the failed transfer window:
+
+- `arpanet-hi1shim` counters remained stable with no parser faults (`parse_errors=0`).
+- IMP2 HI1 scan showed no bad-magic recurrence in sampled window.
+- PDP-10 logs show ITS boot/runtime (`DSKDMP`) and IMP/ARP activity, but no evidence of an FTP listener/ready service on target host.
+- VAX-side transfer script failure mode is consistent with target service reachability timeout, not host-link framing failure.
+
+### Interpretation
+
+Current reliability state after Session 23:
+
+1. **Host-link reliability remains strong** under current dual-window acceptance criteria (still green post-attempt).
+2. **Host-to-host transfer is not yet complete** because PDP-10 application/service endpoint for FTP is not currently reachable from VAX (`172.20.0.40:21` timeout).
+3. Immediate critical path has shifted from HI1 framing to **PDP-10 transfer-service bring-up / endpoint readiness**.
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-post-transfer-attempt.json`
+- `build/arpanet/analysis/host-to-host-transfer-attempt.log` (remote AWS workspace)
+
+---
+
+**Updated**: 2026-02-10 (Session 23 host-to-host attempt executed; link-layer remained green; PDP-10 FTP endpoint still unavailable)

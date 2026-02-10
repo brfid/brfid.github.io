@@ -42,20 +42,21 @@ The integration is based on the [obsolescence/arpanet](https://github.com/obsole
 ### Phase 2: Multi-IMP Network (In Progress)
 
 ```
-[VAX/BSD] ←→ [IMP-1] ←→ [IMP-2] ←→ [PDP-10/ITS]
+[VAX/BSD] ←→ [IMP-1] ←→ [IMP-2] ←→ [Host-IMP Interface] ←→ [PDP-10/ITS]
 ```
 
 **Purpose**: Create minimal but authentic ARPANET topology with file transfer capability between hosts.
 
 **Current Phase 2 milestone**:
 ```
-[VAX/BSD] ←→ [IMP-1] ←→ [IMP-2] ←→ [PDP10 host stub]
+[VAX/BSD] ←→ [IMP-1] ←→ [IMP-2] ←→ [Host-IMP Interface] ←→ [PDP-10/ITS]
 ```
 
 - IMP↔IMP modem link (MI1) validated on AWS EC2 x86_64
 - Active packet exchange visible in both IMP debug logs
-- IMP2 HI1 host-link is now attached to a PDP10 UDP stub (`172.20.0.40:2000`)
-- Full PDP-10 OS integration remains the next Phase 2 step
+- IMP2 HI1 host-link now targets the temporary Host-IMP Interface (`172.20.0.50:2000`)
+- PDP-10 IMP link now targets the Host-IMP Interface (`172.20.0.50:2001`)
+- Host-IMP Interface performs temporary boundary-only UDP framing adaptation for HI1
 
 ### Phase 2.5: Centralized Logging (Complete ✅)
 
@@ -172,6 +173,7 @@ arpanet/
 │       ├── authentic-ftp-transfer.ini  # Automated FTP (1986 client)
 │       └── configure-network.ini  # Automated network config
 ├── Dockerfile.imp                  # IMP simulator container
+├── Dockerfile.hi1shim              # Host-IMP Interface shim container
 ├── Dockerfile.pdp10                # PDP-10 TOPS-20 container (legacy)
 ├── Dockerfile.pdp10-its            # PDP-10 ITS container
 ├── PHASE*.md                       # Phase documentation (see below)
@@ -435,6 +437,8 @@ The IMP (Interface Message Processor) was the packet-switching router of ARPANET
 - [x] Added IMP #2 container/config (`arpanet/configs/imp2.ini`)
 - [x] Added Phase 2 IMP #1 config (`arpanet/configs/imp1-phase2.ini`)
 - [x] Added `docker-compose.arpanet.phase2.yml` for VAX + IMP1 + IMP2 + PDP10
+- [x] Added temporary Host-IMP Interface shim (`arpanet/scripts/hi1_shim.py`, `arpanet/Dockerfile.hi1shim`)
+- [x] Rewired Phase 2 links through Host-IMP Interface (`172.20.0.50`) for shim spike validation
 - [x] Added automated test script (`arpanet/scripts/test-phase2-imp-link.sh`) with HI1 checks
 - [x] Added PDP10 container (`arpanet/Dockerfile.pdp10`, TOPS-20 V4.1)
 - [x] Added ITS migration path (`arpanet/Dockerfile.pdp10-its`, generated ITS SIMH config)

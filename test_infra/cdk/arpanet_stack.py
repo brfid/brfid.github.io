@@ -29,11 +29,14 @@ class ArpanetTestStack(Stack):
         # Get configuration from context
         instance_type = context.get("instance_type", "t3.medium")
         root_volume_size = context.get("root_volume_size", 30)
-        logs_volume_size = context.get("logs_volume_size", 20)  # 20GB for persistent logs
+        logs_volume_size = context.get("logs_volume_size", 20)
+        persist_logs_volume = context.get("persist_logs_volume", True)
+        logs_retention_days = context.get("logs_retention_days", 14)
         ssh_public_key_path = os.path.expanduser(context["ssh_public_key_path"])
         allowed_ssh_cidrs = context.get("allowed_ssh_cidrs", ["0.0.0.0/0"])
         git_repo = context.get("git_repo", "https://github.com/brfid/brfid.github.io.git")
         git_branch = context.get("git_branch", "main")
+        logs_volume_enabled = bool(logs_volume_size and logs_volume_size > 0)
 
         # Read SSH public key
         with open(ssh_public_key_path) as f:
@@ -75,9 +78,42 @@ class ArpanetTestStack(Stack):
         # Template user data with git repo and branch
         user_data_content = user_data_content.replace("${git_repo}", git_repo)
         user_data_content = user_data_content.replace("${git_branch}", git_branch)
+        user_data_content = user_data_content.replace(
+            "${logs_volume_enabled}",
+            "true" if logs_volume_enabled else "false",
+        )
+        user_data_content = user_data_content.replace(
+            "${logs_retention_days}",
+            str(logs_retention_days),
+        )
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(user_data_content)
+
+        block_devices = [
+            ec2.BlockDevice(
+                device_name="/dev/sda1",
+                volume=ec2.BlockDeviceVolume.ebs(
+                    volume_size=root_volume_size,
+                    volume_type=ec2.EbsDeviceVolumeType.GP3,
+                    delete_on_termination=True,
+                    encrypted=True,
+                )
+            )
+        ]
+
+        if logs_volume_enabled:
+            block_devices.append(
+                ec2.BlockDevice(
+                    device_name="/dev/sdf",  # Appears as /dev/nvme* on newer instances
+                    volume=ec2.BlockDeviceVolume.ebs(
+                        volume_size=logs_volume_size,
+                        volume_type=ec2.EbsDeviceVolumeType.GP3,
+                        delete_on_termination=not persist_logs_volume,
+                        encrypted=True,
+                    )
+                )
+            )
 
         # EC2 instance
         instance = ec2.Instance(
@@ -91,26 +127,7 @@ class ArpanetTestStack(Stack):
             security_group=security_group,
             key_name=key_pair.key_name,
             user_data=user_data,
-            block_devices=[
-                ec2.BlockDevice(
-                    device_name="/dev/sda1",
-                    volume=ec2.BlockDeviceVolume.ebs(
-                        volume_size=root_volume_size,
-                        volume_type=ec2.EbsDeviceVolumeType.GP3,
-                        delete_on_termination=True,
-                        encrypted=True,
-                    )
-                ),
-                ec2.BlockDevice(
-                    device_name="/dev/sdf",  # Will appear as /dev/nvme1n1 on newer instances
-                    volume=ec2.BlockDeviceVolume.ebs(
-                        volume_size=logs_volume_size,
-                        volume_type=ec2.EbsDeviceVolumeType.GP3,
-                        delete_on_termination=False,  # Persist across instance terminations
-                        encrypted=True,
-                    )
-                )
-            ],
+            block_devices=block_devices,
         )
 
         # Outputs

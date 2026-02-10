@@ -92,6 +92,7 @@ def test_phase2_main_success_without_docker(monkeypatch: pytest.MonkeyPatch) -> 
         "arpanet-imp1": _FakeContainer(name="arpanet-imp1"),
         "arpanet-imp2": _FakeContainer(name="arpanet-imp2"),
         "arpanet-pdp10": _FakeContainer(name="arpanet-pdp10"),
+        "arpanet-hi1shim": _FakeContainer(name="arpanet-hi1shim"),
     }
 
     ip_map = {
@@ -99,6 +100,7 @@ def test_phase2_main_success_without_docker(monkeypatch: pytest.MonkeyPatch) -> 
         "arpanet-imp1": "172.20.0.20",
         "arpanet-imp2": "172.20.0.30",
         "arpanet-pdp10": "172.20.0.40",
+        "arpanet-hi1shim": "172.20.0.50",
     }
 
     monkeypatch.setattr(phase2_script, "get_docker_client", lambda: object())
@@ -121,6 +123,7 @@ def test_phase2_main_returns_nonzero_when_imp1_markers_missing(
         "arpanet-imp1": _FakeContainer(name="arpanet-imp1"),
         "arpanet-imp2": _FakeContainer(name="arpanet-imp2"),
         "arpanet-pdp10": _FakeContainer(name="arpanet-pdp10"),
+        "arpanet-hi1shim": _FakeContainer(name="arpanet-hi1shim"),
     }
 
     monkeypatch.setattr(phase2_script, "get_docker_client", lambda: object())
