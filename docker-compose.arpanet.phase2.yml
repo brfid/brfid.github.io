@@ -67,6 +67,7 @@ services:
       context: ./arpanet
       dockerfile: Dockerfile.pdp10-its
     ports:
+    - 21:21
     - 2326:2323
     - 10004:10004
     volumes:

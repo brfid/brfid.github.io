@@ -30,7 +30,35 @@ Use this page when starting from zero context.
   - `docs/INDEX.md`
   - domain index (example: `docs/arpanet/INDEX.md`)
 
-## 5) If task touches ARPANET runtime behavior
+## 5) AWS Runtime Access (IMPORTANT)
+
+For ARPANET runtime validation, the active stack runs on AWS:
+
+- **Host**: `ubuntu@34.227.223.186` (i-0568f075e84bf24dd)
+- **SSH Key**: `~/.ssh/id_ed25519`
+- **Access**: `ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186`
+- **Workspace**: `/home/ubuntu/brfid.github.io`
+
+### Quick validation commands
+
+```bash
+# Check container status
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && docker compose -f docker-compose.arpanet.phase2.yml ps"
+
+# Check shim health
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && docker logs arpanet-hi1shim --tail 5"
+
+# Run dual-window gate
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && python3 test_infra/scripts/run_hi1_gate_remote.py --dual-window"
+```
+
+### AWS CLI availability
+
+- The remote host may not have AWS CLI installed.
+- Use `docker compose` directly on the remote for container operations.
+- Use `python3` (not `.venv/bin/python`) on the remote.
+
+## 6) If task touches ARPANET runtime behavior
 
 - Check next actions first: `docs/arpanet/progress/NEXT-STEPS.md`
 - Confirm latest session context: `docs/arpanet/progress/PHASE3-PROGRESS.md`
