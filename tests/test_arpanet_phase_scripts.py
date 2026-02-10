@@ -6,6 +6,7 @@ import pytest
 
 import arpanet.scripts.test_phase1 as phase1_script
 import arpanet.scripts.test_phase2 as phase2_script
+import arpanet.scripts.test_phase2_hi1_framing as phase2_hi1_script
 
 
 @dataclass
@@ -27,6 +28,12 @@ def _silence_output(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(phase2_script, "print_error", lambda *args, **kwargs: None)
     monkeypatch.setattr(phase2_script, "print_info", lambda *args, **kwargs: None)
     monkeypatch.setattr(phase2_script, "print_next_steps", lambda *args, **kwargs: None)
+
+    monkeypatch.setattr(phase2_hi1_script, "print_header", lambda *args, **kwargs: None)
+    monkeypatch.setattr(phase2_hi1_script, "print_step", lambda *args, **kwargs: None)
+    monkeypatch.setattr(phase2_hi1_script, "print_success", lambda *args, **kwargs: None)
+    monkeypatch.setattr(phase2_hi1_script, "print_error", lambda *args, **kwargs: None)
+    monkeypatch.setattr(phase2_hi1_script, "print_info", lambda *args, **kwargs: None)
 
 
 def test_phase1_main_success_without_docker(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -123,3 +130,76 @@ def test_phase2_main_returns_nonzero_when_imp1_markers_missing(
     monkeypatch.setattr(phase2_script, "check_logs_for_pattern", lambda container, pattern: False)
 
     assert phase2_script.main() == 1
+
+
+def test_phase2_hi1_main_success_without_docker(monkeypatch: pytest.MonkeyPatch) -> None:
+    _silence_output(monkeypatch)
+
+    containers = {
+        "arpanet-imp2": _FakeContainer(name="arpanet-imp2"),
+        "arpanet-pdp10": _FakeContainer(name="arpanet-pdp10"),
+    }
+
+    monkeypatch.setattr(phase2_hi1_script, "get_docker_client", lambda: object())
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "check_containers_running",
+        lambda client, names: True,
+    )
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "get_container",
+        lambda client, name: containers[name],
+    )
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "get_container_logs",
+        lambda container, tail=10: (
+            "HI1 UDP: link 1 - received packet w/bad magic number (magic=feffffff)\n"
+            if container.name == "arpanet-imp2"
+            else "Eth: opened OS device udp:2000:172.20.0.30:2000\n"
+        ),
+    )
+
+    artifact_paths: list[str] = []
+
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "_artifact_path",
+        lambda: phase2_hi1_script.Path("/tmp/fake-hi1-artifact.md"),
+    )
+
+    def _fake_write(path, bad_magic_counts, hi1_samples, pdp10_summary_lines):
+        artifact_paths.append(str(path))
+        assert bad_magic_counts["feffffff"] == 1
+        assert hi1_samples
+        assert pdp10_summary_lines
+
+    monkeypatch.setattr(phase2_hi1_script, "_write_artifact", _fake_write)
+
+    assert phase2_hi1_script.main() == 0
+    assert artifact_paths == ["/tmp/fake-hi1-artifact.md"]
+
+
+def test_phase2_hi1_main_container_check_failure_exits(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _silence_output(monkeypatch)
+
+    captured: dict[str, str] = {}
+
+    def _fail(message: str, suggestion: str = "") -> None:
+        captured["message"] = message
+        captured["suggestion"] = suggestion
+        raise SystemExit(1)
+
+    monkeypatch.setattr(phase2_hi1_script, "get_docker_client", lambda: object())
+    monkeypatch.setattr(phase2_hi1_script, "check_containers_running", lambda client, names: False)
+    monkeypatch.setattr(phase2_hi1_script, "fail_with_message", _fail)
+
+    with pytest.raises(SystemExit) as exc_info:
+        phase2_hi1_script.main()
+
+    assert exc_info.value.code == 1
+    assert captured["message"] == "Required containers are not running"
+    assert "Not auto-starting" in captured["suggestion"]
