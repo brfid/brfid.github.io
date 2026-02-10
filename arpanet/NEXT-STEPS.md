@@ -30,16 +30,15 @@ See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) for compl
 
 **Tasks**:
 ```bash
-# 1) Confirm runtime baseline + IMP attach settings
-docker compose -f docker-compose.arpanet.phase2.yml up -d --force-recreate vax imp1 imp2 pdp10
-docker compose -f docker-compose.arpanet.phase2.yml ps
-docker logs arpanet-pdp10 --tail 200
+# 1) Non-orchestrating deep evidence capture (running stack only)
+make test-phase2-hi1-framing-deep
 
-# 2) Capture PDP-10 -> IMP2 UDP payloads for framing analysis
+# 2) Review machine-readable summary
+cat build/arpanet/analysis/hi1-framing-matrix-latest.json
+
+# 3) Correlate with IMP2 stream and packet capture when needed
+docker logs arpanet-imp2 --tail 500 | grep -i "bad magic\|HI1 UDP"
 sudo tcpdump -nn -i any udp port 2000 -c 120 -w /tmp/pdp10-imp2-hi1.pcap
-
-# 3) Correlate packet headers with IMP2 bad-magic logs
-docker logs arpanet-imp2 --tail 400 | grep -i "bad magic\|HI1 UDP"
 
 # 4) Test native-mode variants only (UNI/SIMP and documented IMP options)
 # (keep topology fixed; no shim in primary path)
@@ -529,8 +528,10 @@ GitHub Actions Workflow
 
 **Historical fidelity maintained**: 100% authentic 1986 BSD FTP client/server throughout.
 
+**Current evidence workflow**: use `make test-phase2-hi1-framing-deep` to produce paired markdown/json artifacts under `build/arpanet/analysis/` for handoff and progress updates.
+
 ---
 
 **Status**: Ready to proceed
-**Next Action**: Test SIMH automation scripts (#1 above)
+**Next Action**: Run `make test-phase2-hi1-framing-deep` on the active AWS phase2 stack and append findings into `arpanet/PHASE3-PROGRESS.md`
 **Timeline**: 12-15 hours total to complete build pipeline integration
