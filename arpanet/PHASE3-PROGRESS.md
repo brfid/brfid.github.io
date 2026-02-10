@@ -1089,3 +1089,65 @@ Practical policy:
 ---
 
 **Updated**: 2026-02-10 (Session 16 delta metric added; host-to-host gate criteria clarified)
+
+---
+
+## Session 17: Autonomous IMP-Mode Matrix Pass (SIMP vs UNI) Under Delta Gate
+
+### Achievements
+
+#### 38. Added optional IMP-mode forcing to remote gate harness ✅
+
+Extended `test_infra/scripts/run_hi1_gate_remote.py` with:
+
+- `--imp-mode {simp,uni}`
+
+Behavior:
+- rewrites remote `arpanet/configs/phase2/pdp10.ini` (`set imp ...`)
+- restarts `arpanet-pdp10` to apply mode
+- executes the same strict gate flow and emits manifest + `delta_summary`
+
+This removes manual edit drift during native mode comparisons.
+
+#### 39. Ran autonomous SIMP and UNI dual-window captures ✅
+
+Executed:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py --dual-window --imp-mode simp
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py --dual-window --imp-mode uni
+```
+
+Results:
+
+| mode | final_exit | steady bad_magic_total | restart bad_magic_total | bad_magic_total_delta | hi1_line_count_delta |
+|---|---:|---:|---:|---:|---:|
+| `simp` | 2 | 3 | 6 | 3 | 3 |
+| `uni`  | 2 | 3 | 12 | 9 | 9 |
+
+Recurring signatures still present:
+- `feffffff`
+- `00000219`
+- `ffffffff`
+
+#### 40. Matrix implication for plan progression ✅
+
+Interpretation from this autonomous pass:
+
+1. Both `SIMP` and `UNI` remain failing under strict dual-window acceptance.
+2. `UNI` showed a larger restart-window delta in this sample (`9` vs `3`), indicating mode toggle does not solve the framing contract issue.
+3. Host-to-host promotion remains blocked until repeated dual-window runs reach stable zero-delta bad-magic.
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-simp.log`
+- `build/arpanet/analysis/hi1-dual-window-uni.log`
+
+### Next
+
+1. Keep native-first path, but treat mode toggle as non-remediating based on repeated evidence.
+2. Advance to header-contract/native framing investigation with dual-window delta gate as fixed acceptance criteria.
+
+---
+
+**Updated**: 2026-02-10 (Session 17 autonomous SIMP/UNI matrix pass under delta gating)

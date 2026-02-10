@@ -83,6 +83,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=6,
         help="Seconds to wait after restarting arpanet-pdp10 in dual-window mode (default: 6)",
     )
+    parser.add_argument(
+        "--imp-mode",
+        choices=["simp", "uni"],
+        default=None,
+        help="Optionally force remote phase2 pdp10.ini IMP mode before running gate",
+    )
     return parser.parse_args(argv)
 
 
@@ -116,6 +122,28 @@ def _compute_delta_counts(
     return {k: max(0, restart.get(k, 0) - steady.get(k, 0)) for k in sorted(keys)}
 
 
+def _set_remote_imp_mode(ssh_key: str, target: str, mode: str) -> bool:
+    # Keep this narrowly scoped to the phase2 pdp10.ini baseline line.
+    cmd = (
+        f"cd {REMOTE_REPO} && "
+        "python3 - <<'PY'\n"
+        "from pathlib import Path\n"
+        "p = Path('arpanet/configs/phase2/pdp10.ini')\n"
+        "text = p.read_text()\n"
+        f"text = text.replace('set imp simp', 'set imp {mode}')\n"
+        f"text = text.replace('set imp uni', 'set imp {mode}')\n"
+        "p.write_text(text)\n"
+        "print('updated', p)\n"
+        "PY"
+    )
+    result = _run_remote(ssh_key, target, cmd)
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr:
+        print(result.stderr, end="", file=sys.stderr)
+    return result.returncode == 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
 
@@ -125,6 +153,23 @@ def main(argv: list[str] | None = None) -> int:
 
     ssh_command = _get_ssh_command()
     key_path, target = _parse_ssh_command(ssh_command)
+
+    if args.imp_mode:
+        print(f"Setting remote pdp10.ini IMP mode to: {args.imp_mode}")
+        ok = _set_remote_imp_mode(key_path, target, args.imp_mode)
+        if not ok:
+            print("❌ Failed to update remote IMP mode", file=sys.stderr)
+            return 1
+        # Apply config change before evidence collection.
+        print("Restarting arpanet-pdp10 to apply updated IMP mode...")
+        mode_restart = _run_remote(key_path, target, "docker restart arpanet-pdp10 >/dev/null")
+        if mode_restart.returncode != 0:
+            if mode_restart.stderr:
+                print(mode_restart.stderr, end="", file=sys.stderr)
+            print("❌ Failed to restart arpanet-pdp10 after IMP mode update", file=sys.stderr)
+            return 1
+        if args.restart_sleep > 0:
+            _run_remote(key_path, target, f"sleep {args.restart_sleep}")
 
     print("Syncing latest HI1 gate script to AWS host...")
     scp_result = _run(["scp", "-i", key_path, str(LOCAL_SCRIPT), f"{target}:{REMOTE_SCRIPT}"], check=False)
@@ -215,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
 
     manifest = {
         "dual_window": args.dual_window,
+        "imp_mode": args.imp_mode,
         "steady_exit": gate.returncode,
         "restart_exit": restart_exit if args.dual_window else None,
         "steady_summary": steady_summary,
