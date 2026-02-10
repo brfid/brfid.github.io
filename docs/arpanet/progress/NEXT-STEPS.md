@@ -1,7 +1,7 @@
 # ARPANET Integration - Next Steps
 
 **Date**: 2026-02-10
-**Status**: ITS runtime is stable; host-link gate remains green (including post-transfer-attempt check), but end-to-end host transfer is currently blocked by PDP-10 FTP endpoint/service reachability
+**Status**: ITS runtime is stable; host-link gate remains green (including post-transfer-attempt check), but end-to-end host transfer remains blocked by PDP-10 transfer endpoint/service readiness (`172.20.0.40:21` currently refused)
 
 ---
 
@@ -533,9 +533,10 @@ GitHub Actions Workflow
 
 ## Blockers and Dependencies
 
-### Current Blockers
+**Current Blockers**
 - No active HI1 bad-magic blocker in latest aligned batch; primary risk is **regression** if remote runtime drifts from shim-aligned topology.
-- Active transfer blocker is PDP-10 target endpoint/service readiness for FTP from VAX (`172.20.0.40:21` timed out in Session 23).
+- Active transfer blocker is PDP-10 target endpoint/service readiness for FTP from VAX (`172.20.0.40:21` now observed as `Connection refused` in latest checks).
+- Secondary operational risk: stale long-running remote `expect authentic-ftp-transfer.exp` processes can contaminate VAX console state and produce misleading transfer observations.
 
 ### Dependencies
 1. **PDP-10 installation** blocks:
@@ -623,5 +624,5 @@ GitHub Actions Workflow
 ---
 
 **Status**: Ready to proceed
-**Next Action**: Run one pre-transfer dual-window confirmatory gate, then execute controlled host-to-host transfer validation and append findings into `arpanet/PHASE3-PROGRESS.md`
+**Next Action**: keep dual-window gate cadence, establish real PDP-10 transfer service readiness (or ITS-appropriate transfer path), then execute controlled host-to-host validation with destination-side proof and append findings into `docs/arpanet/progress/PHASE3-PROGRESS.md`
 **Timeline**: 12-15 hours total to complete build pipeline integration

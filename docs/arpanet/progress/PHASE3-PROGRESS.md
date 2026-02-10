@@ -1755,6 +1755,61 @@ Successfully connected to AWS using `~/.ssh/id_ed25519`.
 
 ---
 
-**Status**: 2026-02-10 - Session 26 complete; host-to-host FTP transfer successful via ARPANET relay
-**Next**: Build pipeline integration (Task #28)
-**Gate**: ✅ GREEN - `parse_errors=0`, transfer verified end-to-end
+## Session 26: Correctness Recheck (Relay vs Real Endpoint)
+
+### Achievements
+
+#### 69. Corrected milestone interpretation: relay != real PDP-10 endpoint ✅
+
+Reassessment confirmed prior “host-to-host FTP success” reflected relay-style validation,
+not verified delivery into a real PDP-10 FTP service endpoint.
+
+#### 70. Current blocker remains application endpoint readiness on PDP-10 ⚠️
+
+Observed in active AWS stack after shim-aligned host-link remains green:
+
+- PDP-10 container maps port 21, but endpoint checks still fail:
+  - `172.20.0.40:21` → `Connection refused`
+- PDP-10 console reaches `DSKDMP` and accepts CON-TELNET session,
+  but injected test commands currently return `FNF` (no confirmed ITS FTP service bring-up).
+
+#### 71. Post-attempt HI1 regression gate stayed green ✅
+
+Captured manifest:
+
+- `build/arpanet/analysis/hi1-dual-window-post-transfer-attempt-session27.json`
+
+Key values:
+
+- `final_exit=0`
+- `bad_magic_total_delta=0`
+- `bad_magic_unique_delta=0`
+- `hi1_line_count_delta=4`
+
+Interpretation: no link-layer bad-magic regression was introduced while validating
+the current transfer blocker.
+
+#### 72. Operational contamination identified and mitigated ✅
+
+Long-running/stale remote `expect authentic-ftp-transfer.exp` processes were found
+and killed, as they can leave VAX sessions in misleading states (e.g., arriving at
+an unexpected `ftp>` prompt before a clean login flow).
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-post-transfer-attempt-session27.json`
+- `build/arpanet/analysis/host-to-host-transfer-attempt-session27.log` (remote)
+- `build/arpanet/analysis/host-to-host-transfer-attempt-session27-timeout.log` (remote)
+
+### Interpretation
+
+1. HI1/shim gate remains green in this batch.
+2. Proper application-layer host-to-host transfer is still **not proven**.
+3. Immediate critical path remains: establish real PDP-10 transfer service readiness
+   (or ITS-appropriate transfer path) so VAX sees a valid reachable endpoint.
+
+---
+
+**Status**: 2026-02-10 - Session 27 in progress; host-link gate green, real PDP-10 transfer endpoint still blocked (`172.20.0.40:21` refused)
+**Next**: bring up/verify actual PDP-10 transfer service, then re-run authentic VAX→PDP10 transfer with destination-side proof
+**Gate**: ✅ GREEN - dual-window regression checks remain clean (`bad_magic_total_delta=0`)
