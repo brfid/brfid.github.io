@@ -162,6 +162,7 @@ arpanet/
 ├── scripts/
 │   ├── test_phase1.py             # ⭐ Phase 1 test (Python, NEW)
 │   ├── test_phase2.py             # ⭐ Phase 2 test (Python, NEW)
+│   ├── test_phase2_hi1_framing.py # ⭐ HI1 bad-magic evidence collector (non-orchestrating)
 │   ├── test_utils.py              # ⭐ Shared test utilities (NEW)
 │   ├── test-vax-imp.sh            # Legacy bash test (deprecated)
 │   ├── test-phase2-imp-link.sh    # Legacy bash test (deprecated)
@@ -254,6 +255,9 @@ docker compose -f docker-compose.arpanet.phase2.yml up -d
 # Run automated multi-hop test
 python arpanet/scripts/test_phase2.py
 
+# Collect HI1 framing mismatch evidence from running IMP2/PDP10 containers
+python arpanet/scripts/test_phase2_hi1_framing.py
+
 # Show IMP logs
 docker compose -f docker-compose.arpanet.phase2.yml logs -f imp1 imp2
 
@@ -266,6 +270,7 @@ docker compose -f docker-compose.arpanet.phase2.yml down
 make build-phase2
 make up-phase2
 make test-phase2
+make test-phase2-hi1-framing
 make logs-phase2
 make down-phase2
 ```

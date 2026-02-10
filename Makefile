@@ -1,7 +1,7 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 test-imp-logging aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet docs
+.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 test-phase2-hi1-framing test-imp-logging aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet docs
 
 # Default target
 help:
@@ -29,6 +29,7 @@ help:
 	@echo "  make down-phase2   Stop Phase 2 bootstrap topology"
 	@echo "  make logs-phase2   Show Phase 2 IMP logs"
 	@echo "  make test-phase2   Run Phase 2 modem/host-link test"
+	@echo "  make test-phase2-hi1-framing  Collect HI1 bad-magic evidence (non-orchestrating)"
 	@echo "  make test-imp-logging  Run IMP log collection/parsing test"
 	@echo "  make clean         Remove containers and volumes"
 	@echo ""
@@ -136,6 +137,10 @@ logs-phase2:
 test-phase2:
 	@echo "Running ARPANET Phase 2 modem/host-link test..."
 	@.venv/bin/python arpanet/scripts/test_phase2.py
+
+test-phase2-hi1-framing:
+	@echo "Collecting ARPANET Phase 2 HI1 framing evidence (non-orchestrating)..."
+	@.venv/bin/python arpanet/scripts/test_phase2_hi1_framing.py
 
 test-imp-logging:
 	@echo "Running ARPANET IMP log collection/parsing test..."
