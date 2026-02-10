@@ -1869,3 +1869,48 @@ Interpretation:
 **Status**: 2026-02-10 - Session 28 in progress; host-link gate green, PDP-10 FTP endpoint still not listening (`172.20.0.40:21` refused)
 **Next**: complete validated ITS-side service bring-up sequence (TCP/ARPA/FTPS or equivalent), confirm banner reachability, then rerun authentic VAX→PDP10 transfer with destination-side proof
 **Gate**: ✅ GREEN - dual-window regression checks remain clean (`bad_magic_total_delta=0`)
+
+---
+
+## Session 28: Final Bounded Bring-Up Test + Research Escalation Decision
+
+### Achievements
+
+#### 76. Executed one more bounded readiness pass before escalation ✅
+
+A final bounded check was run against the active AWS stack after cleanup of stale transfer automation.
+
+Observed:
+- `arpanet-pdp10` is running with port map `21:21` present in compose output.
+- Direct socket probe still fails:
+  - `172.20.0.40:21` → `ConnectionRefusedError(111)`.
+- PDP-10 remains at `DSKDMP` console state in current snapshots.
+- No evidence of an active `:21` listener inside `arpanet-pdp10` in bounded check window.
+
+#### 77. Reconfirmed link-layer guardrail remains healthy ✅
+
+Post-triage dual-window evidence remains green:
+
+- `build/arpanet/analysis/hi1-dual-window-post-endpoint-triage-session27.json`
+  - `final_exit=0`
+  - `bad_magic_total_delta=0`
+
+Interpretation: current blocker is not HI1 transport/framing regression.
+
+#### 78. Decision: switch from repeated endpoint pokes to targeted LLM research ✅
+
+Given repeated endpoint refusal despite stable host-link evidence, next efficient move is now
+focused research on ITS/KS10 service bring-up semantics for this runtime profile (TCP/ARPA/FTP
+equivalent), using fresh observed evidence from this session.
+
+### Interpretation
+
+1. Host-link/shim remains green.
+2. PDP-10 application endpoint is still not ready (`172.20.0.40:21` refused).
+3. Additional blind retries are low-value; targeted research is now justified.
+
+---
+
+**Status**: 2026-02-10 - Session 29 in progress; switching to focused LLM research for PDP-10 service bring-up path
+**Next**: produce targeted research prompt with latest refusal/console evidence, then implement recommended minimal bring-up sequence and re-test banner + authentic transfer
+**Gate**: ✅ GREEN - dual-window regression checks remain clean (`bad_magic_total_delta=0`)

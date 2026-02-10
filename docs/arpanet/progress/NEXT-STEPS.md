@@ -623,6 +623,6 @@ GitHub Actions Workflow
 
 ---
 
-**Status**: Ready to proceed
-**Next Action**: keep dual-window gate cadence, establish real PDP-10 transfer service readiness (or ITS-appropriate transfer path), then execute controlled host-to-host validation with destination-side proof and append findings into `docs/arpanet/progress/PHASE3-PROGRESS.md`
+**Status**: Switching to focused research-assisted service bring-up
+**Next Action**: run targeted LLM research on ITS/KS10 service activation at `DSKDMP` (TCP/ARPA/FTP-equivalent path) using latest refusal evidence (`172.20.0.40:21` refused), then execute the minimal validated bring-up sequence and re-test banner + authentic transfer with destination-side proof
 **Timeline**: 12-15 hours total to complete build pipeline integration
