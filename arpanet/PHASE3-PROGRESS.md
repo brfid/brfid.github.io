@@ -766,3 +766,55 @@ Validation:
 ---
 
 **Updated**: 2026-02-09 (Session 10 JSON summary output)
+
+---
+
+## Session 11: HI1 Gating Controls for Automation
+
+### Achievements
+
+#### 23. Added explicit fail gates for bad-magic outcomes ✅
+
+Enhanced `arpanet/scripts/test_phase2_hi1_framing.py` with optional gating controls:
+
+- `--fail-on-bad-magic` → exit non-zero when any bad-magic markers are detected
+- `--bad-magic-threshold <N>` → exit non-zero when total bad-magic count reaches/exceeds `N`
+
+This allows CI-style or operator checks to enforce a strict quality bar without parsing logs manually.
+
+#### 24. Added make target for strict verification path ✅
+
+New target:
+
+```bash
+make verify-phase2-hi1-clean
+```
+
+Behavior:
+- reuses deep non-orchestrating capture window
+- writes markdown + json artifacts
+- fails command if bad-magic markers are still present
+
+#### 25. Extended tests for gating and CLI parse coverage ✅
+
+`tests/test_arpanet_phase_scripts.py` now validates:
+- parse defaults/customs for new gate flags
+- `main(["--fail-on-bad-magic"])` non-zero behavior
+- `main(["--bad-magic-threshold", "1"])` non-zero behavior
+
+Validation:
+
+```bash
+.venv/bin/python -m pytest -q tests/test_arpanet_phase_scripts.py
+# 15 passed
+```
+
+### Why this batch matters
+
+- Turns evidence collection into an enforceable acceptance check when needed.
+- Keeps native-first progress measurable over time with a single command.
+- Preserves non-orchestrating safety while improving automation readiness.
+
+---
+
+**Updated**: 2026-02-09 (Session 11 HI1 gating controls)

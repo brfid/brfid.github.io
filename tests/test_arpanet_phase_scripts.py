@@ -271,6 +271,8 @@ def test_phase2_hi1_parse_args_defaults() -> None:
     assert args.sample_limit == 20
     assert args.output is None
     assert args.json_output is None
+    assert args.fail_on_bad_magic is False
+    assert args.bad_magic_threshold is None
 
 
 def test_phase2_hi1_parse_args_custom_values(tmp_path: pytest.TempPathFactory) -> None:
@@ -289,6 +291,9 @@ def test_phase2_hi1_parse_args_custom_values(tmp_path: pytest.TempPathFactory) -
             str(output_path),
             "--json-output",
             str(json_output_path),
+            "--fail-on-bad-magic",
+            "--bad-magic-threshold",
+            "5",
         ]
     )
 
@@ -297,6 +302,8 @@ def test_phase2_hi1_parse_args_custom_values(tmp_path: pytest.TempPathFactory) -
     assert args.sample_limit == 40
     assert args.output == output_path
     assert args.json_output == json_output_path
+    assert args.fail_on_bad_magic is True
+    assert args.bad_magic_threshold == 5
 
 
 def test_phase2_hi1_build_summary_counts() -> None:
@@ -327,3 +334,61 @@ def test_phase2_hi1_write_summary_json(tmp_path: pytest.TempPathFactory) -> None
     content = output_path.read_text()
     assert '"bad_magic_total": 3' in content
     assert '"feffffff": 2' in content
+
+
+def test_phase2_hi1_main_fail_on_bad_magic_returns_2(monkeypatch: pytest.MonkeyPatch) -> None:
+    _silence_output(monkeypatch)
+
+    containers = {
+        "arpanet-imp2": _FakeContainer(name="arpanet-imp2"),
+        "arpanet-pdp10": _FakeContainer(name="arpanet-pdp10"),
+    }
+
+    monkeypatch.setattr(phase2_hi1_script, "get_docker_client", lambda: object())
+    monkeypatch.setattr(phase2_hi1_script, "check_containers_running", lambda client, names: True)
+    monkeypatch.setattr(phase2_hi1_script, "get_container", lambda client, name: containers[name])
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "get_container_logs",
+        lambda container, tail=10: (
+            "HI1 UDP: link 1 - received packet w/bad magic number (magic=feffffff)\n"
+            if container.name == "arpanet-imp2"
+            else "Eth: opened OS device udp:2000:172.20.0.30:2000\n"
+        ),
+    )
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "_artifact_path",
+        lambda: phase2_hi1_script.Path("/tmp/fake-hi1-artifact.md"),
+    )
+
+    assert phase2_hi1_script.main(["--fail-on-bad-magic"]) == 2
+
+
+def test_phase2_hi1_main_threshold_returns_3(monkeypatch: pytest.MonkeyPatch) -> None:
+    _silence_output(monkeypatch)
+
+    containers = {
+        "arpanet-imp2": _FakeContainer(name="arpanet-imp2"),
+        "arpanet-pdp10": _FakeContainer(name="arpanet-pdp10"),
+    }
+
+    monkeypatch.setattr(phase2_hi1_script, "get_docker_client", lambda: object())
+    monkeypatch.setattr(phase2_hi1_script, "check_containers_running", lambda client, names: True)
+    monkeypatch.setattr(phase2_hi1_script, "get_container", lambda client, name: containers[name])
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "get_container_logs",
+        lambda container, tail=10: (
+            "HI1 UDP: link 1 - received packet w/bad magic number (magic=feffffff)\n"
+            if container.name == "arpanet-imp2"
+            else "Eth: opened OS device udp:2000:172.20.0.30:2000\n"
+        ),
+    )
+    monkeypatch.setattr(
+        phase2_hi1_script,
+        "_artifact_path",
+        lambda: phase2_hi1_script.Path("/tmp/fake-hi1-artifact.md"),
+    )
+
+    assert phase2_hi1_script.main(["--bad-magic-threshold", "1"]) == 3

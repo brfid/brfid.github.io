@@ -1,7 +1,7 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 test-phase2-hi1-framing test-phase2-hi1-framing-deep test-imp-logging aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet docs
+.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 test-phase2-hi1-framing test-phase2-hi1-framing-deep verify-phase2-hi1-clean test-imp-logging aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet docs
 
 # Default target
 help:
@@ -31,6 +31,7 @@ help:
 	@echo "  make test-phase2   Run Phase 2 modem/host-link test"
 	@echo "  make test-phase2-hi1-framing  Collect HI1 bad-magic evidence (non-orchestrating)"
 	@echo "  make test-phase2-hi1-framing-deep  Deep HI1 evidence capture with larger log windows"
+	@echo "  make verify-phase2-hi1-clean  Fail if deep capture still shows bad-magic markers"
 	@echo "  make test-imp-logging  Run IMP log collection/parsing test"
 	@echo "  make clean         Remove containers and volumes"
 	@echo ""
@@ -151,6 +152,16 @@ test-phase2-hi1-framing-deep:
 		--sample-limit 50 \
 		--output build/arpanet/analysis/hi1-framing-matrix-latest.md \
 		--json-output build/arpanet/analysis/hi1-framing-matrix-latest.json
+
+verify-phase2-hi1-clean:
+	@echo "Verifying deep HI1 capture is free of bad-magic markers..."
+	@.venv/bin/python arpanet/scripts/test_phase2_hi1_framing.py \
+		--imp2-tail 5000 \
+		--pdp10-tail 1500 \
+		--sample-limit 50 \
+		--output build/arpanet/analysis/hi1-framing-matrix-latest.md \
+		--json-output build/arpanet/analysis/hi1-framing-matrix-latest.json \
+		--fail-on-bad-magic
 
 test-imp-logging:
 	@echo "Running ARPANET IMP log collection/parsing test..."

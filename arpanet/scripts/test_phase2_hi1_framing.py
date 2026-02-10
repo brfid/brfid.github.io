@@ -81,6 +81,17 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Optional JSON summary output path for automation/reporting",
     )
+    parser.add_argument(
+        "--fail-on-bad-magic",
+        action="store_true",
+        help="Exit non-zero if any bad-magic markers are detected",
+    )
+    parser.add_argument(
+        "--bad-magic-threshold",
+        type=_positive_int,
+        default=None,
+        help="Exit non-zero if total bad-magic count is greater than or equal to this value",
+    )
     return parser.parse_args(argv)
 
 
@@ -268,6 +279,20 @@ def main(argv: list[str] | None = None) -> int:
     print()
 
     print_info("Next: append artifact findings into arpanet/PHASE3-PROGRESS.md Session notes.")
+
+    if args.fail_on_bad_magic and summary["bad_magic_total"] > 0:
+        print_error(
+            f"Failing due to bad-magic markers: total={summary['bad_magic_total']} (fail-on-bad-magic enabled)"
+        )
+        return 2
+
+    if args.bad_magic_threshold is not None and summary["bad_magic_total"] >= args.bad_magic_threshold:
+        print_error(
+            "Failing due to bad-magic threshold: "
+            f"total={summary['bad_magic_total']} threshold={args.bad_magic_threshold}"
+        )
+        return 3
+
     return 0
 
 

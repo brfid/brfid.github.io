@@ -266,6 +266,13 @@ python arpanet/scripts/test_phase2_hi1_framing.py \
   --output build/arpanet/analysis/hi1-framing-matrix-latest.md \
   --json-output build/arpanet/analysis/hi1-framing-matrix-latest.json
 
+# Optional: treat persistent bad-magic as a failing check
+python arpanet/scripts/test_phase2_hi1_framing.py \
+  --imp2-tail 5000 \
+  --pdp10-tail 1500 \
+  --sample-limit 50 \
+  --fail-on-bad-magic
+
 # Show IMP logs
 docker compose -f docker-compose.arpanet.phase2.yml logs -f imp1 imp2
 
@@ -279,6 +286,8 @@ make build-phase2
 make up-phase2
 make test-phase2
 make test-phase2-hi1-framing
+make test-phase2-hi1-framing-deep
+make verify-phase2-hi1-clean
 make logs-phase2
 make down-phase2
 ```
