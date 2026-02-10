@@ -2,6 +2,24 @@
 
 Use this page when starting from zero context.
 
+## 0) Current checkpoint (read this first)
+
+- Branch state: **Branch B active** (Branch A closed for current KS10 runtime profile).
+- Link-layer guardrails: **green** in Session 31 baseline (`final_exit=0`, `bad_magic_total_delta=0`).
+- Active blocker (reset): **KS10 `IMP` protocol-stack mismatch** with IMP2 HI1 expectations in current runtime profile.
+- Branch B planning priority (current):
+  1. **Path A: Chaosnet-first ITS-compatible path**
+  2. **Path D fallback: VAX/IMP transfer proof with endpoint compatible with HI1 contract**
+  3. Keep Path B/C as lower-priority exploratory options.
+
+Canonical analysis handoff:
+- `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
+
+Primary references:
+- `STATUS.md`
+- `docs/arpanet/progress/NEXT-STEPS.md`
+- `docs/arpanet/progress/PHASE3-PROGRESS.md`
+
 ## 1) Read order
 
 1. `README.md`
@@ -15,6 +33,9 @@ Use this page when starting from zero context.
 - Current project state: `STATUS.md`
 - ARPANET active execution path: `docs/arpanet/progress/NEXT-STEPS.md`
 - ARPANET progress timeline: `docs/arpanet/progress/PHASE3-PROGRESS.md`
+- Current Branch A closure artifact: `build/arpanet/analysis/session30-its-command-matrix.log`
+- Current Branch B baseline artifact: `build/arpanet/analysis/hi1-dual-window-branchB-baseline-session31.json`
+- Canonical mismatch analysis handoff: `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
 - Historical transport decisions: `docs/project/transport-archive.md`
 
 ## 3) Fast constraints checklist

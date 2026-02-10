@@ -2,6 +2,9 @@
 
 Canonical documentation hub.
 
+## Start Here
+- [Cold start guide](COLD-START.md)
+
 ## Project
 - [Project docs index](project/INDEX.md)
 

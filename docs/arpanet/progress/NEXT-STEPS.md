@@ -1,7 +1,10 @@
 # ARPANET Integration - Next Steps
 
 **Date**: 2026-02-10
-**Status**: ITS runtime is stable; host-link gate remains green (including post-transfer-attempt check), but end-to-end host transfer remains blocked by PDP-10 transfer endpoint/service readiness (`172.20.0.40:21` currently refused)
+**Status**: Branch B is active; host-link gate remains green in Session 31 baseline, and blocker model is reset to KS10 `IMP` protocol-stack mismatch with IMP2 HI1 expectations
+
+Canonical mismatch handoff:
+- `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
 
 ---
 
@@ -18,6 +21,64 @@ See [CONSOLE-AUTOMATION-SOLUTION.md](../research/CONSOLE-AUTOMATION-SOLUTION.md)
 ---
 
 ## Immediate Next Steps (High Priority)
+
+### Branch Resolution Update (Session 31): Branch B Active
+
+Branch A is now closed for this runtime profile.
+
+Why closed:
+- Session 30 command matrix shows all tested bring-up commands returned `FNF` at live `DSKDMP` prompt context:
+  - artifact: `build/arpanet/analysis/session30-its-command-matrix.log`
+- Endpoint remains refused after Branch A attempts:
+  - `172.20.0.40:21` -> `ConnectionRefusedError(111)`
+- Upstream ITS networking caveat for KS10 support remains in effect (already captured in progress/handoff docs).
+
+#### Branch B Objective (active)
+
+Deliver a minimal, reversible, architecture-compatible transfer proof path under the mismatch model while preserving current HI1/shim guardrails and avoiding MI1/routing-core changes.
+
+Branch B path priority (effective immediately):
+
+1. **Path A (preferred):** Chaosnet-first ITS-compatible path.
+2. **Path D (fallback):** VAX/IMP transfer proof with endpoint compatible with HI1 contract.
+3. Keep Path B/C as lower-priority exploratory options.
+
+#### Branch B Session 31 baseline (completed)
+
+- Captured Branch B baseline dual-window guardrail manifest:
+  - `build/arpanet/analysis/hi1-dual-window-branchB-baseline-session31.json`
+- Result remains green:
+  - `final_exit=0`
+  - `bad_magic_total_delta=0`
+  - `bad_magic_unique_delta=0`
+  - `hi1_line_count_delta=4`
+
+#### Branch B next actions (command-first)
+
+1) **Freeze blocker declaration as active constraint**
+   - Keep Session 30 Branch A evidence + KS10 caveat as explicit reason for pivot in progress/handoff docs.
+
+2) **Execute first minimal pivot candidate (narrow + reversible)**
+   - Select one endpoint path that does not require changing MI1/routing core.
+   - Define exact acceptance checks before implementation (banner/connect proof, transfer progression, destination-side proof).
+
+3) **Re-run guardrails immediately after each pivot attempt**
+   - `.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py --dual-window --manifest-output <artifact>.json`
+   - capture shim parse health (`parse_errors=0`) and IMP2 bad-magic scan window.
+
+Success gate for active Branch B cycle:
+- blocker declaration remains explicit and evidence-linked
+- pivot candidate + acceptance checks are documented and executed
+- guardrail remains green in post-change run (`final_exit=0`, `bad_magic_total_delta=0`)
+
+#### Post-proof decision policy (explicit)
+
+If a transfer path is proven in this cycle:
+
+1) Keep the chosen compatible path as the active baseline.
+2) Record explicit retirement/upgrade criteria before introducing additional protocol-path complexity.
+
+---
 
 ### 0. Validate Host-IMP Interface fallback path (Critical)
 
@@ -142,7 +203,7 @@ docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic" || true
 
 **Important note**:
 - Do not assume `172.20.0.40:21` is available by default in the current ITS profile.
-- Current evidence suggests endpoint readiness (listener/service bring-up and exposure) is the active blocker, not HI1 framing.
+- Under current model, repeated FTP bring-up retries are not primary work; use path-selection acceptance checks from the canonical mismatch handoff first.
 
 ---
 
@@ -583,46 +644,7 @@ GitHub Actions Workflow
 
 ---
 
-## Questions to Consider
+## Cold-start note
 
-1. **Should we implement the refactoring plan first?**
-   - REFACTORING-PLAN.md identifies 26 code quality improvements
-   - Some DRY violations in collectors, parsers, scripts
-   - Could improve maintainability before expanding scope
-
-2. **Do we need PDP-10 for initial build pipeline?**
-   - VAX-only FTP works (localhost transfer)
-   - Demonstrates authentic 1986 software
-   - Could ship initial version without PDP-10
-
-3. **What level of error handling in production?**
-   - Retry failed transfers?
-   - Fall back to modern FTP if ARPANET fails?
-   - How to alert on failures?
-
-4. **Performance requirements?**
-   - Current: ~45 seconds for FTP transfer
-   - Acceptable for demo/portfolio project
-   - Optimize later if needed
-
----
-
-## Conclusion
-
-**Console automation is solved.** We now have reliable, production-ready automation using SIMH's native commands. The path forward is clear:
-
-1. **Immediate**: Test and validate SIMH scripts (30 min)
-2. **Short-term**: Complete PDP-10 integration and routing (3-4 hours)
-3. **Medium-term**: Integrate into build pipeline (2-3 hours)
-
-**Host-link gate is currently green in aligned runs.** ITS runtime is stable and latest dual-window manifests show no bad-magic recurrence; focus now moves to sustained host-to-host transfer validation and regression monitoring.
-
-**Historical fidelity maintained**: 100% authentic 1986 BSD FTP client/server throughout.
-
-**Current evidence workflow**: use `make test-phase2-hi1-framing-deep` to produce paired markdown/json artifacts under `build/arpanet/analysis/` for handoff and progress updates.
-
----
-
-**Status**: Switching to focused research-assisted service bring-up
-**Next Action**: run targeted LLM research on ITS/KS10 service activation at `DSKDMP` (TCP/ARPA/FTP-equivalent path) using latest refusal evidence (`172.20.0.40:21` refused), then execute the minimal validated bring-up sequence and re-test banner + authentic transfer with destination-side proof
-**Timeline**: 12-15 hours total to complete build pipeline integration
+- This file intentionally tracks execution order and acceptance gates for the **current** active branch only.
+- For historical timeline and prior branch outcomes, see: `docs/arpanet/progress/PHASE3-PROGRESS.md`.

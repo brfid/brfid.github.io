@@ -1,5 +1,12 @@
 # ARPANET Documentation
 
+## Start Here (Cold Start)
+- [Project status snapshot](../../STATUS.md)
+- [ARPANET next steps (active execution path)](progress/NEXT-STEPS.md)
+- [Phase 3 progress timeline](progress/PHASE3-PROGRESS.md)
+- [KS10 IMP mismatch analysis handoff](handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md)
+- [PDP10 FTP blocker handoff](handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md)
+
 ## Overview
 - [Overview README](overview/README.md)
 - [Phase 1 summary](overview/PHASE1-SUMMARY.md)
@@ -29,6 +36,7 @@
 - [Protocol analysis](research/PROTOCOL-ANALYSIS.md)
 
 ## Handoffs
+- [KS10 IMP mismatch analysis handoff](handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md)
 - [Host-link blocker handoff](handoffs/LLM-HOST-LINK-BLOCKER-2026-02-09.md)
 - [PDP10 FTP blocker handoff](handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md)
 - [Runtime boot-loop handoff](handoffs/LLM-RUNTIME-BOOT-LOOP-2026-02-09.md)

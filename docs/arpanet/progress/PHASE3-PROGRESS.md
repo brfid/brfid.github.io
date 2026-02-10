@@ -1914,3 +1914,251 @@ equivalent), using fresh observed evidence from this session.
 **Status**: 2026-02-10 - Session 29 in progress; switching to focused LLM research for PDP-10 service bring-up path
 **Next**: produce targeted research prompt with latest refusal/console evidence, then implement recommended minimal bring-up sequence and re-test banner + authentic transfer
 **Gate**: ✅ GREEN - dual-window regression checks remain clean (`bad_magic_total_delta=0`)
+
+---
+
+## Session 29: Command-First Recheck + Platform-Capability Fork
+
+### Achievements
+
+#### 79. Reconfirmed post-change HI1/shim guardrail remains green ✅
+
+Captured local manifest:
+
+- `build/arpanet/analysis/hi1-dual-window-post-ftp-change-session29.json`
+
+Key values:
+
+- `final_exit=0`
+- `bad_magic_total_delta=0`
+- `bad_magic_unique_delta=0`
+- `hi1_line_count_delta=4`
+
+Interpretation:
+- No host-link bad-magic regression was introduced by the latest endpoint/bring-up attempts.
+- Shim-path stability remains intact for this batch.
+
+#### 80. Completed remote phase2 background capture (link-layer still healthy) ✅
+
+Background log artifact now contains full `test_phase2.py` output:
+
+- `/tmp/cline/background-1770754364797-lz2ylgd.log`
+
+Key confirmations:
+- all phase2 containers running (`VAX`, `IMP1`, `IMP2`, `PDP10`)
+- expected IP assignments present (`172.20.0.10/20/30/40`)
+- IMP1/IMP2 MI1 startup markers present
+- IMP2 HI1 startup markers present
+
+Interpretation:
+- Link-layer/runtime baseline remains healthy for this check window.
+- This does **not** clear the application-layer blocker (`172.20.0.40:21` readiness).
+
+#### 81. Incorporated upstream ITS networking caveat into blocker model ✅
+
+External ITS networking documentation (`PDP-10/its` `doc/networking.md`) includes a critical platform note:
+
+- **"The SIMH KS10 does not have the necessary support."**
+
+Combined with repeated endpoint observations (`172.20.0.40:21` refused/no listener proof), this raises a credible platform-capability explanation for persistent FTPS bring-up failure under the current KS10 runtime profile.
+
+#### 82. Decision fork established for next execution cycle ✅
+
+The active plan now branches explicitly:
+
+1. **Branch A (preferred if feasible):** prove a valid runnable ITS FTPS/TCP command path in the live prompt/runtime context and demonstrate endpoint readiness (`172.20.0.40:21` banner reachable).
+2. **Branch B (if A cannot be proven):** declare KS10 platform networking as the blocking constraint and pivot to a minimal architecture-compatible authentic endpoint path while preserving HI1/shim guardrails and evidence workflow.
+
+### Interpretation
+
+1. Host-link guardrails are still green in Session 29.
+2. Application-layer readiness remains unresolved on PDP-10 target path.
+3. The project now has a concrete, testable fork that prevents additional blind retries and keeps progress evidence-driven.
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-post-ftp-change-session29.json`
+- `/tmp/cline/background-1770754364797-lz2ylgd.log` (successful phase2 link-check output)
+- `docs/arpanet/handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md`
+
+---
+
+**Status**: 2026-02-10 - Session 29 complete; guardrails green, endpoint still blocked, platform-capability fork activated
+**Next**: execute Branch A command-path proof at live ITS prompt, or move to Branch B pivot with explicit KS10 blocker declaration
+**Gate**: ✅ GREEN - dual-window regression checks remain clean (`bad_magic_total_delta=0`)
+
+---
+
+## Session 30: Branch A Execution Outcome + Branch B Activation
+
+### Achievements
+
+#### 83. Executed Branch A command-path probe at live KS10 console ✅
+
+Captured command matrix artifact:
+
+- `build/arpanet/analysis/session30-its-command-matrix.log`
+
+Observed runtime behavior:
+- connected to KS10 CON-TELNET and reached `DSKDMP`
+- all attempted service bring-up commands returned `FNF` in this prompt context, including:
+  - `ATSIGN TCP`, `ATSIGN ARPA`, `ATSIGN FTPS`
+  - `@TCP`, `FTPS`, `HOSTAT`, `UP`, `?`
+
+Interpretation:
+- no reproducible runnable FTPS/TCP bring-up path was demonstrated in the current runtime/job context.
+
+#### 84. Endpoint readiness remains blocked after Branch A attempts ⚠️
+
+Bounded socket checks still fail:
+
+- `172.20.0.40:21` -> `ConnectionRefusedError(111, 'Connection refused')`
+
+PDP-10 logs continue to show repeated console timeout/re-entry cycles around boot (`sim_check_console ... timed out`), with no evidence of an active FTP listener.
+
+#### 85. Post-Branch-A regression guardrail remains green ✅
+
+Captured manifest:
+
+- `build/arpanet/analysis/hi1-dual-window-post-branchA-session30.json`
+
+Key values:
+- `final_exit=0`
+- `bad_magic_total_delta=0`
+- `bad_magic_unique_delta=0`
+- `hi1_line_count_delta=4`
+
+Interpretation:
+- Branch A probing did not regress HI1/shim transport health.
+
+#### 86. Branch decision advanced to B (platform-capability pivot) ✅
+
+Given:
+1) repeated `FNF` across candidate ITS bring-up commands in live context,
+2) persistent endpoint refusal on `172.20.0.40:21`, and
+3) upstream ITS KS10 networking caveat already documented,
+
+the execution path now proceeds under **Branch B**: explicit KS10 capability blocker declaration + minimal architecture-compatible authentic endpoint pivot, while preserving current HI1/shim evidence gates.
+
+### Artifacts
+
+- `build/arpanet/analysis/session30-its-command-matrix.log`
+- `build/arpanet/analysis/hi1-dual-window-post-branchA-session30.json`
+
+---
+
+**Status**: 2026-02-10 - Session 30 complete; Branch A failed to produce runnable FTPS path, Branch B activated
+**Next**: implement/document minimal Branch B pivot acceptance path for application-layer proof while keeping dual-window gate green
+**Gate**: ✅ GREEN - post-Branch-A dual-window remained clean (`bad_magic_total_delta=0`)
+
+---
+
+## Session 31: Branch B Kickoff Baseline + Active Constraint Freeze
+
+### Achievements
+
+#### 87. Captured Branch B baseline dual-window guardrail manifest ✅
+
+Executed:
+
+```bash
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-branchB-baseline-session31.json
+```
+
+Observed manifest:
+- `final_exit=0`
+- `bad_magic_total_delta=0`
+- `bad_magic_unique_delta=0`
+- `hi1_line_count_delta=4`
+
+Interpretation:
+- Branch B starts from a clean link-layer baseline; no HI1/shim regression introduced.
+
+#### 88. Branch A closure evidence frozen as active Branch B constraint ✅
+
+Branch A is now treated as closed for current KS10 runtime profile, based on:
+
+1) command-path matrix in live `DSKDMP` context produced only `FNF` responses:
+   - `build/arpanet/analysis/session30-its-command-matrix.log`
+2) endpoint remained refused at `172.20.0.40:21`
+3) upstream ITS KS10 networking caveat remains applicable
+
+Operational policy for Session 31+:
+- avoid additional blind FTPS/TCP bring-up retries in the same KS10 prompt context
+- proceed with minimal, reversible Branch B pivot candidate selection while preserving MI1/routing core and HI1 guardrails
+
+#### 89. Next execution gate for Branch B candidate remains explicit ✅
+
+Any Branch B pivot attempt must satisfy all of:
+
+1) concrete pivot candidate + acceptance checks documented before change
+2) post-change dual-window manifest remains green (`final_exit=0`, `bad_magic_total_delta=0`)
+3) shim parse health remains clean (`parse_errors=0`)
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-branchB-baseline-session31.json`
+- `build/arpanet/analysis/session30-its-command-matrix.log`
+
+---
+
+**Status**: 2026-02-10 - Session 31 baseline complete; Branch B active with guardrails green
+**Next**: execute first minimal Branch B pivot candidate with explicit acceptance checks and post-change gate rerun
+**Gate**: ✅ GREEN - Branch B baseline dual-window remained clean (`bad_magic_total_delta=0`)
+
+---
+
+## Session 32: Cold-Start Model Reset (KS10 IMP Mismatch Canonicalization)
+
+### Achievements
+
+#### 90. Added canonical mismatch handoff for future cold starts ✅
+
+Created:
+
+- `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
+
+This document consolidates the current diagnosis:
+
+1) KS10 `IMP` path in this runtime profile behaves as Ethernet/IP-style NIC semantics.
+2) IMP2 HI1 path expects a different host-interface contract.
+3) Green shim gate outcomes validate boundary framing stability but are not alone proof of end-to-end ITS FTP endpoint viability.
+
+#### 91. Updated cold-start + status + next-steps docs to reflect reset ✅
+
+Updated files:
+
+- `docs/COLD-START.md`
+- `STATUS.md`
+- `docs/arpanet/progress/NEXT-STEPS.md`
+
+Key policy change:
+
+- Replace endpoint-readiness-only framing with mismatch-first Branch B model.
+- Branch B path priority is now explicit:
+  1. Path A (Chaosnet-first ITS-compatible path)
+  2. Path D fallback (VAX/IMP transfer proof with endpoint compatible with HI1 contract)
+  3. Path B/C as lower-priority exploration
+
+#### 92. Updated ARPANET doc index for discoverability ✅
+
+Updated:
+
+- `docs/arpanet/INDEX.md`
+
+New canonical handoff is now listed in both:
+
+- Start Here (Cold Start)
+- Handoffs
+
+### Interpretation
+
+Session 32 is a documentation-canonicalization milestone: it does not introduce runtime behavior changes, but it resets operator guidance to avoid repeated blind KS10 FTP bring-up loops and to drive Branch B through explicit path-selection gates.
+
+---
+
+**Status**: 2026-02-10 - Session 32 complete; mismatch-first cold-start model is now canonical
+**Next**: execute first Branch B pivot candidate under new priority (Path A first, Path D fallback) with unchanged dual-window guardrails
+**Gate**: ✅ GREEN - guardrail policy unchanged (`final_exit=0`, `bad_magic_total_delta=0` required post-change)
