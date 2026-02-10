@@ -863,3 +863,95 @@ Then append resulting markdown/json metrics (`hi1-framing-matrix-latest.*`) to t
 ---
 
 **Updated**: 2026-02-09 (Session 12 local fail-fast invocation; AWS evidence run pending)
+
+---
+
+## Session 13: AWS Fail-Fast Gate Run (Active Stack)
+
+### Achievements
+
+#### 28. Ran strict HI1 gate logic on active AWS containers ✅
+
+Because the AWS workspace did not yet include the latest Make/script updates, the gate was executed directly via the updated script command on host `34.227.223.186` using the same strict parameters:
+
+```bash
+python3 arpanet/scripts/test_phase2_hi1_framing.py \
+  --imp2-tail 5000 \
+  --pdp10-tail 1500 \
+  --sample-limit 50 \
+  --output build/arpanet/analysis/hi1-framing-matrix-latest.md \
+  --json-output build/arpanet/analysis/hi1-framing-matrix-latest.json \
+  --fail-on-bad-magic
+```
+
+Result:
+- exit code: `0`
+- `bad_magic_total`: `0`
+- `bad_magic_unique`: `0`
+- `hi1_line_count`: `0`
+- `pdp10_marker_count`: `84`
+
+#### 29. Evidence quality assessment: clean-but-inconclusive window ⚠️
+
+The run is clean from a bad-magic perspective, but there were also zero HI1 UDP sample lines in the inspected IMP2 window. Marker lines were dominated by PDP-10 IMP DHCP chatter and repeated attach/runtime markers.
+
+Interpretation:
+- This is positive for "no observed bad magic in this window," but not yet sufficient to declare host-link compatibility fixed.
+- Additional capture should be taken during known active PDP-10↔IMP packet emission windows.
+
+### Why this batch matters
+
+- Confirms strict fail-fast flow works end-to-end on the AWS runtime path.
+- Produces machine-readable evidence from live stack (not local/no-docker environment).
+- Narrows next validation step to traffic-timed capture quality rather than tooling gaps.
+
+---
+
+**Updated**: 2026-02-09 (Session 13 AWS strict gate run; clean window with no HI1 samples)
+
+---
+
+## Session 14: Traffic-Timed AWS Recheck (Restart Window)
+
+### Achievements
+
+#### 30. Reproduced HI1 bad-magic under forced fresh PDP-10 traffic ✅
+
+Ran a traffic-timed capture by restarting PDP-10 first, then executing strict gate logic with expanded tails:
+
+```bash
+docker restart arpanet-pdp10
+python3 arpanet/scripts/test_phase2_hi1_framing.py \
+  --imp2-tail 12000 \
+  --pdp10-tail 3000 \
+  --sample-limit 80 \
+  --output build/arpanet/analysis/hi1-framing-matrix-restart-window.md \
+  --json-output build/arpanet/analysis/hi1-framing-matrix-restart-window.json \
+  --fail-on-bad-magic
+```
+
+Result:
+- exit code: non-zero (fail-on-bad-magic triggered)
+- `bad_magic_total`: `3`
+- `bad_magic_unique`: `3`
+- `hi1_line_count`: `3`
+- `pdp10_marker_count`: `131`
+
+Observed magic values:
+- `feffffff`
+- `00000219`
+- `ffffffff`
+
+#### 31. Practical interpretation: blocker persists; visibility is window-sensitive ⚠️
+
+Combined outcome across Sessions 13-14:
+- Session 13 (steady-state window): clean (`bad_magic_total=0`) but no HI1 sample lines
+- Session 14 (restart/active-emission window): immediate recurrence of known bad-magic signatures
+
+Conclusion:
+- Host-link compatibility is not resolved yet.
+- Detection is capture-window sensitive, so restart/traffic-timed runs are required for reliable fail-fast validation.
+
+---
+
+**Updated**: 2026-02-09 (Session 14 restart-window recheck confirms persistent HI1 framing mismatch)

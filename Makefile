@@ -1,7 +1,7 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 test-phase2-hi1-framing test-phase2-hi1-framing-deep verify-phase2-hi1-clean test-imp-logging aws-up aws-ssh aws-down aws-test aws-status publish publish_arpanet docs
+.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 test-phase2-hi1-framing test-phase2-hi1-framing-deep verify-phase2-hi1-clean test-imp-logging aws-up aws-ssh aws-down aws-test aws-status aws-verify-phase2-hi1-clean publish publish_arpanet docs
 
 # Default target
 help:
@@ -18,6 +18,7 @@ help:
 	@echo "  make aws-down      Destroy AWS instance"
 	@echo "  make aws-test      Run tests on AWS (provision, test, destroy)"
 	@echo "  make aws-status    Show AWS instance status"
+	@echo "  make aws-verify-phase2-hi1-clean  Run strict HI1 gate remotely on AWS stack"
 	@echo ""
 	@echo "Docker Operations:"
 	@echo "  make build         Build ARPANET containers"
@@ -80,6 +81,9 @@ aws-test:
 
 aws-status:
 	@./test_infra/scripts/status.py
+
+aws-verify-phase2-hi1-clean:
+	@.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py
 
 # Docker operations
 build:
