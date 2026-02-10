@@ -1813,3 +1813,59 @@ an unexpected `ftp>` prompt before a clean login flow).
 **Status**: 2026-02-10 - Session 27 in progress; host-link gate green, real PDP-10 transfer endpoint still blocked (`172.20.0.40:21` refused)
 **Next**: bring up/verify actual PDP-10 transfer service, then re-run authentic VAX→PDP10 transfer with destination-side proof
 **Gate**: ✅ GREEN - dual-window regression checks remain clean (`bad_magic_total_delta=0`)
+
+---
+
+## Session 27: Bounded Endpoint Triage Recheck (Post-Commit)
+
+### Achievements
+
+#### 73. Landed config/docs correction milestone commit ✅
+
+Committed local corrections as:
+
+- `e1db1c3` — `docs+config: correct endpoint status and enable pdp10 telnet console`
+
+Included files:
+- `arpanet/configs/phase2/pdp10.ini`
+- `docs/arpanet/progress/NEXT-STEPS.md`
+- `docs/arpanet/progress/PHASE3-PROGRESS.md`
+
+#### 74. Re-ran bounded remote endpoint triage with clean process state ✅
+
+Executed a bounded AWS triage pass after killing stale transfer automation processes.
+
+Observed:
+- phase2 stack running, including `arpanet-pdp10` with `21:21` mapped
+- host socket probe to `172.20.0.40:21` still fails with `ConnectionRefusedError(111)`
+- no PDP-10 in-container listener evidence for `:21` in `netstat/ss` snapshot
+- console snapshot on `2326` still lands at `DSKDMP` (service not brought up yet)
+
+Note:
+- a direct `docker exec arpanet-vax /bin/sh ... ftp ...` probe returned `/bin/sh: ftp: not found`
+- this is treated as an environment/shell-path caveat for that specific probe method, not as endpoint proof either way
+
+#### 75. Post-triage dual-window HI1 guardrail remained green ✅
+
+Captured:
+- `build/arpanet/analysis/hi1-dual-window-post-endpoint-triage-session27.json`
+
+Key values:
+- `final_exit=0`
+- `bad_magic_total_delta=0`
+- `bad_magic_unique_delta=0`
+- `hi1_line_count_delta=4`
+
+Interpretation:
+- link-layer/shim health remains green in this recheck
+- blocker remains strictly application-endpoint readiness on PDP-10 (`172.20.0.40:21` refused)
+
+### Artifacts
+
+- `build/arpanet/analysis/hi1-dual-window-post-endpoint-triage-session27.json`
+
+---
+
+**Status**: 2026-02-10 - Session 28 in progress; host-link gate green, PDP-10 FTP endpoint still not listening (`172.20.0.40:21` refused)
+**Next**: complete validated ITS-side service bring-up sequence (TCP/ARPA/FTPS or equivalent), confirm banner reachability, then rerun authentic VAX→PDP10 transfer with destination-side proof
+**Gate**: ✅ GREEN - dual-window regression checks remain clean (`bad_magic_total_delta=0`)
