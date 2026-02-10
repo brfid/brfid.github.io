@@ -169,11 +169,13 @@ def test_phase2_hi1_main_success_without_docker(monkeypatch: pytest.MonkeyPatch)
         lambda: phase2_hi1_script.Path("/tmp/fake-hi1-artifact.md"),
     )
 
-    def _fake_write(path, bad_magic_counts, hi1_samples, pdp10_summary_lines):
+    def _fake_write(path, bad_magic_counts, hi1_samples, pdp10_summary_lines, capture_notes=None):
         artifact_paths.append(str(path))
         assert bad_magic_counts["feffffff"] == 1
         assert hi1_samples
         assert pdp10_summary_lines
+        assert capture_notes is not None
+        assert any("IMP2 log tail" in note for note in capture_notes)
 
     monkeypatch.setattr(phase2_hi1_script, "_write_artifact", _fake_write)
 
@@ -221,6 +223,7 @@ def test_phase2_hi1_write_artifact_adds_native_first_hint_for_known_magic(
     assert "| `feffffff` | 2 |" in content
     assert "| `00000219` | 1 |" in content
     assert "Prioritize native host-link/header-contract validation" in content
+    assert "IMP2 log tail: 2000" not in content
 
 
 def test_phase2_hi1_write_artifact_without_bad_magic_has_rerun_guidance(
@@ -239,3 +242,53 @@ def test_phase2_hi1_write_artifact_without_bad_magic_has_rerun_guidance(
     assert "No `bad magic` markers detected" in content
     assert "No bad-magic evidence in this capture window" in content
     assert "Prioritize native host-link/header-contract validation" not in content
+
+
+def test_phase2_hi1_write_artifact_includes_capture_notes(
+    tmp_path: pytest.TempPathFactory,
+) -> None:
+    out_path = tmp_path / "hi1-notes.md"
+
+    phase2_hi1_script._write_artifact(
+        out_path,
+        bad_magic_counts=phase2_hi1_script.Counter(),
+        hi1_samples=[],
+        pdp10_summary_lines=[],
+        capture_notes=["IMP2 log tail: 4000", "PDP-10 log tail: 1000", "Sample limit: 50"],
+    )
+
+    content = out_path.read_text()
+    assert "- IMP2 log tail: 4000" in content
+    assert "- PDP-10 log tail: 1000" in content
+    assert "- Sample limit: 50" in content
+
+
+def test_phase2_hi1_parse_args_defaults() -> None:
+    args = phase2_hi1_script._parse_args([])
+
+    assert args.imp2_tail == 2000
+    assert args.pdp10_tail == 500
+    assert args.sample_limit == 20
+    assert args.output is None
+
+
+def test_phase2_hi1_parse_args_custom_values(tmp_path: pytest.TempPathFactory) -> None:
+    output_path = tmp_path / "custom-output.md"
+
+    args = phase2_hi1_script._parse_args(
+        [
+            "--imp2-tail",
+            "4000",
+            "--pdp10-tail",
+            "1200",
+            "--sample-limit",
+            "40",
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    assert args.imp2_tail == 4000
+    assert args.pdp10_tail == 1200
+    assert args.sample_limit == 40
+    assert args.output == output_path

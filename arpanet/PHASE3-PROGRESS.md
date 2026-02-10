@@ -652,3 +652,62 @@ Validation run:
 ---
 
 **Updated**: 2026-02-09 (Session 8 artifact hardening)
+
+---
+
+## Session 9: Parameterized HI1 Capture Workflow (Operator Throughput)
+
+### Achievements
+
+#### 17. HI1 evidence collector now supports parameterized capture windows ✅
+
+Extended `arpanet/scripts/test_phase2_hi1_framing.py` with CLI parameters so operators can tune evidence collection without editing source:
+
+- `--imp2-tail` (default `2000`)
+- `--pdp10-tail` (default `500`)
+- `--sample-limit` (default `20`)
+- `--output` (optional explicit artifact path)
+
+Implementation details:
+- Added robust positive-int argument validation.
+- Updated `main(...)` to accept argv for easier unit testing while preserving CLI behavior.
+- Artifact metadata now includes capture settings used for each run.
+
+#### 18. Deep-capture operator entrypoint added to Makefile ✅
+
+Added `make test-phase2-hi1-framing-deep` for repeatable high-signal capture:
+
+```bash
+.venv/bin/python arpanet/scripts/test_phase2_hi1_framing.py \
+  --imp2-tail 5000 \
+  --pdp10-tail 1500 \
+  --sample-limit 50 \
+  --output build/arpanet/analysis/hi1-framing-matrix-latest.md
+```
+
+This keeps behavior non-orchestrating while improving consistency for AWS evidence collection runs.
+
+#### 19. Unit coverage expanded for new CLI and artifact metadata ✅
+
+Extended `tests/test_arpanet_phase_scripts.py` to cover:
+- `_parse_args(...)` defaults
+- `_parse_args(...)` custom argument handling
+- artifact capture-notes rendering
+- updated `_write_artifact(...)` call signature in main success path
+
+Validation:
+
+```bash
+.venv/bin/python -m pytest -q tests/test_arpanet_phase_scripts.py
+# 11 passed
+```
+
+### Why this batch matters
+
+- Improves reproducibility of HI1 evidence collection across sessions and operators.
+- Enables higher-fidelity capture windows when the mismatch is intermittent.
+- Preserves native-first/no-orchestration guardrails while reducing manual prep overhead.
+
+---
+
+**Updated**: 2026-02-09 (Session 9 parameterized capture workflow)

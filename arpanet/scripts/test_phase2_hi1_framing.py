@@ -11,6 +11,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from collections import Counter
@@ -38,6 +39,44 @@ BAD_MAGIC_RE = re.compile(r"bad magic number \(magic=([0-9a-fA-F]+)\)")
 HI1_RE = re.compile(r"HI1 UDP:.*", re.IGNORECASE)
 
 
+def _positive_int(value: str) -> int:
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("must be > 0")
+    return ivalue
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Collect non-orchestrating HI1 framing mismatch evidence from running Phase 2 containers."
+    )
+    parser.add_argument(
+        "--imp2-tail",
+        type=_positive_int,
+        default=2000,
+        help="Number of IMP2 log lines to inspect (default: 2000)",
+    )
+    parser.add_argument(
+        "--pdp10-tail",
+        type=_positive_int,
+        default=500,
+        help="Number of PDP-10 log lines to inspect (default: 500)",
+    )
+    parser.add_argument(
+        "--sample-limit",
+        type=_positive_int,
+        default=20,
+        help="Maximum HI1 and marker lines to include in artifact sections (default: 20)",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Optional artifact output path. Defaults to build/arpanet/analysis/hi1-framing-matrix-<timestamp>.md",
+    )
+    return parser.parse_args(argv)
+
+
 def _artifact_path() -> Path:
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
     out_dir = Path("build") / "arpanet" / "analysis"
@@ -50,6 +89,7 @@ def _write_artifact(
     bad_magic_counts: Counter[str],
     hi1_samples: list[str],
     pdp10_summary_lines: list[str],
+    capture_notes: list[str] | None = None,
 ) -> None:
     lines: list[str] = []
     lines.append("# HI1 Native-First Framing Evidence")
@@ -57,6 +97,8 @@ def _write_artifact(
     lines.append(f"- Generated: {datetime.now(timezone.utc).isoformat()}")
     lines.append("- Source: running `arpanet-imp2` and `arpanet-pdp10` container logs")
     lines.append("- Mode: non-orchestrating (no compose up/down)")
+    if capture_notes:
+        lines.extend([f"- {note}" for note in capture_notes])
     lines.append("")
 
     lines.append("## Bad-Magic Summary")
@@ -114,7 +156,9 @@ def _write_artifact(
     output_path.write_text("\n".join(lines) + "\n")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv if argv is not None else [])
+
     print_header("ARPANET Phase 2 HI1 Framing Evidence", "(native-first, non-orchestrating)")
 
     client = get_docker_client()
@@ -136,7 +180,7 @@ def main() -> int:
         fail_with_message("Failed to get container objects")
 
     print_step(2, "Collecting and parsing IMP2 HI1 logs...")
-    imp2_logs = get_container_logs(imp2, tail=2000)
+    imp2_logs = get_container_logs(imp2, tail=args.imp2_tail)
     hi1_lines = [line for line in imp2_logs.splitlines() if HI1_RE.search(line)]
     bad_magic_values = [m.group(1).lower() for m in BAD_MAGIC_RE.finditer(imp2_logs)]
     bad_magic_counts = Counter(bad_magic_values)
@@ -150,7 +194,7 @@ def main() -> int:
     print()
 
     print_step(3, "Collecting PDP-10 IMP runtime markers...")
-    pdp10_logs = get_container_logs(pdp10, tail=500)
+    pdp10_logs = get_container_logs(pdp10, tail=args.pdp10_tail)
     pdp10_markers = [
         line
         for line in pdp10_logs.splitlines()
@@ -169,12 +213,18 @@ def main() -> int:
     print()
 
     print_step(4, "Writing HI1 mismatch artifact...")
-    out_path = _artifact_path()
+    out_path = args.output or _artifact_path()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     _write_artifact(
         out_path,
         bad_magic_counts=bad_magic_counts,
-        hi1_samples=hi1_lines[:20],
-        pdp10_summary_lines=pdp10_markers[:20],
+        hi1_samples=hi1_lines[: args.sample_limit],
+        pdp10_summary_lines=pdp10_markers[: args.sample_limit],
+        capture_notes=[
+            f"IMP2 log tail: {args.imp2_tail}",
+            f"PDP-10 log tail: {args.pdp10_tail}",
+            f"Sample limit: {args.sample_limit}",
+        ],
     )
     print_success(f"Wrote evidence artifact: {out_path}")
     print()
@@ -184,4 +234,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
