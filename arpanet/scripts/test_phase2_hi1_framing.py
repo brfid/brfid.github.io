@@ -97,6 +97,13 @@ def _write_artifact(
             "IMP2 HI1 is receiving ingress packets but rejecting framing at the parser boundary "
             "(`bad magic`). This keeps focus on native header-contract compatibility work."
         )
+        if any(m in bad_magic_counts for m in ("feffffff", "00000219", "ffffffff")):
+            lines.append("")
+            lines.append(
+                "Observed magic patterns include values previously correlated with Ethernet/ARP-style "
+                "payloads on the KS-10 path. Prioritize native host-link/header-contract validation "
+                "before considering any fallback framing adapter."
+            )
     else:
         lines.append(
             "No bad-magic evidence in this capture window; re-run during active PDP-10 IMP traffic "

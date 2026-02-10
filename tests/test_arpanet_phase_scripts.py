@@ -203,3 +203,39 @@ def test_phase2_hi1_main_container_check_failure_exits(
     assert exc_info.value.code == 1
     assert captured["message"] == "Required containers are not running"
     assert "Not auto-starting" in captured["suggestion"]
+
+
+def test_phase2_hi1_write_artifact_adds_native_first_hint_for_known_magic(
+    tmp_path: pytest.TempPathFactory,
+) -> None:
+    out_path = tmp_path / "hi1.md"
+
+    phase2_hi1_script._write_artifact(
+        out_path,
+        bad_magic_counts=phase2_hi1_script.Counter({"feffffff": 2, "00000219": 1}),
+        hi1_samples=["HI1 UDP: link 1 - received packet w/bad magic number (magic=feffffff)"],
+        pdp10_summary_lines=["Eth: opened OS device udp:2000:172.20.0.30:2000"],
+    )
+
+    content = out_path.read_text()
+    assert "| `feffffff` | 2 |" in content
+    assert "| `00000219` | 1 |" in content
+    assert "Prioritize native host-link/header-contract validation" in content
+
+
+def test_phase2_hi1_write_artifact_without_bad_magic_has_rerun_guidance(
+    tmp_path: pytest.TempPathFactory,
+) -> None:
+    out_path = tmp_path / "hi1-empty.md"
+
+    phase2_hi1_script._write_artifact(
+        out_path,
+        bad_magic_counts=phase2_hi1_script.Counter(),
+        hi1_samples=[],
+        pdp10_summary_lines=[],
+    )
+
+    content = out_path.read_text()
+    assert "No `bad magic` markers detected" in content
+    assert "No bad-magic evidence in this capture window" in content
+    assert "Prioritize native host-link/header-contract validation" not in content

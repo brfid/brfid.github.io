@@ -612,3 +612,43 @@ Root `AGENTS.md` now reflects workflow policy:
 ---
 
 **Updated**: 2026-02-09 (Session 7 native-first decision)
+
+---
+
+## Session 8: HI1 Evidence Artifact Hardening (Native-First Guardrails)
+
+### Achievements
+
+#### 15. Artifact interpretation now highlights known KS-10 framing signatures ✅
+
+Updated `arpanet/scripts/test_phase2_hi1_framing.py` so artifact interpretation includes an explicit native-first recommendation when known bad-magic values are present:
+
+- `feffffff`
+- `00000219`
+- `ffffffff`
+
+When these values are detected, generated evidence now calls out correlation with prior Ethernet/ARP-style payload findings and reinforces header-contract validation before any fallback adapter.
+
+#### 16. Unit coverage extended for artifact text behavior ✅
+
+Added direct tests in `tests/test_arpanet_phase_scripts.py` for `_write_artifact(...)`:
+
+- confirms known-magic tables are rendered and native-first hint is included
+- confirms no-bad-magic case keeps rerun guidance and omits the native-first hint block
+
+Validation run:
+
+```bash
+.venv/bin/python -m pytest -q tests/test_arpanet_phase_scripts.py
+# 8 passed
+```
+
+### Why this batch matters
+
+- Keeps evidence outputs aligned with the Session 7 strategy (native first, translator fallback only).
+- Reduces ambiguity during operator handoff by embedding interpretation policy directly into generated artifacts.
+- Strengthens regression protection for evidence/reporting behavior without requiring Docker in CI.
+
+---
+
+**Updated**: 2026-02-09 (Session 8 artifact hardening)
