@@ -1,5 +1,27 @@
 # Agent notes (repo workflow)
 
+## Mission (cold start)
+
+- Build and publish a static resume site, with optional VAX/ARPANET stages used as a technical signal.
+- Keep build outputs reproducible and historically grounded where intended (VAX/SIMH + ARPANET tracks).
+- Prefer clear, evidence-backed updates over broad speculative changes.
+
+## Start-here order (for new LLM sessions)
+
+1. `README.md`
+2. `docs/COLD-START.md`
+3. `STATUS.md`
+4. `docs/INDEX.md`
+5. `docs/arpanet/INDEX.md` (if touching ARPANET work)
+
+## Source-of-truth map
+
+- Current project snapshot: `STATUS.md`
+- Documentation hub: `docs/INDEX.md`
+- ARPANET active execution path: `docs/arpanet/progress/NEXT-STEPS.md`
+- ARPANET progress timeline: `docs/arpanet/progress/PHASE3-PROGRESS.md`
+- Historical transport decisions: `docs/project/transport-archive.md`
+
 ## Virtualenv-only
 
 - Use the repo-local venv at `.venv/` for all Python commands.
@@ -24,10 +46,23 @@ Pre-commit checks are optional by default in this repo workflow.
 
 - GitHub Pages deploy is tag-triggered (`publish` / `publish-*`). Avoid creating/pushing those tags unless you intend to deploy.
 
+## Do-not-break constraints
+
+- Keep Python execution in `.venv/` only.
+- Avoid global/system package installs.
+- Do not create/push publish tags unless intentionally deploying.
+- Preserve evidence workflow for ARPANET changes (manifests/logs referenced in progress docs).
+
+## Expected output shape for implementation work
+
+- Summarize changes by file path.
+- Include validation performed (or explicitly state none performed).
+- If docs paths changed, update central indexes (`docs/INDEX.md`, relevant domain INDEX files).
+
 ## Current VAX/SIMH status (handoff notes)
 
 - Tape (TS11 image) is the working transfer path and is now the default for docker mode.
-- Console/FTP transfer code is removed from the active path and archived in `docs/transport-archive.md`.
+- Console/FTP transfer code is removed from the active path and archived in `docs/project/transport-archive.md`.
 - `vax/bradman.c` was updated for 4.3BSD/K&R C (varargs/stdlib/size_t/void* fallbacks, `_doprnt` + `sys_errlist` stubs).
 - Host uuencode decoding is tolerant of trailing garbage in console output.
 - Docker image is pinned by digest in code; wait loops avoid fixed sleeps.

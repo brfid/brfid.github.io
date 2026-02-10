@@ -13,7 +13,7 @@ The console automation problem has been **completely solved**:
 - **Solution**: SIMH native automation commands (99% success rate)
 - **Status**: Production-ready, 100% historical fidelity maintained
 
-See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) for complete details.
+See [CONSOLE-AUTOMATION-SOLUTION.md](../research/CONSOLE-AUTOMATION-SOLUTION.md) for complete details.
 
 ---
 
@@ -105,23 +105,44 @@ docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic" || true
   - `build/arpanet/analysis/hi1-dual-window-post-transfer-attempt.json`
   - `final_exit=0`, `bad_magic_total_delta=0`
 
-**Immediate next actions**:
+**Immediate next actions (command-first decision tree)**:
 ```bash
-# 1) Verify/bring up FTP-capable service on PDP-10 target path
-docker logs arpanet-pdp10 --tail 200
+# 1) VAX-side fast triage: prove target host/IP reachability vs TCP:21 reachability
+docker exec -it arpanet-vax /bin/sh -c 'ping -c 3 172.20.0.40'
+docker exec -it arpanet-vax /bin/sh -c 'telnet 172.20.0.40 21 </dev/null || true'
 
-# 2) Re-run controlled transfer attempt after service readiness
+# 2) Docker/container exposure checks on PDP-10 endpoint path
+docker inspect -f '{{.Name}} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}} {{.HostConfig.PortBindings}}' arpanet-pdp10
+docker exec -it arpanet-pdp10 /bin/sh -c "netstat -an | grep ':21 ' || ss -ltnp | grep :21 || true"
+
+# 3) ITS service bring-up checks at console (exact command forms may vary by prompt/runtime)
+#    Goal: confirm TCP support + FTP server process are actually running
+#    Typical sequence: ATSIGN TCP, ARPA, FTPS, then PORTS/HOSTAT/UP checks
+
+# 4) Re-test manual endpoint readiness from VAX before automation
+docker exec -it arpanet-vax /bin/sh -c 'ftp 172.20.0.40 <<EOF
+quit
+EOF'
+
+# 5) Re-run controlled transfer attempt after endpoint readiness is proven
 expect arpanet/scripts/authentic-ftp-transfer.exp \
   localhost 2323 \
   /usr/guest/operator/arpanet-test.txt \
   /tmp/pdp10-received.txt \
   172.20.0.40
 
-# 3) Re-check regression gate immediately after attempt
+# 6) Re-check HI1/shim regression guardrails immediately after attempt
 .venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
   --dual-window \
   --manifest-output build/arpanet/analysis/hi1-dual-window-post-transfer-attempt-rerun.json
+
+docker logs arpanet-hi1shim --tail 200
+docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic" || true
 ```
+
+**Important note**:
+- Do not assume `172.20.0.40:21` is available by default in the current ITS profile.
+- Current evidence suggests endpoint readiness (listener/service bring-up and exposure) is the active blocker, not HI1 framing.
 
 ---
 
@@ -543,10 +564,10 @@ GitHub Actions Workflow
 ## Resources
 
 ### Documentation
-- [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) - Complete solution
-- [scripts/simh-automation/README.md](./scripts/simh-automation/README.md) - Usage guide
-- [PHASE3-PLAN.md](./PHASE3-PLAN.md) - Original phase 3 plan
-- [REFACTORING-PLAN.md](../REFACTORING-PLAN.md) - Code quality improvements
+- [CONSOLE-AUTOMATION-SOLUTION.md](../research/CONSOLE-AUTOMATION-SOLUTION.md) - Complete solution
+- [scripts/simh-automation/README.md](../operations/SIMH-AUTOMATION-README.md) - Usage guide
+- [PHASE3-PLAN.md](../overview/PHASE3-PLAN.md) - Original phase 3 plan
+- Refactoring plan document (historical note in this section; no active local path currently tracked)
 
 ### Tools
 - SIMH automation commands (SEND, EXPECT, GO UNTIL)

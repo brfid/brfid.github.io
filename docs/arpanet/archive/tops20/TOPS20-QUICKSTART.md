@@ -229,7 +229,7 @@ Once TOPS-20 is installed and running:
 
 ### Resources
 
-- [TOPS-20 Installation Guide (Detailed)](./TOPS20-INSTALLATION-GUIDE.md)
+- [TOPS-20 Installation Guide (Detailed)](TOPS20-INSTALLATION-GUIDE.md)
 - [Computer History Wiki - Running TOPS-20](https://gunkies.org/wiki/Running_TOPS-20_V4.1_under_SIMH)
 - [TOPS-20 Commands Reference](http://www.bourguet.org/v2/pdp10/cmds/front)
 - [PDP-10 Simulator Docs](https://simh.trailing-edge.com/pdf/pdp10_doc.pdf)

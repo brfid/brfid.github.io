@@ -21,6 +21,17 @@ This project generates and publishes a static resume site, with an optional VAX/
 
 For deeper component detail, see `ARCHITECTURE.md`.
 
+## LLM / operator cold-start quickstart
+
+If you are starting with little or no context, use this exact read order:
+
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/COLD-START.md`
+4. `STATUS.md`
+5. `docs/INDEX.md`
+6. `docs/arpanet/INDEX.md` (for ARPANET tasks)
+
 ## Modes
 
 - `--vax-mode local`: host-only VAX stage emulation path (fast iteration)
@@ -86,29 +97,31 @@ Details: `WORKFLOWS.md`
 
 - `ARCHITECTURE.md` — end-to-end system flow
 - `WORKFLOWS.md` — CI/test/publish behavior
-- `arpanet/README.md` — ARPANET topology and operations
-- `arpanet/TESTING-GUIDE.md` — ARPANET test commands/troubleshooting
-- `arpanet_logging/README.md` — logging subsystem usage
-- `arpanet/topology/README.md` — topology generator and definitions
-- `vax/README.md` — VAX C tool contract
+- `docs/INDEX.md` — central documentation hub
+- `docs/arpanet/INDEX.md` — ARPANET documentation map
+- `docs/arpanet/overview/README.md` — ARPANET topology and operations
+- `docs/arpanet/operations/TESTING-GUIDE.md` — ARPANET test commands/troubleshooting
+- `docs/arpanet/operations/ARPANET-LOGGING-README.md` — logging subsystem usage
+- `docs/arpanet/operations/TOPOLOGY-README.md` — topology generator and definitions
+- `docs/vax/README.md` — VAX C tool contract
 
 ## Retained records and archives
 
 Per project direction, historical and in-progress records are retained.
 
-- Transport history: `docs/transport-archive.md`
+- Transport history: `docs/project/transport-archive.md`
 - ARPANET implementation records (complete + in-progress):
-  - `arpanet/PHASE1-SUMMARY.md`
-  - `arpanet/PHASE2-PLAN.md`
-  - `arpanet/PHASE2-VALIDATION.md`
-  - `arpanet/PHASE3-PLAN.md`
-  - `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
-  - `arpanet/PHASE3-PROGRESS.md`
+  - `docs/arpanet/overview/PHASE1-SUMMARY.md`
+  - `docs/arpanet/overview/PHASE2-PLAN.md`
+  - `docs/arpanet/progress/PHASE2-VALIDATION.md`
+  - `docs/arpanet/overview/PHASE3-PLAN.md`
+  - `docs/arpanet/overview/PHASE3-IMPLEMENTATION-PLAN.md`
+  - `docs/arpanet/progress/PHASE3-PROGRESS.md`
 - Technical investigation records:
-  - `arpanet/CONSOLE-AUTOMATION-PROBLEM.md`
-  - `arpanet/CONSOLE-AUTOMATION-SOLUTION.md`
-  - `arpanet/FTP-TESTING.md`
-  - `arpanet/PROTOCOL-ANALYSIS.md`
+  - `docs/arpanet/research/CONSOLE-AUTOMATION-PROBLEM.md`
+  - `docs/arpanet/research/CONSOLE-AUTOMATION-SOLUTION.md`
+  - `docs/arpanet/operations/FTP-TESTING.md`
+  - `docs/arpanet/research/PROTOCOL-ANALYSIS.md`
 
 ## Local preview
 

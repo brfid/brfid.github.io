@@ -20,7 +20,7 @@
 
 ## The Problem (Brief)
 
-See [CONSOLE-AUTOMATION-PROBLEM.md](./CONSOLE-AUTOMATION-PROBLEM.md) for full technical details.
+See [CONSOLE-AUTOMATION-PROBLEM.md](CONSOLE-AUTOMATION-PROBLEM.md) for full technical details.
 
 **Issue**: Console automation via `expect + telnet` fails consistently:
 - Login prompt doesn't appear reliably
@@ -626,10 +626,10 @@ jobs:
 
 ### Related Documentation
 
-- [CONSOLE-AUTOMATION-PROBLEM.md](./CONSOLE-AUTOMATION-PROBLEM.md) - Original problem statement
-- [AUTHENTIC-FTP-STATUS.md](./AUTHENTIC-FTP-STATUS.md) - FTP testing results
-- [VAX-APPS-SETUP.md](./VAX-APPS-SETUP.md) - VAX service configuration
-- [FTP-TESTING.md](./FTP-TESTING.md) - FTP protocol validation
+- [CONSOLE-AUTOMATION-PROBLEM.md](CONSOLE-AUTOMATION-PROBLEM.md) - Original problem statement
+- [AUTHENTIC-FTP-STATUS.md](AUTHENTIC-FTP-STATUS.md) - FTP testing results
+- [VAX-APPS-SETUP.md](../operations/VAX-APPS-SETUP.md) - VAX service configuration
+- [FTP-TESTING.md](../operations/FTP-TESTING.md) - FTP protocol validation
 
 ---
 

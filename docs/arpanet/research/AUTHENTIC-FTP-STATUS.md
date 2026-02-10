@@ -4,7 +4,7 @@
 **Goal**: Automate file transfer using BSD 4.3's native FTP client (1986)
 **Status**: ✅ COMPLETE - Automation Working via SIMH Native Commands
 
-> **🎉 SOLUTION FOUND** - See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md)
+> **🎉 SOLUTION FOUND** - See [CONSOLE-AUTOMATION-SOLUTION.md](CONSOLE-AUTOMATION-SOLUTION.md)
 >
 > Console automation now works reliably using SIMH's built-in `SEND`, `EXPECT`, and `GO UNTIL` commands instead of external telnet automation. Success rate improved from 10% to 99%.
 

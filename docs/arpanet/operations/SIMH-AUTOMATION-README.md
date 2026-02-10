@@ -4,11 +4,11 @@ This directory contains SIMH automation scripts that use native SIMH commands (`
 
 ## Background
 
-These scripts solve the console automation problem documented in [CONSOLE-AUTOMATION-PROBLEM.md](../../CONSOLE-AUTOMATION-PROBLEM.md). Instead of using external tools like `expect + telnet` (which are unreliable due to timing issues), these scripts use SIMH's built-in automation commands that inject input directly into the console device.
+These scripts solve the console automation problem documented in [CONSOLE-AUTOMATION-PROBLEM.md](../research/CONSOLE-AUTOMATION-PROBLEM.md). Instead of using external tools like `expect + telnet` (which are unreliable due to timing issues), these scripts use SIMH's built-in automation commands that inject input directly into the console device.
 
 **Success Rate**: 99% (vs 10% with expect+telnet)
 
-See [CONSOLE-AUTOMATION-SOLUTION.md](../../CONSOLE-AUTOMATION-SOLUTION.md) for complete technical details.
+See [CONSOLE-AUTOMATION-SOLUTION.md](../research/CONSOLE-AUTOMATION-SOLUTION.md) for complete technical details.
 
 ## Available Scripts
 
@@ -320,9 +320,9 @@ docker cp myfile.txt arpanet-vax:/machines/data/
 
 ## Further Reading
 
-- [CONSOLE-AUTOMATION-SOLUTION.md](../../CONSOLE-AUTOMATION-SOLUTION.md) - Complete technical solution
-- [CONSOLE-AUTOMATION-PROBLEM.md](../../CONSOLE-AUTOMATION-PROBLEM.md) - Original problem statement
-- [AUTHENTIC-FTP-STATUS.md](../../AUTHENTIC-FTP-STATUS.md) - FTP testing results
+- [CONSOLE-AUTOMATION-SOLUTION.md](../research/CONSOLE-AUTOMATION-SOLUTION.md) - Complete technical solution
+- [CONSOLE-AUTOMATION-PROBLEM.md](../research/CONSOLE-AUTOMATION-PROBLEM.md) - Original problem statement
+- [AUTHENTIC-FTP-STATUS.md](../research/AUTHENTIC-FTP-STATUS.md) - FTP testing results
 - [SIMH User's Guide](http://simh.trailing-edge.com/pdf/simh_doc.pdf) - Official SIMH documentation
 
 ---

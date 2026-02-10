@@ -12,6 +12,16 @@ Successfully demonstrated FTP (File Transfer Protocol) on VAX BSD 4.3 system. FT
 
 **Key Achievement**: First successful FTP authentication and protocol exchange on emulated ARPANET system.
 
+### Scope Clarification (Phase 2 Host-to-Host)
+
+This document validates **VAX-local FTP server behavior** (port 21 on VAX BSD 4.3) and does **not** by itself prove PDP-10 endpoint readiness for VAX→PDP-10 host-to-host transfer.
+
+Current Phase 2 blocker remains PDP-10 transfer endpoint/service reachability (`172.20.0.40:21` timeout in Session 23).
+
+For active triage and bring-up path, see:
+- `arpanet/NEXT-STEPS.md` (command-first decision tree)
+- `arpanet/archive/handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md` (research handoff)
+
 ---
 
 ## FTP Server Details

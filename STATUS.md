@@ -1,7 +1,18 @@
 # Current Project Status
 
-**Last Updated**: 2026-02-09
-**Current Phase**: Phase 3 - Build Pipeline Integration
+## Snapshot (machine-friendly)
+
+- `last_updated`: 2026-02-09
+- `current_phase`: Phase 3 - Build Pipeline Integration
+- `current_focus`: ITS migration on PDP-10 KS10 path
+- `active_blocker`: PDP-10 ↔ IMP2 host-link framing mismatch
+- `entrypoints`:
+  - `docs/COLD-START.md`
+  - `docs/INDEX.md`
+  - `docs/arpanet/INDEX.md`
+  - `docs/arpanet/progress/NEXT-STEPS.md`
+  - `docs/arpanet/progress/PHASE3-PROGRESS.md`
+
 **Recent Work**: Major refactoring complete (Python-first DRY improvements)
 
 ---
@@ -13,34 +24,34 @@
 **Phase 1** (VAX + IMP): Complete
 - Docker network operational
 - ARPANET 1822 protocol working
-- Validation: `arpanet/PHASE1-VALIDATION.md`
+- Validation: `docs/arpanet/progress/PHASE1-VALIDATION.md`
 
 **Phase 2** (Multi-hop routing): Complete
 - 4 containers: VAX + IMP1 + IMP2 + PDP-10
 - Multi-hop routing validated
 - Logging system operational
-- Validation: `arpanet/PHASE2-VALIDATION.md`
+- Validation: `docs/arpanet/progress/PHASE2-VALIDATION.md`
 
 **Phase 2.5** (Logging infrastructure): Complete
 - Centralized logging package (`arpanet_logging/`)
 - Real-time Docker log streaming
 - ARPANET 1822 protocol parser
 - 79% test coverage, 141 tests passing
-- Documentation: `arpanet_logging/README.md`
+- Documentation: `docs/arpanet/operations/ARPANET-LOGGING-README.md`
 
 **Recent Refactoring** (2026-02-08): Complete ✅
 - Topology management system (`arpanet/topology/`)
 - Python test scripts (`test_phase1.py`, `test_phase2.py`)
 - DRY improvements (collector registry, TAG_PATTERNS)
 - -80 lines duplicate code, +94% parser coverage
-- Documentation: `REFACTORING-COMPLETE.md`
+- Documentation: `docs/INDEX.md` and `docs/arpanet/INDEX.md`
 
 ### 🔄 In Progress
 
 **Phase 3** (Build Pipeline Integration): Active
 - **Focus**: ITS migration on PDP-10 KS10 path (replacing TOPS-20 install blocker)
-- **Plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
-- **Progress**: `arpanet/PHASE3-PROGRESS.md`
+- **Plan**: `docs/arpanet/overview/PHASE3-IMPLEMENTATION-PLAN.md`
+- **Progress**: `docs/arpanet/progress/PHASE3-PROGRESS.md`
 - **Latest runtime result (AWS)**: UNI vs SIMP A/B completed; both attach and boot to `DSKDMP`, but host-link mismatch remains (IMP2 HI1 `bad magic number`). Packet capture on PDP-10→IMP2 UDP/2000 shows Ethernet/ARP-style payload (`0806 0001 0800 0604 ...`), reinforcing a framing-contract mismatch vs IMP2 HI1 expectations. Baseline remains pinned to static `set imp simp` + `set imp ip/gw/host` + `set imp nodhcp` while proceeding to compatibility-matrix + shim prototype work.
 
 ---
@@ -89,7 +100,7 @@ telnet localhost 10004
 - Test FTP file transfer (VAX ↔ PDP-10)
 - Integrate into build pipeline
 
-**Timeline to GitHub Actions**: See `TIMELINE-TO-PRODUCTION.md` for detailed analysis
+**Timeline to GitHub Actions**: See `docs/project/PLAN.md` for current planning context
 - **MVP**: 2-3 weeks (working but rough)
 - **Production**: 4-6 weeks (portfolio-ready)
 
@@ -99,22 +110,21 @@ telnet localhost 10004
 
 ### Quick Reference
 - **Current status**: This file (`STATUS.md`)
-- **Timeline to production**: `TIMELINE-TO-PRODUCTION.md` (path to GitHub Actions)
-- **Memory/Commands**: `.claude/projects/-home-whf-brfid-github-io/memory/MEMORY.md`
-- **Refactoring summary**: `REFACTORING-COMPLETE.md`
-- **Phase 3 plan**: `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
-- **Current blocker handoff (research LLM)**: `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
+- **Cold start guide**: `docs/COLD-START.md`
+- **Documentation hub**: `docs/INDEX.md`
+- **Phase 3 plan**: `docs/arpanet/overview/PHASE3-IMPLEMENTATION-PLAN.md`
+- **Current blocker handoff (research LLM)**: `docs/arpanet/handoffs/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
 
 ### ARPANET Subsystem
-- **Overview**: `arpanet/README.md`
-- **Topology system**: `arpanet/topology/README.md`
-- **Logging system**: `arpanet_logging/README.md`
+- **Overview**: `docs/arpanet/overview/README.md`
+- **Topology system**: `docs/arpanet/operations/TOPOLOGY-README.md`
+- **Logging system**: `docs/arpanet/operations/ARPANET-LOGGING-README.md`
 - **Testing**: Python scripts in `arpanet/scripts/test_*.py`
 
 ### Phase Documentation
-- Phase 1: `arpanet/PHASE1-VALIDATION.md`
-- Phase 2: `arpanet/PHASE2-VALIDATION.md`
-- Phase 3: `arpanet/PHASE3-PROGRESS.md`, `arpanet/PHASE3-IMPLEMENTATION-PLAN.md`
+- Phase 1: `docs/arpanet/progress/PHASE1-VALIDATION.md`
+- Phase 2: `docs/arpanet/progress/PHASE2-VALIDATION.md`
+- Phase 3: `docs/arpanet/progress/PHASE3-PROGRESS.md`, `docs/arpanet/overview/PHASE3-IMPLEMENTATION-PLAN.md`
 
 ### Architecture
 - **Main README**: `README.md`
@@ -134,14 +144,14 @@ arpanet-topology --list          # List topologies
 
 ### Testing
 ```bash
-# Python test scripts (cross-platform)
-python arpanet/scripts/test_phase1.py
+.venv/bin/python arpanet/scripts/test_phase1.py
+.venv/bin/python arpanet/scripts/test_phase2.py
 python arpanet/scripts/test_phase2.py
 
-# Unit tests
+.venv/bin/python -m pytest tests/ -m "unit and not docker" -v
 pytest tests/ -m "unit and not docker" -v
 
-# With coverage
+.venv/bin/python -m pytest tests/ -m "unit and not docker" --cov=arpanet_logging --cov=resume_generator
 pytest tests/ -m "unit and not docker" --cov=arpanet_logging --cov=resume_generator
 ```
 
@@ -154,7 +164,7 @@ docker compose -f docker-compose.arpanet.phase2.yml up -d
 docker compose -f docker-compose.arpanet.phase2.yml ps
 
 # Test connectivity
-python arpanet/scripts/test_phase2.py
+.venv/bin/python arpanet/scripts/test_phase2.py
 
 # View logs
 docker compose -f docker-compose.arpanet.phase2.yml logs -f
@@ -237,7 +247,7 @@ cdk destroy --force
    - A/B evidence: changing KS-10 IMP mode (`UNI` vs `SIMP`) does not resolve the parser failure
    - Packet evidence: PDP-10 UDP/2000 payload includes ARP/Ethernet signatures (`0806 0001 0800 0604`) rather than expected HI1 1822 framing
    - Impact: transport is up but host-level ARPANET payload exchange fails; VAX↔PDP-10 transfer remains blocked
-   - Handoff brief: `arpanet/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
+   - Handoff brief: `docs/arpanet/handoffs/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
 
 2. **Docker not on Raspberry Pi**
    - SIMH requires x86_64 architecture
@@ -247,7 +257,7 @@ cdk destroy --force
 3. **FTP Automation**
    - Approach: SIMH native commands (99% reliability)
    - Not yet implemented for VAX ↔ PDP-10
-   - Reference: `arpanet/CONSOLE-AUTOMATION-SOLUTION.md`
+   - Reference: `docs/arpanet/research/CONSOLE-AUTOMATION-SOLUTION.md`
 
 ---
 
@@ -278,8 +288,8 @@ cdk destroy --force
 
 **If starting fresh**:
 1. Read this file first (`STATUS.md`)
-2. Check `MEMORY.md` for common commands
-3. Review `PHASE3-IMPLEMENTATION-PLAN.md` for detailed steps
+2. Read `docs/COLD-START.md` for repo guardrails and read order
+3. Review `docs/arpanet/overview/PHASE3-IMPLEMENTATION-PLAN.md` for detailed steps
 4. Provision AWS instance: `cd test_infra/cdk && cdk deploy`
 
 **If resuming work**:
@@ -292,7 +302,7 @@ cdk destroy --force
 1. Check this file for known blockers
 2. Review relevant Phase docs
 3. Check ARPANET logs: `docker logs arpanet-<component>`
-4. Test connectivity: `python arpanet/scripts/test_phase2.py`
+4. Test connectivity: `.venv/bin/python arpanet/scripts/test_phase2.py`
 
 ---
 

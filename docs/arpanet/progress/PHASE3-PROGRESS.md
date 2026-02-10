@@ -1603,3 +1603,65 @@ Current reliability state after Session 23:
 ---
 
 **Updated**: 2026-02-10 (Session 23 host-to-host attempt executed; link-layer remained green; PDP-10 FTP endpoint still unavailable)
+
+---
+
+## Session 24: PDP-10 FTP Endpoint Research Synthesis + Execution Plan
+
+### Achievements
+
+#### 62. Incorporated focused research outcome for current blocker classification ✅
+
+Post-Session-23 timeout behavior was reviewed against the current Phase 2 runtime profile and recent artifacts.
+
+Key synthesis:
+
+1. Primary blocker is now **application endpoint readiness** on PDP-10 path (`172.20.0.40:21`), not HI1 framing.
+2. Current timeout signature is most consistent with **no reachable listener** on TCP/21 (or missing endpoint exposure path).
+3. Existing green HI1 dual-window manifests remain valid guardrails and should be re-run after service-level changes.
+
+#### 63. Defined command-first triage/enablement path for Session-25 execution ✅
+
+Prioritized verification sequence captured for operators:
+
+```bash
+# 1) VAX reachability vs port reachability
+docker exec -it arpanet-vax /bin/sh -c 'ping -c 3 172.20.0.40'
+docker exec -it arpanet-vax /bin/sh -c 'telnet 172.20.0.40 21 </dev/null || true'
+
+# 2) Docker/container endpoint exposure checks
+docker inspect -f '{{.Name}} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}} {{.HostConfig.PortBindings}}' arpanet-pdp10
+docker exec -it arpanet-pdp10 /bin/sh -c "netstat -an | grep ':21 ' || ss -ltnp | grep :21 || true"
+
+# 3) ITS runtime service bring-up checks (console)
+#    Typical sequence: ATSIGN TCP, ARPA, FTPS; verify with PORTS/HOSTAT/UP
+
+# 4) Manual endpoint sanity before automation
+docker exec -it arpanet-vax /bin/sh -c 'ftp 172.20.0.40 <<EOF
+quit
+EOF'
+```
+
+#### 64. Promotion/unblock acceptance criteria tightened for endpoint readiness ✅
+
+Host-to-host transfer blocker is considered cleared only when all are true:
+
+- VAX can connect to `172.20.0.40:21` and receive an FTP banner.
+- Controlled transfer automation reaches post-connect/login transfer steps.
+- Post-change HI1 regression gate remains green:
+  - `final_exit=0`
+  - `bad_magic_total_delta=0`
+  - shim parser remains clean (`parse_errors=0`)
+
+### Interpretation
+
+Session 24 does not indicate a new link-layer regression. It converts the blocker into an explicit service-readiness execution plan and keeps the same dual-window regression policy intact.
+
+### Cross-References
+
+- Research handoff: `arpanet/archive/handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md`
+- Next operator plan: `arpanet/NEXT-STEPS.md` (Controlled host-to-host decision tree)
+
+---
+
+**Updated**: 2026-02-10 (Session 24 research synthesis complete; command-first endpoint triage path documented)

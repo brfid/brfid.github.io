@@ -1,6 +1,6 @@
 # VAX BSD 4.3 Console Automation Problem
 
-> **🎉 SOLVED** - See [CONSOLE-AUTOMATION-SOLUTION.md](./CONSOLE-AUTOMATION-SOLUTION.md) for the complete solution
+> **🎉 SOLVED** - See [CONSOLE-AUTOMATION-SOLUTION.md](CONSOLE-AUTOMATION-SOLUTION.md) for the complete solution
 >
 > **Root Cause**: Using external telnet automation instead of SIMH's native automation commands
 > **Solution**: Use SIMH's `SEND`, `EXPECT`, and `GO UNTIL` commands in `.ini` files

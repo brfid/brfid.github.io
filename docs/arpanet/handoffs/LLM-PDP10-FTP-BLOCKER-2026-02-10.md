@@ -184,3 +184,18 @@ ftp: connect: Connection timed out
 ## 10) Handoff Bottom Line
 
 The project is no longer blocked on HI1 bad-magic under the aligned shim runtime. The unresolved issue is **PDP-10 transfer endpoint readiness** for VAX-initiated host-to-host file transfer. We need a focused ITS/PDP-10 service bring-up path (or corrected transfer mechanism) that preserves current green link-layer gate behavior.
+
+---
+
+## Follow-up Status (Execution Plan Linked)
+
+This handoff has now been translated into active operator documentation updates:
+
+- Progress tracking + acceptance criteria:
+  - `arpanet/PHASE3-PROGRESS.md` (Session 24)
+- Command-first next actions / decision tree:
+  - `arpanet/NEXT-STEPS.md` (Controlled host-to-host transfer validation section)
+
+Current status remains:
+- HI1 dual-window guardrails are green in the aligned path.
+- Active blocker is still PDP-10 endpoint/service readiness for `172.20.0.40:21`.
