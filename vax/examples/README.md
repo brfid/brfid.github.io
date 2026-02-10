@@ -23,6 +23,16 @@ Skeleton demonstration of what a JSON parser implementation would look like. Sho
 the data structures and functions needed (not a working implementation). Useful for
 understanding why JSON would be ~500 lines vs YAML enhancement at ~285 lines.
 
+### `full-yaml-parser-analysis.md`
+Comprehensive analysis of implementing a **full YAML 1.2 parser** in C for VAX. Covers:
+- What "full YAML" actually means (all spec features)
+- Existing implementations (libyaml: 10,000-12,000 lines)
+- Memory requirements and VAX compatibility
+- Porting challenges (C99 → K&R C conversion)
+- Time estimates (1-3 months for full implementation)
+- Comparison of parser complexity levels
+- Hybrid approaches (e.g., adding just anchors/aliases)
+
 ## Context
 
 These files were created during exploration of replacing the Python preprocessing step
