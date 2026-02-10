@@ -24,3 +24,20 @@ nroff -man brad.1 > brad.txt
 
 See `resume.vax.example.yaml` for an example.
 
+## Future Enhancement: Direct YAML Parsing
+
+The current design uses Python to preprocess `resume.yaml` into a simplified subset
+(`resume.vax.yaml`) before the VAX-side parser processes it. An alternative approach
+would be to enhance the C parser to handle more of the original YAML directly.
+
+See `../docs/vax-yaml-parser-enhancement.md` for a detailed proposal on:
+- Eliminating the Python preprocessing step
+- Adding bare string, multi-line, and single-quote support (~85 lines)
+- Comparison with JSON parser alternatives
+- Implementation strategy and code examples
+
+Reference materials in `examples/`:
+- `yaml_parser_analysis.md` - Feature-by-feature analysis
+- `parsing_examples.txt` - Side-by-side format comparisons
+- `minimal_json_parser.c` - JSON parser complexity demonstration
+
