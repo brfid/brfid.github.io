@@ -818,3 +818,48 @@ Validation:
 ---
 
 **Updated**: 2026-02-09 (Session 11 HI1 gating controls)
+
+---
+
+## Session 12: Fail-Fast Gate Invocation Check (Local Runner)
+
+### Achievements
+
+#### 26. Strict HI1 gate command executed and failed fast as designed ✅
+
+Executed:
+
+```bash
+make verify-phase2-hi1-clean
+```
+
+Observed outcome on current local runner:
+
+- command reached the HI1 evidence script entrypoint
+- execution aborted immediately at Docker client initialization with:
+  - `Failed to connect to Docker ... FileNotFoundError(2, 'No such file or directory')`
+- make exited non-zero (`Error 1`)
+
+Interpretation:
+- fail-fast behavior is working correctly for environment preconditions.
+- this run did **not** produce HI1 protocol evidence because no Docker daemon was available on the local runner.
+
+#### 27. Immediate operational next action clarified ✅
+
+To evaluate true host-link status, run the same strict gate on the active AWS Phase 2 stack (where Docker + containers are available):
+
+```bash
+make verify-phase2-hi1-clean
+```
+
+Then append resulting markdown/json metrics (`hi1-framing-matrix-latest.*`) to this progress log.
+
+### Why this batch matters
+
+- Confirms the new fail-fast operator path is wired correctly end-to-end.
+- Prevents false confidence from local environments without active container runtime.
+- Keeps focus on the real blocker decision metric: bad-magic totals from AWS deep capture.
+
+---
+
+**Updated**: 2026-02-09 (Session 12 local fail-fast invocation; AWS evidence run pending)
