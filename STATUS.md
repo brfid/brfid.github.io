@@ -1,47 +1,68 @@
-# Project Status Snapshot
+# Project Status
 
-**Last Updated**: 2026-02-10  
-**Scope**: Cold-start summary for new sessions/operators
+**Last updated:** 2024-01-XX (update this timestamp when making changes)
 
-## Executive Summary
+## Current State
 
-- Static resume site pipeline remains operational.
-- ARPANET work is in **Phase 3**, with **Branch B active** for path selection after KS10 endpoint reassessment.
-- Link-layer/guardrail health is currently **green** on aligned runtime:
-  - `final_exit=0`
-  - `bad_magic_total_delta=0`
-  - shim `parse_errors=0`
-- Current blocker model is reset to **KS10 `IMP` protocol-stack mismatch** with IMP2 HI1 expectations in this runtime profile.
-- Canonical analysis handoff: `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
+### ✅ Completed
+- Static resume site generator (Python-based)
+- GitHub Pages deployment (tag-triggered: `publish` / `publish-*`)
+- VAX/SIMH stage with tape (TS11) transfer path
+  - `bradman.c` updated for 4.3BSD/K&R C compatibility
+  - Host-side uuencode decoding tolerant of console garbage
+  - Docker mode implemented with digest-pinned image
+  - Wait loops use polling instead of fixed sleeps
+- Archived console/FTP transfer approaches in `docs/project/transport-archive.md`
 
-## Current ARPANET Checkpoint
+### 🚧 In Progress
+- ARPANET stage (Phase 3) - see `docs/arpanet/progress/NEXT-STEPS.md`
 
-- Active execution path: `docs/arpanet/progress/NEXT-STEPS.md`
-- Timeline and evidence log: `docs/arpanet/progress/PHASE3-PROGRESS.md`
-- Canonical mismatch handoff: `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
-- Branch A closure evidence:
-  - `build/arpanet/analysis/session30-its-command-matrix.log` (`FNF` in live `DSKDMP` context)
-- Branch B baseline evidence:
-  - `build/arpanet/analysis/hi1-dual-window-branchB-baseline-session31.json`
+### 📋 Available Next Steps
+1. **Landing page polish** - Enhance UX/styling of generated site
+2. **ARPANET continuation** - Follow `docs/arpanet/progress/NEXT-STEPS.md`
+3. **Testing/CI** - Expand test coverage, add validation workflows
+4. **Documentation** - Keep progress tracking current
 
-## Decision Policy (Important)
+## Key Files for New Sessions
 
-Current Branch B priority order:
+**Start here:**
+1. This file (`STATUS.md`)
+2. `README.md`
+3. `docs/COLD-START.md`
+4. `docs/INDEX.md`
 
-1. **Path A: Chaosnet-first ITS-compatible path**.
-2. **Path D fallback: VAX/IMP transfer proof with endpoint compatible with HI1 contract**.
-3. Keep Path B/C as lower-priority exploratory options.
+**For ARPANET work:**
+- `docs/arpanet/progress/NEXT-STEPS.md`
+- `docs/arpanet/progress/PHASE3-PROGRESS.md`
+- `docs/arpanet/INDEX.md`
 
-## Operational Guardrails
+## Critical Constraints
 
-- Keep dual-window gate in cadence:
-  - `.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py --dual-window --manifest-output <artifact>.json`
-- Require green post-change acceptance:
-  - `final_exit=0`
-  - `bad_magic_total_delta=0`
-  - no shim parse regressions
-- Avoid blind repeated KS10 bring-up retries already shown non-runnable in current prompt context.
+- ✅ Use `.venv/` for all Python commands (do not install globally)
+- ✅ Avoid creating/pushing `publish` tags unless deploying
+- ✅ Commit at significant milestones only
+- ✅ Run validation when requested: pytest, ruff, mypy
 
-## Next Concrete Step
+## Environment
 
-- Execute first minimal, reversible Branch B pivot candidate under the updated mismatch model (Path A first, Path D fallback), with explicit acceptance checks and immediate post-change guardrail rerun.
+Python virtualenv: `.venv/` (must be activated for all operations)
+
+```bash
+# Activate venv
+source .venv/bin/activate
+
+# Run tests (when requested)
+python -m pytest -q
+
+# Run linting (when requested)
+python -m ruff check .
+
+# Run type checking (when requested)
+python -m mypy resume_generator tests
+```
+
+## Recent Changes
+
+- VAX tape transfer is primary path (console/FTP archived)
+- `bradman.c` K&R C compatibility fixes landed
+- Docker SIMH mode operational with pinned image

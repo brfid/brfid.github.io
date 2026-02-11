@@ -84,3 +84,79 @@ ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && python3 te
 - Check next actions first: `docs/arpanet/progress/NEXT-STEPS.md`
 - Confirm latest session context: `docs/arpanet/progress/PHASE3-PROGRESS.md`
 - Keep guardrails in place (dual-window HI1 evidence where applicable).
+
+# Cold Start Guide
+
+Quick onboarding for new LLM sessions working on this repository.
+
+## Reading Order
+
+1. **`STATUS.md`** - Current project snapshot
+2. This file (`docs/COLD-START.md`)
+3. **`README.md`** - Project overview
+4. **`docs/INDEX.md`** - Documentation hub
+5. **`docs/arpanet/INDEX.md`** - If working on ARPANET stage
+
+## Quick Context
+
+This repo builds a static resume site with optional retro computing stages:
+
+- **Modern path:** Python generator → static HTML
+- **VAX/SIMH path:** Transfer via tape (TS11), compile `bradman.c` on 4.3BSD
+- **ARPANET path:** (Phase 3 in progress) - see `docs/arpanet/progress/NEXT-STEPS.md`
+
+## Essential Commands
+
+```bash
+# Activate virtualenv (REQUIRED for all Python work)
+source .venv/bin/activate
+
+# Build site locally
+python -m resume_generator
+
+# Run validation (when requested)
+python -m pytest -q
+python -m ruff check .
+python -m mypy resume_generator tests
+```
+
+## Critical Constraints
+
+❌ **Do not:**
+- Install Python packages globally (use `.venv/` only)
+- Create or push `publish` or `publish-*` tags (unless deploying to GitHub Pages)
+- Make broad speculative changes without evidence
+
+✅ **Do:**
+- Keep changes focused and grounded
+- Update `STATUS.md` at significant milestones
+- Follow commit cadence guidelines in `AGENTS.md`
+- Reference evidence (manifests, logs) for ARPANET work
+
+## Current VAX/SIMH Status
+
+- **Working transfer path:** Tape (TS11 image) via Docker SIMH
+- **Archived approaches:** Console/FTP (see `docs/project/transport-archive.md`)
+- **Code status:** `bradman.c` updated for 4.3BSD/K&R C compatibility
+- **Docker mode:** Pinned by digest, uses polling waits
+
+## Where to Start
+
+**For general work:**
+- Check `STATUS.md` "Available Next Steps" section
+
+**For ARPANET work:**
+- Start at `docs/arpanet/progress/NEXT-STEPS.md`
+- Track progress in `docs/arpanet/progress/PHASE3-PROGRESS.md`
+
+**For VAX/SIMH work:**
+- Current implementation is in working state
+- See `vax/` directory for scripts and `bradman.c`
+- Docker mode is primary path
+
+## Documentation Updates
+
+When modifying docs:
+- Update `docs/INDEX.md` if adding/moving major doc files
+- Update domain INDEX files (`docs/arpanet/INDEX.md`, etc.) for domain-specific changes
+- Keep `STATUS.md` current with project state

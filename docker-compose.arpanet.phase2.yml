@@ -94,6 +94,21 @@ services:
     depends_on:
     - imp2
     - pdp10
+  chaosnet-shim:
+    build:
+      context: .
+      dockerfile: ./arpanet/Dockerfile.chaosnet-shim
+    container_name: arpanet-chaosnet-shim
+    hostname: chaosnet-shim
+    networks:
+      arpanet:
+        ipv4_address: 172.20.0.50
+    ports:
+      - "173:173/udp"  # Chaosnet port
+    depends_on:
+      - imp2
+      - pdp10
+    restart: unless-stopped
 networks:
   arpanet:
     name: arpanet-build

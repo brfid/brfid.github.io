@@ -13,23 +13,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies (no external Python packages needed - uses stdlib only)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+# Copy shim script
+COPY arpanet/scripts/chaosnet_shim.py .
 
-# Copy application from scripts/
-COPY scripts/chaosnet_shim.py .
+# Expose Chaosnet port
+EXPOSE 173/udp
 
-# Environment
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
-
-# Expose Chaosnet listen port (octal 0255 = decimal 173)
-EXPOSE 173
-
-# Run the shim
-CMD ["python", "-u", "/app/chaosnet_shim.py", \
-     "--pdp10-host", "0x7700", \
-     "--pdp10-subnet", "0x01", \
-     "--listen-port", "173"]
+# Run shim
+CMD ["python", "chaosnet_shim.py"]
