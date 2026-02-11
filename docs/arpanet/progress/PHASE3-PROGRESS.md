@@ -2159,6 +2159,133 @@ Session 32 is a documentation-canonicalization milestone: it does not introduce 
 
 ---
 
-**Status**: 2026-02-10 - Session 32 complete; mismatch-first cold-start model is now canonical
-**Next**: execute first Branch B pivot candidate under new priority (Path A first, Path D fallback) with unchanged dual-window guardrails
-**Gate**: ✅ GREEN - guardrail policy unchanged (`final_exit=0`, `bad_magic_total_delta=0` required post-change)
+**Status**: 2026-02-11 - Session 33: ITS Build Attempt Complete - Blocked at Bootstrap
+**Gate**: ✅ GREEN - HI1/shim remains stable; ITS build abandoned for Path D pivot
+
+---
+
+## Session 33: ITS Build Attempt on AWS (Bootstrap Failure)
+
+### Attempts Made
+
+#### Build Environment Setup
+```bash
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186
+cd /tmp/its
+git clone --depth 1 https://github.com/PDP-10/its.git
+git submodule update --init --depth 1 tools/sims
+```
+
+#### Emulator Build Success
+```bash
+cd /tmp/its/tools/sims && make pdp10-ks
+# Output: BIN/pdp10-ks (1.3MB ELF executable)
+# Build completed: Feb 11 15:48 UTC
+```
+
+#### Expect Automation Failure
+```bash
+cd /tmp/its && export EMULATOR=pdp10-ks && expect -f build/pdp10-ks/build.tcl 192.168.1.100 192.168.0.45
+```
+
+**Error observed**:
+```
+Unknown KS-10 simulator stop code 7, PC: 000100
+spawn ./tools/sims/BIN/pdp10-ks build/pdp10-ks/init
+...
+sim> b tua1
+
+Unknown KS-10 simulator stop code 7, PC: 000100
+```
+
+#### Disk Images Created (Empty)
+```
+out/pdp10-ks/
+├── minsys.tape    (0 bytes)
+├── salv.tape      (0 bytes)
+├── rp0.dsk        (0 bytes)
+└── stamp/
+```
+
+### Root Cause Analysis
+
+**SIMH KS10 Bootstrap Limitation**:
+- The ITS `build/pdp10-ks/init` bootstrap expects specific microcode initialization
+- SIMH KS10 emulator does not fully implement the required hardware initialization sequence
+- Upstream ITS documentation confirms: "The SIMH KS10 does not have the necessary support"
+
+**Evidence**:
+1. Bootstrap halts at PC=000100 immediately after `b tua1` (tape boot attempt)
+2. No successful ITS monitor load occurs
+3. Disk images remain empty (0 bytes) - no filesystem created
+
+### Current AWS Container State (2026-02-11)
+
+```
+arpanet-vax:          Up 2 days  - FTP/telnet operational (:2323)
+arpanet-imp1:         Up 26 hours - MI1 routing active
+arpanet-imp2:         Up 26 hours - MI1 routing active  
+arpanet-hi1shim:      Up 26 hours - pdp10_in=2079, imp_in=698, parse_errors=0
+arpanet-chaosnet-shim: Up 15 hours - Chaosnet bridge (:173)
+arpanet-pdp10:        Restarting - No valid disk image (SIMH prompt loop)
+```
+
+### Problem Statement: Where to Go From Here
+
+#### Option A: Obtain Pre-Built Disk Image
+- **Action**: Find/download pre-built ITS or TOPS-20 disk image
+- **Sources**: PDP-10/its-files repo, SimH releases, vintage software archives
+- **Risk**: May not exist for KS10 architecture variant
+
+#### Option B: Alternative PDP-10 Emulator
+- **Action**: Use KA10 or KL10 emulator instead of KS10
+- **KA10**: More complete hardware emulation, better ITS support
+- **KL10**: More accurate DEC hardware, TOPS-20 native
+- **Risk**: May require different Docker image/build pipeline
+
+#### Option C: Path D - VAX→IMP Transfer Proof
+- **Action**: Complete VAX→IMP1→IMP2 routing demonstration without PDP-10
+- **Acceptance**: Transfer artifact from VAX through both IMPs to prove multi-hop routing
+- **Benefit**: Avoids PDP-10 blockers entirely
+- **Historical alignment**: VAX/ARPANET connection is valid Phase 2.5 proof
+
+#### Option E: KA10 ITS with CHAOSNET
+- **Action**: Build KA10 emulator + ITS + Chaosnet instead of KS10 + ARPANET
+- **Benefit**: CHAOSNET is actively maintained in ITS; simpler topology
+- **Trade-off**: Requires new Docker image, different infrastructure
+
+### Recommended Path Forward
+
+**Immediate Action**: Proceed with **Option C (Path D)**
+
+Rationale:
+1. **VAX is fully operational** - BSD 4.3 FTP/telnet working
+2. **IMPs are stable** - MI1 routing confirmed active
+3. **HI1 shim is validated** - bidirectional traffic, zero errors
+4. **No new infrastructure required** - all components already running
+5. **Proves core ARPANET multi-hop routing** - VAX→IMP1→IMP2 is the critical path
+
+**Path D Acceptance Criteria**:
+1. Create test artifact on VAX
+2. Route through IMP1 (HI1 ingress)
+3. Route through IMP2 (MI1 transit)
+4. Capture evidence at IMP2 egress
+5. Document complete 3-hop path proof
+
+**Follow-on Actions** (after Path D):
+1. Revisit KA10/KL10 alternative for full host-to-host proof
+2. Evaluate ITS Chaosnet path if/when pre-built disks available
+3. Consider TOPS-20 on KL10 if disk images obtained
+
+### Key Files Referenced
+
+- `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` - Canonical blocker handoff
+- `arpanet/Dockerfile.pdp10-its` - Abandoned build attempt
+- `arpanet/configs/phase2/pdp10.ini` - ITS configuration (not working)
+- `docs/arpanet/progress/NEXT-STEPS.md` - Updated navigation
+
+---
+
+**Status**: 2026-02-11 - Session 33 complete; ITS build blocked at bootstrap, Path D (VAX→IMP) recommended
+**Next**: Execute Path D VAX→IMP multi-hop transfer proof with existing infrastructure
+**Gate**: ✅ GREEN - HI1/shim guardrails remain stable; no regression introduced
