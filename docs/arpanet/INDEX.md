@@ -45,6 +45,7 @@
 - [Host-link blocker handoff](handoffs/LLM-HOST-LINK-BLOCKER-2026-02-09.md)
 - [PDP10 FTP blocker handoff](handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md)
 - [Runtime boot-loop handoff](handoffs/LLM-RUNTIME-BOOT-LOOP-2026-02-09.md)
+- [Path A Chaosnet ITS Blocker](handoffs/LLM-PATH-A-CHAOSNET-ITS-BLOCKER-2026-02-11.md)
 
 ## Archive
 - [Session records](archive/sessions/)
