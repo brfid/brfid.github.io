@@ -69,29 +69,31 @@ python -m mypy resume_generator tests
 
 ## ARPANET Stage
 
-**Active path**: Chaosnet-direct (VAX ↔ PDP-10/ITS, two t3.micro VMs)
+**Active path**: Direct transfer (VAX/4.3BSD ↔ PDP-11/2.11BSD, two t3.micro VMs)
 
 ### What works
-- Phase 1 validated (single IMP + VAX, 2026-02-07)
-- Chaosnet shim scaffold exists (`arpanet/scripts/chaosnet_shim.py`)
+- VAX/SIMH + 4.3BSD (builder side — proven, in production)
+- bradman.c compiles under K&R C (should work on 2.11BSD as-is)
 
 ### Current state
 - Two t3.micro VMs: **not yet provisioned**
-- PDP-10 OS: needs switch from TOPS-20 to ITS
-- ITS on SIMH KS10: feasibility not confirmed (may need KLH10)
-- Old t3.medium with IMP topology: **tear down pending**
+- PDP-11/2.11BSD: need disk image and Dockerfile
+- Transfer method: TBD (FTP, serial, or UUCP)
+- Old t3.medium: **tear down pending**
 
 ### Archived
-- IMP chain (Phase 2) in `arpanet/archived/`
-- Blocked on KS10 HI1 framing mismatch
-- See `arpanet/archived/README.md`
+- IMP chain in `arpanet/archived/` (HI1 framing mismatch)
+- PDP-10/ITS path dropped (emulator complexity)
+- Chaosnet plan superseded (no longer needed without ITS)
 
 ### Next actions
-1. Tear down old t3.medium IMP topology
-2. Provision two t3.micro instances (same VPC)
-3. Research ITS on SIMH KS10 or KLH10
-4. Deploy Chaosnet-direct topology
-5. See `docs/arpanet/progress/NEXT-STEPS.md`
+1. Tear down old t3.medium
+2. Provision two t3.micro instances
+3. Find/build 2.11BSD disk image for SIMH PDP-11
+4. Create PDP-11 Dockerfile and SIMH config
+5. Test bradman.c compilation on 2.11BSD
+6. Implement transfer (FTP or serial)
+7. See `docs/arpanet/progress/NEXT-STEPS.md`
 
 ### Cost
 - Two t3.micro: ~$0.02/hr running, $0 stopped
