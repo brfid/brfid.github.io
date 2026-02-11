@@ -1,6 +1,6 @@
 # ARPANET Next Steps
 
-**Active path**: Chaosnet-direct (VAX ↔ PDP-10/ITS, separate VMs)  
+**Active path**: Chaosnet-direct (VAX ↔ PDP-10/ITS, separate VMs)
 **IMP chain**: Archived in `arpanet/archived/` (blocked on HI1 framing mismatch)
 
 ---
@@ -54,7 +54,7 @@ Options:
 Both instances need:
 - Ubuntu 22.04 AMI
 - Docker installed
-- Same SSH key (`~/.ssh/id_ed25519`)  
+- Same SSH key (`~/.ssh/id_ed25519`)
 - Same VPC private subnet (so they can reach each other on private IPs)
 - Security group allowing:
   - SSH (22) from your IP
@@ -76,7 +76,7 @@ This is the key unknown. Research needed:
 - [ ] If ITS build is needed: build on Mac x86 Docker, scp disk image to t3.micro
 
 **Fallback**: If ITS won't run on the t3.micro, build the disk image on the Mac
-(x86_64 Docker via Rosetta) and copy it over. The t3.micro only needs to *run* 
+(x86_64 Docker via Rosetta) and copy it over. The t3.micro only needs to *run*
 the emulator, not build ITS from source.
 
 ---
