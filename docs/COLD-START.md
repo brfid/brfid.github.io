@@ -4,10 +4,10 @@ Use this page when starting from zero context.
 
 ## 0) Current checkpoint (read this first)
 
-- Active path: **Chaosnet-direct** (VAX ↔ PDP-10/ITS, no IMPs).
-- IMP chain (Phase 2): **Archived** in `arpanet/archived/`. Blocked on KS10 HI1 framing mismatch. Return to later.
-- Chaosnet shim code exists (`arpanet/scripts/chaosnet_shim.py`) but is **not yet validated on AWS**.
-- PDP-10 needs to be **switched from TOPS-20 to ITS** for Chaosnet support.
+- Active path: **Chaosnet-direct** (VAX ↔ PDP-10/ITS, two separate t3.micro VMs).
+- IMP chain (Phase 2): **Archived** in `arpanet/archived/`. Blocked on KS10 HI1 framing mismatch.
+- PDP-10 needs **ITS** (not TOPS-20) for Chaosnet support. ITS runtime not yet validated.
+- Chaosnet shim code exists (`arpanet/scripts/chaosnet_shim.py`) but is **not yet deployed**.
 
 Canonical references:
 - `STATUS.md`
@@ -33,7 +33,6 @@ Archived IMP blocker analysis:
 - ARPANET progress timeline: `docs/arpanet/progress/PHASE3-PROGRESS.md`
 - Chaosnet plan: `docs/arpanet/progress/PATH-A-CHAOSNET-PLAN.md`
 - Archived IMP topology: `arpanet/archived/`
-- Canonical mismatch analysis: `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
 - Historical transport decisions: `docs/project/transport-archive.md`
 
 ## 3) Fast constraints checklist
@@ -49,49 +48,37 @@ Archived IMP blocker analysis:
   - `docs/INDEX.md`
   - domain index (example: `docs/arpanet/INDEX.md`)
 
-## 5) AWS Runtime Access (IMPORTANT)
+## 5) AWS Runtime Access
 
-For ARPANET runtime validation, the active stack runs on AWS:
+Two t3.micro instances in the same VPC (pending provisioning):
 
-- **Host**: `ubuntu@34.227.223.186` (i-0568f075e84bf24dd)
-- **SSH Key**: `~/.ssh/id_ed25519`
-- **Access**: `ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186`
-- **Workspace**: `/home/ubuntu/brfid.github.io`
+| VM | Role | Instance type | Status |
+|----|------|--------------|--------|
+| `arpanet-vax` | VAX/4.3BSD (SIMH) | t3.micro | **Not yet provisioned** |
+| `arpanet-pdp10` | PDP-10/ITS (KLH10 or SIMH) | t3.micro | **Not yet provisioned** |
 
-### Quick validation commands
+Old single-VM (may still be running — tear down):
+- **Host**: `ubuntu@34.227.223.186`
+- **Teardown**: `make aws-teardown-imps` or terminate instance after new VMs are up
 
-```bash
-# Check container status (Chaosnet topology)
-ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
-  "cd brfid.github.io && docker compose -f docker-compose.arpanet.chaosnet.yml ps"
+SSH key for all instances: `~/.ssh/id_ed25519`
 
-# Tear down old IMP containers if still running
-ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
-  "cd brfid.github.io && docker compose -f arpanet/archived/docker-compose.arpanet.phase2.yml down 2>/dev/null; true"
-```
-
-### AWS CLI availability
-
-- The remote host may not have AWS CLI installed.
-- Use `docker compose` directly on the remote for container operations.
-- Use `python3` (not `.venv/bin/python`) on the remote.
+### Once provisioned, update this section with:
+- VAX VM public IP
+- PDP-10 VM public IP
+- VPC private IPs (for Chaosnet traffic)
 
 ## 6) If task touches ARPANET runtime behavior
 
 - Check next actions first: `docs/arpanet/progress/NEXT-STEPS.md`
-- The active topology is **Chaosnet-direct** (`docker-compose.arpanet.chaosnet.yml`)
-- IMP chain is archived — do not start IMP containers unless explicitly returning to that work
+- Active topology is **Chaosnet-direct** (two VMs, no IMPs)
+- IMP containers are archived — do not start them
 
 ## 7) Essential Commands
 
 ```bash
-# Activate virtualenv (REQUIRED for all Python work)
 source .venv/bin/activate
-
-# Build site locally
 python -m resume_generator
-
-# Run validation (when requested)
 python -m pytest -q
 python -m ruff check .
 python -m mypy resume_generator tests
@@ -100,13 +87,11 @@ python -m mypy resume_generator tests
 ## 8) Critical Constraints
 
 ❌ **Do not:**
-- Install Python packages globally (use `.venv/` only)
-- Create or push `publish` or `publish-*` tags (unless deploying to GitHub Pages)
-- Make broad speculative changes without evidence
-- Start IMP containers (archived — use Chaosnet topology)
+- Install Python packages globally
+- Create/push publish tags unless deploying
+- Start IMP containers (archived)
 
 ✅ **Do:**
-- Keep changes focused and grounded
-- Update `STATUS.md` at significant milestones
-- Follow commit cadence guidelines in `AGENTS.md`
-- Reference evidence (manifests, logs) for ARPANET work
+- Keep changes focused and evidence-backed
+- Update `STATUS.md` at milestones
+- Follow `AGENTS.md` commit cadence

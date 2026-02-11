@@ -78,10 +78,12 @@ aws-status:
 	@./test_infra/scripts/status.py
 
 aws-teardown-imps:
-	@echo "Tearing down archived IMP containers on AWS..."
+	@echo "Tearing down archived IMP containers on old t3.medium..."
 	@ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
 		"cd brfid.github.io && docker compose -f arpanet/archived/docker-compose.arpanet.phase2.yml down 2>/dev/null; true"
 	@echo "✅ IMP containers stopped"
+	@echo ""
+	@echo "Consider terminating the t3.medium instance after new t3.micro VMs are up."
 
 # Chaosnet-Direct operations (active topology)
 chaosnet-build:

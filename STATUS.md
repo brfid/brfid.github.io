@@ -69,25 +69,30 @@ python -m mypy resume_generator tests
 
 ## ARPANET Stage
 
-**Active path**: Chaosnet-direct (VAX ↔ PDP-10/ITS, no IMPs)
+**Active path**: Chaosnet-direct (VAX ↔ PDP-10/ITS, two t3.micro VMs)
 
 ### What works
 - Phase 1 validated (single IMP + VAX, 2026-02-07)
 - Chaosnet shim scaffold exists (`arpanet/scripts/chaosnet_shim.py`)
-- HI1 evidence tooling works (`test_phase2_hi1_framing.py`)
 
-### Current blocker
-- PDP-10 runs TOPS-20, needs ITS for Chaosnet support
-- Chaosnet shim not yet deployed/validated on AWS
-- ITS on SIMH KS10 feasibility not confirmed
+### Current state
+- Two t3.micro VMs: **not yet provisioned**
+- PDP-10 OS: needs switch from TOPS-20 to ITS
+- ITS on SIMH KS10: feasibility not confirmed (may need KLH10)
+- Old t3.medium with IMP topology: **tear down pending**
 
 ### Archived
-- IMP chain (Phase 2) archived in `arpanet/archived/`
-- Blocked on KS10 HI1 framing mismatch (Ethernet frames vs 1822 leaders)
+- IMP chain (Phase 2) in `arpanet/archived/`
+- Blocked on KS10 HI1 framing mismatch
 - See `arpanet/archived/README.md`
 
 ### Next actions
-1. Tear down IMP containers on AWS (`make aws-teardown-imps`)
-2. Research ITS on SIMH KS10 feasibility
-3. Deploy Chaosnet-direct topology
-4. See `docs/arpanet/progress/NEXT-STEPS.md`
+1. Tear down old t3.medium IMP topology
+2. Provision two t3.micro instances (same VPC)
+3. Research ITS on SIMH KS10 or KLH10
+4. Deploy Chaosnet-direct topology
+5. See `docs/arpanet/progress/NEXT-STEPS.md`
+
+### Cost
+- Two t3.micro: ~$0.02/hr running, $0 stopped
+- Old t3.medium: $0.04/hr (terminate after migration)
