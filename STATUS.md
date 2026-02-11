@@ -69,32 +69,35 @@ python -m mypy resume_generator tests
 
 ## ARPANET Stage
 
-**Active path**: Direct transfer (VAX/4.3BSD ↔ PDP-11/2.11BSD, two t3.micro VMs)
+**Active path**: VAX ↔ PDP-10 Serial Tunnel (Phase 1: serial-over-TCP)
 
 ### What works
-- VAX/SIMH + 4.3BSD (builder side — proven, in production)
-- bradman.c compiles under K&R C (should work on 2.11BSD as-is)
+- VAX/SIMH + 4.3BSD (proven, builder side)
+- Serial tunnel infrastructure (`docker-compose.vax-pdp10-serial.yml`)
+- Serial tunnel script (`arpanet/scripts/serial-tunnel.sh`)
 
 ### Current state
-- Two t3.micro VMs: **not yet provisioned**
-- PDP-11/2.11BSD: need disk image and Dockerfile
-- Transfer method: TBD (FTP, serial, or UUCP)
-- Old t3.medium: **tear down pending**
+- Phase 1: Serial tunnel infrastructure created
+- Phase 2: Chaosnet-on-Serial (after tunnel works)
+- Phase 3: Full Chaosnet Bridge (TCP encapsulation)
 
 ### Archived
 - IMP chain in `arpanet/archived/` (HI1 framing mismatch)
-- PDP-10/ITS path dropped (emulator complexity)
-- Chaosnet plan superseded (no longer needed without ITS)
+- PDP-11 path (replaced with PDP-10)
 
 ### Next actions
-1. Tear down old t3.medium
-2. Provision two t3.micro instances
-3. Find/build 2.11BSD disk image for SIMH PDP-11
-4. Create PDP-11 Dockerfile and SIMH config
-5. Test bradman.c compilation on 2.11BSD
-6. Implement transfer (FTP or serial)
-7. See `docs/arpanet/progress/NEXT-STEPS.md`
+1. Test VAX console connectivity (port 2323)
+2. Test PDP-10 console connectivity (port 2326)
+3. Start serial tunnel: `./arpanet/scripts/serial-tunnel.sh start`
+4. Verify tunnel works: telnet localhost 9000
+5. Once tunnel works, move to Phase 2 (Chaosnet-on-Serial)
+6. See `docs/arpanet/SERIAL-TUNNEL.md` for full architecture
 
 ### Cost
 - Two t3.micro: ~$0.02/hr running, $0 stopped
 - Old t3.medium: $0.04/hr (terminate after migration)
+
+## Key References
+
+- Serial Tunnel Architecture: `docs/arpanet/SERIAL-TUNNEL.md`
+- Chaosnet Shim: `arpanet/scripts/chaosnet_shim.py`

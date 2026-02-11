@@ -1,7 +1,11 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs chaosnet-build chaosnet-up chaosnet-down chaosnet-logs chaosnet-test aws-up aws-ssh aws-down aws-test aws-status aws-teardown-imps publish publish_arpanet docs
+.PHONY: help test test_docker test_aws check_env clean build up down logs \
+        serial-tunnel-start serial-tunnel-stop serial-tunnel-status \
+        chaosnet-build chaosnet-up chaosnet-down chaosnet-logs chaosnet-test \
+        aws-up aws-ssh aws-down aws-test aws-status aws-teardown-imps \
+        publish publish_arpanet docs
 
 # Default target
 help:
@@ -84,6 +88,24 @@ aws-teardown-imps:
 	@echo "✅ IMP containers stopped"
 	@echo ""
 	@echo "Consider terminating the t3.medium instance after new t3.micro VMs are up."
+
+# Serial Tunnel Operations (Phase 1: VAX <-> PDP-10 via socat)
+# See docs/arpanet/SERIAL-TUNNEL.md for full architecture
+serial-tunnel-start:
+	@echo "Starting VAX <-> PDP-10 serial tunnel..."
+	@echo ""
+	@echo "Make sure containers are running first:"
+	@echo "  docker compose -f docker-compose.vax-pdp10-serial.yml up -d"
+	@echo ""
+	./arpanet/scripts/serial-tunnel.sh start
+
+serial-tunnel-stop:
+	@echo "Stopping VAX <-> PDP-10 serial tunnel..."
+	./arpanet/scripts/serial-tunnel.sh stop
+
+serial-tunnel-status:
+	@echo "VAX <-> PDP-10 serial tunnel status..."
+	./arpanet/scripts/serial-tunnel.sh status
 
 # Chaosnet-Direct operations (active topology)
 chaosnet-build:

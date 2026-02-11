@@ -1,8 +1,9 @@
 # ARPANET Documentation Index
 
-## Active Path: VAX ↔ PDP-11 Direct Transfer
+## Active Path: VAX ↔ PDP-10 Serial Tunnel
 
-- [Next Steps](progress/NEXT-STEPS.md) — current execution plan (PDP-11/2.11BSD)
+- [Serial Tunnel Architecture](SERIAL-TUNNEL.md) — Phase 1: serial-over-TCP tunnel
+- [Next Steps](progress/NEXT-STEPS.md) — current execution plan (PDP-10/ITS)
 - [Phase 3 Progress](progress/PHASE3-PROGRESS.md) — timeline of all sessions
 
 ## Archived

@@ -1,0 +1,67 @@
+# VAX + PDP-10 Serial Tunnel
+# Phase 1: Direct serial-over-TCP connection
+#
+# This compose file sets up VAX/4.3BSD and PDP-10/ITS with serial console
+# access for tunnel setup via socat. No IMPs - direct connection.
+#
+# Usage:
+#   docker-compose -f docker-compose.vax-pdp10-serial.yml up -d
+#   docker exec -it vax-host /bin/sh
+#   socat TCP-LISTEN:9000,fork TCP:localhost:2323 &
+#
+#   docker exec -it pdp10-host /bin/sh
+#   socat TCP-LISTEN:9001,fork TCP:localhost:2326 &
+#
+#   # Cross-connect for tunnel
+#   socat TCP:localhost:9000 TCP:localhost:9001 &
+#
+#   # Now connect from either side
+#   telnet localhost 9000  # VAX console
+#   telnet localhost 9001  # PDP-10 console
+
+version: '3.8'
+
+services:
+  vax:
+    container_name: arpanet-vax
+    hostname: vax-host
+    image: jguillaumes/simh-vaxbsd@sha256:1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215
+    ports:
+      - "2323:2323"    # SIMH console
+    volumes:
+      - arpanet-vax-data:/machines/data
+    networks:
+      internal:
+        ipv4_address: 172.21.0.10
+    environment:
+      - SIMH_NETWORK=enabled
+    restart: unless-stopped
+
+  pdp10:
+    container_name: arpanet-pdp10
+    hostname: pdp10-host
+    build:
+      context: ./arpanet
+      dockerfile: Dockerfile.pdp10
+    ports:
+      - "2326:2323"    # SIMH console
+    volumes:
+      - arpanet-pdp10-data:/machines/data
+      - ./arpanet/configs/pdp10-serial.ini:/machines/pdp10.ini:ro
+    networks:
+      internal:
+        ipv4_address: 172.21.0.40
+    restart: unless-stopped
+
+networks:
+  internal:
+    name: vax-pdp10-internal
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+
+volumes:
+  arpanet-vax-data:
+  arpanet-pdp10-data:
