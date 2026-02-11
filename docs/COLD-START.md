@@ -46,18 +46,28 @@ Canonical references:
 
 ## 5) AWS Runtime Access
 
-Two t3.micro instances planned (same VPC):
+**Active instance** (t3.medium):
 
 | VM | Role | Status |
 |----|------|--------|
-| `arpanet-vax` | VAX/4.3BSD builder | **Not yet provisioned** |
-| `arpanet-pdp10` | PDP-10/TOPS-20 (serial tunnel) | **Not yet provisioned** |
+| `arpanet-vax` | VAX/4.3BSD | ✅ Running (2+ hours) |
+| `arpanet-pdp10` | PDP-10/TOPS-20 | ✅ Running |
 
-Old single-VM (tear down):
-- **Host**: `ubuntu@34.227.223.186`
-- **Teardown**: `make aws-teardown-imps` or terminate instance
+**Connection**:
+```bash
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186
+```
 
-SSH key: `~/.ssh/id_ed25519`
+**Serial tunnel ports**:
+- `localhost:9000` → VAX console (2323)
+- `localhost:9001` → PDP-10 console (2326)
+
+**Test connection**:
+```bash
+telnet localhost 9000  # VAX console
+```
+
+**Old instances**: Tear down after serial tunnel is proven.
 
 ## 6) If task touches ARPANET runtime behavior
 

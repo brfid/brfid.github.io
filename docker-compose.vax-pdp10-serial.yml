@@ -30,11 +30,9 @@ services:
       - "2323:2323"    # SIMH console
     volumes:
       - arpanet-vax-data:/machines/data
-    networks:
-      internal:
-        ipv4_address: 172.21.0.10
     environment:
       - SIMH_NETWORK=enabled
+      - SIMH_USE_CONTAINER=yes
     restart: unless-stopped
 
   pdp10:
