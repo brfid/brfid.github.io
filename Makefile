@@ -1,7 +1,7 @@
 # ARPANET Build Integration - Makefile
 # Convenience commands for testing and development
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs build-phase2 up-phase2 down-phase2 logs-phase2 test-phase2 test-phase2-hi1-framing test-phase2-hi1-framing-deep verify-phase2-hi1-clean test-imp-logging aws-up aws-ssh aws-down aws-test aws-status aws-verify-phase2-hi1-clean publish publish_arpanet docs
+.PHONY: help test test_docker test_aws check_env clean build up down logs chaosnet-build chaosnet-up chaosnet-down chaosnet-logs chaosnet-test aws-up aws-ssh aws-down aws-test aws-status aws-teardown-imps publish publish_arpanet docs
 
 # Default target
 help:
@@ -18,23 +18,14 @@ help:
 	@echo "  make aws-down      Destroy AWS instance"
 	@echo "  make aws-test      Run tests on AWS (provision, test, destroy)"
 	@echo "  make aws-status    Show AWS instance status"
-	@echo "  make aws-verify-phase2-hi1-clean  Run strict HI1 gate remotely on AWS stack"
+	@echo "  make aws-teardown-imps  Tear down archived IMP containers on AWS"
 	@echo ""
-	@echo "Docker Operations:"
-	@echo "  make build         Build ARPANET containers"
-	@echo "  make up            Start ARPANET network"
-	@echo "  make down          Stop ARPANET network"
-	@echo "  make logs          Show container logs"
-	@echo "  make build-phase2  Build Phase 2 containers (VAX+IMP1+IMP2+PDP10-stub)"
-	@echo "  make up-phase2     Start Phase 2 Step 2.2 bootstrap topology"
-	@echo "  make down-phase2   Stop Phase 2 bootstrap topology"
-	@echo "  make logs-phase2   Show Phase 2 IMP logs"
-	@echo "  make test-phase2   Run Phase 2 modem/host-link test"
-	@echo "  make test-phase2-hi1-framing  Collect HI1 bad-magic evidence (non-orchestrating)"
-	@echo "  make test-phase2-hi1-framing-deep  Deep HI1 evidence capture with larger log windows"
-	@echo "  make verify-phase2-hi1-clean  Fail if deep capture still shows bad-magic markers"
-	@echo "  make test-imp-logging  Run IMP log collection/parsing test"
-	@echo "  make clean         Remove containers and volumes"
+	@echo "Chaosnet-Direct (active topology):"
+	@echo "  make chaosnet-build  Build Chaosnet-direct containers"
+	@echo "  make chaosnet-up     Start Chaosnet-direct topology"
+	@echo "  make chaosnet-down   Stop Chaosnet-direct topology"
+	@echo "  make chaosnet-logs   Show Chaosnet container logs"
+	@echo "  make chaosnet-test   Run Chaosnet transfer test"
 	@echo ""
 	@echo "Publishing:"
 	@echo "  make publish       Fast publish (Mode 3)"
@@ -42,6 +33,10 @@ help:
 	@echo ""
 	@echo "Documentation:"
 	@echo "  make docs          Generate API docs from docstrings into site/api"
+	@echo ""
+	@echo "Archived (IMP chain — blocked on HI1 framing):"
+	@echo "  Compose files in arpanet/archived/"
+	@echo "  See arpanet/archived/README.md"
 	@echo ""
 
 # Testing
@@ -82,98 +77,48 @@ aws-test:
 aws-status:
 	@./test_infra/scripts/status.py
 
-aws-verify-phase2-hi1-clean:
-	@.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py
+aws-teardown-imps:
+	@echo "Tearing down archived IMP containers on AWS..."
+	@ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
+		"cd brfid.github.io && docker compose -f arpanet/archived/docker-compose.arpanet.phase2.yml down 2>/dev/null; true"
+	@echo "✅ IMP containers stopped"
 
-# Docker operations
-build:
-	@echo "Building ARPANET containers..."
-	@docker compose -f docker-compose.arpanet.phase1.yml build
+# Chaosnet-Direct operations (active topology)
+chaosnet-build:
+	@echo "Building Chaosnet-direct containers..."
+	@docker compose -f docker-compose.arpanet.chaosnet.yml build
 
-up:
-	@echo "Starting ARPANET network..."
-	@docker compose -f docker-compose.arpanet.phase1.yml up -d
-	@echo "Waiting for VAX boot (60s)..."
+chaosnet-up:
+	@echo "Starting Chaosnet-direct topology (VAX <-> PDP-10/ITS)..."
+	@docker compose -f docker-compose.arpanet.chaosnet.yml up -d
+	@echo "Waiting for boot (60s)..."
 	@sleep 60
-	@echo "Waiting for IMP boot (10s)..."
-	@sleep 10
-	@echo "✅ Network ready"
+	@echo "✅ Chaosnet topology ready"
 	@echo ""
-	@echo "Connect to VAX console: telnet localhost 2323"
-	@echo "Connect to IMP console: telnet localhost 2324"
+	@echo "Connect to VAX console:    telnet localhost 2323"
+	@echo "Connect to PDP-10 console: telnet localhost 2326"
 
-down:
-	@echo "Stopping ARPANET network..."
-	@docker compose -f docker-compose.arpanet.phase1.yml down
+chaosnet-down:
+	@echo "Stopping Chaosnet-direct topology..."
+	@docker compose -f docker-compose.arpanet.chaosnet.yml down
 
-logs:
+chaosnet-logs:
 	@echo "=== VAX Logs ==="
 	@docker logs arpanet-vax --tail 50
 	@echo ""
-	@echo "=== IMP Logs ==="
-	@docker logs arpanet-imp1 --tail 50
-
-build-phase2:
-	@echo "Building ARPANET Phase 2 containers..."
-	@docker compose -f docker-compose.arpanet.phase2.yml build
-
-up-phase2:
-	@echo "Starting ARPANET Phase 2 Step 2.2 bootstrap topology..."
-	@docker compose -f docker-compose.arpanet.phase2.yml up -d
-	@echo "Waiting for initial boot (75s)..."
-	@sleep 75
-	@echo "✅ Phase 2 bootstrap topology ready"
+	@echo "=== Chaosnet Shim Logs ==="
+	@docker logs arpanet-chaosnet-shim --tail 50
 	@echo ""
-	@echo "Connect to VAX console:  telnet localhost 2323"
-	@echo "Connect to IMP1 console: telnet localhost 2324"
-	@echo "Connect to IMP2 console: telnet localhost 2325"
-	@echo "PDP10 stub logs:        docker logs arpanet-pdp10 --tail 20"
+	@echo "=== PDP-10 Logs ==="
+	@docker logs arpanet-pdp10 --tail 50
 
-down-phase2:
-	@echo "Stopping ARPANET Phase 2 bootstrap topology..."
-	@docker compose -f docker-compose.arpanet.phase2.yml down
-
-logs-phase2:
-	@echo "=== IMP1 Logs ==="
-	@docker logs arpanet-imp1 --tail 50
-	@echo ""
-	@echo "=== IMP2 Logs ==="
-	@docker logs arpanet-imp2 --tail 50
-
-test-phase2:
-	@echo "Running ARPANET Phase 2 modem/host-link test..."
-	@.venv/bin/python arpanet/scripts/test_phase2.py
-
-test-phase2-hi1-framing:
-	@echo "Collecting ARPANET Phase 2 HI1 framing evidence (non-orchestrating)..."
-	@.venv/bin/python arpanet/scripts/test_phase2_hi1_framing.py
-
-test-phase2-hi1-framing-deep:
-	@echo "Collecting deep HI1 framing evidence (non-orchestrating, expanded log windows)..."
-	@.venv/bin/python arpanet/scripts/test_phase2_hi1_framing.py \
-		--imp2-tail 5000 \
-		--pdp10-tail 1500 \
-		--sample-limit 50 \
-		--output build/arpanet/analysis/hi1-framing-matrix-latest.md \
-		--json-output build/arpanet/analysis/hi1-framing-matrix-latest.json
-
-verify-phase2-hi1-clean:
-	@echo "Verifying deep HI1 capture is free of bad-magic markers..."
-	@.venv/bin/python arpanet/scripts/test_phase2_hi1_framing.py \
-		--imp2-tail 5000 \
-		--pdp10-tail 1500 \
-		--sample-limit 50 \
-		--output build/arpanet/analysis/hi1-framing-matrix-latest.md \
-		--json-output build/arpanet/analysis/hi1-framing-matrix-latest.json \
-		--fail-on-bad-magic
-
-test-imp-logging:
-	@echo "Running ARPANET IMP log collection/parsing test..."
-	@.venv/bin/python arpanet/scripts/test_imp_logging.py
+chaosnet-test:
+	@echo "Running Chaosnet transfer test..."
+	@.venv/bin/python arpanet/scripts/test_chaosnet_transfer.py
 
 clean:
 	@echo "Cleaning up containers and volumes..."
-	@docker compose -f docker-compose.arpanet.phase1.yml down -v
+	@docker compose -f docker-compose.arpanet.chaosnet.yml down -v 2>/dev/null; true
 	@echo "✅ Cleanup complete"
 
 # Publishing

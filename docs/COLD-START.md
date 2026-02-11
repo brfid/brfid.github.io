@@ -4,21 +4,19 @@ Use this page when starting from zero context.
 
 ## 0) Current checkpoint (read this first)
 
-- Branch state: **Branch B active** (Branch A closed for current KS10 runtime profile).
-- Link-layer guardrails: **green** in Session 31 baseline (`final_exit=0`, `bad_magic_total_delta=0`).
-- Active blocker (reset): **KS10 `IMP` protocol-stack mismatch** with IMP2 HI1 expectations in current runtime profile.
-- Branch B planning priority (current):
-  1. **Path A: Chaosnet-first ITS-compatible path**
-  2. **Path D fallback: VAX/IMP transfer proof with endpoint compatible with HI1 contract**
-  3. Keep Path B/C as lower-priority exploratory options.
+- Active path: **Chaosnet-direct** (VAX ↔ PDP-10/ITS, no IMPs).
+- IMP chain (Phase 2): **Archived** in `arpanet/archived/`. Blocked on KS10 HI1 framing mismatch. Return to later.
+- Chaosnet shim code exists (`arpanet/scripts/chaosnet_shim.py`) but is **not yet validated on AWS**.
+- PDP-10 needs to be **switched from TOPS-20 to ITS** for Chaosnet support.
 
-Canonical analysis handoff:
-- `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
-
-Primary references:
+Canonical references:
 - `STATUS.md`
 - `docs/arpanet/progress/NEXT-STEPS.md`
-- `docs/arpanet/progress/PHASE3-PROGRESS.md`
+- `docs/arpanet/progress/PATH-A-CHAOSNET-PLAN.md`
+
+Archived IMP blocker analysis:
+- `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
+- `arpanet/archived/README.md`
 
 ## 1) Read order
 
@@ -33,9 +31,9 @@ Primary references:
 - Current project state: `STATUS.md`
 - ARPANET active execution path: `docs/arpanet/progress/NEXT-STEPS.md`
 - ARPANET progress timeline: `docs/arpanet/progress/PHASE3-PROGRESS.md`
-- Current Branch A closure artifact: `build/arpanet/analysis/session30-its-command-matrix.log`
-- Current Branch B baseline artifact: `build/arpanet/analysis/hi1-dual-window-branchB-baseline-session31.json`
-- Canonical mismatch analysis handoff: `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
+- Chaosnet plan: `docs/arpanet/progress/PATH-A-CHAOSNET-PLAN.md`
+- Archived IMP topology: `arpanet/archived/`
+- Canonical mismatch analysis: `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
 - Historical transport decisions: `docs/project/transport-archive.md`
 
 ## 3) Fast constraints checklist
@@ -63,14 +61,13 @@ For ARPANET runtime validation, the active stack runs on AWS:
 ### Quick validation commands
 
 ```bash
-# Check container status
-ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && docker compose -f docker-compose.arpanet.phase2.yml ps"
+# Check container status (Chaosnet topology)
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
+  "cd brfid.github.io && docker compose -f docker-compose.arpanet.chaosnet.yml ps"
 
-# Check shim health
-ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && docker logs arpanet-hi1shim --tail 5"
-
-# Run dual-window gate
-ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && python3 test_infra/scripts/run_hi1_gate_remote.py --dual-window"
+# Tear down old IMP containers if still running
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
+  "cd brfid.github.io && docker compose -f arpanet/archived/docker-compose.arpanet.phase2.yml down 2>/dev/null; true"
 ```
 
 ### AWS CLI availability
@@ -82,30 +79,10 @@ ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 "cd brfid.github.io && python3 te
 ## 6) If task touches ARPANET runtime behavior
 
 - Check next actions first: `docs/arpanet/progress/NEXT-STEPS.md`
-- Confirm latest session context: `docs/arpanet/progress/PHASE3-PROGRESS.md`
-- Keep guardrails in place (dual-window HI1 evidence where applicable).
+- The active topology is **Chaosnet-direct** (`docker-compose.arpanet.chaosnet.yml`)
+- IMP chain is archived — do not start IMP containers unless explicitly returning to that work
 
-# Cold Start Guide
-
-Quick onboarding for new LLM sessions working on this repository.
-
-## Reading Order
-
-1. **`STATUS.md`** - Current project snapshot
-2. This file (`docs/COLD-START.md`)
-3. **`README.md`** - Project overview
-4. **`docs/INDEX.md`** - Documentation hub
-5. **`docs/arpanet/INDEX.md`** - If working on ARPANET stage
-
-## Quick Context
-
-This repo builds a static resume site with optional retro computing stages:
-
-- **Modern path:** Python generator → static HTML
-- **VAX/SIMH path:** Transfer via tape (TS11), compile `bradman.c` on 4.3BSD
-- **ARPANET path:** (Phase 3 in progress) - see `docs/arpanet/progress/NEXT-STEPS.md`
-
-## Essential Commands
+## 7) Essential Commands
 
 ```bash
 # Activate virtualenv (REQUIRED for all Python work)
@@ -120,43 +97,16 @@ python -m ruff check .
 python -m mypy resume_generator tests
 ```
 
-## Critical Constraints
+## 8) Critical Constraints
 
 ❌ **Do not:**
 - Install Python packages globally (use `.venv/` only)
 - Create or push `publish` or `publish-*` tags (unless deploying to GitHub Pages)
 - Make broad speculative changes without evidence
+- Start IMP containers (archived — use Chaosnet topology)
 
 ✅ **Do:**
 - Keep changes focused and grounded
 - Update `STATUS.md` at significant milestones
 - Follow commit cadence guidelines in `AGENTS.md`
 - Reference evidence (manifests, logs) for ARPANET work
-
-## Current VAX/SIMH Status
-
-- **Working transfer path:** Tape (TS11 image) via Docker SIMH
-- **Archived approaches:** Console/FTP (see `docs/project/transport-archive.md`)
-- **Code status:** `bradman.c` updated for 4.3BSD/K&R C compatibility
-- **Docker mode:** Pinned by digest, uses polling waits
-
-## Where to Start
-
-**For general work:**
-- Check `STATUS.md` "Available Next Steps" section
-
-**For ARPANET work:**
-- Start at `docs/arpanet/progress/NEXT-STEPS.md`
-- Track progress in `docs/arpanet/progress/PHASE3-PROGRESS.md`
-
-**For VAX/SIMH work:**
-- Current implementation is in working state
-- See `vax/` directory for scripts and `bradman.c`
-- Docker mode is primary path
-
-## Documentation Updates
-
-When modifying docs:
-- Update `docs/INDEX.md` if adding/moving major doc files
-- Update domain INDEX files (`docs/arpanet/INDEX.md`, etc.) for domain-specific changes
-- Keep `STATUS.md` current with project state

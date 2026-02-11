@@ -1,0 +1,58 @@
+# ARPANET Chaosnet-Direct Topology
+# VAX <-> Chaosnet Shim <-> PDP-10/ITS
+# No IMPs — direct Chaosnet link (historically accurate for MIT AI Lab LAN)
+
+services:
+  vax:
+    image: jguillaumes/simh-vaxbsd@sha256:FIXME_PIN_DIGEST
+    container_name: arpanet-vax
+    ports:
+      - "2323:2323"    # VAX console
+    networks:
+      chaosnet:
+        ipv4_address: 172.21.0.10
+    volumes:
+      - arpanet-vax-data:/machines/data
+    restart: unless-stopped
+
+  chaosnet-shim:
+    build:
+      context: ./arpanet
+      dockerfile: Dockerfile.chaosnet-shim
+    container_name: arpanet-chaosnet-shim
+    networks:
+      chaosnet:
+        ipv4_address: 172.21.0.50
+    depends_on:
+      - vax
+      - pdp10
+    restart: unless-stopped
+
+  pdp10:
+    build:
+      context: ./arpanet
+      dockerfile: Dockerfile.pdp10
+    container_name: arpanet-pdp10
+    ports:
+      - "2326:2323"    # PDP-10 console
+    networks:
+      chaosnet:
+        ipv4_address: 172.21.0.40
+    volumes:
+      - arpanet-pdp10-data:/machines/data
+      - arpanet-pdp10-config:/machines/pdp10
+    restart: unless-stopped
+
+networks:
+  chaosnet:
+    name: chaosnet-direct
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+
+volumes:
+  arpanet-vax-data:
+  arpanet-pdp10-data:
+  arpanet-pdp10-config:

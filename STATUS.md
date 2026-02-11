@@ -66,3 +66,28 @@ python -m mypy resume_generator tests
 - VAX tape transfer is primary path (console/FTP archived)
 - `bradman.c` K&R C compatibility fixes landed
 - Docker SIMH mode operational with pinned image
+
+## ARPANET Stage
+
+**Active path**: Chaosnet-direct (VAX ↔ PDP-10/ITS, no IMPs)
+
+### What works
+- Phase 1 validated (single IMP + VAX, 2026-02-07)
+- Chaosnet shim scaffold exists (`arpanet/scripts/chaosnet_shim.py`)
+- HI1 evidence tooling works (`test_phase2_hi1_framing.py`)
+
+### Current blocker
+- PDP-10 runs TOPS-20, needs ITS for Chaosnet support
+- Chaosnet shim not yet deployed/validated on AWS
+- ITS on SIMH KS10 feasibility not confirmed
+
+### Archived
+- IMP chain (Phase 2) archived in `arpanet/archived/`
+- Blocked on KS10 HI1 framing mismatch (Ethernet frames vs 1822 leaders)
+- See `arpanet/archived/README.md`
+
+### Next actions
+1. Tear down IMP containers on AWS (`make aws-teardown-imps`)
+2. Research ITS on SIMH KS10 feasibility
+3. Deploy Chaosnet-direct topology
+4. See `docs/arpanet/progress/NEXT-STEPS.md`
