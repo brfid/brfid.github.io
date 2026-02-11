@@ -69,35 +69,49 @@ python -m mypy resume_generator tests
 
 ## ARPANET Stage
 
-**Active path**: VAX ↔ PDP-10 Serial Tunnel (Phase 1: serial-over-TCP)
+**Active path**: KL10 + Serial + FTP (VAX → PDP-10 file transfer)
 
-### What works
-- VAX/SIMH + 4.3BSD (proven, builder side)
-- Serial tunnel infrastructure (`docker-compose.vax-pdp10-serial.yml`)
-- Serial tunnel script (`arpanet/scripts/serial-tunnel.sh`)
+### Current Blocker
+- **PDP-10 boot failure**: KS10 emulator cannot boot ITS or TOPS-20
+- Error: "Stop code 7, PC: 000100" (confirmed on both OSes)
+- Solution: Switch to KL10 emulator (community-proven for TOPS-20)
 
-### Current state
-- Phase 1: Serial tunnel infrastructure created
-- Phase 2: Chaosnet-on-Serial (after tunnel works)
-- Phase 3: Full Chaosnet Bridge (TCP encapsulation)
+### Three-Phase Plan
+**Phase 1**: Fix PDP-10 Boot (switch KS10 → KL10 emulator)
+**Phase 2**: Serial Tunnel (VAX ↔ PDP-10 direct connection)
+**Phase 3**: File Transfer (FTP from VAX to PDP-10)
 
-### Archived
-- IMP chain in `arpanet/archived/` (HI1 framing mismatch)
-- PDP-11 path (replaced with PDP-10)
+**Master Plan**: `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`
 
-### Next actions
-1. Test VAX console connectivity (port 2323)
-2. Test PDP-10 console connectivity (port 2326)
-3. Start serial tunnel: `./arpanet/scripts/serial-tunnel.sh start`
-4. Verify tunnel works: telnet localhost 9000
-5. Once tunnel works, move to Phase 2 (Chaosnet-on-Serial)
-6. See `docs/arpanet/SERIAL-TUNNEL.md` for full architecture
+### What Works ✅
+- VAX/SIMH + 4.3BSD operational
+- VAX FTP server validated (Version 4.105, 1986)
+- Serial tunnel infrastructure ready
+- Docker compose configs ready
 
-### Cost
-- Two t3.micro: ~$0.02/hr running, $0 stopped
-- Old t3.medium: $0.04/hr (terminate after migration)
+### Archived ❌
+- IMP chain (HI1 framing mismatch) → `arpanet/archived/`
+- Chaosnet Path A (ITS build timeout) → `docs/arpanet/archive/chaosnet/`
+- KS10 boot attempts (emulator incompatibility) → `docs/arpanet/archive/ks10/`
+
+### Next Actions
+1. Create `arpanet/Dockerfile.pdp10-kl10` (KL10 emulator)
+2. Create `arpanet/configs/kl10-install.ini` (TOPS-20 config)
+3. Update `docker-compose.vax-pdp10-serial.yml` for KL10
+4. Deploy to AWS: `cd test_infra/cdk && cdk deploy`
+5. Test PDP-10 boot and TOPS-20 installation
+6. See `docs/arpanet/KL10-SERIAL-FTP-PLAN.md` for full timeline
+
+### AWS Infrastructure
+- Status: Cleaned up (2026-02-11)
+- Cost: $0/hr (no running instances)
+- Ready to redeploy for KL10 testing
+
+**Estimated Time**: 6-10 hours on AWS
+**Estimated Cost**: ~$0.40-$0.80
 
 ## Key References
 
-- Serial Tunnel Architecture: `docs/arpanet/SERIAL-TUNNEL.md`
-- Chaosnet Shim: `arpanet/scripts/chaosnet_shim.py`
+- **Master Plan**: `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`
+- Next Steps: `docs/arpanet/progress/NEXT-STEPS.md`
+- Serial Architecture: `docs/arpanet/SERIAL-TUNNEL.md`

@@ -1,0 +1,43 @@
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    ca-certificates \
+    libedit-dev \
+    libpng-dev \
+    telnet \
+    socat \
+    wget \
+    bzip2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build SIMH with KL10 (not KS10)
+WORKDIR /tmp
+RUN git clone https://github.com/simh/simh.git && \
+    cd simh && \
+    make pdp10
+
+# Install SIMH
+RUN mkdir -p /usr/local/bin && \
+    cp /tmp/simh/BIN/pdp10 /usr/local/bin/ && \
+    chmod +x /usr/local/bin/pdp10
+
+# Download TOPS-20 V4.1 installation tape
+RUN mkdir -p /machines/pdp10 && \
+    cd /machines/pdp10 && \
+    wget -q http://pdp-10.trailing-edge.com/tapes/bb-d867e-bm_tops20_v41_2020_instl.tap.bz2 && \
+    bunzip2 bb-d867e-bm_tops20_v41_2020_instl.tap.bz2
+
+# Create data directory for disk
+RUN mkdir -p /machines/data
+
+# Copy configs
+COPY arpanet/configs/kl10-install.ini /machines/pdp10/install.ini
+COPY arpanet/configs/kl10-runtime.ini /machines/pdp10/runtime.ini
+
+WORKDIR /machines/pdp10
+
+# Start with installation config
+CMD ["pdp10", "install.ini"]

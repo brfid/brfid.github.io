@@ -1,5 +1,8 @@
 # ITS Docker Runtime Boot Failure - Problem Summary for a Problem-Solving LLM
 
+> **⚠️ ARCHIVED**: 2026-02-11 - KS10 emulator incompatible, superseded by KL10
+> See: `docs/arpanet/archive/ks10/README.md`
+
 ## Goal
 
 Stabilize the Phase 2 PDP-10/ITS container so it **boots successfully and stays up** in Docker Compose (`docker-compose.arpanet.phase2.yml`) as part of the ARPANET integration pipeline.

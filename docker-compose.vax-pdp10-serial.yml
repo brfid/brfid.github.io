@@ -1,65 +1,65 @@
-# VAX + PDP-10 Serial Tunnel
-# Phase 1: Direct serial-over-TCP connection
+# VAX + PDP-10 (KL10) Serial Tunnel + FTP
+# KL10 + Serial + FTP Plan - Phase 1: Fix PDP-10 Boot
 #
-# This compose file sets up VAX/4.3BSD and PDP-10/ITS with serial console
-# access for tunnel setup via socat. No IMPs - direct connection.
+# This compose file sets up:
+#   - VAX/4.3BSD with FTP server (validated)
+#   - PDP-10/TOPS-20 with KL10 emulator (community-proven)
+#   - Direct network connection for FTP
+#   - Optional serial tunnel for debugging
 #
 # Usage:
-#   docker-compose -f docker-compose.vax-pdp10-serial.yml up -d
-#   docker exec -it vax-host /bin/sh
-#   socat TCP-LISTEN:9000,fork TCP:localhost:2323 &
+#   1. Build: docker-compose -f docker-compose.vax-pdp10-serial.yml build
+#   2. Start: docker-compose -f docker-compose.vax-pdp10-serial.yml up -d
+#   3. Install TOPS-20 (interactive): docker attach pdp10-kl10
+#   4. Test FTP: docker exec vax-host ftp 172.20.0.40
 #
-#   docker exec -it pdp10-host /bin/sh
-#   socat TCP-LISTEN:9001,fork TCP:localhost:2326 &
-#
-#   # Cross-connect for tunnel
-#   socat TCP:localhost:9000 TCP:localhost:9001 &
-#
-#   # Now connect from either side
-#   telnet localhost 9000  # VAX console
-#   telnet localhost 9001  # PDP-10 console
+# See: docs/arpanet/KL10-SERIAL-FTP-PLAN.md
 
 version: '3.8'
 
 services:
   vax:
-    container_name: arpanet-vax
-    hostname: vax-host
+    container_name: vax-host
+    hostname: vax
     image: jguillaumes/simh-vaxbsd@sha256:1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215
+    networks:
+      serial-net:
+        ipv4_address: 172.20.0.10
     ports:
       - "2323:2323"    # SIMH console
     volumes:
-      - arpanet-vax-data:/machines/data
+      - vax-data:/machines/data
     environment:
       - SIMH_NETWORK=enabled
       - SIMH_USE_CONTAINER=yes
-    restart: unless-stopped
+    stdin_open: true
+    tty: true
 
   pdp10:
-    container_name: arpanet-pdp10
-    hostname: pdp10-host
+    container_name: pdp10-kl10
+    hostname: pdp10
     build:
-      context: ./arpanet
-      dockerfile: Dockerfile.pdp10
-    ports:
-      - "2326:2323"    # SIMH console
-    volumes:
-      - arpanet-pdp10-data:/machines/data
-      - ./arpanet/configs/pdp10-serial.ini:/machines/pdp10.ini:ro
+      context: .
+      dockerfile: arpanet/Dockerfile.pdp10-kl10
     networks:
-      internal:
-        ipv4_address: 172.21.0.40
-    restart: unless-stopped
+      serial-net:
+        ipv4_address: 172.20.0.40
+    ports:
+      - "2326:2326"    # Console (telnet mode when using runtime.ini)
+      - "9001:9001"    # Serial tunnel
+    volumes:
+      - pdp10-data:/machines/data
+    stdin_open: true
+    tty: true
 
 networks:
-  internal:
-    name: vax-pdp10-internal
+  serial-net:
+    name: vax-pdp10-serial
     driver: bridge
     ipam:
       config:
-        - subnet: 172.21.0.0/16
-          gateway: 172.21.0.1
+        - subnet: 172.20.0.0/16
 
 volumes:
-  arpanet-vax-data:
-  arpanet-pdp10-data:
+  vax-data:
+  pdp10-data:

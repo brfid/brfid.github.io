@@ -1,9 +1,12 @@
 # Path A Results: Chaosnet-First ITS-Compatible Path
 
-**Date**: 2026-02-11  
-**Status**: Protocol Implementation Verified ✅
-**Branch**: B (Path A)  
-**AWS Test Instance**: `ubuntu@34.227.223.186`
+> **⚠️ ARCHIVED**: 2026-02-11 - Blocked on ITS build, superseded by Serial Tunnel
+> See: `docs/arpanet/archive/chaosnet/README.md`
+
+**Date**: 2026-02-11
+**Status**: Protocol Implementation Verified ✅ | Endpoint Blocked ❌
+**Branch**: B (Path A)
+**AWS Test Instance**: ~~`ubuntu@34.227.223.186`~~ Terminated 2026-02-11
 
 ---
 

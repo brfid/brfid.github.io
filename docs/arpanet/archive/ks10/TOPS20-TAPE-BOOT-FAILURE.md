@@ -1,7 +1,10 @@
 # TOPS-20 Tape Boot Failure on SIMH KS10 - Technical Analysis
 
+> **⚠️ ARCHIVED**: 2026-02-11 - KS10 emulator incompatible, superseded by KL10
+> See: `docs/arpanet/archive/ks10/README.md`
+
 **Date**: 2026-02-08 23:45 UTC
-**Status**: BLOCKED - Tape boot fails on KS10
+**Status**: ~~BLOCKED~~ **ARCHIVED** (KS10 incompatibility)
 **Context**: Follow-up to TOPS20-INSTALLATION-PROBLEM.md
 
 ---

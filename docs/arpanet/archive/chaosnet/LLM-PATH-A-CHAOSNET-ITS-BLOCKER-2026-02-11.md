@@ -1,6 +1,9 @@
 # Path A Chaosnet ITS Blocker Analysis
 
-**Date**: 2026-02-11  
+> **⚠️ ARCHIVED**: 2026-02-11 - Path A archived, superseded by Serial Tunnel
+> See: `docs/arpanet/archive/chaosnet/README.md`
+
+**Date**: 2026-02-11
 **Purpose**: Document the ITS disk build blocker for Path A (Chaosnet-first) and implications for host-imp-imp-host FTP
 
 ---

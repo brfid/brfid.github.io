@@ -4,16 +4,16 @@ Use this page when starting from zero context.
 
 ## 0) Current checkpoint (read this first)
 
-- Active path: **VAX ↔ PDP-10 Serial Tunnel** (Phase 1: serial-over-TCP).
-- PDP-10/ITS: **Active** — TOPS-20 via SIMH KS10.
-- IMP chain (Phase 2): **Archived** in `arpanet/archived/`.
-- Next phase: Chaosnet-on-Serial (after serial tunnel works).
-- PDP-10 instance: **Requires working disk image**.
+- **Active path**: KL10 + Serial + FTP (3-phase plan)
+- **Current blocker**: PDP-10 cannot boot (KS10 emulator incompatible)
+- **Solution**: Switch to KL10 emulator (community-proven for TOPS-20)
+- **Next action**: Create KL10 Dockerfile and configs
+- **Testing**: All on AWS (Raspberry Pi incompatible)
 
-Canonical references:
+**Canonical references**:
 - `STATUS.md`
-- `docs/arpanet/SERIAL-TUNNEL.md`
-- `docs/arpanet/progress/NEXT-STEPS.md`
+- `docs/arpanet/KL10-SERIAL-FTP-PLAN.md` (master plan)
+- `docs/arpanet/progress/NEXT-STEPS.md` (concrete steps)
 
 ## 1) Read order
 
@@ -46,28 +46,19 @@ Canonical references:
 
 ## 5) AWS Runtime Access
 
-**Active instance** (t3.medium):
+**Status**: All instances terminated (2026-02-11)
 
-| VM | Role | Status |
-|----|------|--------|
-| `arpanet-vax` | VAX/4.3BSD | ✅ Running (2+ hours) |
-| `arpanet-pdp10` | PDP-10/TOPS-20 | ✅ Running |
+**Previous instance** (ArpanetTestStack):
+- Destroyed due to ITS build blocker on Path A (Chaosnet)
+- No running AWS resources
+- Cost: $0/hr
 
-**Connection**:
+**To redeploy** (when needed):
 ```bash
-ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186
+cd test_infra/cdk
+source ../../.venv/bin/activate
+cdk deploy
 ```
-
-**Serial tunnel ports**:
-- `localhost:9000` → VAX console (2323)
-- `localhost:9001` → PDP-10 console (2326)
-
-**Test connection**:
-```bash
-telnet localhost 9000  # VAX console
-```
-
-**Old instances**: Tear down after serial tunnel is proven.
 
 ## 6) If task touches ARPANET runtime behavior
 

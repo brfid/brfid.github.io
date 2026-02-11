@@ -21,8 +21,21 @@ See `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` for full analysi
 
 ## Files moved here
 
-- `docker-compose.arpanet.phase2.yml` — Multi-IMP topology
+### IMP Chain (original blocker)
 - `docker-compose.arpanet.phase1.yml` — Single-IMP topology
+- `docker-compose.arpanet.phase2.yml` — Multi-IMP topology
+
+### Chaosnet Path A (ITS build blocker, 2026-02-11)
+- `docker-compose.arpanet.chaosnet.yml` — Chaosnet shim topology
+- `docker-compose.arpanet.phase2-chaosnet.yml` — IMP + Chaosnet hybrid
+
+See `docs/arpanet/archive/chaosnet/README.md` for Chaosnet path details.
+
+### KS10 Emulator (Boot failure, 2026-02-11)
+- `Dockerfile.pdp10` — KS10 TOPS-20 (boot failure)
+- `Dockerfile.pdp10-its` — KS10 ITS (boot failure)
+
+Both fail with "Stop code 7, PC: 000100". See `docs/arpanet/archive/ks10/README.md`.
 
 ## To reactivate
 
