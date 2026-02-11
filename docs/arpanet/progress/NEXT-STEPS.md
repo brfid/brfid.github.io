@@ -1,7 +1,7 @@
 # ARPANET Integration - Next Steps
 
 **Date**: 2026-02-10
-**Status**: Protocol mismatch identified; IMP path retired; pivoting to Chaosnet (CH11) for PDP-10 networking
+**Status**: ITS runtime is stable; host-link gate remains green (including post-transfer-attempt check), but end-to-end host transfer remains blocked by PDP-10 transfer endpoint/service readiness (`172.20.0.40:21` currently refused)
 
 ---
 
@@ -19,132 +19,130 @@ See [CONSOLE-AUTOMATION-SOLUTION.md](../research/CONSOLE-AUTOMATION-SOLUTION.md)
 
 ## Immediate Next Steps (High Priority)
 
-### 0. Protocol Mismatch Resolution — Chaosnet Pivot (Critical)
+### 0. Validate Host-IMP Interface fallback path (Critical)
 
-**Goal**: Transition PDP-10 networking from failed IMP/1822 path to authentic Chaosnet (CH11) path.
+**Goal**: Prove stable host-link behavior using the Host-IMP Interface adapter while preserving native-first strategy and clear retirement criteria.
 
-**Root cause identified (2026-02-10)**:
-- SIMH `pdp10-ks` "IMP" device is **not** an ARPANET 1822 interface
-- It is a **modern Ethernet/IP NIC** with MAC addresses, ARP, DHCP/IP/gateway config
-- Packet captures show Ethernet frames (`0806 0001 0800 0604` = ARP headers), not 1822 messages
-- "Bad magic" values (`feffffff`, `00000219`, `ffffffff`) were Ethernet frame headers misinterpreted by IMP2's HI1 1822 parser
-- The `hi1shim` adapter solved envelope syntax but the **payload is still Ethernet, not 1822**
-- IMP2 cannot route Ethernet frames through ARPANET routing tables
-- **Consequence**: TCP/IP FTP to `172.20.0.40:21` will never work (ITS uses NCP, not TCP/IP; ARPANET uses host/IMP numbers, not IP addresses)
+**Current implementation status**:
+- Host-IMP Interface is now integrated into Phase 2 topology as `hi1shim` (`172.20.0.50`).
+- IMP2 HI1 now targets shim (`172.20.0.50:2000`).
+- PDP-10 IMP now targets shim ingress (`172.20.0.50:2001`).
+- New shim runtime/service files:
+  - `arpanet/scripts/hi1_shim.py`
+  - `arpanet/Dockerfile.hi1shim`
 
-**Decision**: Proceed with Chaosnet (CH11) for PDP-10 networking
-- CH11 is natively supported by SIMH KS10 emulator
-- ITS has Chaosnet drivers and CFTP (Chaosnet FTP) built-in
-- **More historically authentic**: MIT ITS used Chaosnet for inter-machine communication, not ARPANET
-- Simpler than protocol translation; eliminates semantic mismatch
+**Validation status (local code/tests)**:
+- Focused test suite passed: `62 passed` across shim + topology/generator/phase script tests.
+- Mounted/runtime config consistency confirmed:
+  - `arpanet/configs/imp2.ini` points HI1 to `172.20.0.50:2000`
+  - `arpanet/configs/phase2/imp2.ini` matches generated topology endpoint
+  - `arpanet/configs/phase2/pdp10.ini` points IMP attach to `172.20.0.50:2001`
 
-**Retired components (for PDP-10 path)**:
-- ❌ `hi1shim` (Host-IMP Interface adapter) — syntactic-only fix; semantic dead-end
-- ❌ PDP-10 IMP configuration — fundamentally incompatible protocol family
-- ❌ IMP2 HI1 → PDP-10 host-link — cannot route Ethernet through 1822 IMP
-- ❌ Dual-window HI1 gate tests for PDP-10 — validated wrong layer
-- ❌ FTP to `172.20.0.40:21` — wrong protocol (use CFTP instead)
-
-**Preserved infrastructure**:
-- ✅ VAX + IMP1 + IMP2 ARPANET routing — fully operational and validated
-- ✅ ARPANET 1822 protocol — works correctly for VAX ↔ IMP path
-- ✅ Logging and monitoring systems — applicable to both protocols
-- ✅ Console automation — applies to all SIMH systems
-
-**Implementation tasks (command-first)**:
+**Tasks (next operator run on active stack)**:
 ```bash
-# 1) Verify CH11 device availability in current pdp10-ks build
-docker exec arpanet-pdp10 pdp10-ks --help | grep -i "ch\|chaos"
-# Or at SIMH prompt: show devices
+# 1) Rebuild/restart phase2 with Host-IMP Interface in path
+docker compose -f docker-compose.arpanet.phase2.yml up -d --build
 
-# 2) Update arpanet/configs/phase2/pdp10.ini to enable CH11
-# Add:
-#   set ch enabled
-#   attach ch listen:4001
-# Remove or comment out IMP configuration
+# 2) Confirm link-level wiring and shim activity
+.venv/bin/python arpanet/scripts/test_phase2.py
+docker logs arpanet-hi1shim --tail 200
+docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic"
 
-# 3) Create Chaosnet bridge/peer container (second ITS instance for testing)
-# Update docker-compose.arpanet.phase2.yml with pdp10-peer service
-# Create arpanet/configs/phase2/pdp10-peer.ini with:
-#   set ch enabled
-#   attach ch connect:172.20.0.40:4001
-
-# 4) Rebuild and boot
-docker compose -f docker-compose.arpanet.phase2.yml build pdp10
-docker compose -f docker-compose.arpanet.phase2.yml up -d
-
-# 5) Verify Chaosnet interface comes up at ITS console
-telnet localhost 2326
-# At ITS prompt:
-:SYSTAT   # System status
-:HOSTAT   # Host status - should show Chaosnet hosts
-
-# 6) Test CFTP file transfer between ITS instances
-# At primary ITS:
-:CFTP target-host
-:GET remote-file local-file
-:PUT local-file remote-file
+# 3) Capture strict evidence manifests for handoff
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-default-manifest.json || true
 ```
 
-**Success criteria**:
-- [ ] CH11 device verified available in SIMH build
-- [ ] Chaosnet interface comes up in ITS (visible in `:SYSTAT` or `:HOSTAT`)
-- [ ] Chaosnet connectivity established between two ITS instances
-- [ ] CFTP file transfer succeeds
-- [ ] VAX + IMP1 + IMP2 infrastructure remains operational (no regression)
+**Latest outcome (2026-02-10)**:
+- ✅ Host-IMP Interface counters show active wrap/unwrap traffic (`parse_errors=0`)
+- ✅ Remote attach endpoints confirmed on shim path (`172.20.0.50:2000/2001`)
+- ✅ Dual-window manifests (default/SIMP/UNI) all produced `final_exit=0`, `bad_magic_total_delta=0`
 
-**Reference**:
-- Handoff document: `docs/arpanet/handoffs/LLM-CHAOSNET-PIVOT-2026-02-10.md`
-- MIT AI Memo 628: Chaosnet protocol specification
-- SIMH CH11 documentation: `set ch enabled`, `attach ch listen:PORT` / `attach ch connect:HOST:PORT`
+**Success criteria (ongoing)**:
+- [x] Host-IMP Interface counters show active wrap/unwrap traffic
+- [x] IMP2 HI1 startup/link markers are stable with shim endpoint in path
+- [x] Dual-window evidence shows improved bad-magic behavior vs pre-shim baseline
+- [ ] Maintain clean dual-window results across repeated cycles (regression watch)
+- [ ] Retirement trigger for fallback remains documented (native-compatible path replaces shim)
+
+**Decision policy (unchanged)**:
+- Keep native-path framing alignment as long-term target.
+- Keep Host-IMP Interface as temporary boundary adapter only.
 
 ---
 
-### 1. Chaosnet File Transfer Validation (Next milestone)
+### 1. Controlled host-to-host transfer validation (Next milestone)
 
-**Goal**: Validate end-to-end file transfer using Chaosnet CFTP between ITS instances.
-
-**Prerequisites**:
-- [x] CH11 device verified available
-- [ ] Chaosnet interface configured and operational
-- [ ] Second ITS instance or bridge configured
+**Goal**: Advance from link-level gating to end-to-end host transfer checks now that the current gate batch is green.
 
 **Tasks**:
 ```bash
-# 1) Verify both ITS instances have Chaosnet up
-docker logs arpanet-pdp10 --tail 100 | grep -i "ch\|chaos"
-docker logs arpanet-pdp10-peer --tail 100 | grep -i "ch\|chaos"
+# Re-run at least one confirmatory dual-window gate before transfer attempt
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-pre-transfer-check.json
 
-# 2) Connect to primary ITS console
-telnet localhost 2326
+# Then execute Phase 2 runtime validation (includes shim path checks)
+.venv/bin/python arpanet/scripts/test_phase2.py
 
-# 3) At ITS prompt, verify Chaosnet status
-:SYSTAT   # Check system status
-:HOSTAT   # Check host status - should show Chaosnet hosts
-
-# 4) Test CFTP file transfer
-:CFTP target-host
-:LIST     # List available files on remote
-:GET remote-file local-file
-# Verify file received
-
-# 5) Reverse direction test
-# From peer instance, connect and transfer back
-:PUT local-file remote-file
-
-# 6) Verify file integrity
-# Compare checksums or file contents on both sides
+# Capture shim/IMP2 evidence around transfer window
+docker logs arpanet-hi1shim --tail 200
+docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic" || true
 ```
 
 **Success criteria**:
-- [ ] Both ITS instances show Chaosnet interface operational
-- [ ] `:HOSTAT` shows peer host visible on Chaosnet
-- [ ] CFTP connection established successfully
-- [ ] File transfers in both directions (GET and PUT)
-- [ ] File integrity maintained (checksums match)
-- [ ] Transfer logs captured for documentation
+- [ ] Pre-transfer dual-window manifest stays clean (`final_exit=0`, `bad_magic_total_delta=0`)
+- [ ] Phase2 validation script passes with shim in path
+- [ ] No HI1 bad-magic recurrence during transfer-timed window
+- [ ] PDP-10 transfer target service is reachable from VAX (current blocker)
 
-**Blockers**: None - CH11 verification complete (or in progress)
+**Latest attempt outcome (Session 23)**:
+- Transfer command reached VAX FTP client stage and failed at connect step:
+  - `ftp 172.20.0.40`
+  - `ftp: connect: Connection timed out`
+- Post-attempt dual-window evidence remained green:
+  - `build/arpanet/analysis/hi1-dual-window-post-transfer-attempt.json`
+  - `final_exit=0`, `bad_magic_total_delta=0`
+
+**Immediate next actions (command-first decision tree)**:
+```bash
+# 1) VAX-side fast triage: prove target host/IP reachability vs TCP:21 reachability
+docker exec -it arpanet-vax /bin/sh -c 'ping -c 3 172.20.0.40'
+docker exec -it arpanet-vax /bin/sh -c 'telnet 172.20.0.40 21 </dev/null || true'
+
+# 2) Docker/container exposure checks on PDP-10 endpoint path
+docker inspect -f '{{.Name}} {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}} {{.HostConfig.PortBindings}}' arpanet-pdp10
+docker exec -it arpanet-pdp10 /bin/sh -c "netstat -an | grep ':21 ' || ss -ltnp | grep :21 || true"
+
+# 3) ITS service bring-up checks at console (exact command forms may vary by prompt/runtime)
+#    Goal: confirm TCP support + FTP server process are actually running
+#    Typical sequence: ATSIGN TCP, ARPA, FTPS, then PORTS/HOSTAT/UP checks
+
+# 4) Re-test manual endpoint readiness from VAX before automation
+docker exec -it arpanet-vax /bin/sh -c 'ftp 172.20.0.40 <<EOF
+quit
+EOF'
+
+# 5) Re-run controlled transfer attempt after endpoint readiness is proven
+expect arpanet/scripts/authentic-ftp-transfer.exp \
+  localhost 2323 \
+  /usr/guest/operator/arpanet-test.txt \
+  /tmp/pdp10-received.txt \
+  172.20.0.40
+
+# 6) Re-check HI1/shim regression guardrails immediately after attempt
+.venv/bin/python test_infra/scripts/run_hi1_gate_remote.py \
+  --dual-window \
+  --manifest-output build/arpanet/analysis/hi1-dual-window-post-transfer-attempt-rerun.json
+
+docker logs arpanet-hi1shim --tail 200
+docker logs arpanet-imp2 --tail 200 | grep -i "HI1\|bad magic" || true
+```
+
+**Important note**:
+- Do not assume `172.20.0.40:21` is available by default in the current ITS profile.
+- Current evidence suggests endpoint readiness (listener/service bring-up and exposure) is the active blocker, not HI1 framing.
 
 ---
 
@@ -283,122 +281,77 @@ docker-compose -f docker-compose.arpanet.phase1.yml run vax \
 
 ## Short-Term Goals (1-2 hours)
 
-### 4. PDP-10 Chaosnet Runtime Validation
+### 4. PDP-10 Runtime Validation
 
-**Status**: ITS image build complete, Chaosnet configuration pending
+**Status**: ITS image build complete, runtime stability pending
 
-**Goal**: Confirm stable ITS boot/runtime on PDP-10 container with Chaosnet networking
+**Goal**: Confirm stable ITS boot/runtime on PDP-10 container
 
 **Tasks**:
-1. Update PDP-10 config to use CH11 instead of IMP
-2. Boot PDP-10 container and verify stable runtime
-3. Confirm Chaosnet interface attachment (CH11 device)
-4. Validate Chaosnet service reachability for file transfer tests
+1. Boot PDP-10 container without restart-loop
+2. Confirm disk boot path works with current SIMH build
+3. Verify IMP network attachment (172.20.0.40 ↔ 172.20.0.30)
+4. Validate service reachability for next FTP tests
 
 **Success Criteria**:
-- [ ] ITS boots to prompt with stable runtime
-- [ ] CH11 interface configured and attached
-- [ ] `:SYSTAT` shows Chaosnet operational
-- [ ] `:HOSTAT` shows peer hosts (when peer configured)
-- [ ] Can transfer file to/from PDP-10 via CFTP
+- [ ] ITS boots to prompt / stable runtime
+- [ ] Network interface configured
+- [ ] Ports 2326/10004 reachable
+- [ ] Can transfer file to/from PDP-10
 
-**Blockers**: None - configuration changes only
+**Blockers**: Requires SIMH ini/device reconciliation against running `pdp10-ks`
 
-**Reference**: Chaosnet pivot handoff (`docs/arpanet/handoffs/LLM-CHAOSNET-PIVOT-2026-02-10.md`)
+**Reference**: See `archive/tops20/TESTING-PDP10.md` for historical TOPS-20 installation notes
 
 ---
 
-### 5. Multi-Protocol Network Topology (Task #25)
+### 5. 4-Container Routing Test (Task #25)
 
-**Goal**: Validate dual-protocol architecture: VAX on ARPANET + PDP-10 on Chaosnet
-
-**Updated Architecture**:
-```
-ARPANET Side:
-  [VAX/BSD 4.3] ↔ [IMP #1] ↔ [IMP #2]
-  (1822 protocol, DEC/BSD authentic networking)
-
-Chaosnet Side:
-  [PDP-10/ITS] ↔ [PDP-10/ITS peer or bridge]
-  (Chaosnet protocol, MIT ITS authentic networking)
-```
-
-**Historical Authenticity**: This topology is **more historically accurate** than the original plan:
-- MIT ITS machines used Chaosnet for local inter-machine communication
-- ARPANET was used for gateway/remote access, not local file transfer
-- VAX on ARPANET demonstrates authentic DEC/BSD networking
-- PDP-10 on Chaosnet demonstrates authentic MIT ITS networking
+**Goal**: Validate VAX → IMP1 → IMP2 → PDP-10 full routing
 
 **Prerequisites**:
-- [x] 2-container ARPANET routing validated (VAX → IMP1)
-- [x] 3-container ARPANET routing validated (VAX → IMP1 → IMP2)
-- [ ] PDP-10 Chaosnet configuration complete
-- [ ] Chaosnet peer or bridge operational
+- [x] 3-container routing validated (VAX → IMP1 → IMP2)
+- [ ] PDP-10 TOPS-20 installation complete
+- [ ] PDP-10 network configured
 
-**Test Script**: Update validation scripts to cover both protocols
+**Test Script**: Update `scripts/test-3container-routing.sh` to include PDP-10
 
 **Success Criteria**:
-- [ ] ARPANET path operational: VAX → IMP1 → IMP2
-- [ ] All ARPANET interfaces show activity (HI1 at VAX, MI1 between IMPs)
-- [ ] Chaosnet path operational: PDP-10 ↔ peer via CH11
-- [ ] Both protocols stable simultaneously (no interference)
-- [ ] Logging captures both network activities independently
+- [ ] Packets flow: VAX → IMP1 → IMP2 → PDP-10
+- [ ] All HI1 interfaces show activity
+- [ ] MI1 link stable (IMP1 ↔ IMP2)
+- [ ] Logging captures full route
 
-**Estimated Time**: 30 minutes (after Chaosnet ready)
-
-**Note**: Originally planned as "4-container routing test"; now correctly understood as dual-protocol demonstration rather than single unified network.
+**Estimated Time**: 30 minutes (after PDP-10 ready)
 
 ---
 
-### 6. Cross-Protocol File Transfer (Task #26)
+### 6. VAX ↔ PDP-10 FTP Transfer (Task #26)
 
-**Goal**: Transfer files between VAX (ARPANET) and PDP-10 (Chaosnet) networks
-
-**Approach Options**:
-
-**Option A: Gateway Bridge** (if needed for unified pipeline):
-- Create ARPANET↔Chaosnet gateway container
-- Routes between protocol families
-- More complex but allows direct VAX↔PDP-10 transfer
-
-**Option B: Separate Demonstrations** (simpler, recommended initially):
-- VAX demonstrates ARPANET FTP (VAX↔VAX or VAX↔IMP)
-- PDP-10 demonstrates Chaosnet CFTP (ITS↔ITS)
-- Both showcased as parallel authentic historical networking examples
+**Goal**: Transfer file between VAX and PDP-10 via ARPANET FTP
 
 **Prerequisites**:
-- [ ] PDP-10 Chaosnet operational
-- [ ] VAX ARPANET path validated
-- [ ] If Option A: Gateway bridge designed and implemented
+- [ ] PDP-10 TOPS-20 installation complete
+- [ ] 4-container routing working
+- [ ] FTP servers running on both hosts
 
-**Test Sequence (Option B)**:
-1. **ARPANET demonstration**:
-   - Transfer file on VAX via BSD FTP
-   - Use existing authentic FTP automation
-   - Document ARPANET protocol logs
+**Test Sequence**:
+1. Create test file on VAX
+2. FTP from VAX to PDP-10 via ARPANET network
+3. Verify file on PDP-10
+4. FTP from PDP-10 back to VAX
+5. Compare checksums
 
-2. **Chaosnet demonstration**:
-   - Transfer file between ITS instances via CFTP
-   - Document Chaosnet protocol activity
-   - Capture ITS console session
+**Automation**: Create `scripts/simh-automation/vax-to-pdp10-ftp.ini`
 
-3. **Integration narrative**:
-   - "Resume built using two authentic 1980s networks"
-   - VAX: compilation and ARPANET transfer showcase
-   - PDP-10: ITS environment and Chaosnet showcase
+**Success Criteria**:
+- [ ] File transfers VAX → PDP-10
+- [ ] File transfers PDP-10 → VAX
+- [ ] File integrity maintained (checksums match)
+- [ ] Transfer uses ARPANET routing (not direct TCP)
+- [ ] 100% historical authenticity (1986 FTP clients on both ends)
 
-**Success Criteria (Option B)**:
-- [ ] VAX ARPANET transfer validated independently
-- [ ] PDP-10 Chaosnet transfer validated independently
-- [ ] Both protocol logs captured
-- [ ] File integrity maintained in both demonstrations
-- [ ] 100% historical authenticity for each protocol
-
-**Automation**: 
-- ARPANET: Use existing `scripts/simh-automation/authentic-ftp-transfer.ini`
-- Chaosnet: Create `scripts/simh-automation/its-cftp-transfer.ini`
-
-**Estimated Time**: 1-2 hours for Option B; 4-6 hours for Option A gateway
+**Estimated Time**: 45 minutes
 
 ---
 
@@ -532,30 +485,25 @@ GitHub Actions Workflow
 
 ## Implementation Timeline
 
-### Week 1: Chaosnet Pivot (Current)
+### Week 1: Foundation (Current)
 - [x] Console automation solved
 - [x] SIMH scripts created
-- [x] Protocol mismatch identified and documented
-- [ ] CH11 device verification (15 min)
-- [ ] Update PDP-10 config for Chaosnet (30 min)
-- [ ] Create Chaosnet peer/bridge (1 hour)
-- [ ] Verify Chaosnet interface operational (30 min)
+- [x] Documentation updated
+- [ ] Test SIMH automation (15 min)
+- [ ] Create build transfer script (30 min)
+- [ ] Update Docker Compose (15 min)
 
-### Week 2: Chaosnet Integration
-- [ ] Test CFTP file transfer (1 hour)
-- [ ] Validate dual-protocol topology (30 min)
-- [ ] Document Chaosnet configuration (1 hour)
-- [ ] Create ITS CFTP automation scripts (1 hour)
+### Week 2: PDP-10 Integration
+- [ ] Complete TOPS-20 installation (2-3 hours)
+- [ ] 4-container routing test (30 min)
+- [ ] VAX ↔ PDP-10 FTP transfer (45 min)
 
 ### Week 3: Build Pipeline
 - [ ] GitHub Actions workflow (2-3 hours)
-- [ ] Integrate both ARPANET and Chaosnet demonstrations (2 hours)
 - [ ] Landing page integration (2 hours)
 - [ ] Documentation completion (2-3 hours)
 
-**Total Estimated Time**: 12-16 hours
-
-**Note**: Timeline adjusted for Chaosnet pivot; overall duration similar to original plan but with cleaner architecture and better historical authenticity.
+**Total Estimated Time**: 12-15 hours
 
 ---
 
@@ -585,38 +533,17 @@ GitHub Actions Workflow
 
 ## Blockers and Dependencies
 
-**Current Blockers**:
-1. **CH11/Chaosnet feasibility verification** (CRITICAL)
-   - Status: Pending verification that CH11 device is available in current pdp10-ks build
-   - Impact: Blocks all Chaosnet implementation work
-   - Mitigation: Check early with `docker exec arpanet-pdp10 pdp10-ks --help` or `show devices`
-   - Fallback: Use different ITS build or keep ARPANET-only demonstration
-
-**Retired Blockers** (no longer active):
-1. **PDP-10 ↔ IMP2 Host-Link Framing Mismatch** (RESOLVED/RETIRED as of 2026-02-10)
-   - Root cause: Fundamental protocol incompatibility (Ethernet vs 1822)
-   - Not a configuration issue; protocol families are incompatible
-   - Resolution: Pivot to Chaosnet (CH11) for PDP-10 networking
-   - Historical: See `docs/arpanet/handoffs/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
-
-2. **PDP-10 FTP endpoint readiness** (RESOLVED/RETIRED as of 2026-02-10)
-   - Root cause: TCP/IP FTP incompatible with ITS NCP network stack
-   - Resolution: Use Chaosnet CFTP instead
-   - Historical: See `docs/arpanet/handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md`
-
-**No Longer Applicable**:
-- hi1shim operational risk — retired; shim removed from PDP-10 path
-- IMP bad-magic regression monitoring — only applies to VAX path now
-- PDP-10 service bring-up for TCP:21 — wrong protocol; using Chaosnet instead
+**Current Blockers**
+- No active HI1 bad-magic blocker in latest aligned batch; primary risk is **regression** if remote runtime drifts from shim-aligned topology.
+- Active transfer blocker is PDP-10 target endpoint/service readiness for FTP from VAX (`172.20.0.40:21` now observed as `Connection refused` in latest checks).
+- Secondary operational risk: stale long-running remote `expect authentic-ftp-transfer.exp` processes can contaminate VAX console state and produce misleading transfer observations.
 
 ### Dependencies
-1. **Chaosnet configuration** blocks:
-   - Chaosnet file transfer validation (Section 1)
-   - PDP-10 runtime validation (Section 4)
-   - Multi-protocol topology (Section 5)
-   - Cross-protocol file transfer (Section 6)
+1. **PDP-10 installation** blocks:
+   - 4-container routing test (#25)
+   - VAX ↔ PDP-10 FTP transfer (#26)
 
-2. **Multi-protocol topology working** blocks:
+2. **VAX ↔ PDP-10 FTP** blocks:
    - Build pipeline integration (#28)
 
 3. **Build pipeline working** blocks:
@@ -624,27 +551,14 @@ GitHub Actions Workflow
 
 ### Risk Mitigation
 
-**Risk**: CH11 not available in current build
-**Mitigation**: 
-- Verify early (first task in Section 0)
-- Fallback to VAX ARPANET-only demonstration if needed
-- Alternative: Use different ITS build with CH11 support
-
-**Risk**: Chaosnet configuration unfamiliar
-**Mitigation**: 
-- Well-documented in ITS manuals and MIT AI Memos
-- Simpler than ARPANET 1822 protocol
-- Community resources available (SIMH forums, ITS documentation)
-
-**Risk**: Two protocols more complex to maintain
-**Mitigation**: 
-- Protocols are independent; no coupling
-- Each is authentic and self-contained
-- Simpler than protocol translation layer
-- Can demonstrate ARPANET first, add Chaosnet later
+**Risk**: PDP-10 TOPS-20 installation complex
+**Mitigation**: Can proceed with VAX-only FTP testing first, add PDP-10 later
 
 **Risk**: GitHub Actions timing issues
-**Mitigation**: Use SIMH automation (proven 99% reliable) for both protocols
+**Mitigation**: Use SIMH automation (proven 99% reliable)
+
+**Risk**: Build pipeline too slow
+**Mitigation**: Optimize container startup, consider pre-warming
 
 ---
 
