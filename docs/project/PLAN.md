@@ -141,10 +141,16 @@ The AWS infrastructure provides on-demand x86_64 EC2 instances for testing ARPAN
 - Testing pipeline expansions (new nodes, protocols)
 - Iterating on orchestration before CI/CD runs
 
+**Current State**:
+- Single t3.medium instance running (34.227.223.186)
+- VAX + PDP-10 containers active
+- Serial tunnel infrastructure ready
+- Next: Migrate to two t3.micro instances for cost optimization
+
 **Architecture**:
 - Orchestration from small Linux systems (Raspberry Pi, ARM devices)
 - Python-based AWS CDK for ephemeral EC2 instances
-- Cost: ~$0.04/hour when testing, $0 when idle
+- Cost: ~$0.04/hour (t3.medium) → ~$0.02/hour (two t3.micros)
 - See `test_infra/` for implementation details
 
 **Workflow**: Develop on AWS EC2 → Deploy to GitHub Actions pipeline → Debug on AWS EC2 as needed
