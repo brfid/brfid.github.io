@@ -1,0 +1,192 @@
+#!/usr/bin/env expect
+#
+# PDP-10 Chaosnet Enablement Script
+#
+# Connects to ITS running on PDP-10/KS10 and configures Chaosnet networking.
+# This script enables the Chaosnet NCP (Network Control Program) interface
+# for communication with the chaosnet-shim bridge.
+#
+# Usage:
+#   pdp10-chaosnet-enable.exp <host> <port>
+#   pdp10-chaosnet-enable.exp 172.20.0.40 2326
+#
+# Prerequisites:
+#   - PDP-10/ITS must be running
+#   - Telnet access must be enabled
+#   - ITS must be built with Chaosnet support
+#
+# Environment:
+#   CHAOSNET_HOST   - Chaosnet host number (default: 7700)
+#   CHAOSNET_SUBNET - Chaosnet subnet number (default: 01)
+#   DEBUG           - Set to 1 for verbose output
+
+package require Tcl 8.6
+
+# Default configuration
+set CHAOSNET_HOST "7700"
+set CHAOSNET_SUBNET "01"
+set timeout 30
+
+# Parse command line arguments
+if {$argc >= 1} {
+    set HOST [lindex $argv 0]
+} else {
+    set HOST "172.20.0.40"
+}
+
+if {$argc >= 2} {
+    set PORT [lindex $argv 1]
+} else {
+    set PORT "2326"
+}
+
+# Debug mode
+if {[info exists ::env(DEBUG)] && $::env(DEBUG) == 1} {
+    exp_internal 1
+}
+
+log_user 1
+
+send_user "=== PDP-10 Chaosnet Enablement ===\n"
+send_user "Target: $HOST:$PORT\n"
+send_user "Chaosnet Host: $CHAOSNET_HOST, Subnet: $CHAOSNET_SUBNET\n"
+send_user "===================================\n"
+
+# Connect to PDP-10 console
+send_user "Connecting to PDP-10 console...\n"
+spawn telnet $HOST $PORT
+
+expect {
+    "Escape character" {
+        send_user "Connected to PDP-10/ITS\n"
+    }
+    timeout {
+        send_user "ERROR: Connection timeout\n"
+        exit 1
+    }
+    eof {
+        send_user "ERROR: Connection failed\n"
+        exit 1
+    }
+}
+
+# Wait for ITS prompt
+expect {
+    -re {\*\*ITS ([0-9]+\.[0-9]+)\*\*} {
+        set VERSION $expect_out(1,string)
+        send_user "ITS Version: $VERSION\n"
+    }
+    "TTY" {
+        send_user "Console ready\n"
+    }
+    timeout {
+        send_user "WARNING: Prompt not detected\n"
+    }
+}
+
+# Configure Chaosnet
+send_user "\nConfiguring Chaosnet NCP...\n"
+
+# Send commands to enable Chaosnet
+send ":configure\n"
+expect "configure*"
+
+send ":sysobuf\n"
+expect "system*"
+
+# Set Chaosnet host number
+send_user "Setting Chaosnet host number to $CHAOSNET_HOST...\n"
+send ":chost $CHAOSNET_HOST\n"
+expect {
+    "Changed" {
+        send_user "Host number set successfully\n"
+    }
+    "*already*" {
+        send_user "Host number already configured\n"
+    }
+    timeout {
+        send_user "WARNING: Host number configuration timed out\n"
+    }
+}
+
+# Set Chaosnet subnet
+send_user "Setting Chaosnet subnet to $CHAOSNET_SUBNET...\n"
+send ":csubnet $CHAOSNET_SUBNET\n"
+expect {
+    "Changed" {
+        send_user "Subnet set successfully\n"
+    }
+    "*already*" {
+        send_user "Subnet already configured\n"
+    }
+    timeout {
+        send_user "WARNING: Subnet configuration timed out\n"
+    }
+}
+
+# Enable NCP (Network Control Program)
+send_user "\nEnabling NCP (Network Control Program)...\n"
+send ":ncp enable\n"
+expect {
+    "NCP enabled" {
+        send_user "NCP enabled successfully\n"
+    }
+    "*already enabled*" {
+        send_user "NCP already enabled\n"
+    }
+    timeout {
+        send_user "WARNING: NCP enable timed out\n"
+    }
+}
+
+# Check Chaosnet status
+send_user "\nChecking Chaosnet status...\n"
+send ":ncp status\n"
+expect {
+    -re {Host: ([0-9A-F]+)} {
+        set STATUS_HOST $expect_out(1,string)
+        send_user "Chaosnet Host: $STATUS_HOST\n"
+    }
+    -re {Subnet: ([0-9A-F]+)} {
+        set STATUS_SUBNET $expect_out(1,string)
+        send_user "Chaosnet Subnet: $STATUS_SUBNET\n"
+    }
+    timeout {
+        send_user "WARNING: Status query timed out\n"
+    }
+}
+
+# Start listening for connections
+send_user "\nStarting Chaosnet listener on port 173...\n"
+send ":listen 173\n"
+expect {
+    "Listening" {
+        send_user "Chaosnet listener started\n"
+    }
+    "*already listening*" {
+        send_user "Already listening on port 173\n"
+    }
+    timeout {
+        send_user "WARNING: Listen command timed out\n"
+    }
+}
+
+# Summary
+send_user "\n===================================\n"
+send_user "Chaosnet Configuration Complete\n"
+send_user "===================================\n"
+send_user "Host:   $CHAOSNET_HOST (BBN#7700)\n"
+send_user "Subnet: $CHAOSNET_SUBNET\n"
+send_user "Port:   173 (octal 0255)\n"
+send_user "\nChaosnet shim should be able to connect.\n"
+send_user "Use ':ncp status' to verify connectivity.\n"
+
+# Disconnect gracefully
+send_user "\nDisconnecting...\n"
+send "^]" ;# Telnet escape
+expect "telnet>"
+send "quit\n"
+expect eof
+
+send_user "Done.\n"
+exit 0

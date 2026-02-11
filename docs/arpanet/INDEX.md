@@ -20,6 +20,11 @@
 - [Phase 2 validation](progress/PHASE2-VALIDATION.md)
 - [Phase 3 progress](progress/PHASE3-PROGRESS.md)
 
+## Branch B Paths (Active)
+- [Path A: Chaosnet-First ITS-Compatible](progress/PATH-A-CHAOSNET-PLAN.md)
+- [Path A Results](progress/PATH-A-CHAOSNET-RESULTS.md) ✅
+- [Path D: VAX/IMP Fallback](progress/PATH-D-VAX-IMP-FALLBACK-PLAN.md) ⏳
+
 ## Operations
 - [Testing guide](operations/TESTING-GUIDE.md)
 - [VAX app setup](operations/VAX-APPS-SETUP.md)

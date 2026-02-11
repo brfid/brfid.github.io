@@ -37,7 +37,7 @@ class NetworkInterface:
         ... )
     """
 
-    network_type: Literal["arpanet", "decnet", "uucp"]
+    network_type: Literal["arpanet", "chaosnet", "decnet", "uucp"]
     ip_address: str
     udp_port: int
     device: str

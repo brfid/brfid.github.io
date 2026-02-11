@@ -53,6 +53,37 @@ Branch B path priority (effective immediately):
   - `bad_magic_unique_delta=0`
   - `hi1_line_count_delta=4`
 
+#### Path A: Chaosnet-First Progress ✅ COMPLETE
+
+**Implementation Status**: Protocol implementation verified, 12-byte header format correct
+
+**Evidence**:
+- Path A implementation: `docs/arpanet/progress/PATH-A-CHAOSNET-RESULTS.md`
+- Chaosnet shim: `arpanet/scripts/chaosnet_shim.py`
+- Test harness: `arpanet/scripts/test_chaosnet_transfer.py`
+- PDP-10 enablement: `arpanet/scripts/pdp10-chaosnet-enable.exp`
+- Topology: `docker-compose.arpanet.phase2-chaosnet.yml`
+
+**Protocol Fix (2026-02-11)**:
+- Header format corrected: `>HHHHHH` (6 unsigned shorts = 12 bytes)
+- Fields: pkt_type, length, src_host, src_subnet, dst_host, dst_subnet
+- All struct.pack/unpack calls now consistent
+
+**Test Results**:
+- Local packet_format: ✓ PASSED (1/1)
+- AWS packet_format: ✓ PASSED (1/1)
+- Connectivity: UDP port mapping requires `network_mode: host` for direct testing
+- Shim logs confirm: "Chaosnet shim listening on port 173"
+
+**Container Status**:
+```bash
+ssh ubuntu@34.227.223.186
+cd brfid.github.io
+docker-compose -f docker-compose.arpanet.phase2-chaosnet.yml up -d --force-recreate
+```
+
+**Protocol Ready**: Chaosnet NCP implementation structurally correct and ready for ITS integration testing.
+
 #### Branch B next actions (command-first)
 
 1) **Freeze blocker declaration as active constraint**

@@ -1,0 +1,35 @@
+# Chaosnet Shim Container
+# Protocol bridge between ARPANET and Chaosnet for ITS compatibility
+#
+# This container provides a Chaosnet protocol adapter that enables
+# communication between the ARPANET IMP infrastructure and PDP-10/ITS
+# nodes using the native Chaosnet (NCP) protocol.
+#
+# Usage:
+#   docker build -f Dockerfile.chaosnet-shim -t arpanet-chaosnet-shim .
+#   docker run -d --name chaosnet-shim arpanet-chaosnet-shim
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install runtime dependencies (no external Python packages needed - uses stdlib only)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy application from scripts/
+COPY scripts/chaosnet_shim.py .
+
+# Environment
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Expose Chaosnet listen port (octal 0255 = decimal 173)
+EXPOSE 173
+
+# Run the shim
+CMD ["python", "-u", "/app/chaosnet_shim.py", \
+     "--pdp10-host", "0x7700", \
+     "--pdp10-subnet", "0x01", \
+     "--listen-port", "173"]
