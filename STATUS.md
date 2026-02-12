@@ -1,6 +1,6 @@
 # Project Status
 
-**Last updated:** 2026-02-11
+**Last updated:** 2026-02-12
 
 ## Current State
 
@@ -71,10 +71,15 @@ python -m mypy resume_generator tests
 
 **Active path**: KL10 + Serial + FTP (VAX → PDP-10 file transfer)
 
-### Current Blocker
-- **PDP-10 boot failure**: KS10 emulator cannot boot ITS or TOPS-20
-- Error: "Stop code 7, PC: 000100" (confirmed on both OSes)
-- Solution: Switch to KL10 emulator (community-proven for TOPS-20)
+### Current Status (2026-02-12)
+- **PDP-10 installation automation attempted** - Multiple approaches tested
+- ✅ SIMH configuration errors fixed (unit number syntax)
+- ✅ Automation method proven (screen + command stuffing works)
+- ❌ TOPS-20 V4.1: Boot loop bug (WRCSTM instruction issue)
+- ⚠️ TOPS-20 V7.0: Cornwell SIMH parameter incompatibilities
+- ⚠️ KLH10: Execution errors with Docker image
+- **Recommendation**: Manual installation (15-30 min) or use TOPS-10
+- **See**: `docs/arpanet/PDP10-INSTALLATION-ATTEMPTS-2026-02-12.md`
 
 ### Three-Phase Plan
 **Phase 1**: Fix PDP-10 Boot (switch KS10 → KL10 emulator)
@@ -95,20 +100,31 @@ python -m mypy resume_generator tests
 - KS10 boot attempts (emulator incompatibility) → `docs/arpanet/archive/ks10/`
 
 ### Next Actions
-1. Create `arpanet/Dockerfile.pdp10-kl10` (KL10 emulator)
-2. Create `arpanet/configs/kl10-install.ini` (TOPS-20 config)
-3. Update `docker-compose.vax-pdp10-serial.yml` for KL10
-4. Deploy to AWS: `cd test_infra/cdk && cdk deploy`
-5. Test PDP-10 boot and TOPS-20 installation
-6. See `docs/arpanet/KL10-SERIAL-FTP-PLAN.md` for full timeline
+**Option A (Recommended)**: Manual TOPS-20 installation
+1. Start container interactively on AWS or locally
+2. Type `/L` and `/G143` at MTBOOT> prompt
+3. Complete installation (15-30 min)
+4. Save disk image for reuse
+
+**Option B**: Try TOPS-10 instead (better compatibility)
+1. Download TOPS-10 installation tape
+2. Use similar process to TOPS-20
+3. Likely avoids boot loop issues
+
+**Option C**: Continue debugging automation
+1. Fix Cornwell SIMH parameter compatibility
+2. Or debug KLH10 execution issues
+3. Time investment: 1-2 hours more
 
 ### AWS Infrastructure
-- Status: Cleaned up (2026-02-11)
-- Cost: $0/hr (no running instances)
-- Ready to redeploy for KL10 testing
+- Status: Instance running (2026-02-12)
+- Instance: 34.202.231.2 (i-063975b939603d451)
+- Type: t3.medium
+- Cost: ~$0.04/hr
+- **Action needed**: Destroy when done (`cd test_infra/cdk && cdk destroy --force`)
 
-**Estimated Time**: 6-10 hours on AWS
-**Estimated Cost**: ~$0.40-$0.80
+**Time invested**: ~3 hours
+**Cost so far**: ~$0.12
 
 ## Key References
 
