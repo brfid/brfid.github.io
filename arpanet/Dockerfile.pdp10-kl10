@@ -7,6 +7,9 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     libedit-dev \
     libpng-dev \
+    libpcap-dev \
+    libvdeplug-dev \
+    curl \
     telnet \
     socat \
     wget \
@@ -35,9 +38,11 @@ RUN mkdir -p /machines/data
 
 # Copy configs
 COPY arpanet/configs/kl10-install.ini /machines/pdp10/install.ini
+COPY arpanet/configs/kl10-install-interactive.ini /machines/pdp10/install-interactive.ini
+COPY arpanet/configs/kl10-install-auto.ini /machines/pdp10/install-auto.ini
 COPY arpanet/configs/kl10-runtime.ini /machines/pdp10/runtime.ini
 
 WORKDIR /machines/pdp10
 
-# Start with installation config
-CMD ["pdp10", "install.ini"]
+# Start with auto installation config (boots automatically, no telnet)
+CMD ["pdp10", "install-auto.ini"]
