@@ -133,6 +133,7 @@ max-line-length = 100
 # Keep this explicit: docstrings are enforced (no global opt-out).
 disable = [
     "duplicate-code",  # R0801: Test fixtures have expected duplication
+    "too-many-instance-attributes",  # R0902: Config classes need many attributes
 ]
 
 [tool.vulture]

@@ -45,24 +45,15 @@ def _needs_quoting(value: str) -> bool:
     Returns:
         True if quoting is required, False if can be unquoted.
     """
-    if not value:
+    # Check for empty or whitespace issues
+    if not value or value != value.strip():
         return True
-    # Check for leading/trailing whitespace
-    if value != value.strip():
+    # Check for characters that need escaping or YAML special chars
+    special_chars = ('"', '\\', '#', '[', ']', '{', '}', ',')
+    if any(c in value for c in special_chars):
         return True
-    # Check for characters that need escaping
-    if '"' in value or '\\' in value:
-        return True
-    # Check for YAML special chars that require quoting
-    if '#' in value or '[' in value or ']' in value:
-        return True
-    if '{' in value or '}' in value or ',' in value:
-        return True
-    # Check for colon followed by space (key indicator)
-    if ': ' in value or ':\t' in value:
-        return True
-    # Check if ends with colon
-    return value.endswith(':')
+    # Check for colon followed by space (key indicator) or trailing colon
+    return ': ' in value or ':\t' in value or value.endswith(':')
 
 
 def _quote_vax_yaml_string(value: str) -> str:
