@@ -161,15 +161,8 @@ jobs:
 
             # Run build on VAX
             echo "🔨 Running build on AWS VAX (4.3BSD)..."
-            ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP << 'ENDSSH'
-              # Compile bradman
-              cc -o /tmp/bradman /tmp/bradman.c
-
-              # Generate manpage
-              /tmp/bradman -i /tmp/resume.vax.yaml -o /tmp/brad.1
-
-              echo "✅ VAX build complete"
-ENDSSH
+            ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+              'cc -o /tmp/bradman /tmp/bradman.c && /tmp/bradman -i /tmp/resume.vax.yaml -o /tmp/brad.1 && echo "✅ VAX build complete"'
 
             # Retrieve output
             echo "📥 Retrieving build output..."
