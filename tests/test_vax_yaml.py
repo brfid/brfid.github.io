@@ -33,9 +33,12 @@ def test_emit_vax_yaml_uses_double_quotes_and_two_space_indent() -> None:
 
     assert "\t" not in text
     assert "\r" not in text
-    assert 'schemaVersion: "v1"' in text
+    # Simple strings are now unquoted
+    assert 'schemaVersion: v1' in text
+    # Strings with special characters are still quoted and escaped
     assert 'label: "Senior \\"Dev\\" \\\\ Writer"' in text
-    assert 'summary: "Line1 Line2 Line3"' in text
+    # Long strings without special chars are unquoted
+    assert 'summary: Line1 Line2 Line3' in text
     assert "  email: " in text
 
     # Ensure list indentation is exactly 2 spaces at top level sequences.

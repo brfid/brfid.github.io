@@ -224,6 +224,40 @@ static char *parse_quoted(s)
   return out;
 }
 
+static char *parse_unquoted(s)
+    const char *s;
+{
+  BRADMAN_SIZE_T cap;
+  BRADMAN_SIZE_T len;
+  char *out;
+  const char *end;
+  /* Parse an unquoted YAML scalar - read until special char or end of line */
+  end = s;
+  while (*end) {
+    unsigned char c = (unsigned char)*end;
+    /* Stop at YAML indicators (except : must be followed by space/newline) */
+    if (c == '\0' || c == '\n') break;
+    if (c == '#' || c == '[' || c == ']' || c == '{' || c == '}' || c == ',') break;
+    /* Colon is only special if followed by space or end */
+    if (c == ':' && (end[1] == ' ' || end[1] == '\t' || end[1] == '\n' || end[1] == '\0')) break;
+    end++;
+  }
+
+  /* Trim trailing whitespace */
+  while (end > s && isspace((unsigned char)*(end - 1))) {
+    end--;
+  }
+
+  len = (BRADMAN_SIZE_T)(end - s);
+  if (len == 0) die("empty unquoted string");
+
+  out = (char *)malloc(len + 1);
+  if (!out) die("out of memory");
+  memcpy(out, s, len);
+  out[len] = '\0';
+  return out;
+}
+
 static int parse_key_value(line, key_out, val_out)
     const char *line;
     char **key_out;
@@ -234,7 +268,7 @@ static int parse_key_value(line, key_out, val_out)
   char *key;
   const char *rest;
   char *val;
-  /* Parses: key: "value"  OR  key:   (no value) */
+  /* Parses: key: "value"  OR  key: value  OR  key:   (no value) */
   colon = strchr(line, ':');
   if (!colon) return 0;
 
@@ -253,8 +287,12 @@ static int parse_key_value(line, key_out, val_out)
     *val_out = NULL;
     return 1;
   }
-  if (*rest != '"') die("expected quoted scalar for key '%s'", key);
-  val = parse_quoted(rest);
+  /* Auto-detect quoted vs unquoted strings */
+  if (*rest == '"') {
+    val = parse_quoted(rest);
+  } else {
+    val = parse_unquoted(rest);
+  }
   *key_out = key;
   *val_out = val;
   return 1;
@@ -458,8 +496,12 @@ static void parse_resume_vax_yaml(in, r)
       if (!cur_work) die("highlight appears before work item");
       if (!starts_with(line, "-")) die("expected highlight list item: %s", line);
       rest = skip_ws(line + 1);
-      if (*rest != '"') die("expected quoted highlight string");
-      val = parse_quoted(rest);
+      /* Auto-detect quoted vs unquoted strings */
+      if (*rest == '"') {
+        val = parse_quoted(rest);
+      } else {
+        val = parse_unquoted(rest);
+      }
       push_string(&cur_work->highlights, &cur_work->highlights_len, &cur_work->highlights_cap, val);
       continue;
     }
@@ -504,8 +546,12 @@ static void parse_resume_vax_yaml(in, r)
       if (!cur_skill) die("keyword appears before skill item");
       if (!starts_with(line, "-")) die("expected keyword list item: %s", line);
       rest = skip_ws(line + 1);
-      if (*rest != '"') die("expected quoted keyword string");
-      val = parse_quoted(rest);
+      /* Auto-detect quoted vs unquoted strings */
+      if (*rest == '"') {
+        val = parse_quoted(rest);
+      } else {
+        val = parse_unquoted(rest);
+      }
       push_string(&cur_skill->keywords, &cur_skill->keywords_len, &cur_skill->keywords_cap, val);
       continue;
     }

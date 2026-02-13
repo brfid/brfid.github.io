@@ -1,0 +1,26 @@
+[+0.00s] VAX Resume Build Pipeline
+[+0.00s] GitHub: https://github.com/brfid/brfid.github.io
+[+0.00s]
+[+0.00s] Stage: VAX artifact generation (local mode)
+[+0.00s] Platform: Host compilation (native C compiler)
+[+0.00s]
+[+0.00s] [1/7] Generate resume.vax.yaml from resume.yaml
+[+0.02s]       Written: build/vax/resume.vax.yaml
+[+0.02s] [2/7] Compile vax/bradman.c (HTML and man page generator)
+[+0.02s]       Compiler: cc
+[+0.48s]       Binary: build/vax/bradman
+[+0.48s] [3/7] Generate brad.1 roff man page
+[+0.48s]       Input: resume.vax.yaml
+[+0.48s]       Output: build/vax/brad.1
+[+0.48s] [4/7] Generate contact.json (simplified for VAX HTML rendering)
+[+0.48s]       Output: build/vax/contact.json
+[+0.48s] [5/7] Generate contact.html (VAX-rendered HTML fragment)
+[+0.48s]       Input: contact.json
+[+0.48s]       Output: site-test/contact.html
+[+0.48s] [6/7] Render brad.man.txt (man page text for reference)
+[+0.48s]       Parser: Python roff subset (host-side)
+[+0.48s]       Output: site-test/brad.man.txt
+[+0.48s] [7/7] Render landing page
+[+0.48s]       Output: site-test/index.html
+[+0.48s]
+[+0.48s] Build complete - all artifacts generated

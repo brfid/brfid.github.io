@@ -45,12 +45,16 @@ If you are starting with little or no context, use this exact read order:
 
 Then apply repository workflow constraints from `AGENTS.md`.
 
-## Modes
+## Build Modes
 
-- `--vax-mode local`: host-only VAX stage emulation path (fast iteration)
-- `--vax-mode docker`: SIMH/VAX Docker path
-- `--with-arpanet`: add ARPANET wrapper stage
-- `--arpanet-execute`: run scaffold execution commands (instead of dry-run scaffold only)
+- `--vax-mode local`: host-only VAX stage emulation (fast iteration)
+- `--vax-mode docker`: authentic SIMH/VAX 11/780 build (4.3BSD, K&R C)
+
+**Publish Tags**:
+- `publish` or `publish-*`: Fast local build
+- `publish-vax` or `publish-docker`: Full VAX/Docker build with enhanced logging
+
+**Note**: ARPANET Phase 2 (IMPs) removed from CI as of 2026-02-13. Tape transfer functionality preserved for future integration.
 
 ## Quickstart (venv only)
 
@@ -72,14 +76,14 @@ python3 -m venv .venv
 .venv/bin/resume-gen --out site --with-vax --vax-mode docker
 ```
 
-### Build site with ARPANET wrapper
+### Build site with VAX Docker mode
 
 ```bash
-# Scaffold mode
-.venv/bin/resume-gen --out site --with-vax --with-arpanet --vax-mode docker
+# VAX/Docker mode (authentic 4.3BSD build)
+.venv/bin/resume-gen --out site --with-vax --vax-mode docker
 
-# Execute scaffold commands
-.venv/bin/resume-gen --out site --with-vax --with-arpanet --arpanet-execute --vax-mode docker
+# Local mode (fast)
+.venv/bin/resume-gen --out site --with-vax --vax-mode local
 ```
 
 ## Useful Make targets

@@ -1,0 +1,13 @@
+DESCRIPTION
+    Senior Technical Writer specializing in API documentation and
+    docs-as-code. I lead documentation strategy, content
+    development, and docs platform. I build OpenAPI and prose
+    workflows that accelerate releases, enable SME contributions,
+    and prepare documentation for AI applications. Experienced in
+    Python automation for docs CI/CD, schema validation, and
+    content pipelines.
+
+CONTACT
+    Email: brfid@icloud.com
+    Web: https://brfid.github.io
+    LinkedIn: https://www.linkedin.com/in/brfid/

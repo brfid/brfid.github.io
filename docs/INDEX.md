@@ -10,7 +10,7 @@ New to the project? Start here:
 2. **`COLD-START.md`** - Quick onboarding for new sessions
 3. **`../STATUS.md`** - Current project status
 4. This index
-5. **`arpanet/INDEX.md`** - ARPANET-specific map (if task touches ARPANET)
+5. **`vax/INDEX.md`** - VAX/BSD documentation
 
 Then apply repository workflow constraints from `../AGENTS.md`.
 
@@ -22,21 +22,29 @@ Then apply repository workflow constraints from `../AGENTS.md`.
 
 ### Project Management
 - **`project/transport-archive.md`** - Archived VAX console/FTP transfer approaches
+- **`project/PLAN.md`** - Project planning document
 
-## Domain-Specific Documentation
+## Machine-Specific Documentation
 
-### ARPANET Stage
-- **`arpanet/INDEX.md`** - ARPANET documentation hub
-- **`arpanet/progress/NEXT-STEPS.md`** - Current active execution path (Panda)
-- **`arpanet/PDP11-HOST-REPLACEMENT-PLAN.md`** - Parallel contingency plan (PDP-11/2.11BSD; non-active)
-- **`arpanet/progress/PHASE3-PROGRESS.md`** - Timeline and progress log
-- **`arpanet/progress/PHASE1-PROGRESS.md`** - Historical Phase 1 (completed)
-- **`arpanet/progress/PHASE2-PROGRESS.md`** - Historical Phase 2 (completed)
+### VAX / BSD
+- **`vax/INDEX.md`** - VAX/BSD documentation hub
+- **`vax/README.md`** - VAX implementation details
+- **`vax/examples/`** - VAX YAML examples
 
-### VAX/SIMH Stage
-- Implementation in `../vax/` directory (scripts and `bradman.c`)
-- Transport history: `project/transport-archive.md`
-- Current approach: Tape (TS11) transfer via Docker SIMH
+### PDP Systems
+- **`pdp/INDEX.md`** - PDP documentation hub (PDP-10, PDP-11)
+- **`pdp/pdp10/`** - PDP-10/KS10/KL10 systems
+- **`pdp/pdp11/`** - PDP-11/2.11BSD systems
+
+### Integration / ARPANET
+- **`integration/INDEX.md`** - Multi-machine connection documentation
+- **`integration/progress/`** - Progress tracking and timelines
+- **`integration/operations/`** - Integration operational guides
+- **`integration/research/`** - Integration research notes
+
+### AWS / Cloud Infrastructure
+- **`aws/INDEX.md`** - AWS infrastructure documentation
+- **`aws/aws-cost-optimization.md`** - Cost management
 
 ## Source of Truth Map
 
@@ -44,9 +52,10 @@ Then apply repository workflow constraints from `../AGENTS.md`.
 |-------|------|
 | Project snapshot | `../STATUS.md` |
 | Documentation hub | This file |
-| ARPANET next steps | `arpanet/progress/NEXT-STEPS.md` |
-| ARPANET progress | `arpanet/progress/PHASE3-PROGRESS.md` |
-| VAX transport history | `project/transport-archive.md` |
+| VAX documentation | `vax/INDEX.md` |
+| PDP documentation | `pdp/INDEX.md` |
+| Integration/ARPANET | `integration/INDEX.md` |
+| AWS infrastructure | `aws/INDEX.md` |
 | Agent workflow | `../AGENTS.md` |
 
 ## Adding New Documentation
@@ -54,6 +63,6 @@ Then apply repository workflow constraints from `../AGENTS.md`.
 When creating new docs:
 
 1. Add to appropriate section in this index
-2. If domain-specific, also add to domain INDEX (`arpanet/INDEX.md`, etc.)
+2. If domain-specific, also add to domain INDEX (e.g., `vax/INDEX.md`, `pdp/INDEX.md`)
 3. Update `../STATUS.md` if it represents a milestone
 4. Use clear headers and follow existing doc patterns

@@ -5,20 +5,19 @@ Use this page when starting from zero context.
 ## 0) Current State (read this first)
 
 **Date**: 2026-02-13
-**Status**: ✅ VAX operational, ⚠️ PDP-11 tape testing
+**Status**: ⏸️ STOPPED (for cost savings), ✅ Tape transfer validated
 
-- **Active path**: VAX operational with FTP, PDP-11 testing tape alternative
-- **AWS Infrastructure**: ArpanetProductionStack running on 2x t3.micro
-- **Current state**: VAX networking+FTP working, PDP-11 kernel blocks networking
-- **Next action**: Complete tape transfer testing as alternative to network/FTP
-- **Cost**: ~$17/month running, ~$2/month stopped
-- **Latest**: See `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
+- **AWS Infrastructure**: ⏸️ STOPPED (2x t3.micro)
+- **Last state**: Tape transfer working, VAX + PDP-11 file transfer proven
+- **Achievement**: End-to-end tape transfer validated with SIMH TAP extraction
+- **Cost**: ~$2/month (stopped - storage only)
+- **Latest**: See `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
 
 **Canonical references**:
 - `STATUS.md` - Overall project status
-- `docs/arpanet/PRODUCTION-STATUS-2026-02-13.md` - Detailed deployment report
-- `docs/arpanet/progress/NEXT-STEPS.md` - FTP setup steps
-- `PRODUCTION-DEPLOYMENT.md` - Complete deployment guide
+- `docs/YAML-ENHANCEMENT-PLAN.md` - YAML parser enhancement roadmap
+- `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md` - Tape transfer proof
+- `PRODUCTION-DEPLOYMENT.md` - Complete deployment guide (AWS)
 
 **Quick AWS management**:
 ```bash
@@ -33,7 +32,7 @@ Use this page when starting from zero context.
 2. `docs/COLD-START.md` (this file)
 3. `STATUS.md`
 4. `docs/INDEX.md`
-5. `docs/arpanet/INDEX.md` (for ARPANET tasks)
+5. Machine-specific INDEX (e.g., `docs/vax/INDEX.md`, `docs/pdp/INDEX.md`, `docs/integration/INDEX.md`)
 
 Then apply repository workflow constraints from `AGENTS.md`.
 
@@ -41,23 +40,23 @@ Then apply repository workflow constraints from `AGENTS.md`.
 
 **Project state**:
 - Current status: `STATUS.md`
-- Next actions: `docs/arpanet/progress/NEXT-STEPS.md`
+- Next actions: `docs/integration/progress/NEXT-STEPS.md`
 - Production deployment: `PRODUCTION-DEPLOYMENT.md`
 
 **AWS Infrastructure**:
 - Stack code: `infra/cdk/arpanet_production_stack.py`
 - Management scripts: `aws-*.sh` (repo root)
-- Deployment guide: `infra/cdk/PRODUCTION-README.md`
+- Deployment guide: `docs/aws/INDEX.md`
 
 **Architecture**:
 - Simplified: VAX + PDP-11 direct TCP/IP (no IMPs)
-- IMP phase archived: `arpanet/archived/imp-phase/`
+- IMP phase archived: `docs/integration/archive/imp-phase/`
 - Docker compose: `docker-compose.production.yml`
 
 **Historical references**:
-- Archived IMP topology: `arpanet/archived/imp-phase/`
+- Archived IMP topology: `docs/integration/archive/imp-phase/`
 - Historical transport decisions: `docs/project/transport-archive.md`
-- PDP-10 experiments: `docs/arpanet/PANDA-*.md`
+- PDP-10 experiments: `docs/pdp/pdp10/`
 
 ## 3) Fast constraints checklist
 
@@ -71,9 +70,9 @@ Then apply repository workflow constraints from `AGENTS.md`.
 
 - Update central indexes when moving/adding docs:
   - `docs/INDEX.md`
-  - domain index (example: `docs/arpanet/INDEX.md`)
+  - domain index (example: `docs/vax/INDEX.md`, `docs/pdp/INDEX.md`)
 - Keep `STATUS.md` current
-- Document significant changes in `docs/arpanet/progress/`
+- Document significant changes in `docs/integration/progress/`
 
 ## 5) If task is AWS-related
 
@@ -133,11 +132,11 @@ telnet <pdp11-ip> 2327  # PDP-11 console
 **Documentation**:
 - `STATUS.md` - Current project status
 - `PRODUCTION-DEPLOYMENT.md` - Full deployment guide
-- `docs/arpanet/PRODUCTION-STATUS-2026-02-13.md` - Deployment report
-- `docs/arpanet/progress/NEXT-STEPS.md` - Next actions
+- `docs/integration/PRODUCTION-STATUS-2026-02-13.md` - Deployment report
+- `docs/integration/progress/NEXT-STEPS.md` - Next actions
 
 **Archives**:
-- `arpanet/archived/imp-phase/` - ARPANET 1822 protocol work
+- `docs/integration/archive/` - Historical integration approaches
 
 ## 8) Common Tasks
 
@@ -183,7 +182,7 @@ docker-compose -f docker-compose.production.yml restart vax
 ## 9) What Changed Recently (2026-02-13)
 
 1. **IMP Phase Archived**: Protocol incompatibility (Ethernet/TCP-IP vs ARPANET 1822)
-   - All IMP materials moved to `arpanet/archived/imp-phase/`
+   - All IMP materials moved to `docs/integration/archive/`
    - Simplified to direct VAX ↔ PDP-11 TCP/IP
 
 2. **Production Infrastructure Deployed**:
@@ -205,18 +204,29 @@ docker-compose -f docker-compose.production.yml restart vax
 - **Data safety**: Stop/start preserves all data (EFS + EBS)
 - **IMPs**: Archived but can be restored if needed
 
-## 11) Next Steps
+## 11) Current Priorities (2026-02-13)
 
-**Current testing** (2026-02-13):
-1. Verify PDP-11 BSD detects TS11 tape device
-2. Test VAX tape write operations (tar to tape)
-3. Test PDP-11 tape read operations (tar from tape)
-4. Complete end-to-end tape file transfer
-5. Document tape transfer methodology
+**Phase 1: YAML Parser Enhancement** (IN PROGRESS)
+- Goal: Enhance VAX C parser to handle 95% of YAML syntax
+- Remove Python preprocessing dependency
+- Timeline: 8-9 hours estimated
+- See: `docs/YAML-ENHANCEMENT-PLAN.md`
 
-**Alternative paths**:
-- Option A: Fix PDP-11 kernel (rebuild with networking)
-- Option B: Deploy second VAX for proven network/FTP testing
-- Option C: Find alternative PDP-11 image with working network stack
+**Phase 2: GitHub Workflow Simplification** (COMPLETED ✅)
+- Removed ARPANET Phase 2 (IMPs no longer needed)
+- Simplified to VAX-only builds
+- Enhanced build logging
+- See: `.github/workflows/deploy.yml`
 
-See `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md` for detailed status.
+**Phase 3: Tape Transfer Integration** (FUTURE)
+- Proven working: VAX ↔ PDP-11 via SIMH tape
+- Can integrate into pipeline later
+- See: `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
+
+---
+
+**Recent Achievements** (2026-02-13):
+- ✅ Tape transfer validated end-to-end
+- ✅ SIMH TAP parser created
+- ✅ GitHub workflow simplified
+- ✅ YAML enhancement plan created

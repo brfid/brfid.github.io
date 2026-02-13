@@ -20,10 +20,12 @@ If you are new to the repo, start with the **Overview** and the **Pipeline** dia
 ## Overview (TL;DR)
 
 1. **Input:** `resume.yaml`
-2. **Host build:** Python generates HTML, PDF, and a simplified YAML for the VAX program.
-3. **VAX step:** A C program (`vax/bradman.c`) runs (locally or inside a VAX emulator) to create `brad.1`.
+2. **Host build:** Python generates HTML, PDF, and YAML for VAX.
+3. **VAX step:** A C program (`vax/bradman.c`) runs (locally or in 4.3BSD VAX emulator) to create `brad.1`.
 4. **Host render:** `brad.1` is rendered into `site/brad.man.txt`.
 5. **Output:** Everything ends up in `site/` for static hosting.
+
+**Current enhancement (2026-02-13):** Upgrading VAX C parser to handle standard YAML, removing Python preprocessing dependency. See `docs/YAML-ENHANCEMENT-PLAN.md`.
 
 ---
 
@@ -69,20 +71,23 @@ flowchart LR
   - **transcript:** replay a saved console transcript.
 - Docker mode uses **tape by default** to pass files into the guest.
 
-**4) ARPANET stage wrapper (Phase 3 scaffold)**
-- `resume_generator/vax_arpanet_stage.py`
-- Activated through CLI flags:
-  - `--with-arpanet` (dry-run scaffold by default)
-  - `--arpanet-execute` (explicit command execution mode)
-- Current behavior:
-  - wraps the normal VAX stage
-  - emits `site/arpanet-transfer.log`
-  - in execute mode, runs scaffold command hooks and captures transfer execution output to
-    `build/vax/arpanet-transfer-exec.log`
-  - execute mode includes initial resiliency controls:
-    - retries transfer `docker exec` once on command failure
-    - classifies transfer output (`ok`, `empty-output`, `fatal-marker-detected`)
-    - records attempt + validation breadcrumbs in `site/arpanet-transfer.log`
+**4) YAML Processing (Current: v1, Planned: v2)**
+
+**v1 (Current):**
+- Python preprocessor (`vax_yaml.py`) converts `resume.yaml` → constrained `resume.vax.yaml`
+- VAX C parser handles only quoted strings, simple structure
+- Works but adds Python dependency
+
+**v2 (In Development):**
+- Enhanced VAX C parser handles standard YAML (unquoted strings, lists, nested maps)
+- Direct parsing of `resume.yaml` without preprocessing
+- 95% YAML coverage (excludes comments, anchors, complex multiline)
+- See: `docs/YAML-ENHANCEMENT-PLAN.md`
+
+**ARPANET Components (Archived):**
+- ARPANET Phase 2 (IMPs + multi-hop) removed from CI as of 2026-02-13
+- Tape transfer validated and archived: `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
+- Can be restored for demonstrations but not needed for builds
 
 ---
 
@@ -101,31 +106,33 @@ flowchart LR
 
 ## Runtime Modes
 
-**Local mode**
-```
+**Local mode** (fast iteration):
+```bash
 .venv/bin/resume-gen --out site --with-vax --vax-mode local
 ```
+- Compiles `bradman.c` on host
+- No emulator needed
+- Fast (~5 seconds)
 
-**Docker (SIMH) mode**
-```
+**Docker (SIMH) mode** (authentic 4.3BSD):
+```bash
 .venv/bin/resume-gen --out site --with-vax --vax-mode docker
 ```
+- Runs VAX 11/780 emulator
+- 4.3BSD UNIX (1986)
+- K&R C compiler
+- TS11 tape transfer
+- Authentic but slower (~60 seconds)
 
-**ARPANET scaffold (dry-run)**
-```
-.venv/bin/resume-gen --out site --with-vax --with-arpanet --vax-mode local
-```
+**GitHub Actions Tags:**
+- `publish` or `publish-*`: Local mode (fast)
+- `publish-vax` or `publish-docker`: Docker mode (authentic)
 
-**ARPANET scaffold (execute mode)**
-```
-.venv/bin/resume-gen --out site --with-vax --with-arpanet --arpanet-execute --vax-mode local
-```
-
-Notes:
-- Docker mode runs a pinned SIMH image.
-- File transfer uses a TS11 tape image.
-- Console/FTP transports are not part of the active runtime path.
-- Historical transport notes are retained in `docs/transport-archive.md`.
+**Notes:**
+- Docker mode uses pinned SIMH image (`jguillaumes/simh-vaxbsd`)
+- File transfer via TS11 tape image
+- ARPANET multi-hop removed from CI (archived)
+- Historical ARPANET work: `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
 
 ## Retained implementation records
 

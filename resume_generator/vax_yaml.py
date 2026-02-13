@@ -1,7 +1,12 @@
-"""Emit a constrained, VAX-friendly YAML subset from a JSON Resume input.
+"""Emit standard YAML from a JSON Resume input for VAX processing.
 
-The VAX-side program (`vax/bradman.c`) parses only a tiny subset of YAML. This module
-generates that subset deterministically so the guest does not need a full YAML library.
+The VAX-side program (`vax/bradman.c`) now parses standard YAML including:
+- Unquoted strings (default for simple values)
+- Quoted strings (when containing YAML special characters)
+- Lists with '-' markers
+- Nested mappings
+
+This module generates clean, readable YAML that is both human-friendly and VAX-compatible.
 """
 
 from __future__ import annotations
@@ -24,21 +29,63 @@ def _flatten_whitespace(value: str) -> str:
     return _WHITESPACE_RE.sub(" ", value).strip()
 
 
-def _quote_vax_yaml_string(value: str) -> str:
-    r"""Quote a string as required by the VAX-YAML subset.
+def _needs_quoting(value: str) -> bool:
+    """Check if a string needs quoting for YAML.
 
-    The subset requires:
-    - Double-quoted scalars only
+    Strings need quoting if they contain YAML special characters:
+    - Quotes or backslashes (need escaping)
+    - : followed by space (key indicator)
+    - # (comment)
+    - [ ] { } , (flow indicators)
+    - Leading/trailing whitespace
+
+    Args:
+        value: String to check.
+
+    Returns:
+        True if quoting is required, False if can be unquoted.
+    """
+    if not value:
+        return True
+    # Check for leading/trailing whitespace
+    if value != value.strip():
+        return True
+    # Check for characters that need escaping
+    if '"' in value or '\\' in value:
+        return True
+    # Check for YAML special chars that require quoting
+    if '#' in value or '[' in value or ']' in value:
+        return True
+    if '{' in value or '}' in value or ',' in value:
+        return True
+    # Check for colon followed by space (key indicator)
+    if ': ' in value or ':\t' in value:
+        return True
+    # Check if ends with colon
+    if value.endswith(':'):
+        return True
+    return False
+
+
+def _quote_vax_yaml_string(value: str) -> str:
+    r"""Quote a string if required by YAML syntax.
+
+    Now supports both quoted and unquoted strings:
+    - Unquoted if safe (no YAML special characters)
+    - Quoted if contains special characters like `: ` or `#`
     - Single-line strings only (no embedded newlines)
-    - Escaped `\\` and `"`
+    - Escaped `\\` and `"` in quoted strings
 
     Args:
         value: Raw string.
 
     Returns:
-        A YAML scalar like `"Hello \"world\""` (including surrounding quotes).
+        A YAML scalar, quoted or unquoted as needed.
     """
     flattened = _flatten_whitespace(value)
+    if not _needs_quoting(flattened):
+        return flattened
+    # Quote and escape
     escaped = flattened.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'
 

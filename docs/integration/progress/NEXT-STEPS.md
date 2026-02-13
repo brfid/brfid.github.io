@@ -1,32 +1,171 @@
 # ARPANET Next Steps
 
 **Last updated:** 2026-02-13
-**Status**: ✅ **Production infrastructure deployed - Ready for FTP setup**
+**Status**: ⚠️ **Tape transfer in progress** - then direct connection - then IMPs
 
 ---
 
 ## Current Situation
 
 **Date**: 2026-02-13
-**Phase**: Production deployment complete, awaiting network configuration
+**Phase**: Production deployment complete, PDP-11 kernel issue identified
 
 **Infrastructure**:
 - ✅ ArpanetProductionStack deployed to AWS
 - ✅ 2x t3.micro instances (VAX + PDP-11)
 - ✅ Shared EFS logging at `/mnt/arpanet-logs/`
-- ✅ Both containers running without restart loops
 - ✅ IMP phase archived (protocol incompatibility)
 
-**Network**:
-- VAX: 172.20.0.10 (de0 interface detected)
-- PDP-11: 172.20.0.50 (xq0 interface, Ethernet working)
-- Docker bridge: 172.20.0.0/16
+**Network Status**:
+- **VAX**: 172.20.0.10 (de0) - ✅ FULLY OPERATIONAL, FTP running
+- **PDP-11**: 172.20.0.50 (xq0) - ❌ BLOCKED - No working kernel
 
-**AWS Instances**:
-- VAX: 3.80.32.255 (i-090040c544bb866e8)
-- PDP-11: 3.87.125.203 (i-071ab53e735109c59)
-- EFS: fs-03cd0abbb728b4ad8
-- Cost: ~$17/month running, ~$2/month stopped
+**PDP-11 Kernel Issue**:
+- Default `unix` kernel: Boots but no xq/Ethernet driver
+- `netnix` kernel: Crashes with "Trap stack push abort"
+- `genunix` kernel: Configuration error during boot
+
+See: `docs/pdp/pdp11/operations/PDP11-KERNEL-ISSUE-2026-02-13.md`
+
+---
+
+## PDP-11 Networking Fix Paths
+
+The following three paths are available to resolve the networking blocker, ordered from fastest to most robust:
+
+### Path 3: Fix netnix Crash - TESTED ❌
+
+**Approach**: Force SIMH vector/CSR settings in pdp11.ini to match 2.11BSD kernel expectations.
+
+**SIMH Configuration Fix** (`arpanet/configs/pdp11.ini`):
+```ini
+set xq enabled
+set xq address=174440
+set xq vector=120
+attach xq eth0
+```
+
+**Test Result**: ❌ FAILED - SIMH version 4.0-0 does not support `set xq address` or `set xq vector` parameters. These cause "Non-existent parameter" errors.
+
+**Conclusion**: Path 3 will not work with current SIMH version.
+
+---
+
+### Path 1: Pre-built Networking Image - TESTED ❌
+
+**Approach**: Download PiDP-11 community's `2.11BSD_rq.dsk` with kernel properly built with networking (qe driver for DEQNA/DELQA).
+
+**Sources Attempted**:
+- https://pidp.net/pidp11/systems.tar.gz - ❌ Not accessible (404 or corrupted)
+- https://github.com/chasecovello/211bsd-pidp11 - ❌ No releases
+- https://www.retro11.de - Only rpeth variant (current one), no rq variant
+
+**Result**: Could not locate working pre-built image with networking.
+
+**Alternative**: May need to find alternative source or build custom image.
+
+---
+
+### netnix Kernel Test
+
+**Boot command**: `xp(0,0,0)netnix`
+
+**Result**: Crashes with "Trap stack push abort" at PC:005320
+
+The netnix kernel crashes immediately when booted, regardless of SIMH configuration.
+
+---
+
+### Path 2: Rebuild Kernel (Last Resort)
+
+**Approach**: If keeping current disk image, rebuild kernel with qe driver enabled.
+
+**Steps**:
+1. Boot working kernel (unix)
+2. Edit `/usr/src/sys/conf/GENERIC` or create `NET` config
+3. Ensure these lines exist:
+   ```c
+   options INET
+   device qe0 at uba? csr 174440 vector qeintr
+   pseudo-device pty 4
+   pseudo-device loop
+   pseudo-device ether
+   ```
+4. Compile: `./config NET && make && make install`
+5. Boot new kernel: `xp(0,0,0)netnix`
+
+**Estimated Time**: 2-4 hours
+
+---
+
+### Tape Transfer Alternative (Already Configured)
+
+If all networking paths fail, the TS11 tape drive is already configured:
+
+**Current Config**:
+- Tape device in pdp11.ini: `set ts enabled`
+- Transfer file: `/var/log/arpanet/transfer.tap`
+
+**Steps**:
+1. Write file from VAX to tape
+2. Read file on PDP-11 from tape
+3. See: TS11 tape transfer testing in progress
+
+---
+
+## Current Priority Order
+
+### Phase 1: Tape Transfer (IMMEDIATE)
+**Goal**: Get TS11 tape transfer working between VAX and PDP-11
+
+**Current Config**:
+- PDP-11: TS11 tape device enabled (`set ts enabled` in pdp11.ini)
+- VAX: Has TU58 tape (but using EFS for file exchange)
+- Transfer method: Shared EFS file at `/mnt/arpanet-logs/` mapped to `/var/log/arpanet/`
+
+**Steps**:
+1. Start AWS instances: `./aws-start.sh`
+2. SSH to VAX: `ssh -i ~/.ssh/arpanet-temp.pem ubuntu@<vax-ip>`
+3. Create test file on VAX:
+   ```bash
+   echo "Test from VAX $(date)" > /mnt/arpanet-logs/vax/tape-test.txt
+   ```
+4. SSH to PDP-11: `ssh -i ~/.ssh/arpanet-temp.pem ubuntu@<pdp11-ip>`
+5. Check if file is accessible via shared EFS
+6. Alternatively, use VAX's tape device to write to EFS-mounted tape file
+7. Document results
+
+**Alternative - Direct TS11 on PDP-11**:
+- The PDP-11 has TS11 configured: `attach ts /var/log/arpanet/transfer.tap`
+- Boot PDP-11 and check `dmesg` for ts0 device
+- Use `mt` command to read/write tape
+
+**Status**: ⏸️ Pending - Next session task
+
+---
+
+### Phase 2: Direct Connection (AFTER TAPE)
+**Goal**: Get VAX ↔ PDP-11 TCP/IP networking working
+
+**Options** (if networking needed):
+- Find working PDP-11 kernel with Ethernet support
+- Deploy second VAX as alternative
+- Rebuild PDP-11 kernel from source
+
+**Status**: ⏸️ Pending
+
+---
+
+### Phase 3: IMP Network (EVENTUALLY)
+**Goal**: Restore ARPANET 1822 protocol demonstration
+
+**Note**: IMPs were archived due to protocol incompatibility but can be restored for historical demonstration purposes.
+
+**Status**: ⏸️ Future enhancement
+
+---
+
+## What Was Done Before Blocker Identified
 
 **What's Done**:
 - ✅ CDK stack deployed
@@ -36,12 +175,12 @@
 - ✅ IMPs archived with documentation
 - ✅ Management scripts created (`aws-*.sh`)
 - ✅ Documentation updated (STATUS.md, COLD-START.md)
+- ✅ VAX network and FTP fully operational
 
-**What's Next**:
-- → Configure network interfaces (assign IPs)
+**What's Next** (after PDP-11 fix):
+- → Configure PDP-11 network interfaces
 - → Test connectivity (ping)
-- → Configure FTP on both systems
-- → Test file transfers
+- → Test FTP transfers both directions
 - → Make configuration persistent
 - → Document validation results
 
