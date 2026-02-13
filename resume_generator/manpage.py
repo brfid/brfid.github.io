@@ -1,9 +1,9 @@
 """Convert a small subset of man(7) roff into publishable text.
 
 This is intentionally narrow: it targets the deterministic roff emitted by
-`vax/bradman.c` (NAME/DESCRIPTION/CONTACT) so the host can render a stable
-`site/brad.man.txt` without depending on `groff`, `mandoc`, or a VAX-side
-`nroff` installation.
+`vax/bradman.c` (NAME/DESCRIPTION/CONTACT/EXPERIENCE/SKILLS) so the host
+can render a stable `site/brad.man.txt` without depending on `groff`,
+`mandoc`, or a VAX-side `nroff` installation.
 """
 
 from __future__ import annotations
@@ -16,11 +16,13 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class BradManSummary:
-    """Minimal brad(1) summary used on the landing page."""
+    """Brad(1) summary used on the landing page."""
 
     name_line: str
     description: str
     contact_lines: tuple[str, ...]
+    experience_lines: tuple[str, ...]
+    skills_lines: tuple[str, ...]
 
 
 def _unescape_roff_text(value: str) -> str:
@@ -40,11 +42,14 @@ def _unescape_roff_text(value: str) -> str:
 
 
 def parse_brad_roff_summary(roff: str) -> BradManSummary:
-    """Parse the minimal summary from a `brad.1` roff source string."""
+    """Parse the summary from a `brad.1` roff source string."""
     section: str | None = None
+    subsection: str | None = None
     name_lines: list[str] = []
     description_lines: list[str] = []
     contact_lines: list[str] = []
+    experience_lines: list[str] = []
+    skills_lines: list[str] = []
 
     for raw_line in roff.splitlines():
         line = raw_line.rstrip("\r\n")
@@ -59,13 +64,30 @@ def parse_brad_roff_summary(roff: str) -> BradManSummary:
 
             if macro == "SH":
                 section = arg.strip().upper()
+                subsection = None
                 continue
-            if macro in {"TH", "TP", "SS", "B", "I", "IP"}:
-                # Outside the minimal summary we intentionally ignore these,
-                # and within the minimal summary the content arrives on plain lines.
+            if macro == "SS":
+                # Skills subsection (e.g., "Technical Writing")
+                subsection = arg.strip()
+                if section == "SKILLS" and subsection:
+                    skills_lines.append(f"  {subsection}:")
+                continue
+            if macro in {"TH", "TP"}:
+                # New entry in EXPERIENCE
+                continue
+            if macro == "B":
+                # Company name in EXPERIENCE
+                if section == "EXPERIENCE":
+                    experience_lines.append(f"  {arg}")
+                continue
+            if macro == "I":
+                # Location in EXPERIENCE (usually follows company)
+                continue
+            if macro == "IP":
+                # Bullet point (we'll capture the text on the next line)
                 continue
             if macro == "br":
-                # Explicit line break in CONTACT; ignore because we store each content line.
+                # Explicit line break in CONTACT
                 continue
             continue
 
@@ -79,6 +101,16 @@ def parse_brad_roff_summary(roff: str) -> BradManSummary:
             description_lines.append(text)
         elif section == "CONTACT":
             contact_lines.append(text)
+        elif section == "EXPERIENCE":
+            # Indent content under company names
+            if not text.startswith("  "):
+                experience_lines.append(f"    {text}")
+            else:
+                experience_lines.append(text)
+        elif section == "SKILLS":
+            # Skills come after subsection headers
+            if text and subsection:
+                skills_lines.append(f"    {text}")
 
     name_line = " ".join(name_lines).strip()
     description = " ".join(description_lines).strip()
@@ -86,6 +118,8 @@ def parse_brad_roff_summary(roff: str) -> BradManSummary:
         name_line=name_line,
         description=description,
         contact_lines=tuple(contact_lines),
+        experience_lines=tuple(experience_lines),
+        skills_lines=tuple(skills_lines),
     )
 
 
@@ -102,7 +136,6 @@ def render_brad_man_txt(
 
     out_lines.append("DESCRIPTION")
     wrapped = textwrap.wrap(summary.description, width=body_width, break_long_words=False)
-    # Don't truncate - show full description
     for line in wrapped:
         out_lines.append(f"{indent}{line}".rstrip())
     out_lines.append("")
@@ -114,6 +147,18 @@ def render_brad_man_txt(
     else:
         out_lines.append(f"{indent}(none)")
     out_lines.append("")
+
+    if summary.experience_lines:
+        out_lines.append("EXPERIENCE")
+        for line in summary.experience_lines:
+            out_lines.append(line.rstrip())
+        out_lines.append("")
+
+    if summary.skills_lines:
+        out_lines.append("SKILLS")
+        for line in summary.skills_lines:
+            out_lines.append(line.rstrip())
+        out_lines.append("")
 
     return "\n".join(out_lines)
 
