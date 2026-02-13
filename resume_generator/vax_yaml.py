@@ -62,9 +62,7 @@ def _needs_quoting(value: str) -> bool:
     if ': ' in value or ':\t' in value:
         return True
     # Check if ends with colon
-    if value.endswith(':'):
-        return True
-    return False
+    return value.endswith(':')
 
 
 def _quote_vax_yaml_string(value: str) -> str:
