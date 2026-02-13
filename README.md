@@ -21,6 +21,18 @@ This project generates and publishes a static resume site, with an optional VAX/
 
 For deeper component detail, see `ARCHITECTURE.md`.
 
+## AWS Production Infrastructure Management
+
+**Quick commands** (2x t3.micro + shared EFS storage):
+```bash
+./aws-status.sh  # Check if running/stopped, show IPs and costs
+./aws-stop.sh    # Stop instances (saves ~$15/month, keeps all data)
+./aws-start.sh   # Start instances (shows new IPs)
+```
+
+**Cost**: ~$17/month running or ~$2/month stopped (storage only).
+**Data safety**: All scripts preserve EFS and EBS volumes - no data loss.
+
 ## LLM / operator cold-start quickstart
 
 If you are starting with little or no context, use this exact read order:
