@@ -134,6 +134,9 @@ max-line-length = 100
 disable = [
     "duplicate-code",  # R0801: Test fixtures have expected duplication
     "too-many-instance-attributes",  # R0902: Config classes need many attributes
+    "too-many-locals",  # R0914: Parser functions need many variables
+    "too-many-branches",  # R0912: Parser functions have many cases
+    "too-many-statements",  # R0915: Parser functions are naturally long
 ]
 
 [tool.vulture]
