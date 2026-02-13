@@ -107,10 +107,9 @@ def parse_brad_roff_summary(roff: str) -> BradManSummary:
                 experience_lines.append(f"    {text}")
             else:
                 experience_lines.append(text)
-        elif section == "SKILLS":
+        elif section == "SKILLS" and text and subsection:
             # Skills come after subsection headers
-            if text and subsection:
-                skills_lines.append(f"    {text}")
+            skills_lines.append(f"    {text}")
 
     name_line = " ".join(name_lines).strip()
     description = " ".join(description_lines).strip()
