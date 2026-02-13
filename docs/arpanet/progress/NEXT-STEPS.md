@@ -1,575 +1,256 @@
-# ARPANET Next Steps: KL10 + Serial + FTP
+# ARPANET Next Steps
 
-**Date**: 2026-02-11
-**Current Phase**: Phase 1 - Fix PDP-10 Boot (KL10 Switch)
-**Goal**: VAX → PDP-10 file transfer via serial tunnel
+**Last updated:** 2026-02-12 Evening (Phase 1 & Phase 3 complete)
+**Status**: ✅ **Investigation complete - Console automation blocker identified as common to both PDP-10 and PDP-11**
 
----
-
-## Quick Status
-
-**Current Blocker**: PDP-10 cannot boot (KS10 emulator incompatible)
-**Solution**: Switch to KL10 emulator (community-proven for TOPS-20)
-**Master Plan**: `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`
-
-**Three Phases**:
-1. ✋ **Phase 1**: Fix PDP-10 boot (KL10 emulator) - **IN PROGRESS**
-2. ⏸️ **Phase 2**: Serial tunnel VAX ↔ PDP-10
-3. ⏸️ **Phase 3**: FTP file transfer
+> Decision: Continue with VAX (proven working). Archive PDP-10/PDP-11 as experimental manual-boot systems.
 
 ---
 
-## Phase 1: Fix PDP-10 Boot (KL10 Switch)
+## Current Situation
 
-### Step 1.1: Create KL10 Dockerfile (30 min)
+**Latest Session**: AWS testing and validation (2026-02-12 evening, continued)
+**Duration**: ~2+ hours
+**Status**: ✅ bootloader reached, ⚠️ final startup currently blocked by console session behavior
 
-**File**: `arpanet/Dockerfile.pdp10-kl10`
+**Progress**:
+- ✅ Fixed disk image path (`RH20.RP07.1`, not `panda.rp`)
+- ✅ Fixed config file to include `go` command
+- ✅ Identified command mismatch in Panda config: `mount dsk0 ...` is invalid for this KLH10 build (uses `devmount`)
+- ✅ System boots and loads boot.sav successfully
+- ✅ Reaches TOPS-20 BOOT loader prompt
+- ⚠️ **Current blocker**: remote console sessions to `localhost:2326` are closing immediately before command handoff
+- ⚠️ BOOT command injection is still non-deterministic; `/L` and `/G143` are not consistently accepted in non-interactive runs
+- ⚠️ After a full `docker compose down && up -d` reset, host-port console `localhost:2326` still accepts then immediately closes (`recv == b''`), so remote scripted ingress remains unreliable
+- ℹ️ `devmount dsk0 RH20.RP07.1` now reports `Cannot mount: drive busy` (expected when already attached by current runtime path), so the remaining issue is console/control-plane reliability rather than missing media
+- ✅ Runtime TTY is confirmed interactive-capable: `stdin_open=true`, `tty=true`, `/proc/1/fd/0 -> /dev/pts/0`
+- ⚠️ Strict automation rerun (`arpanet/scripts/panda_boot_handoff.py --retries 3 --timeout 50`) produced `boot_seen=False` and `sent_commands=[]` in all attempts, i.e. no observable BOOT stream over attach and no proof of `@` prompt
+- ⚠️ Recent deterministic single-attempt rerun (restart + attach; `/G143`, `/E`, `dbugsw/ 2`, `147<ESC>g`) also produced no observable BOOT stream in automation (`boot_seen=False`, `sent=[]`, no `@`)
+- ⚠️ Recent container log tails repeatedly show `?BOOT: Can't find bootable structure` when commands are accepted
+- ⚠️ **Next**: run one final manual attach proof attempt; if no `@`, pivot to install/rebuild path (`inst-klt20`) rather than additional blind BOOT retries
 
-```dockerfile
-FROM ubuntu:22.04
-
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    ca-certificates \
-    libedit-dev \
-    libpng-dev \
-    telnet \
-    socat \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
-
-# Build SIMH with KL10 (not KS10)
-WORKDIR /tmp
-RUN git clone https://github.com/simh/simh.git && \
-    cd simh && \
-    make pdp10
-
-# Install SIMH
-RUN mkdir -p /usr/local/bin && \
-    cp /tmp/simh/BIN/pdp10 /usr/local/bin/ && \
-    chmod +x /usr/local/bin/pdp10
-
-# Download TOPS-20 V4.1 installation tape
-RUN mkdir -p /machines/pdp10 && \
-    cd /machines/pdp10 && \
-    wget -q http://pdp-10.trailing-edge.com/tapes/bb-d867e-bm_tops20_v41_2020_instl.tap.bz2 && \
-    bunzip2 bb-d867e-bm_tops20_v41_2020_instl.tap.bz2
-
-# Create data directory for disk
-RUN mkdir -p /machines/data
-
-# Copy configs
-COPY arpanet/configs/kl10-install.ini /machines/pdp10/install.ini
-COPY arpanet/configs/kl10-runtime.ini /machines/pdp10/runtime.ini
-
-WORKDIR /machines/pdp10
-
-# Start with installation config
-CMD ["pdp10", "install.ini"]
-```
-
-**Action**: `vim arpanet/Dockerfile.pdp10-kl10` and paste above
+**See**:
+- `docs/arpanet/PANDA-TEST-RESULTS-2026-02-12.md` - **LATEST** test results and findings
+- `docs/arpanet/PANDA-BUILD-STATUS-2026-02-12.md` - Build progress
+- `docs/COLD-START.md` - Global quick orientation
+- `docs/arpanet/PANDA-QUICK-REFERENCE.md` - Panda operator runbook
 
 ---
 
-### Step 1.2: Create KL10 Installation Config (15 min)
+## What Was Attempted (2026-02-12)
 
-**File**: `arpanet/configs/kl10-install.ini`
+### Panda TOPS-20 Approach
+**Goal**: Use pre-built disk image with KLH10 for direct TCP/IP networking
 
-```ini
-; KL10 TOPS-20 V4.1 Installation
-; Based on working Gunkies recipe
+**Progress**:
+- ✅ Created `Dockerfile.pdp10-panda`
+- ✅ Fixed build dependencies (linux-libc-dev)
+- ✅ Disabled LITES feature (asm/io.h not available in Docker)
+- ✅ KLH10 compiled successfully from source
+- ✅ `RH20.RP07.1` disk image verified in Panda distribution/runtime container
 
-; Enable debug output
-set debug stdout
+**Files Created**:
+- `arpanet/Dockerfile.pdp10-panda`
+- `arpanet/configs/panda.ini`
+- `docker-compose.panda-vax.yml`
+- `arpanet/scripts/test_panda_vax.py`
+- `docs/arpanet/PANDA-APPROACH.md`
 
-; CPU configuration for TOPS-20
-set cpu tops-20
-
-; Set WRU character (Control-F)
-d wru 006
-
-; Disable unused devices
-set dz disabled
-set lp20 disabled
-
-; Tape drive for installation
-set tu enable
-set tu locked
-attach tu /machines/pdp10/tops20_v41.tap
-
-; Disk drive (RP06, 176MB)
-set rp enable
-set rp rp06
-attach rp /machines/data/tops20.dsk
-
-; Console configuration
-set console notelnet
-set console wru=006
-
-; Boot from tape (interactive installation)
-; User will complete installation manually
-echo ===================================================
-echo KL10 TOPS-20 V4.1 Installation
-echo ===================================================
-echo At MTBOOT> prompt, type:
-echo   /L
-echo   /G143
-echo ===================================================
-
-boot tu
-```
-
-**Action**: `vim arpanet/configs/kl10-install.ini` and paste above
+**Disk Image Location**:
+- URL: `http://panda.trailing-edge.com/panda-dist.tar.gz`
+- Path in distribution/runtime: `RH20.RP07.1`
+- Size: ~221 MB total download (archive), ~498 MB disk image
 
 ---
 
-### Step 1.3: Create KL10 Runtime Config (15 min)
+## Completed Investigations (2026-02-12 Evening)
 
-**File**: `arpanet/configs/kl10-runtime.ini`
+### ✅ Phase 1: Final PDP-10 Gate (20 minutes)
+**Goal**: Quick attempt to prove `@` prompt automation
+**Result**: ❌ FAILED - Console automation timeout (empty logs, no interaction)
+**Conclusion**: Automation script `panda_boot_handoff.py` couldn't interact with console
 
-```ini
-; KL10 TOPS-20 V4.1 Runtime Configuration
-; Used after installation is complete
+### ✅ Phase 3: PDP-11 Pivot (2 hours)
+**Goal**: Test turnkey alternative with pre-built 2.11BSD
+**Result**: ✅ POC SUCCESSFUL - ❌ SAME BLOCKER
+**Findings**:
+- ✅ Container builds successfully
+- ✅ SIMH PDP-11 boots to `73Boot` prompt
+- ✅ XQ network device works (`Eth: opened OS device eth0`)
+- ❌ **Same console automation issue as PDP-10**
+- Manual boot required for both systems
 
-; Enable debug output
-set debug stdout
+**See**: `docs/arpanet/PDP11-DEPLOYMENT-RESULTS-2026-02-12.md`
 
-; CPU configuration for TOPS-20
-set cpu tops-20
+### 🔍 Root Cause Analysis
+**Problem**: SIMH console design (KLH10, SIMH PDP-11, and likely all SIMH variants)
+**Symptoms**:
+- Telnet mode: Waits for connection, restarts on disconnect
+- Stdio mode: Output appears but input timing is unreliable
+- Docker attach: Can't replay boot prompt, timing issues
+- Expect/PTY: Inconsistent console output capture
 
-; Set WRU character
-d wru 006
+**Impact**: Both PDP-10 and PDP-11 viable for **manual operation**, not CI/CD automation
 
-; Disable unused devices
-set dz disabled
-set lp20 disabled
+## Decision Points
 
-; Disk drive (RP06, 176MB)
-set rp enable
-set rp rp06
-attach rp /machines/data/tops20.dsk
+### ✅ DECISION MADE: Continue with VAX, Archive Vintage Host Experiments
 
-; Console configuration
-set console notelnet
-set console wru=006
+**Rationale**:
+1. VAX already working and proven
+2. PDP-11 didn't solve automation problem (same SIMH blocker)
+3. 5.5+ hours invested (3.5h PDP-10 + 2h PDP-11) with same outcome
+4. Console automation blocker is fundamental to SIMH design, not specific to PDP-10 or PDP-11
 
-; Telnet console on port 2326
-set console telnet=2326
+**Next Actions**:
+1. ✅ Document PDP-10 and PDP-11 findings
+2. ✅ Update STATUS.md with decision
+3. → Clean up AWS infrastructure
+4. → Focus on resume build pipeline with VAX
+5. → Archive PDP-10/PDP-11 work as experimental branches
 
-; Serial port for VAX connection (TTY0)
-set dz lines=1
-set dz 0 speed=9600
-attach dz 0 localhost:9001
+**Pros**: Keeps current Panda path if recoverable
+**Cons**: Low confidence after repeated no-byte attach outcomes
 
-; Boot from disk
-boot rp
-```
+### Option A2: Automate Boot Sequence ⏱️ 30-60 minutes
+**Action**: Create expect script or modify Dockerfile to send boot commands
 
-**Action**: `vim arpanet/configs/kl10-runtime.ini` and paste above
+**Steps**:
+1. Write expect script to send `/G143` to console
+2. Modify docker-compose or Dockerfile CMD
+3. Test automated boot
+4. Validate services start correctly
 
----
+**Pros**: Fully automated, reproducible
+**Cons**: Requires additional scripting work
 
-### Step 1.4: Update Docker Compose (15 min)
+### ✅ Option B: Pivot path if manual proof fails once more (RECOMMENDED fallback)
+- Move to installation/rebuild flow (`inst-klt20`) to establish a known bootable structure baseline
+- Keep same AWS runtime and evidence discipline (transcript + tail logs + command history)
+- If rebuild path also stalls, fall back to KL10 serial plan (`docs/arpanet/KL10-SERIAL-FTP-PLAN.md`)
 
-**File**: `docker-compose.vax-pdp10-serial.yml`
-
-**Replace pdp10 service** with:
-
-```yaml
-  pdp10:
-    build:
-      context: .
-      dockerfile: arpanet/Dockerfile.pdp10-kl10
-    container_name: pdp10-kl10
-    hostname: pdp10
-    networks:
-      serial-net:
-        ipv4_address: 172.20.0.40
-    ports:
-      - "2326:2326"  # Console
-      - "9001:9001"  # Serial tunnel
-    volumes:
-      - pdp10-data:/machines/data
-    stdin_open: true
-    tty: true
-```
-
-**Action**: `vim docker-compose.vax-pdp10-serial.yml` and update
+### Option C: Parallel host contingency planning (non-active path)
+- A staged host-replacement plan is documented in:
+  - `docs/arpanet/PDP11-HOST-REPLACEMENT-PLAN.md`
+- Use this only as a controlled parallel track; keep Panda as active path until explicit pivot.
 
 ---
 
-### Step 1.5: Deploy to AWS and Test (3-4 hours)
+## Previous Attempts (All Failed)
 
-#### Deploy Infrastructure
+| Approach | Blocker | Time Invested |
+|----------|---------|---------------|
+| TOPS-20 V4.1 (SIMH) | Boot loop bug | 1 hour |
+| TOPS-20 V7.0 (Cornwell SIMH) | Parameter issues | 1 hour |
+| KLH10 (Docker image) | Execution errors | 30 min |
+| Panda (KLH10 source) | Missing disk image | 1 hour |
+| **Total** | | **~3.5 hours** |
+
+**Documentation**: `docs/arpanet/PDP10-INSTALLATION-ATTEMPTS-2026-02-12.md`
+
+---
+
+## Recommendation
+
+**✅ IMMEDIATE ACTION**: Do exactly one manual attach proof attempt; if no `@`, pivot immediately to rebuild path
+
+The system reaches BOOT reliably, but strict automation still cannot observe/drive the BOOT stream, and logs also show `Can't find bootable structure` in some handoff attempts. Use this gate:
 
 ```bash
-# From local machine (Raspberry Pi)
-cd ~/brfid.github.io/test_infra/cdk
-source ../../.venv/bin/activate
-cdk deploy
+# 1. SSH to AWS instance
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.202.231.142
 
-# Note the IP address from output
+# 2. Validate PDP-10 console lifecycle
+# (recent evidence: sessions can connect then close immediately)
+
+# 3. Connect to PDP-10 console (preferred)
+docker attach panda-pdp10
+
+# Fallback
+telnet localhost 2326
+
+# 4. At BOOT> prompt, enter boot command
+BOOT> /G143
+# OR for standalone boot:
+BOOT> /E
+dbugsw/ 2
+147$G
+
+# 5. Hard gate: prove a real TOPS-20 @ prompt
+# If not reached in this attempt, stop retries and pivot to inst-klt20 rebuild
+
+# 6. Login as OPERATOR
+@log operator dec-20
+@enable
+
+# 7. Configure network (if needed)
+# Edit SYSTEM:INTERNET.ADDRESS for 172.20.0.40
+# Edit SYSTEM:INTERNET.GATEWAYS for 172.20.0.1
+
+# 8. Test from VAX
+telnet localhost 2323  # VAX console
+# Then: ftp 172.20.0.40
 ```
 
-#### SSH and Build
+**Expected outcome (if gate passes)**: Working VAX ↔ PDP-10 FTP transfer via TCP/IP after deterministic BOOT handoff
 
-```bash
-# Connect to AWS instance
-ssh ubuntu@<AWS_IP>
+**Current state**:
+- Docker containers: Running
+- VAX: Operational at 172.20.0.10
+- PDP-10: BOOT prompt reached; command ingress path unstable and bootable-structure failure intermittently observed
+- Network: Configured (172.20.0.0/16)
 
-# Navigate to repo
-cd brfid.github.io
-
-# Pull latest changes (after committing locally)
-git pull origin main
-
-# Build KL10 container
-docker-compose -f docker-compose.vax-pdp10-serial.yml build pdp10
-
-# Expected: Build succeeds, SIMH compiles
-```
-
-#### Test PDP-10 Boot
-
-```bash
-# Start PDP-10 container
-docker-compose -f docker-compose.vax-pdp10-serial.yml up -d pdp10
-
-# Attach to console (interactive)
-docker attach pdp10-kl10
-
-# Expected output:
-#   BOOT V11.0(315)
-#   MTBOOT>
-
-# If you see MTBOOT> prompt, boot is successful! ✅
-```
-
-#### Install TOPS-20 (Interactive)
-
-**At MTBOOT> prompt**:
-
-```
-MTBOOT> /L
-MTBOOT> /G143
-
-! You'll see prompts for logical name and device
-LOGICAL-NAME: DSK
-DEVICE-NAME: RPA0
-
-! Format the disk
-*FORMAT/UNIT:0 RPA0:
-
-! Restore files from tape
-*DUMPER
-DUMPER> TAPE TU0:
-DUMPER> RESTORE <*>*.*.* (TO) DSK:*.*.*
-DUMPER> EXIT
-
-! Boot from disk
-*^E
-MTBOOT> /G144
-
-! You should see TOPS-20 prompt
-@
-```
-
-**Success Criteria**:
-- ✅ MTBOOT> prompt appears
-- ✅ Disk formats without errors
-- ✅ Files restore from tape
-- ✅ System boots to `@` prompt
-
-**Evidence**: Save session transcript to `build/arpanet/validation/kl10-phase1-install.log`
+**Fallback options** (if gate fails):
+- Pivot to `inst-klt20` installation/rebuild path (preferred)
+- Then reattempt automation only after manual `@` proof on rebuilt system
+- Keep KL10 serial plan as secondary fallback
 
 ---
 
-### Step 1.6: Verify TOPS-20 Functionality (30 min)
+## AWS Instance Status
 
-**At `@` prompt**:
+**Running**: 34.202.231.142 (i-013daaa4a0c3a9bfa)
+**Type**: t3.medium (~$0.04/hr)
+**Session duration**: ~2 hours
+**Action needed**: `cd test_infra/cdk && cdk destroy --force`
+**Current session cost**: ~$0.08
 
-```
-@ENABLE
-$SHOW SYSTEM
-
-! Create test directory and file
-@CREATE-DIRECTORY <OPERATOR>
-$CREATE <OPERATOR>TEST.TXT
-This is a test file on TOPS-20
-^Z
-
-@DIRECTORY <OPERATOR>
-
-@TYPE <OPERATOR>TEST.TXT
-```
-
-**Success Criteria**:
-- ✅ `SHOW SYSTEM` works
-- ✅ Can create directories
-- ✅ Can create and read files
-- ✅ System stable (no crashes)
-
-**Phase 1 Complete**: ✅ PDP-10 boots, TOPS-20 operational
+**Containers running**:
+- `panda-vax`: Port 2323 (VAX console)
+- `panda-pdp10`: Port 2326 (PDP-10 console), 21 (FTP), 23 (telnet)
 
 ---
 
-## Phase 2: Serial Tunnel (After Phase 1)
-
-### Step 2.1: Start Both Containers
+## Quick Start Commands
 
 ```bash
-# On AWS instance
-docker-compose -f docker-compose.vax-pdp10-serial.yml up -d
+# Check AWS status
+cd test_infra/cdk && source ../../.venv/bin/activate
+aws ec2 describe-instances --instance-ids i-013daaa4a0c3a9bfa
 
-# Verify both running
-docker-compose ps
-# Expected: vax (Up), pdp10 (Up)
-```
-
-### Step 2.2: Create Serial Tunnel Script
-
-```bash
-# On AWS instance
-cat > ~/serial-tunnel.sh << 'EOF'
-#!/bin/bash
-
-echo "Starting serial tunnel..."
-
-# Kill any existing socat processes
-pkill -f "socat.*9000"
-pkill -f "socat.*9001"
-
-# VAX serial → TCP 9000
-socat TCP-LISTEN:9000,bind=0.0.0.0,fork,reuseaddr TCP:172.20.0.10:2323 &
-PID1=$!
-
-# PDP-10 serial → TCP 9001
-socat TCP-LISTEN:9001,bind=0.0.0.0,fork,reuseaddr TCP:172.20.0.40:2326 &
-PID2=$!
-
-# Cross-connect
-socat TCP:127.0.0.1:9000 TCP:127.0.0.1:9001 &
-PID3=$!
-
-echo "Serial tunnel active:"
-echo "  VAX console: telnet localhost 9000 (PID: $PID1)"
-echo "  PDP-10 console: telnet localhost 9001 (PID: $PID2)"
-echo "  Tunnel bridge: 9000 ↔ 9001 (PID: $PID3)"
-echo ""
-echo "To stop: kill $PID1 $PID2 $PID3"
-EOF
-
-chmod +x ~/serial-tunnel.sh
-~/serial-tunnel.sh
-```
-
-### Step 2.3: Test Serial Connectivity
-
-```bash
-# Test VAX console
-telnet localhost 9000
-# Should see VAX login prompt
-
-# Test PDP-10 console (different terminal)
-telnet localhost 9001
-# Should see @ prompt
-
-# Type on one, verify appears on other
-```
-
-**Success Criteria**:
-- ✅ Both consoles accessible
-- ✅ Characters echo between systems
-- ✅ Tunnel stable for 5+ minutes
-
-**Phase 2 Complete**: ✅ Serial tunnel working
-
----
-
-## Phase 3: File Transfer (After Phase 2)
-
-### Step 3.1: Verify Network Connectivity
-
-```bash
-# From VAX console
-ping -c 3 172.20.0.40
-
-# Expected: 3 packets transmitted, 3 received
-```
-
-### Step 3.2: Enable FTP on PDP-10
-
-**On PDP-10 console**:
-
-```
-@ENABLE
-$SET SERVER FTP ENABLED
-$START FTP
-$^E
-
-@INFORMATION FTP-SERVER
-```
-
-**Test FTP listening**:
-
-```bash
-# From AWS host
-telnet 172.20.0.40 21
-# Expected: 220 ... FTP server ready
-```
-
-### Step 3.3: Transfer File
-
-**On VAX console**:
-
-```
-$ cat > /tmp/vax-test.txt
-This file was created on VAX BSD 4.3
-and transferred to PDP-10 TOPS-20
-via FTP over serial tunnel.
-^D
-
-$ ftp 172.20.0.40
-Name: OPERATOR
-Password: [password]
-ftp> binary
-ftp> put /tmp/vax-test.txt vax-test.txt
-ftp> quit
-```
-
-**Verify on PDP-10**:
-
-```
-@TYPE <OPERATOR>VAX-TEST.TXT
-```
-
-**Success Criteria**:
-- ✅ FTP connection succeeds
-- ✅ File transfers without errors
-- ✅ File contents correct on PDP-10
-- ✅ Checksums match
-
-**Phase 3 Complete**: ✅ **File transfer working!**
-
----
-
-## Quick Reference Commands
-
-### AWS Deployment
-
-```bash
-# Deploy
-cd test_infra/cdk && source ../../.venv/bin/activate && cdk deploy
-
-# Connect
-ssh ubuntu@<AWS_IP>
-
-# Destroy (when done)
+# Destroy AWS (when done)
 cd test_infra/cdk && cdk destroy --force
-```
 
-### Docker Operations
+# Connect and complete boot
+ssh -i ~/.ssh/id_ed25519 ubuntu@34.202.231.142
+telnet localhost 2326  # PDP-10 console
+# At BOOT> prompt: /G143
 
-```bash
-# Build
-docker-compose -f docker-compose.vax-pdp10-serial.yml build
-
-# Start
-docker-compose -f docker-compose.vax-pdp10-serial.yml up -d
-
-# Logs
-docker logs pdp10-kl10
-docker logs vax-host
-
-# Attach
-docker attach pdp10-kl10
-
-# Stop
-docker-compose -f docker-compose.vax-pdp10-serial.yml down
-```
-
-### Testing
-
-```bash
-# Console access
-telnet localhost 2326  # PDP-10 direct
-telnet localhost 2323  # VAX direct
-telnet localhost 9000  # VAX via tunnel
-telnet localhost 9001  # PDP-10 via tunnel
-
-# Network test
-docker exec vax-host ping -c 3 172.20.0.40
-
-# FTP test
-docker exec vax-host ftp 172.20.0.40
+# Check container status
+cd brfid.github.io
+docker compose -f docker-compose.panda-vax.yml ps
+docker logs panda-pdp10 | tail -50
 ```
 
 ---
 
-## Troubleshooting
+## Related Documentation
 
-### PDP-10 Won't Boot
-
-**Check**:
-1. `docker logs pdp10-kl10` for errors
-2. SIMH built correctly: `docker exec pdp10-kl10 pdp10 --version`
-3. Tape file exists: `docker exec pdp10-kl10 ls -lh /machines/pdp10/tops20_v41.tap`
-4. Config syntax: Review `kl10-install.ini`
-
-**Try**:
-- Rebuild with `--no-cache`
-- Use pre-built TOPS-20 disk image
-- Check SIMH logs for specific error
-
-### Serial Tunnel Not Working
-
-**Check**:
-1. `ps aux | grep socat` - Are processes running?
-2. `netstat -tuln | grep 900` - Are ports listening?
-3. Container network: `docker network inspect serial-net`
-
-**Try**:
-- Kill and restart tunnel script
-- Check firewall rules
-- Verify container IPs match config
-
-### FTP Connection Fails
-
-**Check**:
-1. FTP server running: `@INFO FTP-SERVER` on PDP-10
-2. Network connectivity: `ping 172.20.0.40` from VAX
-3. Port 21 accessible: `telnet 172.20.0.40 21`
-
-**Try**:
-- Restart FTP server on PDP-10
-- Check TOPS-20 user accounts
-- Try Python ftplib as alternative
-
----
-
-## Current Action Items
-
-**Next immediate steps**:
-
-1. [ ] Create `arpanet/Dockerfile.pdp10-kl10`
-2. [ ] Create `arpanet/configs/kl10-install.ini`
-3. [ ] Create `arpanet/configs/kl10-runtime.ini`
-4. [ ] Update `docker-compose.vax-pdp10-serial.yml`
-5. [ ] Commit changes to git
-6. [ ] Deploy to AWS
-7. [ ] Test PDP-10 boot
-8. [ ] Install TOPS-20
-9. [ ] Document Phase 1 results
-
-**Ready to begin**: Start with Step 1.1
-
----
-
-**Status**: Phase 1 ready to start
-**Blocker**: None (plan complete)
-**Next Command**: `vim arpanet/Dockerfile.pdp10-kl10`
-**Estimated Time**: 6-10 hours total
-**AWS Cost**: ~$0.40-$0.80
+- **Cold start guide**: `docs/COLD-START.md`
+- **Panda quick reference**: `docs/arpanet/PANDA-QUICK-REFERENCE.md`
+- **Panda build status**: `docs/arpanet/PANDA-BUILD-STATUS-2026-02-12.md`
+- **Panda approach**: `docs/arpanet/PANDA-APPROACH.md`
+- **Previous PDP-10 attempts**: `docs/arpanet/PDP10-INSTALLATION-ATTEMPTS-2026-02-12.md`
+- **Protocol mismatch**: `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md`
+- **KL10 serial fallback context**: `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`
+- **Project state summary**: `PROJECT-STATE-FOR-RESEARCH.md`

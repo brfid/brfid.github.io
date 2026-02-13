@@ -1,11 +1,15 @@
 # ARPANET Documentation Index
 
-## Active Path: KL10 + Serial + FTP
+## Active Path: Panda KLH10 BOOT-Handoff Stabilization
 
-- **[Master Plan](KL10-SERIAL-FTP-PLAN.md)** — Complete 3-phase plan (KL10 boot, serial, FTP)
-- **[Next Steps](progress/NEXT-STEPS.md)** — Concrete action items for implementation
-- [Serial Tunnel Architecture](SERIAL-TUNNEL.md) — Network architecture (KL10-based)
-- [Phase 3 Progress](progress/PHASE3-PROGRESS.md) — Timeline of all sessions
+- **[Next Steps](progress/NEXT-STEPS.md)** — Canonical active execution path (current truth)
+- **[Panda Quick Reference](PANDA-QUICK-REFERENCE.md)** — Operator runbook for current Panda path
+- **[Panda Test Results](PANDA-TEST-RESULTS-2026-02-12.md)** — Initial Panda session evidence (+ historical context)
+- **[PDP-11 Host Replacement Plan](PDP11-HOST-REPLACEMENT-PLAN.md)** — Parallel contingency plan (non-active unless explicitly chosen)
+- [KL10 Serial Plan](KL10-SERIAL-FTP-PLAN.md) — Fallback/historical strategy context (non-active)
+- [Phase 3 Progress](progress/PHASE3-PROGRESS.md) — Long-form timeline/history
+
+> For current status, trust `STATUS.md` + `docs/arpanet/progress/NEXT-STEPS.md` over older handoff/archive docs.
 
 ## Archived
 

@@ -1,0 +1,657 @@
+{
+ "Description": "ARPANET Production: 2x t3.micro (VAX + PDP-11) with shared EFS logging",
+ "Resources": {
+  "ArpanetSG6538A629": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "ARPANET production hosts security group",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow SSH access",
+      "FromPort": 22,
+      "IpProtocol": "tcp",
+      "ToPort": 22
+     }
+    ],
+    "VpcId": "vpc-057a2a1e2cb253eba"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetSG/Resource"
+   }
+  },
+  "ArpanetSGfromArpanetProductionStackArpanetSG0AB28FCEALLTRAFFIC6E5E1537": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow inter-host communication",
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ArpanetSG6538A629",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "-1",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ArpanetSG6538A629",
+      "GroupId"
+     ]
+    }
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetSG/from ArpanetProductionStackArpanetSG0AB28FCE:ALL TRAFFIC"
+   }
+  },
+  "ArpanetLogsF6E5B81E": {
+   "Type": "AWS::EFS::FileSystem",
+   "Properties": {
+    "BackupPolicy": {
+     "Status": "ENABLED"
+    },
+    "Encrypted": true,
+    "FileSystemTags": [
+     {
+      "Key": "Name",
+      "Value": "ArpanetProductionStack/ArpanetLogs"
+     }
+    ],
+    "LifecyclePolicies": [
+     {
+      "TransitionToIA": "AFTER_7_DAYS"
+     },
+     {
+      "TransitionToPrimaryStorageClass": "AFTER_1_ACCESS"
+     }
+    ],
+    "PerformanceMode": "generalPurpose",
+    "ThroughputMode": "bursting"
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/Resource"
+   }
+  },
+  "ArpanetLogsEfsSecurityGroupFA9C113E": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "ArpanetProductionStack/ArpanetLogs/EfsSecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ArpanetProductionStack/ArpanetLogs"
+     }
+    ],
+    "VpcId": "vpc-057a2a1e2cb253eba"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsSecurityGroup/Resource"
+   }
+  },
+  "ArpanetLogsEfsSecurityGroupfromArpanetProductionStackArpanetSG0AB28FCE204921736324": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Allow NFS from ARPANET hosts",
+    "FromPort": 2049,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "ArpanetLogsEfsSecurityGroupFA9C113E",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "ArpanetSG6538A629",
+      "GroupId"
+     ]
+    },
+    "ToPort": 2049
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsSecurityGroup/from ArpanetProductionStackArpanetSG0AB28FCE:2049"
+   }
+  },
+  "ArpanetLogsEfsMountTarget121F1351E": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "ArpanetLogsF6E5B81E"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetLogsEfsSecurityGroupFA9C113E",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-02609bca2886c7557"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsMountTarget1"
+   }
+  },
+  "ArpanetLogsEfsMountTarget26BA413D9": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "ArpanetLogsF6E5B81E"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetLogsEfsSecurityGroupFA9C113E",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-0ac9e02ba1ebc68ca"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsMountTarget2"
+   }
+  },
+  "ArpanetLogsEfsMountTarget394DC33D1": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "ArpanetLogsF6E5B81E"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetLogsEfsSecurityGroupFA9C113E",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-0b09539670c5b03ae"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsMountTarget3"
+   }
+  },
+  "ArpanetLogsEfsMountTarget43BC9116C": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "ArpanetLogsF6E5B81E"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetLogsEfsSecurityGroupFA9C113E",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-02b30813b6f6c64be"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsMountTarget4"
+   }
+  },
+  "ArpanetLogsEfsMountTarget5B77D8DC3": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "ArpanetLogsF6E5B81E"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetLogsEfsSecurityGroupFA9C113E",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-0be50d9c1acca57cf"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsMountTarget5"
+   }
+  },
+  "ArpanetLogsEfsMountTarget6A77DF68D": {
+   "Type": "AWS::EFS::MountTarget",
+   "Properties": {
+    "FileSystemId": {
+     "Ref": "ArpanetLogsF6E5B81E"
+    },
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetLogsEfsSecurityGroupFA9C113E",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-01276e65f11a3a3a9"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogs/EfsMountTarget6"
+   }
+  },
+  "ArpanetLogArchive17AFFD47": {
+   "Type": "AWS::S3::Bucket",
+   "Properties": {
+    "BucketEncryption": {
+     "ServerSideEncryptionConfiguration": [
+      {
+       "ServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+       }
+      }
+     ]
+    },
+    "BucketName": "arpanet-logs-972626128180",
+    "LifecycleConfiguration": {
+     "Rules": [
+      {
+       "Status": "Enabled",
+       "Transitions": [
+        {
+         "StorageClass": "GLACIER_IR",
+         "TransitionInDays": 30
+        }
+       ]
+      }
+     ]
+    }
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain",
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetLogArchive/Resource"
+   }
+  },
+  "ArpanetInstanceRoleC623DEED": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ec2.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/AmazonSSMManagedInstanceCore"
+       ]
+      ]
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetInstanceRole/Resource"
+   }
+  },
+  "ArpanetInstanceRoleDefaultPolicy6622FF41": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "s3:DeleteObject*",
+        "s3:PutObject",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutObjectTagging",
+        "s3:PutObjectVersionTagging",
+        "s3:Abort*"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::GetAtt": [
+          "ArpanetLogArchive17AFFD47",
+          "Arn"
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           {
+            "Fn::GetAtt": [
+             "ArpanetLogArchive17AFFD47",
+             "Arn"
+            ]
+           },
+           "/*"
+          ]
+         ]
+        }
+       ]
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "ArpanetInstanceRoleDefaultPolicy6622FF41",
+    "Roles": [
+     {
+      "Ref": "ArpanetInstanceRoleC623DEED"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/ArpanetInstanceRole/DefaultPolicy/Resource"
+   }
+  },
+  "VaxHostInstanceProfileD7CF034C": {
+   "Type": "AWS::IAM::InstanceProfile",
+   "Properties": {
+    "Roles": [
+     {
+      "Ref": "ArpanetInstanceRoleC623DEED"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/VaxHost/InstanceProfile"
+   }
+  },
+  "VaxHost20D7E689": {
+   "Type": "AWS::EC2::Instance",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "BlockDeviceMappings": [
+     {
+      "DeviceName": "/dev/sda1",
+      "Ebs": {
+       "DeleteOnTermination": false,
+       "VolumeSize": 8,
+       "VolumeType": "gp3"
+      }
+     }
+    ],
+    "IamInstanceProfile": {
+     "Ref": "VaxHostInstanceProfileD7CF034C"
+    },
+    "ImageId": {
+     "Ref": "SsmParameterValueawsservicecanonicalubuntuserver2204stablecurrentamd64hvmebsgp2amiidC96584B6F00A464EAD1953AFF4B05118Parameter"
+    },
+    "InstanceType": "t3.micro",
+    "KeyName": "arpanet-temp",
+    "SecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetSG6538A629",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-02609bca2886c7557",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ArpanetProductionStack/VaxHost"
+     }
+    ],
+    "UserData": {
+     "Fn::Base64": {
+      "Fn::Join": [
+       "",
+       [
+        "#!/bin/bash\n#!/bin/bash\nset -ex\n\n# Update system\napt-get update -qq\napt-get upgrade -y -qq\n\n# Install dependencies\napt-get install -y -qq \\\n  docker.io \\\n  docker-compose \\\n  nfs-common \\\n  awscli \\\n  git \\\n  python3-pip\n\n# Enable Docker\nsystemctl enable docker\nsystemctl start docker\nusermod -aG docker ubuntu\n\n# Install EFS mount helper FIRST (before mounting)\ngit clone https://github.com/aws/efs-utils /tmp/efs-utils\ncd /tmp/efs-utils\nbash ./build-deb.sh\napt-get install -y ./build/amazon-efs-utils*deb\n\n# Create EFS mount point\nmkdir -p /mnt/arpanet-logs\n\n# Mount EFS (now that efs-utils is installed)\necho '",
+        {
+         "Ref": "ArpanetLogsF6E5B81E"
+        },
+        ":/ /mnt/arpanet-logs efs _netdev,tls,iam 0 0' >> /etc/fstab\nmount -a -t efs defaults\n\n# Create log directories\nmkdir -p /mnt/arpanet-logs/vax\nmkdir -p /mnt/arpanet-logs/pdp11\nmkdir -p /mnt/arpanet-logs/shared\nchown -R ubuntu:ubuntu /mnt/arpanet-logs\n\n# Clone repository\ncd /home/ubuntu\ngit clone https://github.com/brfid/brfid.github.io.git\nchown -R ubuntu:ubuntu brfid.github.io\n\n# Setup S3 sync cron (daily at 2 AM)\ncat > /etc/cron.daily/arpanet-log-sync <<'EOF'\n#!/bin/bash\naws s3 sync /mnt/arpanet-logs/ s3://",
+        {
+         "Ref": "ArpanetLogArchive17AFFD47"
+        },
+        "/ \\\n  --exclude '*.tmp' \\\n  --exclude '*.lock' \\\n  --storage-class GLACIER_IR\nEOF\nchmod +x /etc/cron.daily/arpanet-log-sync\n\n# Signal completion\necho 'ARPANET setup complete' > /tmp/setup-complete"
+       ]
+      ]
+     }
+    }
+   },
+   "DependsOn": [
+    "ArpanetInstanceRoleDefaultPolicy6622FF41",
+    "ArpanetInstanceRoleC623DEED"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/VaxHost/Resource"
+   }
+  },
+  "Pdp11HostInstanceProfile7EF63C7E": {
+   "Type": "AWS::IAM::InstanceProfile",
+   "Properties": {
+    "Roles": [
+     {
+      "Ref": "ArpanetInstanceRoleC623DEED"
+     }
+    ]
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/Pdp11Host/InstanceProfile"
+   }
+  },
+  "Pdp11HostADA85DC2": {
+   "Type": "AWS::EC2::Instance",
+   "Properties": {
+    "AvailabilityZone": "us-east-1a",
+    "BlockDeviceMappings": [
+     {
+      "DeviceName": "/dev/sda1",
+      "Ebs": {
+       "DeleteOnTermination": false,
+       "VolumeSize": 8,
+       "VolumeType": "gp3"
+      }
+     }
+    ],
+    "IamInstanceProfile": {
+     "Ref": "Pdp11HostInstanceProfile7EF63C7E"
+    },
+    "ImageId": {
+     "Ref": "SsmParameterValueawsservicecanonicalubuntuserver2204stablecurrentamd64hvmebsgp2amiidC96584B6F00A464EAD1953AFF4B05118Parameter"
+    },
+    "InstanceType": "t3.micro",
+    "KeyName": "arpanet-temp",
+    "SecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "ArpanetSG6538A629",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": "subnet-02609bca2886c7557",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "ArpanetProductionStack/Pdp11Host"
+     }
+    ],
+    "UserData": {
+     "Fn::Base64": {
+      "Fn::Join": [
+       "",
+       [
+        "#!/bin/bash\n#!/bin/bash\nset -ex\n\n# Update system\napt-get update -qq\napt-get upgrade -y -qq\n\n# Install dependencies\napt-get install -y -qq \\\n  docker.io \\\n  docker-compose \\\n  nfs-common \\\n  awscli \\\n  git \\\n  python3-pip\n\n# Enable Docker\nsystemctl enable docker\nsystemctl start docker\nusermod -aG docker ubuntu\n\n# Install EFS mount helper FIRST (before mounting)\ngit clone https://github.com/aws/efs-utils /tmp/efs-utils\ncd /tmp/efs-utils\nbash ./build-deb.sh\napt-get install -y ./build/amazon-efs-utils*deb\n\n# Create EFS mount point\nmkdir -p /mnt/arpanet-logs\n\n# Mount EFS (now that efs-utils is installed)\necho '",
+        {
+         "Ref": "ArpanetLogsF6E5B81E"
+        },
+        ":/ /mnt/arpanet-logs efs _netdev,tls,iam 0 0' >> /etc/fstab\nmount -a -t efs defaults\n\n# Create log directories\nmkdir -p /mnt/arpanet-logs/vax\nmkdir -p /mnt/arpanet-logs/pdp11\nmkdir -p /mnt/arpanet-logs/shared\nchown -R ubuntu:ubuntu /mnt/arpanet-logs\n\n# Clone repository\ncd /home/ubuntu\ngit clone https://github.com/brfid/brfid.github.io.git\nchown -R ubuntu:ubuntu brfid.github.io\n\n# Setup S3 sync cron (daily at 2 AM)\ncat > /etc/cron.daily/arpanet-log-sync <<'EOF'\n#!/bin/bash\naws s3 sync /mnt/arpanet-logs/ s3://",
+        {
+         "Ref": "ArpanetLogArchive17AFFD47"
+        },
+        "/ \\\n  --exclude '*.tmp' \\\n  --exclude '*.lock' \\\n  --storage-class GLACIER_IR\nEOF\nchmod +x /etc/cron.daily/arpanet-log-sync\n\n# Signal completion\necho 'ARPANET setup complete' > /tmp/setup-complete"
+       ]
+      ]
+     }
+    }
+   },
+   "DependsOn": [
+    "ArpanetInstanceRoleDefaultPolicy6622FF41",
+    "ArpanetInstanceRoleC623DEED"
+   ],
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/Pdp11Host/Resource"
+   }
+  },
+  "CDKMetadata": {
+   "Type": "AWS::CDK::Metadata",
+   "Properties": {
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/32NwWrDMAyGn6V3R6PJYPcNNnoYC8nuw/OUTo1jF0mmBON3H04pY5ed/v/TJ6QW2u4B9jt7kcZ9zY2nT8ijWjebASUmdmjsRT4yuhbyiC4x6frCMZ3N0xT+HxzCkVHEHIKoDQ7rwq0Xg5NAfiaP4yqKS5V/6TWmoO+Wj6jFSAf5MbkZtaprK4bsAnmIfju9ZR89ubXib7v97DlO5LGUTVu2Cypyhbek56TF9Kt+x3DXwf4e2t1JiBpOQWlBGK75A8iAyeQxAQAA"
+   },
+   "Metadata": {
+    "aws:cdk:path": "ArpanetProductionStack/CDKMetadata/Default"
+   }
+  }
+ },
+ "Parameters": {
+  "SsmParameterValueawsservicecanonicalubuntuserver2204stablecurrentamd64hvmebsgp2amiidC96584B6F00A464EAD1953AFF4B05118Parameter": {
+   "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+   "Default": "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id"
+  },
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Outputs": {
+  "VaxPublicIP": {
+   "Description": "VAX host public IP",
+   "Value": {
+    "Fn::GetAtt": [
+     "VaxHost20D7E689",
+     "PublicIp"
+    ]
+   }
+  },
+  "Pdp11PublicIP": {
+   "Description": "PDP-11 host public IP",
+   "Value": {
+    "Fn::GetAtt": [
+     "Pdp11HostADA85DC2",
+     "PublicIp"
+    ]
+   }
+  },
+  "VaxInstanceId": {
+   "Description": "VAX instance ID",
+   "Value": {
+    "Ref": "VaxHost20D7E689"
+   }
+  },
+  "Pdp11InstanceId": {
+   "Description": "PDP-11 instance ID",
+   "Value": {
+    "Ref": "Pdp11HostADA85DC2"
+   }
+  },
+  "EfsFileSystemId": {
+   "Description": "EFS file system ID",
+   "Value": {
+    "Ref": "ArpanetLogsF6E5B81E"
+   }
+  },
+  "LogArchiveBucket": {
+   "Description": "S3 log archive bucket",
+   "Value": {
+    "Ref": "ArpanetLogArchive17AFFD47"
+   }
+  },
+  "LogsPath": {
+   "Description": "Shared logs mount point",
+   "Value": "/mnt/arpanet-logs"
+  },
+  "SSHCommandVax": {
+   "Description": "SSH command for VAX",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "ssh ubuntu@",
+      {
+       "Fn::GetAtt": [
+        "VaxHost20D7E689",
+        "PublicIp"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "SSHCommandPdp11": {
+   "Description": "SSH command for PDP-11",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      "ssh ubuntu@",
+      {
+       "Fn::GetAtt": [
+        "Pdp11HostADA85DC2",
+        "PublicIp"
+       ]
+      }
+     ]
+    ]
+   }
+  },
+  "EstimatedMonthlyCost": {
+   "Description": "Estimated monthly cost (2x t3.micro + EFS + storage)",
+   "Value": "$17.90"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

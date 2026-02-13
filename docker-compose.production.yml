@@ -1,0 +1,95 @@
+# ARPANET Production Docker Compose
+# VAX ↔ PDP-11 direct TCP/IP connection (no IMPs)
+#
+# Prerequisites:
+#   - EFS mounted at /mnt/arpanet-logs
+#   - Docker and docker-compose installed
+#   - Repository cloned to /home/ubuntu/brfid.github.io
+#
+# Usage:
+#   docker compose -f docker-compose.production.yml up -d
+#
+# Logs location:
+#   VAX:    /mnt/arpanet-logs/vax/
+#   PDP-11: /mnt/arpanet-logs/pdp11/
+#
+# Note: IMPs archived to arpanet/archived/imp-phase/
+#       (protocol incompatibility: VAX/PDP-11 use TCP/IP, IMPs use 1822)
+
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # VAX/BSD Host - Primary ARPANET host
+  # ===========================================================================
+  vax:
+    container_name: arpanet-vax
+    hostname: vax-host
+    image: jguillaumes/simh-vaxbsd:latest
+    environment:
+      - SIMH_USE_CONTAINER=yes  # Allow external volume mounting
+    ports:
+      - "2323:2323"  # Telnet console
+      - "21:21"      # FTP
+      - "23:23"      # Telnet
+    volumes:
+      - ./build/vax:/machines/data
+      - /mnt/arpanet-logs/vax:/var/log/arpanet  # EFS shared logs
+    networks:
+      arpanet:
+        ipv4_address: 172.20.0.10
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # PDP-11/BSD Host - Secondary ARPANET host
+  # ===========================================================================
+  pdp11:
+    container_name: arpanet-pdp11
+    hostname: pdp11-host
+    build:
+      context: ./arpanet
+      dockerfile: Dockerfile.pdp11
+    ports:
+      - "2327:2327"  # Telnet console
+      - "2121:21"    # FTP
+      - "2023:23"    # Telnet (changed from 2324 to avoid conflict)
+    volumes:
+      - ./build/pdp11:/opt/pdp11/data
+      - ./arpanet/configs/pdp11.ini:/opt/pdp11/pdp11.ini:ro
+      - /mnt/arpanet-logs/pdp11:/var/log/arpanet  # EFS shared logs
+    networks:
+      arpanet:
+        ipv4_address: 172.20.0.50
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  arpanet:
+    name: arpanet-production
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+# =============================================================================
+# Volumes - Note: Most volumes are bind mounts to EFS
+# =============================================================================
+volumes:
+  # Local build artifacts (not logged to EFS)
+  vax-data:
+    driver: local
+  pdp11-data:
+    driver: local

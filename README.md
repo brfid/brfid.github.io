@@ -26,11 +26,12 @@ For deeper component detail, see `ARCHITECTURE.md`.
 If you are starting with little or no context, use this exact read order:
 
 1. `README.md`
-2. `AGENTS.md`
-3. `docs/COLD-START.md`
-4. `STATUS.md`
-5. `docs/INDEX.md`
-6. `docs/arpanet/INDEX.md` (for ARPANET tasks)
+2. `docs/COLD-START.md`
+3. `STATUS.md`
+4. `docs/INDEX.md`
+5. `docs/arpanet/INDEX.md` (for ARPANET tasks)
+
+Then apply repository workflow constraints from `AGENTS.md`.
 
 ## Modes
 

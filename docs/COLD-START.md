@@ -4,24 +4,28 @@ Use this page when starting from zero context.
 
 ## 0) Current checkpoint (read this first)
 
-- **Active path**: KL10 + Serial + FTP (3-phase plan)
-- **Current blocker**: PDP-10 cannot boot (KS10 emulator incompatible)
-- **Solution**: Switch to KL10 emulator (community-proven for TOPS-20)
-- **Next action**: Create KL10 Dockerfile and configs
-- **Testing**: All on AWS (Raspberry Pi incompatible)
+- **Active path**: Panda KLH10 TOPS-20 bring-up (direct TCP/IP path)
+- **Current known-good**: KLH10 boots to `BOOT V11.0(315)` with `RH20.RP07.1`
+- **Current blocker**: BOOT control-plane ingress is unstable (no proven `@` prompt yet)
+- **Critical fix already landed**: `mount dsk0 ...` → `devmount dsk0 ...`
+- **Next action**: capture one successful manual `docker attach` transcript to `@`, then codify into automation
+- **Testing**: AWS-first runtime validation
 
 **Canonical references**:
 - `STATUS.md`
-- `docs/arpanet/KL10-SERIAL-FTP-PLAN.md` (master plan)
 - `docs/arpanet/progress/NEXT-STEPS.md` (concrete steps)
+- `docs/arpanet/INDEX.md` (active vs archived ARPANET docs)
+- `docs/arpanet/KL10-SERIAL-FTP-PLAN.md` (fallback/historical strategy context)
 
 ## 1) Read order
 
 1. `README.md`
-2. `AGENTS.md`
+2. `docs/COLD-START.md`
 3. `STATUS.md`
 4. `docs/INDEX.md`
 5. `docs/arpanet/INDEX.md` (for ARPANET tasks)
+
+Then apply repository workflow constraints from `AGENTS.md`.
 
 ## 2) Source-of-truth pointers
 
@@ -46,12 +50,11 @@ Use this page when starting from zero context.
 
 ## 5) AWS Runtime Access
 
-**Status**: All instances terminated (2026-02-11)
+**Status**: Active Panda runtime used for validation (see `STATUS.md` / `docs/arpanet/progress/NEXT-STEPS.md` for latest instance/IP)
 
-**Previous instance** (ArpanetTestStack):
-- Destroyed due to ITS build blocker on Path A (Chaosnet)
-- No running AWS resources
-- Cost: $0/hr
+**Note**:
+- Instance details and costs can change between sessions.
+- Treat `STATUS.md` + `docs/arpanet/progress/NEXT-STEPS.md` as canonical for current live host information.
 
 **To redeploy** (when needed):
 ```bash
@@ -62,10 +65,10 @@ cdk deploy
 
 ## 6) If task touches ARPANET runtime behavior
 
-- Check: `docs/arpanet/SERIAL-TUNNEL.md` and `docs/arpanet/progress/NEXT-STEPS.md`
-- Active topology: VAX + PDP-10 via serial tunnel (Phase 1)
+- Check: `docs/arpanet/progress/NEXT-STEPS.md` first, then Panda docs
+- Active topology for current blocker: Panda VAX + PDP-10 (`docker-compose.panda-vax.yml`)
 - IMP containers are archived — do not start them
-- Serial tunnel script: `arpanet/scripts/serial-tunnel.sh`
+- Serial tunnel docs are historical context, not the current execution path
 
 ## 7) Essential Commands
 

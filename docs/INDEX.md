@@ -6,10 +6,13 @@ Central hub for all project documentation.
 
 New to the project? Start here:
 
-1. **`../STATUS.md`** - Current project status
+1. **`../README.md`** - Project overview
 2. **`COLD-START.md`** - Quick onboarding for new sessions
-3. **`../README.md`** - Project overview
+3. **`../STATUS.md`** - Current project status
 4. This index
+5. **`arpanet/INDEX.md`** - ARPANET-specific map (if task touches ARPANET)
+
+Then apply repository workflow constraints from `../AGENTS.md`.
 
 ## Project Documentation
 
@@ -24,7 +27,8 @@ New to the project? Start here:
 
 ### ARPANET Stage
 - **`arpanet/INDEX.md`** - ARPANET documentation hub
-- **`arpanet/progress/NEXT-STEPS.md`** - Current active execution path
+- **`arpanet/progress/NEXT-STEPS.md`** - Current active execution path (Panda)
+- **`arpanet/PDP11-HOST-REPLACEMENT-PLAN.md`** - Parallel contingency plan (PDP-11/2.11BSD; non-active)
 - **`arpanet/progress/PHASE3-PROGRESS.md`** - Timeline and progress log
 - **`arpanet/progress/PHASE1-PROGRESS.md`** - Historical Phase 1 (completed)
 - **`arpanet/progress/PHASE2-PROGRESS.md`** - Historical Phase 2 (completed)

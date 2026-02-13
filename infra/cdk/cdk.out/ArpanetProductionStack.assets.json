@@ -1,0 +1,21 @@
+{
+  "version": "48.0.0",
+  "files": {
+    "be0bf07bfff1d610679e3fdc336fd77283d1b7b7cf59679f0f90855eb47c4965": {
+      "displayName": "ArpanetProductionStack Template",
+      "source": {
+        "path": "ArpanetProductionStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "972626128180-us-east-1-aac38e88": {
+          "bucketName": "cdk-hnb659fds-assets-972626128180-us-east-1",
+          "objectKey": "be0bf07bfff1d610679e3fdc336fd77283d1b7b7cf59679f0f90855eb47c4965.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::972626128180:role/cdk-hnb659fds-file-publishing-role-972626128180-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

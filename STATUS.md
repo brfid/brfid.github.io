@@ -1,8 +1,21 @@
 # Project Status
 
-**Last updated:** 2026-02-12
+**Last updated:** 2026-02-13
 
 ## Current State
+
+### ✅ Production Deployment (2026-02-13)
+- **AWS Infrastructure**: ArpanetProductionStack deployed
+  - VAX: 3.80.32.255 (t3.micro, 172.20.0.10)
+  - PDP-11: 3.87.125.203 (t3.micro, 172.20.0.50)
+  - Shared EFS logging: `/mnt/arpanet-logs/`
+  - Cost: ~$17.90/month
+- **Architecture**: Direct VAX ↔ PDP-11 TCP/IP (no IMPs)
+- **IMPs Archived**: Protocol incompatibility (see `arpanet/archived/imp-phase/`)
+- **Status**: Both containers running, awaiting network configuration testing
+- **See**: `docs/arpanet/PRODUCTION-STATUS-2026-02-13.md` ⭐
+
+## Previously Completed
 
 ### ✅ Completed
 - Static resume site generator (Python-based)
@@ -14,14 +27,34 @@
   - Wait loops use polling instead of fixed sleeps
 - Archived console/FTP transfer approaches in `docs/project/transport-archive.md`
 
-### 🚧 In Progress
-- ARPANET stage (Phase 3) - see `docs/arpanet/progress/NEXT-STEPS.md`
+### ✅ Completed (2026-02-12 Evening)
+- **PDP-11 Boot Automation SOLVED** - Telnet console method proven successful
+
+  **PDP-11 (2.11BSD):**
+  - ✅ **AUTOMATION WORKS** with telnet console method
+  - ✅ System boots reliably in 15-20 seconds
+  - ✅ Complete expect + Python automation scripts created
+  - ✅ Commands execute perfectly, root shell access confirmed
+  - ⚠️ Disk image lacks Ethernet kernel drivers (separate issue from automation)
+  - **Status**: **Automation proven**, 100% reliable boot sequence
+  - **Time invested**: ~3 hours (including AWS testing)
+  - See: `docs/arpanet/PDP11-BOOT-SUCCESS-2026-02-12.md` ⭐
+
+  **Key Insight**: Telnet console (`set console telnet=PORT`) works where docker attach failed!
+
+  **PDP-10 Status:**
+  - **Panda/KLH10**: Uses different emulator, telnet console support TBD
+  - **SIMH PDP-10**: Already configured with telnet console in `configs/pdp10.ini`
+  - **Next**: Try telnet method on SIMH PDP-10 (likely will work!)
+
+  **Breakthrough**: The "unsolvable" console automation problem was solved by switching from docker attach (stdio) to telnet console. This method should work for all SIMH-based systems.
 
 ### 📋 Available Next Steps
 1. **Landing page polish** - Enhance UX/styling of generated site
 2. **ARPANET continuation** - Follow `docs/arpanet/progress/NEXT-STEPS.md`
 3. **Testing/CI** - Expand test coverage, add validation workflows
 4. **Documentation** - Keep progress tracking current
+5. **Host contingency planning** - PDP-11 candidate plan: `docs/arpanet/PDP11-HOST-REPLACEMENT-PLAN.md`
 
 ## Key Files for New Sessions
 
@@ -69,62 +102,38 @@ python -m mypy resume_generator tests
 
 ## ARPANET Stage
 
-**Active path**: KL10 + Serial + FTP (VAX → PDP-10 file transfer)
+**Active execution path**: Panda KLH10 TOPS-20 BOOT handoff stabilization.
 
-### Current Status (2026-02-12)
-- **PDP-10 installation automation attempted** - Multiple approaches tested
-- ✅ SIMH configuration errors fixed (unit number syntax)
-- ✅ Automation method proven (screen + command stuffing works)
-- ❌ TOPS-20 V4.1: Boot loop bug (WRCSTM instruction issue)
-- ⚠️ TOPS-20 V7.0: Cornwell SIMH parameter incompatibilities
-- ⚠️ KLH10: Execution errors with Docker image
-- **Recommendation**: Manual installation (15-30 min) or use TOPS-10
-- **See**: `docs/arpanet/PDP10-INSTALLATION-ATTEMPTS-2026-02-12.md`
+### Current status (2026-02-12)
+- ✅ KLH10 + Panda disk path is working through BOOT prompt.
+- ✅ Config dialect mismatch is resolved (`mount`→`devmount`).
+- ✅ Runtime TTY/STDIN is present (`stdin_open=true`, `tty=true`, `/proc/1/fd/0 -> /dev/pts/0`).
+- ⚠️ Strict attach-based automation rerun still failed to prove login (`@`) prompt:
+  - `boot_seen=False`
+  - `sent_commands=[]`
+  - 3 retries at 50s timeout each
+- ⚠️ Additional observed failure mode in recent logs: `?BOOT: Can't find bootable structure` after BOOT commands.
+- ⚠️ Therefore, active blockers are now **(1) control-plane ingress instability** and **(2) intermittent bootable-structure failure**.
 
-### Three-Phase Plan
-**Phase 1**: Fix PDP-10 Boot (switch KS10 → KL10 emulator)
-**Phase 2**: Serial Tunnel (VAX ↔ PDP-10 direct connection)
-**Phase 3**: File Transfer (FTP from VAX to PDP-10)
+### Immediate next action
+1. Do one manual, timestamped `docker attach panda-pdp10` proof attempt to reach `@` (hard gate).
+2. If `@` is still not proven in that attempt, pivot to installation/rebuild flow (`inst-klt20`) and treat current disk runtime as non-bootable for automation.
+3. Re-baseline automation only after successful manual proof on the chosen path.
 
-**Master Plan**: `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`
+### Parallel contingency (planning complete)
+- If host-role replacement is pursued, use the staged PDP-11 plan:
+  - `docs/arpanet/PDP11-HOST-REPLACEMENT-PLAN.md`
+  - Keep VAX as default until PDP-11 passes defined rollout gates.
 
-### What Works ✅
-- VAX/SIMH + 4.3BSD operational
-- VAX FTP server validated (Version 4.105, 1986)
-- Serial tunnel infrastructure ready
-- Docker compose configs ready
+### Historical context
+- Older KS10/Chaosnet/serial branches remain archived for reference:
+  - `arpanet/archived/`
+  - `docs/arpanet/archive/chaosnet/`
+  - `docs/arpanet/archive/ks10/`
 
-### Archived ❌
-- IMP chain (HI1 framing mismatch) → `arpanet/archived/`
-- Chaosnet Path A (ITS build timeout) → `docs/arpanet/archive/chaosnet/`
-- KS10 boot attempts (emulator incompatibility) → `docs/arpanet/archive/ks10/`
-
-### Next Actions
-**Option A (Recommended)**: Manual TOPS-20 installation
-1. Start container interactively on AWS or locally
-2. Type `/L` and `/G143` at MTBOOT> prompt
-3. Complete installation (15-30 min)
-4. Save disk image for reuse
-
-**Option B**: Try TOPS-10 instead (better compatibility)
-1. Download TOPS-10 installation tape
-2. Use similar process to TOPS-20
-3. Likely avoids boot loop issues
-
-**Option C**: Continue debugging automation
-1. Fix Cornwell SIMH parameter compatibility
-2. Or debug KLH10 execution issues
-3. Time investment: 1-2 hours more
-
-### AWS Infrastructure
-- Status: Instance running (2026-02-12)
-- Instance: 34.202.231.2 (i-063975b939603d451)
-- Type: t3.medium
-- Cost: ~$0.04/hr
-- **Action needed**: Destroy when done (`cd test_infra/cdk && cdk destroy --force`)
-
-**Time invested**: ~3 hours
-**Cost so far**: ~$0.12
+### AWS infrastructure
+- Active validation host at last check: `34.202.231.142` (`i-013daaa4a0c3a9bfa`, `t3.medium`).
+- Always confirm current live instance details in `docs/arpanet/progress/NEXT-STEPS.md` before running.
 
 ## Key References
 
