@@ -131,7 +131,9 @@ max-line-length = 100
 
 [tool.pylint.messages_control]
 # Keep this explicit: docstrings are enforced (no global opt-out).
-disable = []
+disable = [
+    "duplicate-code",  # R0801: Test fixtures have expected duplication
+]
 
 [tool.vulture]
 min_confidence = 80
