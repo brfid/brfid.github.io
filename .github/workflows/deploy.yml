@@ -99,11 +99,92 @@ jobs:
       - name: Install Playwright browsers
         run: python -m playwright install --with-deps chromium
 
+      - name: Setup SSH key
+        if: steps.mode.outputs.vax_mode == 'docker'
+        run: |
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > /tmp/aws-key.pem
+          chmod 600 /tmp/aws-key.pem
+
+      - name: Start AWS VAX instance
+        if: steps.mode.outputs.vax_mode == 'docker'
+        id: aws_start
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          echo "🚀 Starting AWS VAX instance..."
+          aws ec2 start-instances --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }}
+
+          echo "⏳ Waiting for instance to be running..."
+          aws ec2 wait instance-running --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }}
+
+          echo "📡 Getting instance IP..."
+          VAX_IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "vax_ip=$VAX_IP" >> $GITHUB_OUTPUT
+          echo "✅ VAX instance ready at $VAX_IP"
+
+          echo "⏳ Waiting for SSH to be available..."
+          for i in {1..30}; do
+            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /tmp/aws-key.pem ubuntu@$VAX_IP echo "ready" 2>/dev/null; then
+              echo "✅ SSH ready"
+              break
+            fi
+            echo "Attempt $i/30: SSH not ready yet..."
+            sleep 10
+          done
+
       - name: Generate site (HTML + PDF + VAX artifacts)
+        env:
+          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
         run: |
           echo "🔨 Building resume with VAX mode: ${{ steps.mode.outputs.vax_mode }}"
-          python -m resume_generator --out site --with-vax \
-            --vax-mode ${{ steps.mode.outputs.vax_mode }}
+
+          if [[ "${{ steps.mode.outputs.vax_mode }}" == "docker" ]]; then
+            echo "🖥️  Using AWS VAX instance at $VAX_IP"
+
+            # Generate resume.vax.yaml locally
+            python -m resume_generator --out site --with-vax --vax-mode local
+
+            # Transfer to VAX
+            echo "📤 Transferring files to VAX..."
+            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+              build/vax/resume.vax.yaml \
+              ubuntu@$VAX_IP:/tmp/resume.vax.yaml
+
+            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+              vax/bradman.c \
+              ubuntu@$VAX_IP:/tmp/bradman.c
+
+            # Run build on VAX
+            echo "🔨 Running build on AWS VAX (4.3BSD)..."
+            ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP << 'ENDSSH'
+              # Compile bradman
+              cc -o /tmp/bradman /tmp/bradman.c
+
+              # Generate manpage
+              /tmp/bradman -i /tmp/resume.vax.yaml -o /tmp/brad.1
+
+              echo "✅ VAX build complete"
+ENDSSH
+
+            # Retrieve output
+            echo "📥 Retrieving build output..."
+            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+              ubuntu@$VAX_IP:/tmp/brad.1 \
+              build/vax/brad.1
+
+            # Render to text
+            python -m resume_generator.manpage --in build/vax/brad.1 --out site/brad.man.txt
+
+            echo "✅ AWS VAX build complete"
+          else
+            python -m resume_generator --out site --with-vax \
+              --vax-mode ${{ steps.mode.outputs.vax_mode }}
+          fi
 
       - name: Capture VAX build logs (Docker mode only)
         if: steps.mode.outputs.vax_mode == 'docker'
@@ -143,6 +224,17 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Stop AWS VAX instance
+        if: always() && steps.mode.outputs.vax_mode == 'docker'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          echo "🛑 Stopping AWS VAX instance..."
+          aws ec2 stop-instances --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }}
+          echo "✅ Instance stopped (cost savings mode)"
 
       - name: Summary
         run: |
