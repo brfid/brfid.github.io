@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{{ name }}</title>
     <meta name="color-scheme" content="dark" />
+    {% if build_info_css_path %}
+    <link rel="stylesheet" href="{{ build_info_css_path }}" />
+    {% endif %}
     <style>
       :root {
         --bg: #0f1115;
@@ -169,6 +172,9 @@
         </footer>
       </section>
     </main>
+    {% if build_info_html %}
+    {{ build_info_html }}
+    {% endif %}
   </body>
 </html>
 

@@ -163,8 +163,8 @@ Examples:
   # Show details of a specific build
   python -m arpanet_logging show build-20260207-221530
 
-  # Clean up old builds (keep last 10)
-  python -m arpanet_logging cleanup --keep 10
+  # Clean up old builds (keep last 20)
+  python -m arpanet_logging cleanup --keep 20
         """
     )
 
@@ -218,7 +218,7 @@ Examples:
     cleanup_parser.add_argument(
         "--keep",
         type=int,
-        default=10,
+        default=20,
         help="Number of recent builds to keep"
     )
 

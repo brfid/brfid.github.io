@@ -73,3 +73,33 @@ def test_build_landing_page_includes_html_fragment(tmp_path: Path) -> None:
     # Resume links added by JavaScript
     assert "Resume (HTML)" in html
     assert "Resume (PDF)" in html
+
+
+def test_build_landing_page_includes_build_info_widget(tmp_path: Path) -> None:
+    templates_dir = Path("templates")
+    resume = {"basics": {"name": "Test User"}}
+    out_dir = tmp_path / "site"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Create build info files
+    build_info_dir = out_dir / "build-info"
+    build_info_dir.mkdir()
+
+    build_info_html = """<div class="build-info">
+  <button class="build-badge">Build: test-123 <span class="status success">✓</span></button>
+  <div class="build-details">Test build details</div>
+</div>"""
+    (build_info_dir / "build-info.html").write_text(build_info_html, encoding="utf-8")
+    (build_info_dir / "build-info.css").write_text(".build-info { }", encoding="utf-8")
+
+    index_path = build_landing_page(
+        resume=cast(Resume, resume),
+        out_dir=out_dir,
+        templates_dir=templates_dir,
+    )
+
+    html = index_path.read_text(encoding="utf-8")
+    assert "build-info.css" in html
+    assert "build-badge" in html
+    assert "Build: test-123" in html
+    assert "Test build details" in html

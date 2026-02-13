@@ -99,6 +99,14 @@ jobs:
       - name: Install Playwright browsers
         run: python -m playwright install --with-deps chromium
 
+      - name: Generate build ID
+        if: steps.mode.outputs.vax_mode == 'docker'
+        id: build_id
+        run: |
+          BUILD_ID="build-$(date -u '+%Y%m%d-%H%M%S')"
+          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+          echo "📝 Build ID: $BUILD_ID"
+
       - name: Setup SSH key
         if: steps.mode.outputs.vax_mode == 'docker'
         run: |
@@ -137,20 +145,45 @@ jobs:
             sleep 10
           done
 
+      - name: Transfer logging scripts to AWS
+        if: steps.mode.outputs.vax_mode == 'docker'
+        env:
+          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+        run: |
+          echo "📤 Transferring logging scripts to AWS..."
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            scripts/arpanet-log.sh \
+            ubuntu@$VAX_IP:/tmp/arpanet-log.sh
+
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            scripts/merge-logs.py \
+            ubuntu@$VAX_IP:/tmp/merge-logs.py
+
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            'chmod +x /tmp/arpanet-log.sh /tmp/merge-logs.py'
+
+          echo "✅ Logging scripts transferred"
+
       - name: Generate site (HTML + PDF + VAX artifacts)
         env:
           VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "🔨 Building resume with VAX mode: ${{ steps.mode.outputs.vax_mode }}"
 
           if [[ "${{ steps.mode.outputs.vax_mode }}" == "docker" ]]; then
             echo "🖥️  Using AWS VAX instance at $VAX_IP"
+            echo "📝 Build ID: $BUILD_ID"
+
+            # Log GitHub Actions activity
+            exec > >(tee >(while IFS= read -r line; do echo "[$(date -u '+%Y-%m-%d %H:%M:%S') GITHUB] $line"; done >> /tmp/github.log)) 2>&1
 
             # Generate resume.vax.yaml locally
+            echo "Generating resume.vax.yaml locally..."
             python -m resume_generator --out site --with-vax --vax-mode local
 
             # Transfer to VAX
-            echo "📤 Transferring files to VAX..."
+            echo "Transferring files to VAX..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               build/vax/resume.vax.yaml \
               ubuntu@$VAX_IP:/tmp/resume.vax.yaml
@@ -159,13 +192,13 @@ jobs:
               vax/bradman.c \
               ubuntu@$VAX_IP:/tmp/bradman.c
 
-            # Run build on VAX
-            echo "🔨 Running build on AWS VAX (4.3BSD)..."
+            # Run build on VAX with logging
+            echo "Running build on AWS VAX (4.3BSD)..."
             ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-              'cc -o /tmp/bradman /tmp/bradman.c && /tmp/bradman -i /tmp/resume.vax.yaml -o /tmp/brad.1 && echo "✅ VAX build complete"'
+              "cd /tmp && (cc -o bradman bradman.c 2>&1; ./bradman -i resume.vax.yaml -o brad.1 2>&1; echo 'VAX build complete') | /tmp/arpanet-log.sh VAX $BUILD_ID"
 
             # Retrieve output
-            echo "📥 Retrieving build output..."
+            echo "Retrieving build output..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               ubuntu@$VAX_IP:/tmp/brad.1 \
               build/vax/brad.1
@@ -173,41 +206,93 @@ jobs:
             # Render to text
             python -m resume_generator.manpage --in build/vax/brad.1 --out site/brad.man.txt
 
-            echo "✅ AWS VAX build complete"
+            echo "AWS VAX build complete"
           else
             python -m resume_generator --out site --with-vax \
               --vax-mode ${{ steps.mode.outputs.vax_mode }}
           fi
 
-      - name: Capture VAX build logs (Docker mode only)
+      - name: Merge and retrieve build logs
         if: steps.mode.outputs.vax_mode == 'docker'
+        env:
+          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
-          echo "📋 Capturing VAX build logs..."
-          mkdir -p site/vax-logs
+          echo "📋 Merging build logs..."
 
-          # Copy VAX build log if it exists
-          if [[ -f site/vax-build.log ]]; then
-            cp site/vax-build.log site/vax-logs/
+          # Upload GitHub log to VAX
+          if [[ -f /tmp/github.log ]]; then
+            echo "Uploading GitHub Actions log..."
+            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+              /tmp/github.log \
+              ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/GITHUB.log
           fi
 
-          # Create enhanced build log summary
-          cat > site/vax-logs/build-summary.txt << 'EOF'
-          VAX/BSD Build Summary
-          =====================
-          Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          Mode: Docker (authentic 4.3BSD VAX 11/780)
+          # Merge logs chronologically on VAX
+          echo "Merging logs chronologically..."
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            "python3 /tmp/merge-logs.py $BUILD_ID"
 
-          Build Steps:
-          1. Resume YAML → VAX-friendly subset
-          2. Transfer to VAX via SIMH tape
-          3. Compile bradman.c (K&R C)
-          4. Generate manpage (roff format)
-          5. Extract and render artifacts
+          # Retrieve all logs
+          echo "Retrieving build logs..."
+          mkdir -p site/build-logs
 
-          Status: ✅ Build complete
-          EOF
+          # Retrieve merged log
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/merged.log \
+            site/build-logs/merged.log
 
-          echo "✅ Logs captured to site/vax-logs/"
+          # Retrieve individual component logs
+          for component in VAX PDP11 GITHUB; do
+            if ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+              "test -f /mnt/arpanet-logs/builds/$BUILD_ID/${component}.log"; then
+              scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+                ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/${component}.log \
+                site/build-logs/${component}.log
+            fi
+          done
+
+          # Cleanup old builds (keep last 20)
+          echo "Cleaning up old builds..."
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            'cd /mnt/arpanet-logs/builds && ls -t | tail -n +21 | xargs -r rm -rf'
+
+          echo "✅ Logs merged and retrieved"
+
+      - name: Generate build info widget
+        if: steps.mode.outputs.vax_mode == 'docker'
+        env:
+          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
+        run: |
+          echo "📊 Generating build info widget..."
+
+          # Transfer generate-build-info.py to VAX
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            scripts/generate-build-info.py \
+            ubuntu@$VAX_IP:/tmp/generate-build-info.py
+
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            'chmod +x /tmp/generate-build-info.py'
+
+          # Generate build info on VAX
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            "python3 /tmp/generate-build-info.py $BUILD_ID /mnt/arpanet-logs /tmp/build-info"
+
+          # Retrieve generated files
+          mkdir -p site/build-info
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            ubuntu@$VAX_IP:/tmp/build-info/build-info.json \
+            site/build-info/
+
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            ubuntu@$VAX_IP:/tmp/build-info/build-info.html \
+            site/build-info/
+
+          # Copy CSS
+          cp templates/build-info.css site/build-info/
+
+          echo "✅ Build info widget generated"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
