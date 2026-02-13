@@ -9,11 +9,33 @@
   - VAX: 3.80.32.255 (t3.micro, 172.20.0.10)
   - PDP-11: 3.87.125.203 (t3.micro, 172.20.0.50)
   - Shared EFS logging: `/mnt/arpanet-logs/`
-  - Cost: ~$17.90/month
+  - Cost: ~$17.90/month (~$0.60/day)
 - **Architecture**: Direct VAX ↔ PDP-11 TCP/IP (no IMPs)
 - **IMPs Archived**: Protocol incompatibility (see `arpanet/archived/imp-phase/`)
-- **Status**: Both containers running, awaiting network configuration testing
-- **See**: `docs/arpanet/PRODUCTION-STATUS-2026-02-13.md` ⭐
+
+### 🔬 Current Testing Phase (2026-02-13)
+
+**VAX Status**: ✅ FULLY OPERATIONAL
+- Network configured (172.20.0.10)
+- FTP service running (port 21)
+- Ready for file transfers
+- See: `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
+
+**PDP-11 Status**: ⚠️ NETWORKING BLOCKED, TESTING TAPE ALTERNATIVE
+- **Issue**: Kernel lacks TCP/IP networking stack
+- **Root cause**: 211bsd_rpeth.dsk genunix kernel compiled without network support
+- **Current approach**: Testing TS11 tape drive for file transfers
+- **Tape config**: Enabled in `arpanet/configs/pdp11.ini`
+- **Details**: `docs/arpanet/PDP11-KERNEL-ISSUE-2026-02-13.md`
+
+**Testing in progress**:
+- [x] VAX network and FTP operational
+- [x] PDP-11 kernel issue diagnosed
+- [x] Tape drive enabled in SIMH config
+- [ ] Verify PDP-11 BSD detects tape device
+- [ ] Test VAX tape write operations
+- [ ] Test PDP-11 tape read operations
+- [ ] End-to-end tape file transfer
 
 ## Previously Completed
 
@@ -27,34 +49,48 @@
   - Wait loops use polling instead of fixed sleeps
 - Archived console/FTP transfer approaches in `docs/project/transport-archive.md`
 
+### ✅ Completed (2026-02-12-13)
+- **Screen-based console automation** - Interactive control via GNU screen
+  - `screen -dmS vax-console telnet localhost 2323`
+  - `screen -S vax-console -X stuff "command\n"`
+  - `screen -S vax-console -X hardcopy /tmp/output.txt`
+  - Provides pseudo-interactive control for BSD configuration
+  - See: `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
+
+- **VAX Network + FTP Configuration** - Fully operational
+  - Network interface: de0 at 172.20.0.10
+  - Routing: Default gateway via 172.17.0.1
+  - FTP service: Running on port 21
+  - Testing: All services verified and operational
+
+- **PDP-11 Kernel Analysis** - Root cause identified
+  - Default `unix` kernel: w11a-specific (Unibus), no Ethernet
+  - `genunix` kernel: Boots but lacks TCP/IP stack entirely
+  - `netnix` kernel: Crashes with trap abort
+  - Detailed analysis: `docs/arpanet/PDP11-KERNEL-ISSUE-2026-02-13.md`
+
+- **Tape Transfer Pivot** - Alternative approach for PDP-11
+  - TS11 tape drive configured in SIMH
+  - Both systems can access shared EFS tape file
+  - Historically authentic "sneakernet" approach
+  - Testing in progress
+
 ### ✅ Completed (2026-02-12 Evening)
 - **PDP-11 Boot Automation SOLVED** - Telnet console method proven successful
-
-  **PDP-11 (2.11BSD):**
   - ✅ **AUTOMATION WORKS** with telnet console method
   - ✅ System boots reliably in 15-20 seconds
   - ✅ Complete expect + Python automation scripts created
   - ✅ Commands execute perfectly, root shell access confirmed
-  - ⚠️ Disk image lacks Ethernet kernel drivers (separate issue from automation)
-  - **Status**: **Automation proven**, 100% reliable boot sequence
-  - **Time invested**: ~3 hours (including AWS testing)
-  - See: `docs/arpanet/PDP11-BOOT-SUCCESS-2026-02-12.md` ⭐
-
-  **Key Insight**: Telnet console (`set console telnet=PORT`) works where docker attach failed!
-
-  **PDP-10 Status:**
-  - **Panda/KLH10**: Uses different emulator, telnet console support TBD
-  - **SIMH PDP-10**: Already configured with telnet console in `configs/pdp10.ini`
-  - **Next**: Try telnet method on SIMH PDP-10 (likely will work!)
-
-  **Breakthrough**: The "unsolvable" console automation problem was solved by switching from docker attach (stdio) to telnet console. This method should work for all SIMH-based systems.
+  - **Status**: Automation proven, 100% reliable boot sequence
+  - See: `docs/arpanet/PDP11-BOOT-SUCCESS-2026-02-12.md`
 
 ### 📋 Available Next Steps
-1. **Landing page polish** - Enhance UX/styling of generated site
-2. **ARPANET continuation** - Follow `docs/arpanet/progress/NEXT-STEPS.md`
-3. **Testing/CI** - Expand test coverage, add validation workflows
-4. **Documentation** - Keep progress tracking current
-5. **Host contingency planning** - PDP-11 candidate plan: `docs/arpanet/PDP11-HOST-REPLACEMENT-PLAN.md`
+1. **Complete tape testing** - Verify end-to-end VAX→tape→PDP-11 transfer
+2. **PDP-11 kernel options** - Rebuild with networking, or find alternative image
+3. **VAX-to-VAX setup** - Deploy second VAX for proven network/FTP testing
+4. **Landing page polish** - Enhance UX/styling of generated site
+5. **Testing/CI** - Expand test coverage, add validation workflows
+6. **Documentation** - Keep progress tracking current
 
 ## Key Files for New Sessions
 
@@ -65,9 +101,15 @@
 4. `docs/INDEX.md`
 
 **For ARPANET work:**
-- `docs/arpanet/progress/NEXT-STEPS.md`
-- `docs/arpanet/progress/PHASE3-PROGRESS.md`
-- `docs/arpanet/INDEX.md`
+- `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md` - Latest validation report
+- `docs/arpanet/PDP11-KERNEL-ISSUE-2026-02-13.md` - Kernel compatibility analysis
+- `docs/arpanet/progress/NEXT-STEPS.md` - Original FTP setup steps
+- `docs/arpanet/INDEX.md` - ARPANET documentation index
+
+**AWS Management:**
+- `aws-status.sh` - Check instance state and costs
+- `aws-stop.sh` - Stop instances (saves $15/month, keeps data)
+- `aws-start.sh` - Start instances (shows new IPs)
 
 ## Critical Constraints
 
@@ -96,47 +138,31 @@ python -m mypy resume_generator tests
 
 ## Recent Changes
 
-- VAX tape transfer is primary path (console/FTP archived)
-- `bradman.c` K&R C compatibility fixes landed
-- Docker SIMH mode operational with pinned image
+- VAX networking and FTP fully operational (2026-02-13)
+- PDP-11 kernel networking blocked, pivoted to tape transfer (2026-02-13)
+- Screen-based interactive console automation proven effective (2026-02-13)
+- Comprehensive validation reports created (2026-02-13)
+- IMPs archived due to protocol incompatibility (2026-02-13)
+- Production infrastructure deployed on AWS (2026-02-13)
 
-## ARPANET Stage
+## Architecture
 
-**Active execution path**: Panda KLH10 TOPS-20 BOOT handoff stabilization.
+**Current**: Direct VAX ↔ PDP-11 connection (simplified)
+- Docker bridge network: 172.20.0.0/16
+- VAX: 4.3BSD with de0 Ethernet
+- PDP-11: 2.11BSD with TS11 tape
+- Shared EFS storage for tape file exchange
 
-### Current status (2026-02-12)
-- ✅ KLH10 + Panda disk path is working through BOOT prompt.
-- ✅ Config dialect mismatch is resolved (`mount`→`devmount`).
-- ✅ Runtime TTY/STDIN is present (`stdin_open=true`, `tty=true`, `/proc/1/fd/0 -> /dev/pts/0`).
-- ⚠️ Strict attach-based automation rerun still failed to prove login (`@`) prompt:
-  - `boot_seen=False`
-  - `sent_commands=[]`
-  - 3 retries at 50s timeout each
-- ⚠️ Additional observed failure mode in recent logs: `?BOOT: Can't find bootable structure` after BOOT commands.
-- ⚠️ Therefore, active blockers are now **(1) control-plane ingress instability** and **(2) intermittent bootable-structure failure**.
-
-### Immediate next action
-1. Do one manual, timestamped `docker attach panda-pdp10` proof attempt to reach `@` (hard gate).
-2. If `@` is still not proven in that attempt, pivot to installation/rebuild flow (`inst-klt20`) and treat current disk runtime as non-bootable for automation.
-3. Re-baseline automation only after successful manual proof on the chosen path.
-
-### Parallel contingency (planning complete)
-- If host-role replacement is pursued, use the staged PDP-11 plan:
-  - `docs/arpanet/PDP11-HOST-REPLACEMENT-PLAN.md`
-  - Keep VAX as default until PDP-11 passes defined rollout gates.
-
-### Historical context
-- Older KS10/Chaosnet/serial branches remain archived for reference:
-  - `arpanet/archived/`
-  - `docs/arpanet/archive/chaosnet/`
-  - `docs/arpanet/archive/ks10/`
-
-### AWS infrastructure
-- Active validation host at last check: `34.202.231.142` (`i-013daaa4a0c3a9bfa`, `t3.medium`).
-- Always confirm current live instance details in `docs/arpanet/progress/NEXT-STEPS.md` before running.
+**Historical**: ARPANET 1822 protocol with IMPs
+- Archived to: `arpanet/archived/imp-phase/`
+- Reason: Protocol incompatibility (TCP/IP vs 1822)
+- Can be restored if needed
 
 ## Key References
 
-- **Master Plan**: `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`
-- Next Steps: `docs/arpanet/progress/NEXT-STEPS.md`
-- Serial Architecture: `docs/arpanet/SERIAL-TUNNEL.md`
+- **Validation Report**: `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
+- **Kernel Analysis**: `docs/arpanet/PDP11-KERNEL-ISSUE-2026-02-13.md`
+- **Production Deployment**: `PRODUCTION-DEPLOYMENT.md`
+- **Infrastructure Code**: `infra/cdk/arpanet_production_stack.py`
+- **Docker Compose**: `docker-compose.production.yml`
+- **SIMH Configs**: `arpanet/configs/vax-network.ini`, `arpanet/configs/pdp11.ini`

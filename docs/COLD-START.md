@@ -5,13 +5,14 @@ Use this page when starting from zero context.
 ## 0) Current State (read this first)
 
 **Date**: 2026-02-13
-**Status**: ✅ Production infrastructure deployed and running
+**Status**: ✅ VAX operational, ⚠️ PDP-11 tape testing
 
-- **Active path**: VAX ↔ PDP-11 direct TCP/IP networking (no IMPs)
+- **Active path**: VAX operational with FTP, PDP-11 testing tape alternative
 - **AWS Infrastructure**: ArpanetProductionStack running on 2x t3.micro
-- **Current state**: Both containers operational, awaiting FTP configuration
-- **Next action**: Configure networking and test FTP between VAX and PDP-11
+- **Current state**: VAX networking+FTP working, PDP-11 kernel blocks networking
+- **Next action**: Complete tape transfer testing as alternative to network/FTP
 - **Cost**: ~$17/month running, ~$2/month stopped
+- **Latest**: See `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
 
 **Canonical references**:
 - `STATUS.md` - Overall project status
@@ -206,12 +207,16 @@ docker-compose -f docker-compose.production.yml restart vax
 
 ## 11) Next Steps
 
-See `docs/arpanet/progress/NEXT-STEPS.md` for detailed FTP setup steps.
+**Current testing** (2026-02-13):
+1. Verify PDP-11 BSD detects TS11 tape device
+2. Test VAX tape write operations (tar to tape)
+3. Test PDP-11 tape read operations (tar from tape)
+4. Complete end-to-end tape file transfer
+5. Document tape transfer methodology
 
-**Summary**:
-1. Configure VAX network (172.20.0.10)
-2. Configure PDP-11 network (172.20.0.50)
-3. Test connectivity (ping)
-4. Configure FTP on both systems
-5. Test file transfers both directions
-6. Make configuration persistent
+**Alternative paths**:
+- Option A: Fix PDP-11 kernel (rebuild with networking)
+- Option B: Deploy second VAX for proven network/FTP testing
+- Option C: Find alternative PDP-11 image with working network stack
+
+See `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md` for detailed status.
