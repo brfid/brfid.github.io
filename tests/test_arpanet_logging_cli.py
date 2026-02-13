@@ -84,11 +84,20 @@ def test_cmd_show_prints_component_summary(tmp_path: Path, capsys: pytest.Captur
 
 
 def test_cmd_cleanup_removes_older_builds(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    import os
+    import time
+
     builds_path = tmp_path / "builds"
     builds_path.mkdir(parents=True)
 
-    for name in ["build-1", "build-2", "build-3"]:
-        (builds_path / name).mkdir()
+    # Create directories with explicit timestamps to ensure deterministic sorting
+    base_time = time.time() - 300  # 5 minutes ago
+    for i, name in enumerate(["build-1", "build-2", "build-3"]):
+        build_dir = builds_path / name
+        build_dir.mkdir()
+        # Set modification time: build-1 oldest, build-3 newest
+        mtime = base_time + (i * 60)  # 1 minute apart
+        os.utime(build_dir, (mtime, mtime))
 
     args = SimpleNamespace(path=str(tmp_path), keep=1)
     cli.cmd_cleanup(args)
