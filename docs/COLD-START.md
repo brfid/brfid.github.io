@@ -2,25 +2,34 @@
 
 Use this page when starting from zero context.
 
-## 0) Current checkpoint (read this first)
+## 0) Current State (read this first)
 
-- **Active path**: Panda KLH10 TOPS-20 bring-up (direct TCP/IP path)
-- **Current known-good**: KLH10 boots to `BOOT V11.0(315)` with `RH20.RP07.1`
-- **Current blocker**: BOOT control-plane ingress is unstable (no proven `@` prompt yet)
-- **Critical fix already landed**: `mount dsk0 ...` → `devmount dsk0 ...`
-- **Next action**: capture one successful manual `docker attach` transcript to `@`, then codify into automation
-- **Testing**: AWS-first runtime validation
+**Date**: 2026-02-13
+**Status**: ✅ Production infrastructure deployed and running
+
+- **Active path**: VAX ↔ PDP-11 direct TCP/IP networking (no IMPs)
+- **AWS Infrastructure**: ArpanetProductionStack running on 2x t3.micro
+- **Current state**: Both containers operational, awaiting FTP configuration
+- **Next action**: Configure networking and test FTP between VAX and PDP-11
+- **Cost**: ~$17/month running, ~$2/month stopped
 
 **Canonical references**:
-- `STATUS.md`
-- `docs/arpanet/progress/NEXT-STEPS.md` (concrete steps)
-- `docs/arpanet/INDEX.md` (active vs archived ARPANET docs)
-- `docs/arpanet/KL10-SERIAL-FTP-PLAN.md` (fallback/historical strategy context)
+- `STATUS.md` - Overall project status
+- `docs/arpanet/PRODUCTION-STATUS-2026-02-13.md` - Detailed deployment report
+- `docs/arpanet/progress/NEXT-STEPS.md` - FTP setup steps
+- `PRODUCTION-DEPLOYMENT.md` - Complete deployment guide
+
+**Quick AWS management**:
+```bash
+./aws-status.sh  # Check instance state and costs
+./aws-stop.sh    # Stop instances (saves $15/month, keeps data)
+./aws-start.sh   # Start instances (shows new IPs)
+```
 
 ## 1) Read order
 
 1. `README.md`
-2. `docs/COLD-START.md`
+2. `docs/COLD-START.md` (this file)
 3. `STATUS.md`
 4. `docs/INDEX.md`
 5. `docs/arpanet/INDEX.md` (for ARPANET tasks)
@@ -29,11 +38,25 @@ Then apply repository workflow constraints from `AGENTS.md`.
 
 ## 2) Source-of-truth pointers
 
-- Current project state: `STATUS.md`
-- Active execution path: `docs/arpanet/progress/NEXT-STEPS.md`
-- Progress timeline: `docs/arpanet/progress/PHASE3-PROGRESS.md`
-- Archived IMP topology: `arpanet/archived/`
+**Project state**:
+- Current status: `STATUS.md`
+- Next actions: `docs/arpanet/progress/NEXT-STEPS.md`
+- Production deployment: `PRODUCTION-DEPLOYMENT.md`
+
+**AWS Infrastructure**:
+- Stack code: `infra/cdk/arpanet_production_stack.py`
+- Management scripts: `aws-*.sh` (repo root)
+- Deployment guide: `infra/cdk/PRODUCTION-README.md`
+
+**Architecture**:
+- Simplified: VAX + PDP-11 direct TCP/IP (no IMPs)
+- IMP phase archived: `arpanet/archived/imp-phase/`
+- Docker compose: `docker-compose.production.yml`
+
+**Historical references**:
+- Archived IMP topology: `arpanet/archived/imp-phase/`
 - Historical transport decisions: `docs/project/transport-archive.md`
+- PDP-10 experiments: `docs/arpanet/PANDA-*.md`
 
 ## 3) Fast constraints checklist
 
@@ -41,46 +64,154 @@ Then apply repository workflow constraints from `AGENTS.md`.
 - Do not install globally.
 - Do not create/push publish tags unless intentional (`publish`, `publish-*`).
 - Prefer evidence-backed changes and preserve manifest/log workflow.
+- AWS instances can be stopped/started without data loss (EFS + EBS persist).
 
 ## 4) If task is documentation-related
 
 - Update central indexes when moving/adding docs:
   - `docs/INDEX.md`
   - domain index (example: `docs/arpanet/INDEX.md`)
+- Keep `STATUS.md` current
+- Document significant changes in `docs/arpanet/progress/`
 
-## 5) AWS Runtime Access
+## 5) If task is AWS-related
 
-**Status**: Active Panda runtime used for validation (see `STATUS.md` / `docs/arpanet/progress/NEXT-STEPS.md` for latest instance/IP)
-
-**Note**:
-- Instance details and costs can change between sessions.
-- Treat `STATUS.md` + `docs/arpanet/progress/NEXT-STEPS.md` as canonical for current live host information.
-
-**To redeploy** (when needed):
+**Check current state first**:
 ```bash
-cd test_infra/cdk
-source ../../.venv/bin/activate
-cdk deploy
+./aws-status.sh
 ```
 
-## 6) If task touches ARPANET runtime behavior
-
-- Check: `docs/arpanet/progress/NEXT-STEPS.md` first, then Panda docs
-- Active topology for current blocker: Panda VAX + PDP-10 (`docker-compose.panda-vax.yml`)
-- IMP containers are archived — do not start them
-- Serial tunnel docs are historical context, not the current execution path
-
-## 7) Essential Commands
-
+**Access instances**:
 ```bash
-source .venv/bin/activate
-python -m resume_generator
-python -m pytest -q
-python -m ruff check .
-python -m mypy resume_generator tests
+# Get IPs from status script output
+ssh -i ~/.ssh/arpanet-temp.pem ubuntu@<vax-ip>
+ssh -i ~/.ssh/arpanet-temp.pem ubuntu@<pdp11-ip>
 ```
 
-## 8) Critical Constraints
+**Console access**:
+```bash
+telnet <vax-ip> 2323    # VAX console
+telnet <pdp11-ip> 2327  # PDP-11 console
+```
 
-❌ Do not: install globally, push publish tags, start IMP containers
-✅ Do: use `.venv/`, update `STATUS.md` at milestones, follow `AGENTS.md`
+**Stop when done** (saves money):
+```bash
+./aws-stop.sh  # Keeps all data, saves $15/month
+```
+
+## 6) Current Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│         Docker Bridge 172.20.0.0/16         │
+│                                              │
+│   ┌──────────────┐       ┌──────────────┐   │
+│   │  VAX/BSD     │       │  PDP-11/BSD  │   │
+│   │  172.20.0.10 │◄─────►│  172.20.0.50 │   │
+│   │  de0         │  TCP  │  xq0         │   │
+│   │  Port 2323   │  /IP  │  Port 2327   │   │
+│   └──────────────┘       └──────────────┘   │
+│                                              │
+└─────────────────────────────────────────────┘
+                     │
+                     ▼
+           /mnt/arpanet-logs/ (EFS)
+```
+
+## 7) Key Files
+
+**Management scripts** (repo root):
+- `aws-status.sh` - Check instances
+- `aws-stop.sh` - Stop instances
+- `aws-start.sh` - Start instances
+
+**Infrastructure**:
+- `infra/cdk/arpanet_production_stack.py` - AWS CDK stack
+- `docker-compose.production.yml` - Container orchestration
+
+**Documentation**:
+- `STATUS.md` - Current project status
+- `PRODUCTION-DEPLOYMENT.md` - Full deployment guide
+- `docs/arpanet/PRODUCTION-STATUS-2026-02-13.md` - Deployment report
+- `docs/arpanet/progress/NEXT-STEPS.md` - Next actions
+
+**Archives**:
+- `arpanet/archived/imp-phase/` - ARPANET 1822 protocol work
+
+## 8) Common Tasks
+
+### Check AWS status
+```bash
+./aws-status.sh
+```
+
+### Access VAX
+```bash
+ssh -i ~/.ssh/arpanet-temp.pem ubuntu@<vax-ip>
+telnet <vax-ip> 2323  # Console
+```
+
+### Access PDP-11
+```bash
+ssh -i ~/.ssh/arpanet-temp.pem ubuntu@<pdp11-ip>
+telnet <pdp11-ip> 2327  # Console
+```
+
+### Check logs
+```bash
+# On either instance:
+tail -f /mnt/arpanet-logs/vax/boot.log
+tail -f /mnt/arpanet-logs/pdp11/boot.log
+du -sh /mnt/arpanet-logs/*
+```
+
+### Manage containers
+```bash
+# On either instance:
+cd ~
+docker-compose -f docker-compose.production.yml ps
+docker-compose -f docker-compose.production.yml logs -f
+docker-compose -f docker-compose.production.yml restart vax
+```
+
+### Save money
+```bash
+./aws-stop.sh  # $17/month → $2/month (storage only)
+```
+
+## 9) What Changed Recently (2026-02-13)
+
+1. **IMP Phase Archived**: Protocol incompatibility (Ethernet/TCP-IP vs ARPANET 1822)
+   - All IMP materials moved to `arpanet/archived/imp-phase/`
+   - Simplified to direct VAX ↔ PDP-11 TCP/IP
+
+2. **Production Infrastructure Deployed**:
+   - 2x t3.micro instances (VAX + PDP-11)
+   - Shared EFS logging at `/mnt/arpanet-logs/`
+   - Simple management scripts at repo root
+
+3. **PDP-11 Added**:
+   - Replaced PDP-10 (console automation issues)
+   - 2.11BSD pre-built image
+   - Native Ethernet support
+
+## 10) Important Notes
+
+- **AWS credentials**: Account 972626128180, region us-east-1
+- **SSH key**: `~/.ssh/arpanet-temp.pem`
+- **EFS ID**: `fs-03cd0abbb728b4ad8`
+- **Network**: Docker bridge `172.20.0.0/16`
+- **Data safety**: Stop/start preserves all data (EFS + EBS)
+- **IMPs**: Archived but can be restored if needed
+
+## 11) Next Steps
+
+See `docs/arpanet/progress/NEXT-STEPS.md` for detailed FTP setup steps.
+
+**Summary**:
+1. Configure VAX network (172.20.0.10)
+2. Configure PDP-11 network (172.20.0.50)
+3. Test connectivity (ping)
+4. Configure FTP on both systems
+5. Test file transfers both directions
+6. Make configuration persistent
