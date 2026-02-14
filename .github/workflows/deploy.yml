@@ -326,12 +326,24 @@ jobs:
         run: |
           echo "📋 Merging build logs from all sources..."
 
+          # Ensure build directory exists on EFS
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID"
+
           # Upload GitHub log to VAX (for EFS)
           if [[ -f /tmp/github.log ]]; then
             echo "Uploading GitHub Actions log to EFS..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               /tmp/github.log \
               ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/GITHUB.log
+          fi
+
+          # Upload COURIER log to VAX (for EFS)
+          if [[ -f /tmp/COURIER-$BUILD_ID.log ]]; then
+            echo "Uploading COURIER log to EFS..."
+            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+              /tmp/COURIER-$BUILD_ID.log \
+              ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/COURIER.log
           fi
 
           # Verify all log sources exist
