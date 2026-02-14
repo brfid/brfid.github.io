@@ -15,12 +15,30 @@ fi
 echo "=== VAX BUILD & ENCODE ===" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 echo "Build ID: $BUILD_ID" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 echo "Date: $(date)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+echo "" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+
+# Log system information
+echo "System Information:" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+echo "  OS: $(uname -a 2>/dev/null || echo '4.3BSD')" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+echo "  Hostname: $(hostname)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+echo "" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 
 cd /tmp || exit 1
 
 # Compile bradman
 echo "Compiling bradman.c..." | /tmp/arpanet-log.sh VAX "$BUILD_ID"
-echo "  Compiler: cc (4.3BSD K&R C)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+
+# Capture actual compiler version
+CC_VERSION=$(cc -v 2>&1 | head -1 || echo "cc (4.3BSD K&R C)")
+echo "  Compiler: $CC_VERSION" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+
+# Show compiler binary info
+if [ -f /bin/cc ]; then
+    CC_SIZE=$(ls -l /bin/cc | awk '{print $5}')
+    CC_DATE=$(ls -l /bin/cc | awk '{print $6, $7, $8}')
+    echo "  Compiler binary: /bin/cc ($CC_SIZE bytes, dated $CC_DATE)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+fi
+
 echo "  Source: bradman.c ($(wc -l < bradman.c) lines)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 
 COMPILE_OUTPUT=$(cc -o bradman bradman.c 2>&1)
@@ -78,7 +96,18 @@ echo "  Sample (first 3 lines):" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 head -3 brad.1 | sed 's/^/    /' | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 
 # Encode for transfer
+echo "" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 echo "Encoding output for console transfer..." | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+
+# Show uuencode tool info
+if [ -f /usr/bin/uuencode ]; then
+    UU_SIZE=$(ls -l /usr/bin/uuencode | awk '{print $5}')
+    UU_DATE=$(ls -l /usr/bin/uuencode | awk '{print $6, $7, $8}')
+    echo "  Tool: uuencode ($UU_SIZE bytes, dated $UU_DATE)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+else
+    echo "  Tool: uuencode (location: $(which uuencode))" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+fi
+
 uuencode brad.1 brad.1 > brad.1.uu 2>&1 | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 
 if [ ! -f brad.1.uu ]; then

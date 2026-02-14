@@ -35,13 +35,23 @@ echo "[COURIER] Sending validation commands to PDP-11..."
 send_cmd "echo '=== PDP-11 VALIDATION ===' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo 'Build ID: $BUILD_ID' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo \"Date: \$(date)\" | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
-send_cmd "echo 'System: 2.11BSD on PDP-11/73' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+send_cmd "echo '' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+
+# Log system information
+send_cmd "echo 'System Information:' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+send_cmd "echo \"  OS: \$(uname -a 2>/dev/null || echo '2.11BSD')\" | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+send_cmd "echo \"  Hostname: \$(hostname)\" | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo '' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 
 # Decode the file
 send_cmd "echo 'Step 1: Decoding uuencoded file...' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo '  Input: /tmp/brad.1.uu' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo \"  Size: \$(wc -c < /tmp/brad.1.uu) bytes, \$(wc -l < /tmp/brad.1.uu) lines\" | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+
+# Show uudecode tool info
+send_cmd "UU_SIZE=\$(ls -l /usr/bin/uudecode 2>/dev/null | awk '{print \$5}')"
+send_cmd "UU_DATE=\$(ls -l /usr/bin/uudecode 2>/dev/null | awk '{print \$6, \$7, \$8}')"
+send_cmd "echo \"  Tool: uudecode (\$UU_SIZE bytes, dated \$UU_DATE)\" | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 
 send_cmd "uudecode /tmp/brad.1.uu 2>&1 | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 
@@ -63,7 +73,11 @@ sleep 1
 # Run nroff validation
 send_cmd "echo '' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo 'Step 2: Rendering with nroff...' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
-send_cmd "echo '  Tool: nroff -man (2.11BSD troff suite)' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+
+# Show nroff tool info
+send_cmd "NROFF_SIZE=\$(ls -l /usr/bin/nroff 2>/dev/null | awk '{print \$5}')"
+send_cmd "NROFF_DATE=\$(ls -l /usr/bin/nroff 2>/dev/null | awk '{print \$6, \$7, \$8}')"
+send_cmd "echo \"  Tool: nroff -man (\$NROFF_SIZE bytes, dated \$NROFF_DATE)\" | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo '  Purpose: Validate manpage format and render to text' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 
 send_cmd "nroff -man /tmp/brad.1 > /tmp/brad.txt 2>&1"

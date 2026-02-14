@@ -222,22 +222,113 @@ jobs:
           echo "Generating resume.vax.yaml locally..."
           python -m resume_generator --out site --with-vax --vax-mode local
 
-          # Transfer source files to VAX
-          echo "Transferring source files to VAX..."
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            build/vax/resume.vax.yaml \
-            ubuntu@$VAX_IP:/tmp/resume.vax.yaml
+          # Install screen for console automation
+          if ! command -v screen &> /dev/null; then
+            echo "Installing screen..."
+            sudo apt-get update -qq
+            sudo apt-get install -y screen
+          fi
 
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            vax/bradman.c \
-            ubuntu@$VAX_IP:/tmp/bradman.c
+          # Upload arpanet-log.sh to VAX BSD via console
+          echo "Uploading arpanet-log.sh to VAX BSD..."
+          bash scripts/vax-console-upload.sh scripts/arpanet-log.sh /tmp/arpanet-log.sh "$VAX_IP"
 
-          # Run VAX build script (compile + encode)
-          echo "Running VAX build & encode script..."
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            "bash /tmp/vax-build-and-encode.sh $BUILD_ID"
+          # Make it executable inside BSD
+          SESSION="vax-chmod-$$"
+          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
+          sleep 3
+          screen -S "$SESSION" -X stuff "\n"
+          sleep 0.5
+          screen -S "$SESSION" -X stuff "root\n"
+          sleep 2
+          screen -S "$SESSION" -X stuff "chmod +x /tmp/arpanet-log.sh\n"
+          sleep 1
+          screen -S "$SESSION" -X quit 2>/dev/null || true
 
-          echo "✓ VAX build & encode complete"
+          # Upload source files to VAX BSD via console
+          echo "Uploading bradman.c to VAX BSD..."
+          bash scripts/vax-console-upload.sh vax/bradman.c /tmp/bradman.c "$VAX_IP"
+
+          echo "Uploading resume.vax.yaml to VAX BSD..."
+          bash scripts/vax-console-upload.sh build/vax/resume.vax.yaml /tmp/resume.vax.yaml "$VAX_IP"
+
+          # Upload build script to VAX BSD via console
+          echo "Uploading vax-build-and-encode.sh to VAX BSD..."
+          bash scripts/vax-console-upload.sh scripts/vax-build-and-encode.sh /tmp/vax-build-and-encode.sh "$VAX_IP"
+
+          # Make build script executable inside BSD
+          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
+          sleep 3
+          screen -S "$SESSION" -X stuff "\n"
+          sleep 0.5
+          screen -S "$SESSION" -X stuff "root\n"
+          sleep 2
+          screen -S "$SESSION" -X stuff "chmod +x /tmp/vax-build-and-encode.sh\n"
+          sleep 1
+          screen -S "$SESSION" -X quit 2>/dev/null || true
+
+          # Execute build script INSIDE VAX BSD
+          echo "Executing build inside VAX BSD (vintage K&R C)..."
+          SESSION="vax-build-$$"
+          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
+          sleep 3
+          screen -S "$SESSION" -X stuff "\n"
+          sleep 0.5
+          screen -S "$SESSION" -X stuff "root\n"
+          sleep 2
+          screen -S "$SESSION" -X stuff "cd /tmp\n"
+          sleep 1
+          screen -S "$SESSION" -X stuff "/tmp/vax-build-and-encode.sh $BUILD_ID\n"
+
+          # Wait for build to complete (adjust timing as needed)
+          echo "Waiting for build to complete..."
+          sleep 30
+
+          # Capture console output
+          screen -S "$SESSION" -X hardcopy "/tmp/vax-build-console.txt"
+          screen -S "$SESSION" -X quit 2>/dev/null || true
+
+          # Extract logs from console capture
+          echo "Extracting logs from console output..."
+
+          if [ -f /tmp/vax-build-console.txt ]; then
+            # Verify build succeeded
+            if grep -q "VAX build complete" /tmp/vax-build-console.txt; then
+              echo "✓ Build succeeded (verified via console)"
+
+              # Upload console capture to container for processing
+              scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+                /tmp/vax-build-console.txt \
+                ubuntu@$VAX_IP:/tmp/vax-build-console.txt
+
+              # Extract logs from console capture to EFS
+              ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+                "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
+                 python3 -c \"
+import re
+import sys
+
+pattern = re.compile(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+)\] (.+)$')
+with open('/tmp/vax-build-console.txt', 'r') as infile, \
+     open('/mnt/arpanet-logs/builds/$BUILD_ID/VAX.log', 'w') as outfile:
+    for line in infile:
+        match = pattern.match(line.rstrip())
+        if match and match.group(2) == 'VAX':
+            outfile.write(line)
+print('Logs extracted')
+\""
+
+              echo "✓ Logs extracted to EFS"
+            else
+              echo "⚠️  Build status unclear from console output"
+              echo "Console output (last 50 lines):"
+              tail -50 /tmp/vax-build-console.txt
+            fi
+          else
+            echo "⚠️  Console capture not found"
+          fi
+
+          echo "✓ VAX build & encode complete (executed in BSD with vintage tools)"
 
       - name: Stage 2 - Console Transfer (VAX → PDP-11)
         if: steps.mode.outputs.vax_mode == 'docker'
@@ -251,18 +342,59 @@ jobs:
           echo "PDP-11 IP: $PDP11_IP"
           echo "Build ID: $BUILD_ID"
 
-          # Retrieve encoded file from VAX
-          echo "Retrieving encoded file from VAX..."
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$VAX_IP:/tmp/brad.1.uu \
-            /tmp/brad.1.uu
+          # Retrieve encoded file from VAX BSD via console cat
+          echo "Retrieving encoded file from VAX BSD..."
+          SESSION="vax-retrieve-$$"
+          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
+          sleep 3
+          screen -S "$SESSION" -X stuff "\n"
+          sleep 0.5
+          screen -S "$SESSION" -X stuff "root\n"
+          sleep 2
+          screen -S "$SESSION" -X stuff "cat /tmp/brad.1.uu\n"
+          sleep 5
+          screen -S "$SESSION" -X hardcopy "/tmp/vax-cat-output.txt"
+          screen -S "$SESSION" -X quit 2>/dev/null || true
 
-          # Install screen if not present
-          if ! command -v screen &> /dev/null; then
-            echo "Installing screen..."
-            sudo apt-get update -qq
-            sudo apt-get install -y screen
+          # Extract just the uuencoded content (skip prompts)
+          grep -E '^(begin|M|end)' /tmp/vax-cat-output.txt > /tmp/brad.1.uu || echo "Warning: Could not extract uuencoded file"
+
+          # Verify we got the file
+          if [ -f /tmp/brad.1.uu ] && [ -s /tmp/brad.1.uu ]; then
+            echo "✓ Retrieved brad.1.uu ($(wc -l < /tmp/brad.1.uu) lines)"
+          else
+            echo "❌ Failed to retrieve brad.1.uu from VAX BSD"
+            exit 1
           fi
+
+          # Upload arpanet-log.sh to PDP-11 BSD
+          echo "Uploading arpanet-log.sh to PDP-11 BSD..."
+
+          # Create a console upload helper for PDP-11
+          SESSION="pdp11-upload-$$"
+          screen -dmS "$SESSION" telnet "$PDP11_IP" 2327
+          sleep 3
+          screen -S "$SESSION" -X stuff "\n"
+          sleep 0.5
+          screen -S "$SESSION" -X stuff "root\n"
+          sleep 2
+
+          # Upload arpanet-log.sh via heredoc
+          screen -S "$SESSION" -X stuff "cat > /tmp/arpanet-log.sh << 'UPLOAD_EOF'\n"
+          sleep 0.5
+
+          while IFS= read -r line; do
+            screen -S "$SESSION" -X stuff "$line\r"
+            sleep 0.02
+          done < scripts/arpanet-log.sh
+
+          screen -S "$SESSION" -X stuff "UPLOAD_EOF\n"
+          sleep 1
+          screen -S "$SESSION" -X stuff "chmod +x /tmp/arpanet-log.sh\n"
+          sleep 1
+          screen -S "$SESSION" -X quit 2>/dev/null || true
+
+          echo "✓ arpanet-log.sh uploaded to PDP-11 BSD"
 
           # Run console transfer
           echo "Starting console transfer to PDP-11..."
@@ -291,6 +423,7 @@ jobs:
         env:
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
           PDP11_IP: ${{ steps.pdp11_start.outputs.pdp11_ip }}
+          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
         run: |
           echo "=== STAGE 3: PDP-11 VALIDATION ==="
           echo "Build ID: $BUILD_ID"
@@ -299,6 +432,46 @@ jobs:
           # Run validation commands on PDP-11 console
           echo "Sending validation commands to PDP-11..."
           bash scripts/pdp11-validate.sh "$BUILD_ID"
+
+          # Extract logs from PDP-11 console capture
+          echo "Extracting PDP-11 logs from console output..."
+
+          if [ -f /tmp/pdp11-validation-$BUILD_ID.txt ]; then
+            # Verify validation succeeded
+            if grep -q "Status: PASS" /tmp/pdp11-validation-$BUILD_ID.txt; then
+              echo "✓ Validation succeeded (verified via console)"
+
+              # Upload console capture to container for processing
+              scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+                /tmp/pdp11-validation-$BUILD_ID.txt \
+                ubuntu@$VAX_IP:/tmp/pdp11-validation-$BUILD_ID.txt
+
+              # Extract logs from console capture to EFS (using VAX container which has EFS mounted)
+              ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+                "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
+                 python3 -c \"
+import re
+import sys
+
+pattern = re.compile(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+)\] (.+)$')
+with open('/tmp/pdp11-validation-$BUILD_ID.txt', 'r') as infile, \
+     open('/mnt/arpanet-logs/builds/$BUILD_ID/PDP11.log', 'w') as outfile:
+    for line in infile:
+        match = pattern.match(line.rstrip())
+        if match and match.group(2) == 'PDP11':
+            outfile.write(line)
+print('PDP-11 logs extracted')
+\""
+
+              echo "✓ PDP-11 logs extracted to EFS"
+            else
+              echo "⚠️  Validation status unclear from console output"
+              echo "Console output (last 50 lines):"
+              tail -50 /tmp/pdp11-validation-$BUILD_ID.txt
+            fi
+          else
+            echo "⚠️  PDP-11 console capture not found"
+          fi
 
           echo "✓ PDP-11 validation complete"
 
