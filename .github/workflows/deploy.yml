@@ -243,7 +243,7 @@ jobs:
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
-          PDP11_IP: ${{ steps.pdp11_ip.outputs.pdp11_ip }}
+          PDP11_IP: ${{ steps.pdp11_start.outputs.pdp11_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 2: CONSOLE TRANSFER ==="

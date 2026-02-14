@@ -21,9 +21,8 @@ def log_courier(build_id: str, message: str) -> None:
     timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     log_line = f"[{timestamp} COURIER] {message}"
 
-    # Append to courier log on EFS
-    log_file = f"/mnt/arpanet-logs/builds/{build_id}/COURIER.log"
-    Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+    # Write locally (GitHub Actions runner doesn't have EFS mounted)
+    log_file = f"/tmp/COURIER-{build_id}.log"
 
     with open(log_file, 'a') as f:
         f.write(log_line + '\n')
