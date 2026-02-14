@@ -239,7 +239,7 @@ class VaxArpanetStageRunner:
             [
                 python_bin,
                 "-m",
-                "arpanet_logging",
+                "host_logging",
                 "collect",
                 "--build-id",
                 build_id,
@@ -254,7 +254,7 @@ class VaxArpanetStageRunner:
                 str(self.paths.build_dir / "arpanet-logs"),
             ]
         )
-        steps.append("logs: collected via arpanet_logging CLI (scaffold)")
+        steps.append("logs: collected via host_logging CLI (scaffold)")
 
     def _stop_arpanet_network(self, steps: list[str]) -> None:
         compose_file = self._arpanet_compose_file()
