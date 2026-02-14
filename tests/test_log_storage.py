@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from arpanet_logging.core.models import BuildMetadata, LogEntry
-from arpanet_logging.core.storage import LogStorage
+from host_logging.core.models import BuildMetadata, LogEntry
+from host_logging.core.storage import LogStorage
 
 
 def _metadata(build_id: str) -> BuildMetadata:

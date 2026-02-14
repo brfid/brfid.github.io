@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-import arpanet_logging.orchestrator as orchestrator_module
+import host_logging.orchestrator as orchestrator_module
 
 
 @dataclass

@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from arpanet_logging import cli
-from arpanet_logging.core.models import BuildMetadata, LogEntry
-from arpanet_logging.core.storage import LogStorage
+from host_logging import cli
+from host_logging.core.models import BuildMetadata, LogEntry
+from host_logging.core.storage import LogStorage
 
 
 def test_cli_list_and_show_work_with_real_storage(

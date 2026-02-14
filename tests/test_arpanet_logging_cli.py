@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from arpanet_logging import cli
+from host_logging import cli
 
 
 def test_generate_build_id_has_expected_format() -> None:

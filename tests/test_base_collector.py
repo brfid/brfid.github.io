@@ -5,8 +5,8 @@ from typing import Any
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from arpanet_logging.core.collector import BaseCollector
-from arpanet_logging.core.models import LogEntry
+from host_logging.core.collector import BaseCollector
+from host_logging.core.models import LogEntry
 
 
 class _FakeStorage:
@@ -63,7 +63,7 @@ class _TestCollector(BaseCollector):
 @pytest.fixture
 def mock_docker(monkeypatch: MonkeyPatch) -> None:
     """Mock Docker client to avoid connection attempts in unit tests."""
-    monkeypatch.setattr("arpanet_logging.core.collector.docker", None)
+    monkeypatch.setattr("host_logging.core.collector.docker", None)
 
 
 def test_process_line_splits_timestamp_and_writes_raw_and_event(mock_docker: None) -> None:

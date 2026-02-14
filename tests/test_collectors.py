@@ -5,10 +5,10 @@ from typing import Any
 import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from arpanet_logging.collectors.imp import IMPCollector
-from arpanet_logging.collectors.vax import VAXCollector
-from arpanet_logging.parsers.arpanet import ArpanetParser
-from arpanet_logging.parsers.bsd import BSDParser
+from host_logging.collectors.imp import IMPCollector
+from host_logging.collectors.vax import VAXCollector
+from host_logging.parsers.arpanet import ArpanetParser
+from host_logging.parsers.bsd import BSDParser
 
 
 class _FakeParser:
@@ -34,7 +34,7 @@ class _FakeParser:
 @pytest.fixture
 def mock_docker(monkeypatch: MonkeyPatch) -> None:
     """Mock Docker client to avoid connection attempts in unit tests."""
-    monkeypatch.setattr("arpanet_logging.core.collector.docker", None)
+    monkeypatch.setattr("host_logging.core.collector.docker", None)
 
 
 def test_vax_collector_uses_default_parser_when_none_supplied(mock_docker: None) -> None:

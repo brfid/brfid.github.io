@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from arpanet_logging.core.models import BuildMetadata, ComponentStats, LogEntry
+from host_logging.core.models import BuildMetadata, ComponentStats, LogEntry
 
 
 def test_log_entry_roundtrip_dict_and_json() -> None:

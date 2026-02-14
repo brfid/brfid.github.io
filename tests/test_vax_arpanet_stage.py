@@ -85,7 +85,7 @@ def test_arpanet_stage_run_writes_scaffold_log(
     def _collect(self: VaxArpanetStageRunner, steps: list[str]) -> None:
         del self
         calls["collect"] += 1
-        steps.append("logs: collected via arpanet_logging CLI (scaffold)")
+        steps.append("logs: collected via host_logging CLI (scaffold)")
 
     def _stop(self: VaxArpanetStageRunner, steps: list[str]) -> None:
         del self
@@ -656,7 +656,7 @@ def test_collect_arpanet_logs_includes_pdp10_component(
 
     assert len(commands) == 1
     cmd = commands[0]
-    assert cmd[:4] == ["/usr/bin/python", "-m", "arpanet_logging", "collect"]
+    assert cmd[:4] == ["/usr/bin/python", "-m", "host_logging", "collect"]
 
     components_idx = cmd.index("--components")
     assert cmd[components_idx + 1 : components_idx + 5] == [
@@ -665,7 +665,7 @@ def test_collect_arpanet_logs_includes_pdp10_component(
         "imp2",
         "pdp10",
     ]
-    assert "logs: collected via arpanet_logging CLI (scaffold)" in steps
+    assert "logs: collected via host_logging CLI (scaffold)" in steps
 
 
 def test_validate_phase2_links_runs_script(

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from arpanet_logging.parsers.arpanet import ArpanetParser
-from arpanet_logging.parsers.bsd import BSDParser
+from host_logging.parsers.arpanet import ArpanetParser
+from host_logging.parsers.bsd import BSDParser
 
 
 FIXTURES = Path("tests/fixtures")

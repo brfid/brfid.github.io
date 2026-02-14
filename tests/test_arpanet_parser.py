@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from arpanet_logging.parsers.arpanet import ArpanetParser
+from host_logging.parsers.arpanet import ArpanetParser
 
 
 def test_arpanet_parser_extracts_structured_fields_from_rich_line() -> None:
