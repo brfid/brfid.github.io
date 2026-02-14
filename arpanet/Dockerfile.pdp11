@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     telnet \
+    netcat-openbsd \
     iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
