@@ -30,16 +30,16 @@ dev = [
 
 [project.scripts]
 resume-gen = "resume_generator.cli:main"
-arpanet-logging = "arpanet_logging.cli:main"
+host-logging = "host_logging.cli:main"
 arpanet-topology = "arpanet.topology.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["resume_generator*", "arpanet_logging*", "arpanet*"]
+include = ["resume_generator*", "host_logging*", "arpanet*"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["resume_generator", "arpanet_logging", "tests"]
+files = ["resume_generator", "host_logging", "tests"]
 warn_unused_configs = true
 warn_return_any = true
 warn_redundant_casts = true
@@ -68,8 +68,8 @@ ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = [
-  "arpanet_logging",
-  "arpanet_logging.*",
+  "host_logging",
+  "host_logging.*",
 ]
 ignore_errors = true
 

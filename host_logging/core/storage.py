@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-from arpanet_logging.core.models import LogEntry, BuildMetadata, ComponentStats
+from host_logging.core.models import LogEntry, BuildMetadata, ComponentStats
 
 
 class LogStorage:

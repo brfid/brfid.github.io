@@ -37,6 +37,16 @@ What needs to be done before pushing to GitHub.
 ### Templates
 - [x] `templates/build-info-widget.html` - Webpage widget ready
 
+### Enterprise Logs Page
+- [x] `scripts/generate-logs-page.py` - Build-time generator
+- [x] `site/logs/logs.js` - Client-side features (filtering, search, export)
+- [x] `site/logs/index.html` - Generated viewer page (auto-generated)
+- [x] `docs/integration/LOGS-PAGE.md` - Complete documentation
+- [x] Integrated into GitHub Actions workflow
+- [x] Site navigation updated (`/vax-build.log` → `/logs/`)
+- [x] Evidence detection (6 patterns for vintage tools)
+- [x] Responsive dark theme matching site aesthetic
+
 ### Commits
 - [x] `5a58852` - Logging overhaul
 - [x] `dd58356` - Log examples & templates

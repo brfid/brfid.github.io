@@ -1,7 +1,7 @@
 """VAX/BSD log collector."""
 
-from arpanet_logging.core.collector import BaseCollector
-from arpanet_logging.parsers.bsd import BSDParser
+from host_logging.core.collector import BaseCollector
+from host_logging.parsers.bsd import BSDParser
 
 
 class VAXCollector(BaseCollector):

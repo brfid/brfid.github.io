@@ -2,9 +2,9 @@
 
 from typing import Dict, Type
 
-from arpanet_logging.collectors.imp import IMPCollector
-from arpanet_logging.collectors.vax import VAXCollector
-from arpanet_logging.core.collector import BaseCollector
+from host_logging.collectors.imp import IMPCollector
+from host_logging.collectors.vax import VAXCollector
+from host_logging.core.collector import BaseCollector
 
 # Default collector registry
 # Maps component names to their collector classes

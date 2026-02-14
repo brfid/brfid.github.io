@@ -1,7 +1,7 @@
 """IMP (Interface Message Processor) log collector."""
 
-from arpanet_logging.core.collector import BaseCollector
-from arpanet_logging.parsers.arpanet import ArpanetParser
+from host_logging.core.collector import BaseCollector
+from host_logging.parsers.arpanet import ArpanetParser
 
 
 class IMPCollector(BaseCollector):

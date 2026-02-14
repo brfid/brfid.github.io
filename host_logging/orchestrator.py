@@ -7,11 +7,11 @@ import time
 import signal
 import sys
 
-from arpanet_logging.core.models import BuildMetadata
-from arpanet_logging.core.storage import LogStorage
+from host_logging.core.models import BuildMetadata
+from host_logging.core.storage import LogStorage
 
 try:
-    from arpanet_logging.collectors import get_collector_class
+    from host_logging.collectors import get_collector_class
     COLLECTORS_AVAILABLE = True
 except ModuleNotFoundError:  # pragma: no cover - environment-dependent
     COLLECTORS_AVAILABLE = False

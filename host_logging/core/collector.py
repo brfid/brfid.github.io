@@ -9,9 +9,9 @@ from datetime import datetime, timezone
 from typing import Optional, List
 import threading
 
-from arpanet_logging.core.models import LogEntry
-from arpanet_logging.core.storage import LogStorage
-from arpanet_logging.core.parser import BaseParser
+from host_logging.core.models import LogEntry
+from host_logging.core.storage import LogStorage
+from host_logging.core.parser import BaseParser
 
 
 class BaseCollector:

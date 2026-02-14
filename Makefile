@@ -153,4 +153,4 @@ publish_arpanet:
 	@./scripts/publish-vintage.sh
 
 docs:
-	@.venv/bin/pdoc resume_generator arpanet_logging arpanet -o site/api --docformat google
+	@.venv/bin/pdoc resume_generator host_logging arpanet -o site/api --docformat google

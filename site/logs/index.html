@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Build Logs: build-20260214-121649 | Bradley Fidler</title>
+    <meta name="color-scheme" content="dark" />
+    <style>
+        :root {
+            --bg: #0f1115;
+            --card: #151a23;
+            --text: #e8eefc;
+            --muted: #a8b3cf;
+            --border: rgba(232, 238, 252, 0.12);
+            --link: #e8eefc;
+            --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            --success: #2ecc71;
+            --failed: #e74c3c;
+            --warning: #f39c12;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 600px at 20% 0%, #131a2b, var(--bg));
+            color: var(--text);
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+                "Apple Color Emoji", "Segoe UI Emoji";
+            line-height: 1.45;
+        }
+
+        a {
+            color: var(--link);
+            text-decoration: none;
+        }
+
+        a:hover, a:focus-visible {
+            text-decoration: underline;
+            outline: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem 4rem;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 650;
+            margin: 0 0 0.5rem 0;
+            letter-spacing: 0.2px;
+        }
+
+        .build-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            background: var(--success);
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .component-table {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .component-table h2 {
+            font-size: 1.1rem;
+            margin: 0 0 1rem 0;
+            color: var(--text);
+        }
+
+        .component-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .component-table th {
+            text-align: left;
+            padding: 0.5rem;
+            color: var(--muted);
+            font-size: 0.85rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .component-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(232, 238, 252, 0.06);
+        }
+
+        .controls {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.015);
+            color: var(--muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--machine-color);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .filter-btn.active {
+            border-color: var(--machine-color);
+            background: var(--machine-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.015);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .search-box::placeholder {
+            color: var(--muted);
+        }
+
+        .export-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.015);
+            color: var(--muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            border-color: var(--link);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+        }
+
+        .log-viewer {
+            background: #0a0c10;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.85rem;
+        }
+
+        .log-line {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.4rem 0.5rem;
+            align-items: flex-start;
+            border-bottom: 1px solid rgba(232, 238, 252, 0.03);
+        }
+
+        .log-line:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .log-line.hidden {
+            display: none;
+        }
+
+        .log-line.evidence {
+            background: rgba(46, 204, 113, 0.05);
+            border-left: 3px solid var(--success);
+            padding-left: calc(0.5rem - 3px);
+        }
+
+        .timestamp {
+            color: var(--muted);
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+
+        .machine-badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .message {
+            color: var(--text);
+            flex: 1;
+            word-break: break-word;
+        }
+
+        .evidence-icon {
+            color: var(--success);
+            font-size: 1rem;
+        }
+
+        .evidence-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .evidence-section h2 {
+            font-size: 1.1rem;
+            margin: 0 0 1rem 0;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .evidence-item {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.015);
+            border-radius: 8px;
+            border-left: 3px solid var(--success);
+        }
+
+        .evidence-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .evidence-label {
+            color: var(--success);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .evidence-message {
+            color: var(--muted);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.8rem;
+        }
+
+        .no-evidence {
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 0.9rem;
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Build Logs</h1>
+            <div class="build-meta">
+                <span>Build: <strong>build-20260214-121649</strong></span>
+                <span class="status-badge">✓ SUCCESS</span>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Events</div>
+                <div class="stat-value">46</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Duration</div>
+                <div class="stat-value">15s</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Errors</div>
+                <div class="stat-value" style="color: var(--text)">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Warnings</div>
+                <div class="stat-value" style="color: var(--text)">0</div>
+            </div>
+        </div>
+
+        <div class="component-table">
+            <h2>Component Statistics</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>Events</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>COURIER</td><td>12</td></tr>
+<tr><td>GITHUB</td><td>9</td></tr>
+<tr><td>VAX</td><td>25</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="controls">
+            <div class="controls-row">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-machine="all" style="--machine-color: var(--link)">All</button>
+                    <button class="filter-btn" data-machine="COURIER" style="--machine-color: #9b59b6">COURIER</button>
+<button class="filter-btn" data-machine="GITHUB" style="--machine-color: #24292e">GITHUB</button>
+<button class="filter-btn" data-machine="VAX" style="--machine-color: #00aaff">VAX</button>
+                </div>
+                <input type="text" class="search-box" placeholder="Search logs..." id="searchBox" />
+                <button class="export-btn" id="exportBtn">Export Logs</button>
+            </div>
+        </div>
+
+        <div class="log-viewer" id="logViewer">
+            
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:34</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Generating resume.vax.yaml locally...</span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:38</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Wrote: site/brad.man.txt</span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:38</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Wrote: site/vax-build.log</span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:38</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Wrote: site/resume/index.html</span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:38</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Wrote: site/index.html</span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:38</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Wrote: site/vax-manifest.txt</span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:38</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Transferring source files to VAX...</span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:38</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">Running VAX build &amp; encode script...</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Found encoded file: /tmp/brad.1.uu</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">File size: 67 bytes</span>
+        </div>
+
+        <div class="log-line evidence" data-machine="COURIER">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Initiating console transfer to PDP-11 (54.221.119.144) <span class="evidence-icon" title="Authenticity Evidence">⭐</span></span>
+        </div>
+
+        <div class="log-line evidence" data-machine="COURIER">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Connecting to PDP-11 console (telnet 54.221.119.144:2327) <span class="evidence-icon" title="Authenticity Evidence">⭐</span></span>
+        </div>
+
+        <div class="log-line" data-machine="GITHUB">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #24292e">GITHUB</span>
+            <span class="message">✓ VAX build &amp; encode complete</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">=== VAX BUILD &amp; ENCODE ===</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Build ID: build-20260214-121649</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Date: Sat Feb 14 12:17:39 UTC 2026</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Compiling bradman.c...</span>
+        </div>
+
+        <div class="log-line evidence" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Compiler: cc (4.3BSD K&amp;R C) <span class="evidence-icon" title="Authenticity Evidence">⭐</span></span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Source: bradman.c (1037 lines)</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Compilation successful</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Binary size: 30072 bytes</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Generating manpage from resume.vax.yaml...</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Input: resume.vax.yaml (83 lines)</span>
+        </div>
+
+        <div class="log-line evidence" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Parser: bradman (VAX C YAML parser) <span class="evidence-icon" title="Authenticity Evidence">⭐</span></span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Manpage generated successfully</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Output: brad.1 (2119 bytes, 51 lines)</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Sections: 6 (.SH directives)</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Format: troff/nroff man(7) macros</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Sample (first 3 lines):</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">    .TH BRAD 1 &quot;2026-02-14&quot; &quot;brfid.github.io&quot; &quot;&quot;</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">    .SH NAME</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">    brad \- Technical Writer: docs platforms, AI workflows, delivery</span>
+        </div>
+
+        <div class="log-line evidence" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Encoding output for console transfer... <span class="evidence-icon" title="Authenticity Evidence">⭐</span></span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">Encoding complete</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Original file: brad.1 (2119 bytes)</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Encoded file: brad.1.uu (67 bytes, 1 lines)</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">  Overhead: -97%</span>
+        </div>
+
+        <div class="log-line" data-machine="VAX">
+            <span class="timestamp">12:17:39</span>
+            <span class="machine-badge" style="background: #00aaff">VAX</span>
+            <span class="message">VAX build complete - Output ready for transfer</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:42</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Console connection established</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:45</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Changing to /tmp directory</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:46</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Sending 1 lines of encoded data</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:46</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Transfer statistics: 1 lines in 0.05s (18.5 lines/sec)</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:48</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Transfer complete - All lines sent</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:48</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Verifying received file</span>
+        </div>
+
+        <div class="log-line" data-machine="COURIER">
+            <span class="timestamp">12:17:49</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">Console output saved to /tmp/pdp11-console-build-20260214-121649.txt</span>
+        </div>
+
+        <div class="log-line evidence" data-machine="COURIER">
+            <span class="timestamp">12:17:49</span>
+            <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+            <span class="message">✓ Console transfer completed successfully <span class="evidence-icon" title="Authenticity Evidence">⭐</span></span>
+        </div>
+        </div>
+
+        <div class="evidence-section">
+            <h2>⭐ Authenticity Evidence</h2>
+            <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.9rem;">
+                Key lines proving the use of vintage tools (1986 VAX compiler, 1970s-80s transfer methods).
+            </p>
+            
+        <div class="evidence-item">
+            <div class="evidence-header">
+                <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+                <span class="evidence-label">Console I/O Transfer</span>
+            </div>
+            <div class="evidence-message">Initiating console transfer to PDP-11 (54.221.119.144)</div>
+        </div>
+
+        <div class="evidence-item">
+            <div class="evidence-header">
+                <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+                <span class="evidence-label">Console I/O Transfer</span>
+            </div>
+            <div class="evidence-message">Connecting to PDP-11 console (telnet 54.221.119.144:2327)</div>
+        </div>
+
+        <div class="evidence-item">
+            <div class="evidence-header">
+                <span class="machine-badge" style="background: #00aaff">VAX</span>
+                <span class="evidence-label">VAX K&R C Compiler</span>
+            </div>
+            <div class="evidence-message">  Compiler: cc (4.3BSD K&amp;R C)</div>
+        </div>
+
+        <div class="evidence-item">
+            <div class="evidence-header">
+                <span class="machine-badge" style="background: #00aaff">VAX</span>
+                <span class="evidence-label">VAX C YAML Parser</span>
+            </div>
+            <div class="evidence-message">  Parser: bradman (VAX C YAML parser)</div>
+        </div>
+
+        <div class="evidence-item">
+            <div class="evidence-header">
+                <span class="machine-badge" style="background: #00aaff">VAX</span>
+                <span class="evidence-label">Console I/O Transfer</span>
+            </div>
+            <div class="evidence-message">Encoding output for console transfer...</div>
+        </div>
+
+        <div class="evidence-item">
+            <div class="evidence-header">
+                <span class="machine-badge" style="background: #9b59b6">COURIER</span>
+                <span class="evidence-label">Console I/O Transfer</span>
+            </div>
+            <div class="evidence-message">✓ Console transfer completed successfully</div>
+        </div>
+        </div>
+
+        <footer class="footer">
+            <a href="/">← Back to Home</a>
+            <a href="/build-logs/merged.log">View Raw Logs</a>
+            <a href="/build-logs/vax.log">VAX Log</a>
+            <a href="/build-logs/courier.log">COURIER Log</a>
+            <a href="/build-logs/github.log">GITHUB Log</a>
+        </footer>
+    </div>
+
+    <script src="/logs/logs.js"></script>
+</body>
+</html>

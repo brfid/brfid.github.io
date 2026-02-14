@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 
-from arpanet_logging.orchestrator import LogOrchestrator
+from host_logging.orchestrator import LogOrchestrator
 
 
 def generate_build_id() -> str:
@@ -152,19 +152,19 @@ def main():
         epilog="""
 Examples:
   # Collect logs from VAX only
-  python -m arpanet_logging collect --components vax
+  python -m host_logging collect --components vax
 
   # Collect from all Phase 2 components for 60 seconds
-  python -m arpanet_logging collect --components vax imp1 imp2 --duration 60
+  python -m host_logging collect --components vax imp1 imp2 --duration 60
 
   # List available builds
-  python -m arpanet_logging list
+  python -m host_logging list
 
   # Show details of a specific build
-  python -m arpanet_logging show build-20260207-221530
+  python -m host_logging show build-20260207-221530
 
   # Clean up old builds (keep last 20)
-  python -m arpanet_logging cleanup --keep 20
+  python -m host_logging cleanup --keep 20
         """
     )
 

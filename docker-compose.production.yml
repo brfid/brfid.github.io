@@ -1,8 +1,8 @@
-# Vintage Systems Production Docker Compose
+# Host Systems Production Docker Compose
 # VAX ↔ PDP-11 direct TCP/IP connection (no IMPs)
 #
 # Prerequisites:
-#   - EFS mounted at /mnt/arpanet-logs
+#   - EFS mounted at /mnt/host-logs
 #   - Docker and docker-compose installed
 #   - Repository cloned to /home/ubuntu/brfid.github.io
 #
@@ -10,8 +10,8 @@
 #   docker compose -f docker-compose.production.yml up -d
 #
 # Logs location:
-#   VAX:    /mnt/arpanet-logs/vax/
-#   PDP-11: /mnt/arpanet-logs/pdp11/
+#   VAX:    /mnt/host-logs/vax/
+#   PDP-11: /mnt/host-logs/pdp11/
 #
 # Note: IMP/ARPANET historical research archived to docs/legacy/
 #       (protocol incompatibility: VAX/PDP-11 use TCP/IP, IMPs use 1822)
@@ -23,7 +23,7 @@ services:
   # VAX/BSD Host - Primary vintage system
   # ===========================================================================
   vax:
-    container_name: vintage-vax
+    container_name: vax-host
     hostname: vax-host
     image: jguillaumes/simh-vaxbsd:latest
     environment:
@@ -38,7 +38,7 @@ services:
       - ./vintage/vax-boot.sh:/opt/vax-boot.sh:ro  # Auto-mount wrapper
     command: ["/bin/bash", "/opt/vax-boot.sh"]
     networks:
-      vintage:
+      host:
         ipv4_address: 172.20.0.10
     restart: unless-stopped
     logging:
@@ -51,7 +51,7 @@ services:
   # PDP-11/BSD Host - Secondary vintage system
   # ===========================================================================
   pdp11:
-    container_name: vintage-pdp11
+    container_name: pdp11-host
     hostname: pdp11-host
     build:
       context: ./vintage
@@ -65,7 +65,7 @@ services:
       - ./vintage/configs/pdp11.ini:/opt/pdp11/pdp11.ini:ro
       - /mnt/arpanet-logs:/mnt/arpanet-logs  # EFS full mount for builds access
     networks:
-      vintage:
+      host:
         ipv4_address: 172.20.0.50
     restart: unless-stopped
     logging:
@@ -78,8 +78,8 @@ services:
 # Networks
 # =============================================================================
 networks:
-  vintage:
-    name: vintage-production
+  host:
+    name: host-network
     driver: bridge
     ipam:
       config:

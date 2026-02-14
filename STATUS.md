@@ -4,6 +4,47 @@
 
 ---
 
+## ✅ ENTERPRISE LOGS PAGE IMPLEMENTED
+
+**Status**: Complete and ready for deployment
+**URL**: https://brfid.github.io/logs/
+
+**What Was Built**:
+- ✅ Professional logs viewer with timeline view
+- ✅ Interactive filtering by component (VAX/PDP-11/GITHUB/COURIER)
+- ✅ Real-time search across log messages
+- ✅ Export functionality to download filtered logs
+- ✅ Authenticity evidence highlighting (⭐ indicators for vintage tools)
+- ✅ Statistics dashboard (total events, duration, errors, warnings)
+- ✅ Responsive design matching site dark theme
+
+**Architecture**:
+- Server-side generation: `scripts/generate-logs-page.py` parses logs at build time
+- Client-side enhancement: `site/logs/logs.js` adds filtering/search/export
+- Progressive enhancement: Works without JavaScript
+- Integrated into GitHub Actions workflow
+
+**Evidence Detection** (6 patterns):
+- VAX K&R C Compiler (1986)
+- Historical transfer methods (uuencode, console I/O)
+- VAX C YAML Parser
+- BSD operating system markers
+
+**Files**:
+- `scripts/generate-logs-page.py` - Generator script
+- `site/logs/index.html` - Generated viewer page
+- `site/logs/logs.js` - Client-side features
+- `docs/integration/LOGS-PAGE.md` - Complete documentation
+
+**Integration**:
+- Updated `site/index.html` footer: `/vax-build.log` → `/logs/`
+- Added workflow step in `.github/workflows/deploy.yml`
+- Auto-generates on every `publish-vax` or `publish-docker` deploy
+
+**Next**: Test during next full pipeline run
+
+---
+
 ## ✅ LOGGING OVERHAUL COMPLETE
 
 **Status**: All code changes complete, ready for pipeline test

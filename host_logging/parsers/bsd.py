@@ -3,7 +3,7 @@
 import re
 from typing import Optional, Dict, Any, List
 
-from arpanet_logging.core.parser import BaseParser
+from host_logging.core.parser import BaseParser
 
 
 class BSDParser(BaseParser):
