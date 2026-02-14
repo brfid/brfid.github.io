@@ -5,17 +5,17 @@ Use this page when starting from zero context.
 ## 0) Current State (read this first)
 
 **Date**: 2026-02-14
-**Status**: 🔧 FIXING - EFS permissions and screen session persistence
+**Status**: ✅ COMPLETE - Uuencode console transfer system fully operational
 
 - **AWS Infrastructure**: ✅ DEPLOYED (2x t3.micro)
-- **Latest Achievement**: Uuencode console transfer system implemented
-- **Current Work**: Fixing EFS build directory permissions and session verification
+- **Latest Achievement**: End-to-end VAX → PDP-11 uuencode transfer working
+- **Deployment**: publish-vax-uuencode-v3 (successful)
 - **Architecture**: VAX → uuencode → console → PDP-11 (discrete machines, no shared data)
 - **Cost**: ~$17.90/month running, ~$2/month stopped (storage only)
-- **Fixes Pending**:
-  - CDK: Add builds/ directory to user_data initialization
-  - Workflow: Add screen session verification between stages
-  - Script: Add session existence checks in validation
+- **Fixes Applied**:
+  - ✅ EFS builds directory created in CDK user_data
+  - ✅ Screen session auto-recovery when telnet times out
+  - ✅ Build logs merged chronologically (VAX, COURIER, GITHUB)
 
 **Canonical references**:
 - `STATUS.md` - Overall project status

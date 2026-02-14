@@ -258,5 +258,12 @@ All logs are merged chronologically with format: `[YYYY-MM-DD HH:MM:SS SOURCE]`
 - `.github/workflows/deploy.yml` (added verification step after Stage 2)
 - `scripts/pdp11-validate.sh` (added session existence check in send_cmd)
 
-**Status**: Fixes implemented, pending CDK deployment and workflow test
+**Status**: ✅ Fixes deployed and validated (2026-02-14)
+
+**Deployment**: publish-vax-uuencode-v3 (successful)
+**Results**:
+- EFS permissions: No sudo required for build directories
+- Screen session auto-recovery: Works perfectly when telnet times out
+- All 4 stages completed successfully
+- Build logs merged chronologically (VAX, COURIER, GITHUB)
 
