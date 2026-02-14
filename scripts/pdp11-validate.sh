@@ -15,12 +15,15 @@ fi
 
 # Helper function to send command to PDP-11 console
 send_cmd() {
-    # Verify session exists before sending
+    # Verify session exists, create if missing
     if ! screen -ls | grep -q "$SESSION"; then
-        echo "ERROR: Screen session '$SESSION' not found" >&2
-        echo "Available sessions:" >&2
-        screen -ls >&2
-        exit 1
+        echo "[COURIER] Screen session '$SESSION' not found, recreating..." >&2
+        # Session may have exited due to telnet timeout, recreate it
+        # Get PDP-11 IP from environment or use previous IP
+        PDP11_IP="${PDP11_IP:-34.228.166.115}"  # Fallback to previous IP
+        screen -dmS "$SESSION" telnet "$PDP11_IP" 2327
+        sleep 3  # Wait for connection
+        echo "[COURIER] Screen session recreated" >&2
     fi
     screen -S "$SESSION" -X stuff "$1\n"
     sleep 0.5

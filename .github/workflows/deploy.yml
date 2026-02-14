@@ -290,9 +290,11 @@ jobs:
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
+          PDP11_IP: ${{ steps.pdp11_start.outputs.pdp11_ip }}
         run: |
           echo "=== STAGE 3: PDP-11 VALIDATION ==="
           echo "Build ID: $BUILD_ID"
+          echo "PDP-11 IP: $PDP11_IP"
 
           # Run validation commands on PDP-11 console
           echo "Sending validation commands to PDP-11..."
