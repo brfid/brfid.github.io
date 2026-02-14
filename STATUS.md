@@ -1,263 +1,331 @@
 # Project Status
 
-**Last updated:** 2026-02-14
+**Last updated:** 2026-02-14 Evening
 
-## Current State
+---
 
-### ✅ COMPLETE: Uuencode Console Transfer (2026-02-14)
-- **Goal**: Discrete machine-to-machine file transfer without shared filesystem
-- **Method**: VAX encodes → Console I/O → PDP-11 decodes and validates
-- **Status**: ✅ Fully operational, deployed to production (publish-vax-uuencode-v3)
-- **Why**: Historically accurate (1970s-80s serial/terminal file transfer)
-- **Features**:
-  - EFS permissions fixed (builds directory in CDK user_data)
-  - Screen session auto-recovery (handles telnet timeouts)
-  - All 4 stages completing successfully
-  - Build logs merged chronologically (VAX, COURIER, GITHUB)
-- **Doc**: `docs/integration/UUENCODE-CONSOLE-TRANSFER.md`
-- **Status**: `docs/integration/UUENCODE-IMPLEMENTATION-STATUS.md`
+## 🚨 CURRENT BLOCKER: VAX Build Layer Fix
 
-### ✅ DRY Logging System (2026-02-13-14)
-- **Build Widget**: Hover/dropdown showing build stats live on site
-- **Logs**: Chronological merge of VAX, COURIER, GitHub Actions
-- **Retention**: Last 20 builds on EFS
-- **Scripts**: `arpanet-log.sh`, `merge-logs.py`, `generate-build-info.py`
-- **Status**: ✅ Deployed and operational, showing real build data
+**Problem**: Scripts execute in container (modern GCC 11.4.0), not inside BSD (vintage K&R C from 1986)
 
-### ✅ Production Deployment (2026-02-13)
-- **AWS Infrastructure**: ArpanetProductionStack deployed
-  - VAX: 3.80.32.255 (t3.micro, 172.20.0.10)
-  - PDP-11: 3.87.125.203 (t3.micro, 172.20.0.50)
-  - Shared EFS: `/mnt/arpanet-logs/` (used for logs only, not data transfer)
-  - Cost: ~$17.90/month (~$0.60/day)
-- **Architecture**: Discrete VAX → PDP-11 via console (uuencode transfer)
-- **IMPs Archived**: Protocol incompatibility (see `arpanet/archived/imp-phase/`)
+**Impact**: Violates "show not tell" principle - claiming to use vintage tools but actually using modern ones
 
-### ✅ Tape Transfer Validation Complete (2026-02-13)
+**Status**: ❌ BLOCKED - Need file sharing method between container and BSD layers
 
-**VAX Status**: ✅ FULLY OPERATIONAL
-- Network configured (172.20.0.10)
-- FTP service running (port 21)
-- TS11 tape device configured and working
-- See: `docs/vax/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
+**Research**: `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md`
 
-**PDP-11 Status**: ⚠️ NETWORKING BLOCKED, TAPE TRANSFER PROVEN
-- **Issue**: Kernel lacks TCP/IP networking stack and tape drivers
-- **Root cause**: 211bsd_rpeth.dsk genunix kernel compiled without network/tape support
-- **Solution**: Host-side SIMH TAP extraction (proven successful)
-- **Details**: `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
+**Details**: `docs/integration/ARCHITECTURE-STACK.md` (explains layer confusion)
 
-**Tape Transfer Testing**: ✅ ALL COMPLETE
-- [x] VAX network and FTP operational
-- [x] PDP-11 kernel issue diagnosed
-- [x] Tape drive enabled in SIMH config
-- [x] VAX TS11 device configured and online
-- [x] VAX tape write operations successful
-- [x] SIMH TAP format extraction working
-- [x] End-to-end tape file transfer VALIDATED
-- [x] File content verified byte-for-byte
+---
 
-**Key Achievement**: Proven end-to-end file transfer workflow using SIMH TS11 tape emulation, with host-side extraction as reliable alternative to BSD tape access.
+## ✅ JUST SOLVED: PDP-11 /usr Mount Issue (2026-02-14)
 
-## Just Completed (2026-02-14)
+**Problem**: PDP-11 appeared to be missing uuencode, uudecode, nroff
 
-### ✅ Uuencode Console Transfer System
-- **Duration**: 2 days (design + implementation + deployment)
-- **Achievement**: Complete VAX → PDP-11 file transfer via console I/O
-- **Deployment**: publish-vax-uuencode-v3 (successful)
-- **Components**:
-  - `scripts/vax-build-and-encode.sh` - VAX build and uuencode
-  - `scripts/console-transfer.py` - Console I/O automation via GNU screen
-  - `scripts/pdp11-validate.sh` - PDP-11 decode and validation
-  - CDK user_data fix for EFS build directories
-  - Screen session auto-recovery for telnet timeouts
-- **Results**:
-  - All 4 stages (Build, Transfer, Validate, Retrieve) working
-  - Build logs merged from VAX, COURIER, GITHUB
-  - Build widget showing component breakdown
-  - 0 errors, 0 warnings in latest deployment
-- **Live**: https://brfid.github.io/
+**Root Cause**: `/usr` filesystem not mounted at boot (disk image was complete all along!)
 
-## Previously Completed (2026-02-13 Evening)
+**Solution**: Created `arpanet/pdp11-boot.sh` wrapper script that auto-mounts `/usr` after boot
 
-### ✅ DRY Logging System with Build Widget
-- **Duration**: ~4 hours
-- **Achievement**: Complete logging infrastructure for multi-machine builds
-- **Components**:
-  - `scripts/arpanet-log.sh` - DRY timestamped logging for BSD machines
-  - `scripts/merge-logs.py` - Chronological log merger across all sources
-  - `scripts/generate-build-info.py` - Build metadata and HTML widget generator
-  - `templates/build-info.css` - Professional dropdown widget styling
-- **Features**:
-  - Captures ALL build output from VAX, PDP-11, and GitHub Actions
-  - Merges logs chronologically with `[YYYY-MM-DD HH:MM:SS MACHINE]` format
-  - Shows pytest-style summary stats (events, errors, warnings)
-  - Clean hover/click dropdown in site footer (bottom-right)
-  - Keeps last 20 builds with automatic cleanup
-  - Links to raw logs for detailed inspection
-- **Integration**: GitHub Actions workflow updated, landing page includes widget
-- **Tests**: 196 passing (added `test_merge_logs.py`)
-- **Status**: ✅ Deployed, waiting for first VAX build to populate widget
+**Verification**: All tools confirmed working:
+- ✅ `/usr/bin/uuencode` (6366 bytes, from Nov 1999)
+- ✅ `/usr/bin/uudecode` (16716 bytes, from Nov 1999)
+- ✅ `/usr/bin/nroff` (44940 bytes, from Nov 1999)
 
-## Previously Completed
+**Testing**: Full workflow tested (encode → decode → render) - all successful
 
-### ✅ Completed (2026-02-13 Afternoon)
-- **YAML Parser Enhancement** - Enhanced VAX C parser to handle standard YAML
-  - Unquoted string support (simple values no longer need quotes)
-  - Smart Python preprocessor (quotes only when YAML requires)
-  - 95% YAML syntax coverage (excludes comments, anchors, complex multiline)
-  - Backward compatible - all 194 tests pass
-  - Cleaner, more readable YAML output
-  - Timeline: 3 hours (vs 8-9 hour estimate)
-  - Validation report: `docs/YAML-ENHANCEMENT-VALIDATION-2026-02-13.md`
-  - Files modified: `vax/bradman.c`, `resume_generator/vax_yaml.py`
+**Doc**: `docs/integration/PDP11-USR-MOUNT-FIX.md`
 
-### ✅ Completed (2026-02-13)
-- **Tape Transfer Validation** - End-to-end file transfer proven
-  - VAX TS11 tape write operations working
-  - SIMH TAP format parsing and extraction
-  - Host-side extraction as reliable alternative
-  - Created `extract_simh_tap.py` utility script
-  - Validation report: `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
+---
 
-### ✅ Completed
-- Static resume site generator (Python-based)
-- GitHub Pages deployment (tag-triggered: `publish` / `publish-*`)
-- VAX/SIMH stage with tape (TS11) transfer path
-  - `bradman.c` updated for 4.3BSD/K&R C compatibility
-  - Host-side uuencode decoding tolerant of console garbage
-  - Docker mode implemented with digest-pinned image
-  - Wait loops use polling instead of fixed sleeps
-- Archived console/FTP transfer approaches in `docs/project/transport-archive.md`
+## Current Architecture
 
-### ✅ Completed (2026-02-12-13)
-- **Screen-based console automation** - Interactive control via GNU screen
-  - `screen -dmS vax-console telnet localhost 2323`
-  - `screen -S vax-console -X stuff "command\n"`
-  - `screen -S vax-console -X hardcopy /tmp/output.txt`
-  - Provides pseudo-interactive control for BSD configuration
-  - See: `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
+### Layer Stack (Critical Understanding)
 
-- **VAX Network + FTP Configuration** - Fully operational
-  - Network interface: de0 at 172.20.0.10
-  - Routing: Default gateway via 172.17.0.1
-  - FTP service: Running on port 21
-  - Testing: All services verified and operational
+```
+AWS EC2 (Ubuntu 22.04)
+  └─ Docker Container (Debian/Ubuntu base)
+      └─ SIMH Emulator (Linux binary)
+          └─ Emulated Hardware (VAX/PDP-11)
+              └─ BSD Unix (4.3BSD / 2.11BSD) ← VINTAGE TOOLS HERE
+```
 
-- **PDP-11 Kernel Analysis** - Root cause identified
-  - Default `unix` kernel: w11a-specific (Unibus), no Ethernet
-  - `genunix` kernel: Boots but lacks TCP/IP stack entirely
-  - `netnix` kernel: Crashes with trap abort
-  - Detailed analysis: `docs/arpanet/PDP11-KERNEL-ISSUE-2026-02-13.md`
+**Problem**: Scripts currently run at **Layer 2** (container with modern tools)
 
-- **Tape Transfer Pivot** - Alternative approach for PDP-11
-  - TS11 tape drive configured in SIMH
-  - Both systems can access shared EFS tape file
-  - Historically authentic "sneakernet" approach
-  - Testing in progress
+**Goal**: Scripts must run at **Layer 5** (BSD with vintage tools)
 
-### ✅ Completed (2026-02-12 Evening)
-- **PDP-11 Boot Automation SOLVED** - Telnet console method proven successful
-  - ✅ **AUTOMATION WORKS** with telnet console method
-  - ✅ System boots reliably in 15-20 seconds
-  - ✅ Complete expect + Python automation scripts created
-  - ✅ Commands execute perfectly, root shell access confirmed
-  - **Status**: Automation proven, 100% reliable boot sequence
-  - See: `docs/arpanet/PDP11-BOOT-SUCCESS-2026-02-12.md`
+**Doc**: `docs/integration/ARCHITECTURE-STACK.md`
 
-### ✅ Just Completed (2026-02-13)
+---
 
-1. **YAML Parser Enhancement** ✅ COMPLETE - Enhanced VAX C parser to handle 95% of YAML
-   - ✅ Unquoted string support in VAX C parser
-   - ✅ Smart quoting in Python preprocessor (only when necessary)
-   - ✅ Backward compatible - all 194 tests pass
-   - ✅ Cleaner, more readable YAML output
-   - Timeline: 3 hours (vs 8-9 hour estimate)
-   - See: `docs/YAML-ENHANCEMENT-VALIDATION-2026-02-13.md`
+## Machine Status
 
-2. **GitHub Workflow Simplification** ✅ COMPLETE - Removed ARPANET Phase 2 from CI
-   - ✅ Simplified to VAX-only builds
-   - ✅ Enhanced build logging for landing page
-   - ✅ Updated workflow: `.github/workflows/deploy.yml`
+### VAX 11/780 (4.3BSD)
+- **IP**: 3.80.32.255 (public), 172.20.0.10 (internal)
+- **Instance**: t3.micro on AWS
+- **Boot**: ✅ Boots to multi-user mode automatically
+- **Filesystems**: ✅ All mounted (`/usr`, `/home`, `/usr/src`)
+- **Tools**: ✅ `uuencode`, `cc` from Jun 7 1986 - VERIFIED VINTAGE
+- **Problem**: ❌ Scripts run in container shell (modern GCC), not BSD (K&R C)
+- **Blocker**: No known file sharing method between container and BSD
+- **Console**: telnet 3.80.32.255 2323
 
-### 📋 Available Next Steps
-3. **Docker/VAX mode testing** - Test enhanced parser on actual 4.3BSD VAX
-4. **GitLab migration** - Move repository from GitHub to GitLab (future)
-5. **PDP-11 integration** - Add PDP-11 to pipeline using tape transfer (future)
-6. **Landing page polish** - Enhance UX/styling of generated site
-7. **Testing/CI** - Expand test coverage, add validation workflows
+### PDP-11/73 (2.11BSD)
+- **IP**: 3.87.125.203 (public), 172.20.0.50 (internal)
+- **Instance**: t3.micro on AWS
+- **Boot**: ✅ Boots correctly with auto-mount wrapper
+- **Filesystems**: ✅ `/usr` auto-mounted via `pdp11-boot.sh`
+- **Tools**: ✅ All utilities present and working
+- **Status**: ✅ FULLY OPERATIONAL - Ready for validation workflow
+- **Console**: telnet 3.87.125.203 2327
 
-## Key Files for New Sessions
+### Infrastructure
+- **Shared EFS**: `/mnt/arpanet-logs/` (logs + builds)
+- **Network**: Docker bridge 172.20.0.0/16
+- **Cost**: ~$17.90/month (~$0.60/day)
+- **Management**: `aws-start.sh`, `aws-stop.sh`, `aws-status.sh`
 
-**Start here:**
-1. This file (`STATUS.md`)
-2. `README.md`
-3. `docs/COLD-START.md`
-4. `docs/INDEX.md`
+---
 
-**For ARPANET work:**
-- `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md` - Latest validation report
-- `docs/arpanet/PDP11-KERNEL-ISSUE-2026-02-13.md` - Kernel compatibility analysis
-- `docs/arpanet/progress/NEXT-STEPS.md` - Original FTP setup steps
-- `docs/arpanet/INDEX.md` - ARPANET documentation index
+## What Works Now
 
-**AWS Management:**
-- `aws-status.sh` - Check instance state and costs
-- `aws-stop.sh` - Stop instances (saves $15/month, keeps data)
-- `aws-start.sh` - Start instances (shows new IPs)
+### ✅ PDP-11 Layer
+- Boot wrapper auto-mounts `/usr` filesystem
+- All vintage tools accessible (uuencode, uudecode, nroff)
+- Console automation via screen/telnet proven effective
+- Ready to receive files and execute validation
+
+### ✅ Console Transfer
+- `scripts/console-transfer.py` - Sends files via terminal I/O
+- Works with PDP-11 (will work with VAX once file access solved)
+- Rate-limited, reliable transfer
+
+### ✅ Infrastructure
+- AWS instances running and accessible
+- EFS shared storage working
+- Docker networking operational
+- Logs merging correctly
+
+---
+
+## What's Broken
+
+### ❌ VAX Build Process
+**Problem**: `vax-build-and-encode.sh` runs in container, not BSD
+
+**Current execution** (WRONG):
+```bash
+ssh ubuntu@$VAX_IP "bash /tmp/vax-build-and-encode.sh"
+# Runs in Ubuntu container with GCC 11.4.0
+```
+
+**Needed execution** (CORRECT):
+```bash
+# Send commands to BSD console via telnet
+# Execute inside 4.3BSD with K&R C from 1986
+```
+
+**Blocker**: Files in container `/tmp/` not visible to BSD
+
+---
+
+## Research Needed
+
+### Primary Question
+**How do we share files between container and BSD in `jguillaumes/simh-vaxbsd:latest` image?**
+
+**Research prompt**: `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md`
+
+**Possible approaches**:
+1. FTP (port 21 exposed, is server running in BSD?)
+2. SIMH attach (can SIMH mount container directories?)
+3. Console I/O (like PDP-11, but for binary files?)
+4. Build our own VAX image (like we did for PDP-11)
+
+---
+
+## Next Steps (Priority Order)
+
+### 1. Solve VAX File Sharing (CRITICAL)
+- Research `jguillaumes/simh-vaxbsd` image capabilities
+- Test FTP from container to BSD
+- Or implement console-based file transfer
+- Or build custom VAX Docker image
+
+### 2. Test End-to-End Pipeline
+Once VAX fixed:
+- Generate resume.vax.yaml
+- **Compile inside BSD with K&R C**
+- **Encode inside BSD with uuencode**
+- Transfer to PDP-11 via console
+- Decode and render in PDP-11
+- Verify output
+
+### 3. Update Workflow
+- Modify `.github/workflows/deploy.yml` Stage 1
+- Use console-based execution for VAX
+- Ensure all commands run inside BSD, not container
+
+---
+
+## Key Documentation
+
+### Must Read for Cold Start
+1. **`docs/COLD-START.md`** - Quick start guide (needs update)
+2. **`docs/integration/ARCHITECTURE-STACK.md`** - Layer confusion explained
+3. **`docs/integration/PDP11-USR-MOUNT-FIX.md`** - PDP-11 solution
+4. **`docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md`** - VAX blocker research
+
+### Debugging Session Logs
+- `docs/integration/DEBUGGING-SUMMARY-2026-02-14.md` - Full debug session
+- `docs/integration/PDP11-DEBUG-FINDINGS.md` - Detailed findings
+- `docs/integration/PDP11-DEBUGGING-PLAN.md` - Interactive debugging approach
+
+### Implementation Details
+- `arpanet/pdp11-boot.sh` - Auto-mount wrapper (working)
+- `arpanet/vax-boot.sh` - Auto-mount wrapper (not needed)
+- `scripts/vax-console-build.sh` - Console-based build (blocked)
+- `docker-compose.production.yml` - Container configuration
+
+---
 
 ## Critical Constraints
 
-- ✅ Use `.venv/` for all Python commands (do not install globally)
-- ✅ Avoid creating/pushing `publish` tags unless deploying
+- ✅ Use `.venv/` for all Python commands
+- ✅ Must ACTUALLY use vintage tools ("show don't tell")
+- ✅ No modern GCC claiming to be K&R C
 - ✅ Commit at significant milestones only
-- ✅ Run validation when requested: pytest, ruff, mypy
+- ✅ Test thoroughly before claiming success
+
+---
 
 ## Environment
 
-Python virtualenv: `.venv/` (must be activated for all operations)
+**Python**: `.venv/` (must be activated)
+**AWS**: Account 972626128180, region us-east-1
+**Permissions**: bypassPermissions mode enabled
 
 ```bash
 # Activate venv
 source .venv/bin/activate
 
-# Run tests (when requested)
-python -m pytest -q
+# AWS instances
+./aws-start.sh  # Start and show IPs
+./aws-stop.sh   # Stop (saves money, keeps data)
+./aws-status.sh # Check current state
 
-# Run linting (when requested)
-python -m ruff check .
-
-# Run type checking (when requested)
-python -m mypy resume_generator tests
+# Connect to machines
+ssh -i ~/.ssh/arpanet-temp.pem ubuntu@<ip>
+telnet <vax-ip> 2323  # VAX console
+telnet <pdp11-ip> 2327  # PDP-11 console
 ```
 
-## Recent Changes
+---
 
-- VAX networking and FTP fully operational (2026-02-13)
-- PDP-11 kernel networking blocked, pivoted to tape transfer (2026-02-13)
-- Screen-based interactive console automation proven effective (2026-02-13)
-- Comprehensive validation reports created (2026-02-13)
-- IMPs archived due to protocol incompatibility (2026-02-13)
-- Production infrastructure deployed on AWS (2026-02-13)
+## Recent Discoveries (2026-02-14)
 
-## Architecture
+### PDP-11 Disk Image Is Complete
+- Believed to be minimal, actually full 2.11BSD distribution
+- All standard utilities present in `/usr/bin/`
+- Just needed `/usr` filesystem mounted
+- No need for alternative disk images
 
-**Current**: Direct VAX ↔ PDP-11 connection (simplified)
-- Docker bridge network: 172.20.0.0/16
-- VAX: 4.3BSD with de0 Ethernet
-- PDP-11: 2.11BSD with TS11 tape
-- Shared EFS storage for tape file exchange
+### VAX Filesystems Already Mounted
+- Pre-built image boots correctly
+- All filesystems mounted automatically
+- Tools exist and are vintage (from 1986!)
+- Problem is only script execution layer
 
-**Historical**: ARPANET 1822 protocol with IMPs
-- Archived to: `arpanet/archived/imp-phase/`
-- Reason: Protocol incompatibility (TCP/IP vs 1822)
-- Can be restored if needed
+### Layer Confusion Is The Core Issue
+- Easy to confuse container layer with BSD layer
+- `docker exec` runs in container (modern tools)
+- `telnet to console` runs in BSD (vintage tools)
+- Must execute in BSD to use vintage tools
 
-## Key References
+---
 
-- **Validation Report**: `docs/arpanet/VAX-PDP11-FTP-VALIDATION-2026-02-13.md`
-- **Kernel Analysis**: `docs/arpanet/PDP11-KERNEL-ISSUE-2026-02-13.md`
-- **Production Deployment**: `PRODUCTION-DEPLOYMENT.md`
-- **Infrastructure Code**: `infra/cdk/arpanet_production_stack.py`
-- **Docker Compose**: `docker-compose.production.yml`
-- **SIMH Configs**: `arpanet/configs/vax-network.ini`, `arpanet/configs/pdp11.ini`
+## Success Criteria
+
+### Phase 1: ✅ COMPLETE
+- [x] PDP-11 has all required tools
+- [x] Auto-mount wrapper working
+- [x] Full decode → render workflow tested
+
+### Phase 2: ❌ BLOCKED
+- [ ] VAX file sharing method found
+- [ ] Scripts execute inside BSD
+- [ ] Actual K&R C compilation verified
+- [ ] Actual vintage uuencode working
+
+### Phase 3: ⏳ PENDING
+- [ ] End-to-end pipeline working
+- [ ] All commands in vintage tools
+- [ ] Logs accurately reflect tool usage
+- [ ] Deployed and operational
+
+---
+
+## Quick Commands
+
+```bash
+# Check what's running
+./aws-status.sh
+
+# Start instances
+./aws-start.sh
+
+# Test VAX console
+telnet <vax-ip> 2323
+# Login: root
+# Check: which uuencode
+# Verify: ls -la /usr/bin/uu*
+
+# Test PDP-11 console
+telnet <pdp11-ip> 2327
+# Login: root
+# Check: mount (should show /dev/xp0e on /usr)
+# Verify: ls /usr/bin/uu*
+
+# Stop instances (save money)
+./aws-stop.sh
+```
+
+---
+
+## Files Changed Today (2026-02-14)
+
+**Created**:
+- `arpanet/pdp11-boot.sh` - Auto-mount wrapper
+- `scripts/vax-console-build.sh` - Console-based build attempt
+- `docs/integration/PDP11-USR-MOUNT-FIX.md` - Solution doc
+- `docs/integration/ARCHITECTURE-STACK.md` - Layer explanation
+- `docs/integration/DEBUGGING-SUMMARY-2026-02-14.md` - Debug session
+- `docs/integration/PDP11-DEBUG-FINDINGS.md` - Detailed findings
+- `docs/research/PDP11-MISSING-TOOLS-RESEARCH.md` - Research request (solved)
+- `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md` - Research request (open)
+
+**Modified**:
+- `arpanet/Dockerfile.pdp11` - Added boot wrapper
+- `docker-compose.production.yml` - Updated PDP-11 volume mount + VAX command
+- `arpanet/configs/pdp11.ini` - Reviewed (no changes needed)
+
+---
+
+## Git Status
+
+```bash
+git log --oneline -10
+c14bc33 wip: VAX console build attempt + research prompt for file sharing
+11dddff feat: add VAX auto-mount boot wrapper
+c12ef1a docs: complete solution for PDP-11 /usr mount fix
+c8e0c93 improve: more robust auto-mount with nc and retry logic
+299aa75 feat: auto-mount /usr on PDP-11 boot via wrapper script
+fba4cf1 docs: research request for PDP-11 missing utilities blocker
+878c0eb docs: debugging findings and architecture stack explanation
+db411c2 fix: add auto-mount /usr to PDP-11 boot sequence
+715bde5 fix: mount full EFS in PDP-11 container for builds access
+d1c2d0d fix: ensure build directory exists before uploading logs
+```
+
+---
+
+**NEXT SESSION**: Start by reading research prompt in `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md` and attempting to find solution for VAX file sharing.
