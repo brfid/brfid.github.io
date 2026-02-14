@@ -5,13 +5,14 @@ Use this page when starting from zero context.
 ## 0) Current State (read this first)
 
 **Date**: 2026-02-14
-**Status**: ✅ VAX Console Build Pipeline SOLVED - Workflow integration pending
+**Status**: ✅ GitHub Actions + AWS lifecycle stabilized (activate → run → deactivate)
 
 - **AWS Infrastructure**: ✅ DEPLOYED (2x t3.micro)
 - **VAX Solution**: Console I/O via screen + telnet (runs INSIDE BSD, not container!)
 - **Scripts**: `vax-console-upload.sh`, `vax-console-build.sh`, `vax-build-and-encode.sh`
 - **Verification**: Vintage K&R C compilation verified inside 4.3BSD
-- **Remaining**: Update `.github/workflows/deploy.yml` to use console scripts
+- **Workflow**: `.github/workflows/deploy.yml` now uses consolidated AWS activation/deactivation
+- **Logging**: `GITHUB.log` now includes AWS lifecycle markers for activate/deactivate
 - **Cost**: ~$17.90/month running, ~$2/month stopped (storage only)
 
 **Canonical references**:
@@ -56,7 +57,7 @@ Then apply repository workflow constraints from `AGENTS.md`.
 
 **Historical references**:
 - Archived IMP topology: `docs/integration/archive/imp-phase/`
-- Historical transport decisions: `docs/project/transport-archive.md`
+- Historical transport decisions: `docs/deprecated/transport-archive.md`
 - PDP-10 experiments: `docs/pdp/pdp10/`
 
 ## 3) Fast constraints checklist
@@ -211,12 +212,14 @@ docker-compose -f docker-compose.production.yml restart vax
 - Solution: Console I/O via screen + telnet
 - Scripts created: `vax-console-upload.sh`, `vax-console-build.sh`
 - Verification: Vintage K&R C compilation works inside BSD
-- Status: Solution ready, needs workflow integration
+- Status: Integrated into deploy workflow
 
-**Phase 2: GitHub Workflow Integration** (NEXT TASK)
-- Update `.github/workflows/deploy.yml` to use console scripts
-- Replace direct SSH with console-based execution
-- Test full VAX → PDP-11 pipeline
+**Phase 2: GitHub↔AWS Lifecycle Reliability** (COMPLETE ✅)
+- AWS activation consolidated into one workflow step
+- AWS deactivation consolidated with `always()` + `wait instance-stopped`
+- Lifecycle markers emitted to `GITHUB.log`:
+  - `AWS_ACTIVATE_BEGIN`, `AWS_ACTIVATE_READY`, `AWS_ACTIVATE_FAILED`
+  - `AWS_DEACTIVATE_BEGIN`, `AWS_DEACTIVATE_COMPLETE`
 
 **Phase 3: End-to-End Testing** (PENDING)
 - Full VAX → PDP-11 workflow

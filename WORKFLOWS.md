@@ -7,14 +7,14 @@ This file documents the workflows that currently exist in `.github/workflows/`.
 - Trigger: push to `main`, pull requests
 - Runs:
   - `ruff` on primary portfolio module: `resume_generator`
-  - `mypy resume_generator arpanet_logging tests`
+  - `mypy resume_generator host_logging tests`
   - `pytest -q -m "unit and not docker and not slow"`
   - `pylint resume_generator tests -sn`
   - `vulture --config pyproject.toml resume_generator`
 
 Early-development note:
 - CI intentionally does **not** enforce full-repo Ruff yet.
-- `arpanet_logging` and legacy/experimental areas (for example parts of `arpanet/`) are handled incrementally.
+- Legacy/experimental areas are handled incrementally.
 
 ## 2) Feature-branch test workflow (`test.yml`)
 
@@ -41,26 +41,39 @@ coverage in separate jobs.
 ## 3) Publish workflow (`deploy.yml`)
 
 - Trigger:
-  - tags: `publish`, `publish-*`, `publish-arpanet*`, `publish-full*`
+  - tags: `publish`, `publish-fast`, `publish-vax`, `publish-vax-*`, `publish-docker`, `publish-docker-*`
   - manual dispatch
 - Runs quality checks, generates site artifacts, deploys to GitHub Pages.
 
 ### Important mode note (current behavior)
 
 - `resume_generator` CLI supports `--vax-mode local` and `--vax-mode docker`.
-- ARPANET Phase 3 scaffold is toggled by:
-  - `--with-arpanet` (dry-run scaffold; safe default)
-  - `--arpanet-execute` (explicitly enables scaffold command execution)
-- `deploy.yml` now maps ARPANET publish modes to CLI-compatible arguments:
-  - workflow/tag mode `arpanet` → `--vax-mode docker --with-arpanet --arpanet-execute`
-  - workflow/tag mode `local` → `--vax-mode local`
+
+`deploy.yml` mode resolution:
+- `publish-vax*` / `publish-docker*` tags → docker mode
+- manual dispatch → selected input (`local` or `docker`)
+- otherwise (`publish`, `publish-fast`) → local mode
 
 Operationally, that means:
-- `publish` / `publish-*` tags run local mode.
-- `publish-arpanet*` / `publish-full*` tags run docker VAX mode with ARPANET scaffold execution enabled.
-- ARPANET publish path uses the Phase 2 compose topology (`docker-compose.arpanet.phase2.yml`) and captures logs
-  from `vax`, `imp1`, `imp2`, and `pdp10`.
-- ARPANET publish path runs `arpanet/scripts/test-phase2-imp-link.sh` as a runtime smoke gate before site generation.
+- Local publish tags run fast local generation.
+- Docker publish tags run the full AWS-backed VAX/PDP-11 pipeline.
+
+### AWS lifecycle behavior in `deploy.yml` (docker mode)
+
+- A single **Activate AWS infrastructure** step:
+  - starts both EC2 instances,
+  - waits for both to be `running`,
+  - resolves and validates both public IPs,
+  - waits for SSH readiness with timeout + hard failure.
+- A single **Deactivate AWS infrastructure** step (with `always()`):
+  - stops both EC2 instances,
+  - waits for both to be `stopped`.
+- Lifecycle log markers are written to `GITHUB.log`:
+  - `AWS_ACTIVATE_BEGIN`
+  - `AWS_ACTIVATE_READY`
+  - `AWS_ACTIVATE_FAILED` (on failure paths)
+  - `AWS_DEACTIVATE_BEGIN`
+  - `AWS_DEACTIVATE_COMPLETE`
 
 ## Operational guidance
 

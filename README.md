@@ -41,7 +41,7 @@ If you are starting with little or no context, use this exact read order:
 2. `docs/COLD-START.md`
 3. `STATUS.md`
 4. `docs/INDEX.md`
-5. `docs/arpanet/INDEX.md` (for ARPANET tasks)
+5. `docs/integration/INDEX.md` (for integration/history tasks)
 
 Then apply repository workflow constraints from `AGENTS.md`.
 
@@ -98,7 +98,7 @@ make docs
 
 ```bash
 .venv/bin/python -m pytest -q
-.venv/bin/python -m mypy resume_generator arpanet_logging tests
+.venv/bin/python -m mypy resume_generator host_logging tests
 .venv/bin/python -m ruff check .
 ```
 
@@ -115,11 +115,7 @@ Details: `WORKFLOWS.md`
 - `ARCHITECTURE.md` — end-to-end system flow
 - `WORKFLOWS.md` — CI/test/publish behavior
 - `docs/INDEX.md` — central documentation hub
-- `docs/arpanet/INDEX.md` — ARPANET documentation map
-- `docs/arpanet/overview/README.md` — ARPANET topology and operations
-- `docs/arpanet/operations/TESTING-GUIDE.md` — ARPANET test commands/troubleshooting
-- `docs/arpanet/operations/ARPANET-LOGGING-README.md` — logging subsystem usage
-- `docs/arpanet/operations/TOPOLOGY-README.md` — topology generator and definitions
+- `docs/integration/INDEX.md` — integration documentation map
 - `docs/vax/README.md` — VAX C tool contract
 
 ## Retained records and archives
@@ -127,18 +123,7 @@ Details: `WORKFLOWS.md`
 Per project direction, historical and in-progress records are retained.
 
 - Transport history: `docs/project/transport-archive.md`
-- ARPANET implementation records (complete + in-progress):
-  - `docs/arpanet/overview/PHASE1-SUMMARY.md`
-  - `docs/arpanet/overview/PHASE2-PLAN.md`
-  - `docs/arpanet/progress/PHASE2-VALIDATION.md`
-  - `docs/arpanet/overview/PHASE3-PLAN.md`
-  - `docs/arpanet/overview/PHASE3-IMPLEMENTATION-PLAN.md`
-  - `docs/arpanet/progress/PHASE3-PROGRESS.md`
-- Technical investigation records:
-  - `docs/arpanet/research/CONSOLE-AUTOMATION-PROBLEM.md`
-  - `docs/arpanet/research/CONSOLE-AUTOMATION-SOLUTION.md`
-  - `docs/arpanet/operations/FTP-TESTING.md`
-  - `docs/arpanet/research/PROTOCOL-ANALYSIS.md`
+- Integration and historical records: see `docs/integration/` and `docs/legacy/`
 
 ## Local preview
 

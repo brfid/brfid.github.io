@@ -111,75 +111,77 @@ jobs:
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > /tmp/aws-key.pem
           chmod 600 /tmp/aws-key.pem
 
-      - name: Start AWS VAX instance
+      - name: Activate AWS infrastructure
         if: steps.mode.outputs.vax_mode == 'docker'
-        id: aws_start
+        id: aws_activate
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          echo "🚀 Starting AWS VAX instance..."
-          aws ec2 start-instances --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }}
+          ts() { date -u '+%Y-%m-%d %H:%M:%S'; }
 
-          echo "⏳ Waiting for instance to be running..."
-          aws ec2 wait instance-running --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }}
+          echo "[$(ts) GITHUB] AWS_ACTIVATE_BEGIN vax=${{ secrets.AWS_VAX_INSTANCE_ID }} pdp11=${{ secrets.AWS_PDP11_INSTANCE_ID }}" >> /tmp/github.log
+          echo "🚀 Starting AWS VAX and PDP-11 instances..."
+          aws ec2 start-instances --instance-ids \
+            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
+            ${{ secrets.AWS_PDP11_INSTANCE_ID }}
 
-          echo "📡 Getting instance IP..."
+          echo "⏳ Waiting for instances to be running..."
+          aws ec2 wait instance-running --instance-ids \
+            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
+            ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+
+          echo "📡 Getting instance IPs..."
           VAX_IP=$(aws ec2 describe-instances \
             --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }} \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
-          echo "vax_ip=$VAX_IP" >> $GITHUB_OUTPUT
-          echo "✅ VAX instance ready at $VAX_IP"
-
-          echo "⏳ Waiting for SSH to be available..."
-          for i in {1..30}; do
-            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /tmp/aws-key.pem ubuntu@$VAX_IP echo "ready" 2>/dev/null; then
-              echo "✅ SSH ready"
-              break
-            fi
-            echo "Attempt $i/30: SSH not ready yet..."
-            sleep 10
-          done
-
-      - name: Start AWS PDP-11 instance
-        if: steps.mode.outputs.vax_mode == 'docker'
-        id: pdp11_start
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: |
-          echo "🚀 Starting AWS PDP-11 instance..."
-          aws ec2 start-instances --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }}
-
-          echo "⏳ Waiting for instance to be running..."
-          aws ec2 wait instance-running --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }}
-
-          echo "📡 Getting instance IP..."
           PDP11_IP=$(aws ec2 describe-instances \
             --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }} \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
-          echo "pdp11_ip=$PDP11_IP" >> $GITHUB_OUTPUT
-          echo "✅ PDP-11 instance ready at $PDP11_IP"
 
-          echo "⏳ Waiting for SSH to be available..."
-          for i in {1..30}; do
-            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /tmp/aws-key.pem ubuntu@$PDP11_IP echo "ready" 2>/dev/null; then
-              echo "✅ SSH ready"
-              break
+          if [[ -z "$VAX_IP" || "$VAX_IP" == "None" || -z "$PDP11_IP" || "$PDP11_IP" == "None" ]]; then
+            echo "❌ Failed to resolve AWS instance public IPs"
+            echo "[$(ts) GITHUB] AWS_ACTIVATE_FAILED reason=missing_public_ip vax_ip=$VAX_IP pdp11_ip=$PDP11_IP" >> /tmp/github.log
+            exit 1
+          fi
+
+          wait_for_ssh() {
+            local name="$1"
+            local ip="$2"
+            local ready=0
+            echo "⏳ Waiting for SSH on $name ($ip)..."
+            for i in {1..30}; do
+              if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /tmp/aws-key.pem "ubuntu@$ip" echo "ready" >/dev/null 2>&1; then
+                ready=1
+                echo "✅ SSH ready on $name"
+                break
+              fi
+              echo "Attempt $i/30: SSH not ready yet on $name..."
+              sleep 10
+            done
+            if [[ "$ready" -ne 1 ]]; then
+              echo "❌ SSH readiness timeout for $name ($ip)"
+              echo "[$(ts) GITHUB] AWS_ACTIVATE_FAILED reason=ssh_timeout host=$name ip=$ip" >> /tmp/github.log
+              exit 1
             fi
-            echo "Attempt $i/30: SSH not ready yet..."
-            sleep 10
-          done
+          }
+
+          wait_for_ssh "VAX" "$VAX_IP"
+          wait_for_ssh "PDP11" "$PDP11_IP"
+
+          echo "vax_ip=$VAX_IP" >> $GITHUB_OUTPUT
+          echo "pdp11_ip=$PDP11_IP" >> $GITHUB_OUTPUT
+          echo "[$(ts) GITHUB] AWS_ACTIVATE_READY vax_ip=$VAX_IP pdp11_ip=$PDP11_IP" >> /tmp/github.log
+          echo "✅ AWS infrastructure activated"
 
       - name: Transfer scripts to AWS
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
-          PDP11_IP: ${{ steps.pdp11_start.outputs.pdp11_ip }}
+          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
+          PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
         run: |
           echo "📤 Transferring scripts to AWS instances..."
 
@@ -208,7 +210,7 @@ jobs:
       - name: Stage 1 - VAX Build & Encode
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 1: VAX BUILD & ENCODE ==="
@@ -323,8 +325,8 @@ jobs:
       - name: Stage 2 - Console Transfer (VAX → PDP-11)
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
-          PDP11_IP: ${{ steps.pdp11_start.outputs.pdp11_ip }}
+          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
+          PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 2: CONSOLE TRANSFER ==="
@@ -412,8 +414,8 @@ jobs:
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-          PDP11_IP: ${{ steps.pdp11_start.outputs.pdp11_ip }}
-          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
+          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
         run: |
           echo "=== STAGE 3: PDP-11 VALIDATION ==="
           echo "Build ID: $BUILD_ID"
@@ -458,7 +460,7 @@ jobs:
       - name: Stage 4 - Retrieve Final Output
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 4: RETRIEVE FINAL OUTPUT ==="
@@ -492,7 +494,7 @@ jobs:
       - name: Merge and retrieve build logs
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📋 Merging build logs from all sources..."
@@ -573,7 +575,7 @@ jobs:
       - name: Generate build info widget
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📊 Generating build info widget..."
@@ -614,27 +616,28 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Stop AWS VAX instance
+      - name: Deactivate AWS infrastructure
         if: always() && steps.mode.outputs.vax_mode == 'docker'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          echo "🛑 Stopping AWS VAX instance..."
-          aws ec2 stop-instances --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }}
-          echo "✅ VAX instance stopped (cost savings mode)"
+          ts() { date -u '+%Y-%m-%d %H:%M:%S'; }
 
-      - name: Stop AWS PDP-11 instance
-        if: always() && steps.mode.outputs.vax_mode == 'docker'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: |
-          echo "🛑 Stopping AWS PDP-11 instance..."
-          aws ec2 stop-instances --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }}
-          echo "✅ PDP-11 instance stopped (cost savings mode)"
+          echo "[$(ts) GITHUB] AWS_DEACTIVATE_BEGIN vax=${{ secrets.AWS_VAX_INSTANCE_ID }} pdp11=${{ secrets.AWS_PDP11_INSTANCE_ID }}" >> /tmp/github.log
+          echo "🛑 Stopping AWS VAX and PDP-11 instances..."
+          aws ec2 stop-instances --instance-ids \
+            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
+            ${{ secrets.AWS_PDP11_INSTANCE_ID }} >/dev/null
+
+          echo "⏳ Waiting for instances to stop..."
+          aws ec2 wait instance-stopped --instance-ids \
+            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
+            ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+
+          echo "[$(ts) GITHUB] AWS_DEACTIVATE_COMPLETE" >> /tmp/github.log
+          echo "✅ AWS infrastructure deactivated (cost savings mode)"
 
       - name: Summary
         run: |

@@ -19,8 +19,11 @@ send_cmd() {
     if ! screen -ls | grep -q "$SESSION"; then
         echo "[COURIER] Screen session '$SESSION' not found, recreating..." >&2
         # Session may have exited due to telnet timeout, recreate it
-        # Get PDP-11 IP from environment or use previous IP
-        PDP11_IP="${PDP11_IP:-34.228.166.115}"  # Fallback to previous IP
+        # PDP11_IP must be provided by caller environment for deterministic behavior.
+        if [ -z "$PDP11_IP" ]; then
+            echo "[COURIER] ERROR: PDP11_IP is required to recreate screen session '$SESSION'" >&2
+            exit 1
+        fi
         screen -dmS "$SESSION" telnet "$PDP11_IP" 2327
         sleep 3  # Wait for connection
         echo "[COURIER] Screen session recreated" >&2

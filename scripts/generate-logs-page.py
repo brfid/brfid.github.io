@@ -144,7 +144,7 @@ def generate_html(logs: List[Dict], build_id: str, stats: Dict) -> str:
         machine_color = get_machine_color(log['machine'])
 
         log_lines.append(f'''
-        <div class="log-line{evidence_class}" data-machine="{log['machine']}">
+        <div class="log-line{evidence_class}" data-machine="{log['machine']}" data-full-timestamp="{log['timestamp']}">
             <span class="timestamp">{log['timestamp'].split()[1]}</span>
             <span class="machine-badge" style="background: {machine_color}">{log['machine']}</span>
             <span class="message">{escape_html(log['message'])}{evidence_icon}</span>
@@ -602,9 +602,9 @@ def generate_html(logs: List[Dict], build_id: str, stats: Dict) -> str:
         <footer class="footer">
             <a href="/">← Back to Home</a>
             <a href="/build-logs/merged.log">View Raw Logs</a>
-            <a href="/build-logs/vax.log">VAX Log</a>
-            <a href="/build-logs/courier.log">COURIER Log</a>
-            <a href="/build-logs/github.log">GITHUB Log</a>
+            <a href="/build-logs/VAX.log">VAX Log</a>
+            <a href="/build-logs/COURIER.log">COURIER Log</a>
+            <a href="/build-logs/GITHUB.log">GITHUB Log</a>
         </footer>
     </div>
 

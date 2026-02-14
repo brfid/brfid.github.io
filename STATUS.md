@@ -1,6 +1,6 @@
 # Project Status
 
-**Last updated:** 2026-02-14 Late Evening
+**Last updated:** 2026-02-14 (post AWS lifecycle hardening)
 
 ---
 
@@ -60,7 +60,7 @@
 - `5a58852` - Comprehensive logging overhaul
 - `dd58356` - Log format examples and webpage templates
 
-**Next**: Run pipeline test on AWS to verify and capture real logs
+**Next**: Run a full tagged docker publish to verify end-to-end evidence on live AWS
 
 ---
 
@@ -84,10 +84,10 @@
 - Solution uses console I/O via screen + telnet
 - Commands execute inside 4.3BSD, not container
 
-**Remaining Task**:
-- ❌ Workflow hasn't been updated to use console scripts
-- `.github/workflows/deploy.yml` still runs `bash /tmp/vax-build-and-encode.sh` in container
-- Need to integrate console scripts into CI pipeline
+**Workflow Integration Status**:
+- ✅ `.github/workflows/deploy.yml` now uses console-driven upload/build/validation stages
+- ✅ AWS activation/deactivation is consolidated and deterministic
+- ✅ Lifecycle markers are emitted to `GITHUB.log` for activate/deactivate boundaries
 
 **Docs**: `docs/research/VAX-FILE-INPUT-OPTIONS.md` (still relevant for context)
 
@@ -316,6 +316,14 @@ telnet <pdp11-ip> 2327  # PDP-11 console
 - [ ] All commands in vintage tools
 - [ ] Logs accurately reflect tool usage
 - [ ] Deployed and operational
+
+### GitHub ↔ AWS Lifecycle: ✅ COMPLETE
+- [x] Single activation step starts both instances
+- [x] Waits for both instances to be running
+- [x] Validates public IP resolution and SSH readiness with hard timeout
+- [x] Single deactivation step stops both instances
+- [x] Waits for both instances to be stopped
+- [x] Logs lifecycle markers in `GITHUB.log`
 
 ---
 

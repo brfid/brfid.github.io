@@ -118,6 +118,7 @@ class LogViewer {
 
         // Build text content
         const lines = visibleLines.map(line => {
+            const fullTimestamp = line.dataset.fullTimestamp;
             const timestamp = line.querySelector('.timestamp').textContent;
             const machine = line.querySelector('.machine-badge').textContent;
             const message = line.querySelector('.message').textContent;
@@ -126,8 +127,13 @@ class LogViewer {
             const cleanMessage = message.replace(/\s*⭐\s*$/, '');
 
             // Format: [YYYY-MM-DD HH:MM:SS MACHINE] message
-            // Note: We only have time, so use placeholder date
-            return `[2026-02-14 ${timestamp} ${machine}] ${cleanMessage}`;
+            // Prefer the full timestamp captured from merged logs.
+            if (fullTimestamp) {
+                return `[${fullTimestamp} ${machine}] ${cleanMessage}`;
+            }
+
+            // Fallback if data attribute is unavailable.
+            return `[${timestamp} ${machine}] ${cleanMessage}`;
         });
 
         const content = lines.join('\n') + '\n';
