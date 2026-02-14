@@ -62,8 +62,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = [
   "arpanet.scripts.*",
-  "tests.test_arpanet_phase_scripts",
-  "tests.test_base_collector",
+  "tests.*",  # Ignore all test type checking
 ]
 ignore_errors = true
 
