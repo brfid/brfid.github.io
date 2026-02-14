@@ -188,6 +188,8 @@ jobs:
             scripts/arpanet-log.sh \
             scripts/vax-build-and-encode.sh \
             scripts/merge-logs.py \
+            scripts/extract-vax-logs.py \
+            scripts/extract-pdp11-logs.py \
             ubuntu@$VAX_IP:/tmp/
 
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
@@ -302,19 +304,9 @@ jobs:
               # Extract logs from console capture to EFS
               ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
                 "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
-                 python3 -c \"
-import re
-import sys
-
-pattern = re.compile(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+)\] (.+)$')
-with open('/tmp/vax-build-console.txt', 'r') as infile, \
-     open('/mnt/arpanet-logs/builds/$BUILD_ID/VAX.log', 'w') as outfile:
-    for line in infile:
-        match = pattern.match(line.rstrip())
-        if match and match.group(2) == 'VAX':
-            outfile.write(line)
-print('Logs extracted')
-\""
+                 python3 /tmp/extract-vax-logs.py \
+                   /tmp/vax-build-console.txt \
+                   /mnt/arpanet-logs/builds/$BUILD_ID/VAX.log"
 
               echo "✓ Logs extracted to EFS"
             else
@@ -447,19 +439,9 @@ print('Logs extracted')
               # Extract logs from console capture to EFS (using VAX container which has EFS mounted)
               ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
                 "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
-                 python3 -c \"
-import re
-import sys
-
-pattern = re.compile(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+)\] (.+)$')
-with open('/tmp/pdp11-validation-$BUILD_ID.txt', 'r') as infile, \
-     open('/mnt/arpanet-logs/builds/$BUILD_ID/PDP11.log', 'w') as outfile:
-    for line in infile:
-        match = pattern.match(line.rstrip())
-        if match and match.group(2) == 'PDP11':
-            outfile.write(line)
-print('PDP-11 logs extracted')
-\""
+                 python3 /tmp/extract-pdp11-logs.py \
+                   /tmp/pdp11-validation-$BUILD_ID.txt \
+                   /mnt/arpanet-logs/builds/$BUILD_ID/PDP11.log"
 
               echo "✓ PDP-11 logs extracted to EFS"
             else
