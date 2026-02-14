@@ -61,7 +61,7 @@ services:
     volumes:
       - ./build/pdp11:/opt/pdp11/data
       - ./arpanet/configs/pdp11.ini:/opt/pdp11/pdp11.ini:ro
-      - /mnt/arpanet-logs/pdp11:/var/log/arpanet  # EFS shared logs
+      - /mnt/arpanet-logs:/mnt/arpanet-logs  # EFS full mount for builds access
     networks:
       arpanet:
         ipv4_address: 172.20.0.50
