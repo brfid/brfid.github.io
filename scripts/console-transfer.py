@@ -89,15 +89,31 @@ def transfer_file_via_console(
     time.sleep(0.5)
 
     # Send encoded data line-by-line
+    start_time = time.time()
+
     for i, line in enumerate(lines):
         send_to_console(session_name, line.rstrip())
 
         # Log progress every 20 lines
         if i > 0 and i % 20 == 0:
-            log_courier(build_id, f"Transfer progress: {i}/{total_lines} lines ({i*100//total_lines}%)")
+            elapsed = time.time() - start_time
+            rate = i / elapsed if elapsed > 0 else 0
+            eta = (total_lines - i) / rate if rate > 0 else 0
+            log_courier(
+                build_id,
+                f"Transfer progress: {i}/{total_lines} lines ({i*100//total_lines}%) - "
+                f"{rate:.1f} lines/sec - ETA {eta:.1f}s"
+            )
 
         # Rate limit to prevent overwhelming the console
         time.sleep(0.05)
+
+    elapsed = time.time() - start_time
+    avg_rate = total_lines / elapsed if elapsed > 0 else 0
+    log_courier(
+        build_id,
+        f"Transfer statistics: {total_lines} lines in {elapsed:.2f}s ({avg_rate:.1f} lines/sec)"
+    )
 
     # Close heredoc
     send_to_console(session_name, 'ENDOFFILE')
