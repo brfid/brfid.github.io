@@ -35,6 +35,8 @@ services:
     volumes:
       - ./build/vax:/machines/data
       - /mnt/arpanet-logs/vax:/var/log/arpanet  # EFS shared logs
+      - ./arpanet/vax-boot.sh:/opt/vax-boot.sh:ro  # Auto-mount wrapper
+    command: ["/bin/bash", "/opt/vax-boot.sh"]
     networks:
       arpanet:
         ipv4_address: 172.20.0.10
