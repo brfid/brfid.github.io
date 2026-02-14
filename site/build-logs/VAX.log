@@ -1,9 +1,25 @@
-[2026-02-13 15:45:23 GITHUB] Starting AWS VAX instance...
-[2026-02-13 15:45:45 GITHUB] Transferring files to VAX...
-[2026-02-13 15:46:02 VAX] cc -o bradman bradman.c
-[2026-02-13 15:46:08 VAX] bradman: parsing resume.vax.yaml
-[2026-02-13 15:46:12 VAX] bradman: truncating long title (warning)
-[2026-02-13 15:46:15 VAX] bradman: generating roff output
-[2026-02-13 15:46:18 VAX] Build complete
-[2026-02-13 15:46:25 GITHUB] Retrieving build output...
-[2026-02-13 15:46:30 GITHUB] Build successful
+[2026-02-14 12:17:39 VAX] === VAX BUILD & ENCODE ===
+[2026-02-14 12:17:39 VAX] Build ID: build-20260214-121649
+[2026-02-14 12:17:39 VAX] Date: Sat Feb 14 12:17:39 UTC 2026
+[2026-02-14 12:17:39 VAX] Compiling bradman.c...
+[2026-02-14 12:17:39 VAX]   Compiler: cc (4.3BSD K&R C)
+[2026-02-14 12:17:39 VAX]   Source: bradman.c (1037 lines)
+[2026-02-14 12:17:39 VAX] Compilation successful
+[2026-02-14 12:17:39 VAX]   Binary size: 30072 bytes
+[2026-02-14 12:17:39 VAX] Generating manpage from resume.vax.yaml...
+[2026-02-14 12:17:39 VAX]   Input: resume.vax.yaml (83 lines)
+[2026-02-14 12:17:39 VAX]   Parser: bradman (VAX C YAML parser)
+[2026-02-14 12:17:39 VAX] Manpage generated successfully
+[2026-02-14 12:17:39 VAX]   Output: brad.1 (2119 bytes, 51 lines)
+[2026-02-14 12:17:39 VAX]   Sections: 6 (.SH directives)
+[2026-02-14 12:17:39 VAX]   Format: troff/nroff man(7) macros
+[2026-02-14 12:17:39 VAX]   Sample (first 3 lines):
+[2026-02-14 12:17:39 VAX]     .TH BRAD 1 "2026-02-14" "brfid.github.io" ""
+[2026-02-14 12:17:39 VAX]     .SH NAME
+[2026-02-14 12:17:39 VAX]     brad \- Technical Writer: docs platforms, AI workflows, delivery
+[2026-02-14 12:17:39 VAX] Encoding output for console transfer...
+[2026-02-14 12:17:39 VAX] Encoding complete
+[2026-02-14 12:17:39 VAX]   Original file: brad.1 (2119 bytes)
+[2026-02-14 12:17:39 VAX]   Encoded file: brad.1.uu (67 bytes, 1 lines)
+[2026-02-14 12:17:39 VAX]   Overhead: -97%
+[2026-02-14 12:17:39 VAX] VAX build complete - Output ready for transfer

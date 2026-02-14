@@ -1,0 +1,12 @@
+[2026-02-14 12:17:39 COURIER] Found encoded file: /tmp/brad.1.uu
+[2026-02-14 12:17:39 COURIER] File size: 67 bytes
+[2026-02-14 12:17:39 COURIER] Initiating console transfer to PDP-11 (54.221.119.144)
+[2026-02-14 12:17:39 COURIER] Connecting to PDP-11 console (telnet 54.221.119.144:2327)
+[2026-02-14 12:17:42 COURIER] Console connection established
+[2026-02-14 12:17:45 COURIER] Changing to /tmp directory
+[2026-02-14 12:17:46 COURIER] Sending 1 lines of encoded data
+[2026-02-14 12:17:46 COURIER] Transfer statistics: 1 lines in 0.05s (18.5 lines/sec)
+[2026-02-14 12:17:48 COURIER] Transfer complete - All lines sent
+[2026-02-14 12:17:48 COURIER] Verifying received file
+[2026-02-14 12:17:49 COURIER] Console output saved to /tmp/pdp11-console-build-20260214-121649.txt
+[2026-02-14 12:17:49 COURIER] ✓ Console transfer completed successfully
