@@ -170,6 +170,7 @@ class ArpanetProductionStack(Stack):
             "mkdir -p /mnt/arpanet-logs/vax",
             "mkdir -p /mnt/arpanet-logs/pdp11",
             "mkdir -p /mnt/arpanet-logs/shared",
+            "mkdir -p /mnt/arpanet-logs/builds",
             "chown -R ubuntu:ubuntu /mnt/arpanet-logs",
             "",
             "# Clone repository",

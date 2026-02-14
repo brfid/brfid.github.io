@@ -4,17 +4,18 @@ Use this page when starting from zero context.
 
 ## 0) Current State (read this first)
 
-**Date**: 2026-02-13 (Evening)
-**Status**: 🚧 IN PROGRESS - Uuencode console transfer implementation
+**Date**: 2026-02-14
+**Status**: 🔧 FIXING - EFS permissions and screen session persistence
 
-- **AWS Infrastructure**: ✅ RUNNING (2x t3.micro)
-- **Latest Achievement**: DRY logging system deployed with build widget
-- **Current Work**: Implementing uuencode console transfer (discrete machines)
-- **Architecture**: VAX → uuencode → console → PDP-11 (no shared filesystem for data)
+- **AWS Infrastructure**: ✅ DEPLOYED (2x t3.micro)
+- **Latest Achievement**: Uuencode console transfer system implemented
+- **Current Work**: Fixing EFS build directory permissions and session verification
+- **Architecture**: VAX → uuencode → console → PDP-11 (discrete machines, no shared data)
 - **Cost**: ~$17.90/month running, ~$2/month stopped (storage only)
-- **Latest Docs**:
-  - Logging: Integrated into GitHub workflow, widget on site
-  - Transfer: `docs/integration/UUENCODE-CONSOLE-TRANSFER.md` (being created)
+- **Fixes Pending**:
+  - CDK: Add builds/ directory to user_data initialization
+  - Workflow: Add screen session verification between stages
+  - Script: Add session existence checks in validation
 
 **Canonical references**:
 - `STATUS.md` - Overall project status

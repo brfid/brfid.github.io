@@ -270,6 +270,22 @@ jobs:
 
           echo "✓ Console transfer complete"
 
+      - name: Verify screen session persists
+        if: steps.mode.outputs.vax_mode == 'docker'
+        run: |
+          echo "📡 Verifying screen session..."
+          if screen -ls | grep -q "pdp11-console"; then
+            echo "✅ Screen session 'pdp11-console' is active"
+            screen -ls
+          else
+            echo "❌ Screen session 'pdp11-console' not found"
+            echo "Available sessions:"
+            screen -ls || echo "No screen sessions found"
+            echo "Processes:"
+            ps aux | grep screen || true
+            exit 1
+          fi
+
       - name: Stage 3 - PDP-11 Validation
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
@@ -326,9 +342,9 @@ jobs:
         run: |
           echo "📋 Merging build logs from all sources..."
 
-          # Ensure build directory exists on EFS (use sudo for permissions)
+          # Ensure build directory exists on EFS
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            "sudo mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && sudo chown -R ubuntu:ubuntu /mnt/arpanet-logs/builds/$BUILD_ID"
+            "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID"
 
           # Upload GitHub log to VAX (for EFS)
           if [[ -f /tmp/github.log ]]; then

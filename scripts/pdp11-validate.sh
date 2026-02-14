@@ -15,6 +15,13 @@ fi
 
 # Helper function to send command to PDP-11 console
 send_cmd() {
+    # Verify session exists before sending
+    if ! screen -ls | grep -q "$SESSION"; then
+        echo "ERROR: Screen session '$SESSION' not found" >&2
+        echo "Available sessions:" >&2
+        screen -ls >&2
+        exit 1
+    fi
     screen -S "$SESSION" -X stuff "$1\n"
     sleep 0.5
 }

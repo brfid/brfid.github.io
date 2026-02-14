@@ -238,3 +238,25 @@ All logs are merged chronologically with format: `[YYYY-MM-DD HH:MM:SS SOURCE]`
 
 **Next step**: Deploy to GitHub Pages with `git tag publish-vax-uuencode-v1`
 
+---
+
+## Post-Deployment Fixes (2026-02-14)
+
+### EFS Permissions
+**Issue**: Build directories couldn't be created without sudo
+**Root Cause**: CDK user_data only created `/mnt/arpanet-logs/{vax,pdp11,shared}` but not `builds/`
+**Fix**: Added `builds` directory to CDK user_data initialization
+**Files Modified**:
+- `infra/cdk/arpanet_production_stack.py` (line ~172)
+- `.github/workflows/deploy.yml` (removed sudo workaround at line 331)
+
+### Screen Session Persistence
+**Issue**: Validation script couldn't find console session from previous stage
+**Root Cause**: Screen session created on GitHub Actions runner, not verified between stages
+**Fix**: Added session verification step between transfer and validation
+**Files Modified**:
+- `.github/workflows/deploy.yml` (added verification step after Stage 2)
+- `scripts/pdp11-validate.sh` (added session existence check in send_cmd)
+
+**Status**: Fixes implemented, pending CDK deployment and workflow test
+
