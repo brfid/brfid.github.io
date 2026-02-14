@@ -136,6 +136,7 @@ disable = [
     "too-many-locals",  # R0914: Parser functions need many variables
     "too-many-branches",  # R0912: Parser functions have many cases
     "too-many-statements",  # R0915: Parser functions are naturally long
+    "too-many-lines",  # C0302: Build pipeline modules can be long
 ]
 
 [tool.vulture]
