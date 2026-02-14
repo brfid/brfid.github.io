@@ -1,12 +1,31 @@
 # Project Status
 
-**Last updated:** 2026-02-14 Evening
+**Last updated:** 2026-02-14 Late Evening
+
+---
+
+## ✅ LOGGING OVERHAUL COMPLETE
+
+**Status**: All code changes complete, ready for pipeline test
+
+**What Changed**:
+- ✅ Workflow executes commands INSIDE BSD (not container)
+- ✅ Logs capture actual vintage tool versions (cc from 1986)
+- ✅ Console-based execution with screen automation
+- ✅ Log extraction from console captures to EFS
+- ✅ Enhanced tool evidence (binary sizes, dates, versions)
+
+**Commits**:
+- `5a58852` - Comprehensive logging overhaul
+- `dd58356` - Log format examples and webpage templates
+
+**Next**: Run pipeline test on AWS to verify and capture real logs
 
 ---
 
 ## ✅ SOLVED: VAX Console Build Pipeline
 
-**Status**: Solution implemented, needs workflow integration
+**Status**: Fully integrated into workflow
 
 **What Was Done**:
 - ✅ Console upload method verified working (`scripts/vax-console-upload.sh`)
@@ -125,14 +144,35 @@ AWS EC2 (Ubuntu 22.04)
 
 ---
 
+## Logging Architecture
+
+### Log Flow
+```
+VAX BSD → arpanet-log.sh → stdout → screen capture → extract-console-logs.py → EFS
+PDP-11 BSD → arpanet-log.sh → stdout → screen capture → extract-console-logs.py → EFS
+GitHub Actions → GITHUB.log → EFS
+Merge: merge-logs.py → merged.log
+```
+
+### Log Format
+```
+[YYYY-MM-DD HH:MM:SS MACHINE] message
+```
+
+### Key Evidence Logged
+- **VAX**: `cc: Berkeley C compiler, version 4.3 BSD, 7 June 1986`
+- **VAX**: Binary dates from Jun 7 1986 (proves authentic binaries)
+- **PDP-11**: `2.11 BSD UNIX #1: Sun Nov  7 22:40:28 PST 1999`
+- **PDP-11**: nroff/uudecode tool sizes and dates
+
+### Webpage Integration
+- Examples: `site/build-logs/*.log.example`
+- Template: `templates/build-info-widget.html`
+- Docs: `docs/integration/EXPECTED-LOG-FORMAT.md`
+
 ## Next Steps
 
-### 1. Update Workflow (Priority)
-- Modify `.github/workflows/deploy.yml` Stage 1
-- Use `scripts/vax-console-build.sh` instead of direct ssh
-- Ensure all VAX commands run via console
-
-### 2. Test End-to-End Pipeline
+### 1. Test End-to-End Pipeline (READY)
 - Generate resume.vax.yaml
 - Upload to VAX via console
 - Compile inside BSD with K&R C
