@@ -6,14 +6,12 @@ name: Publish Site
 on:
   push:
     tags:
-      - "publish"           # Mode 1: Fast (local)
-      - "publish-*"         # Mode 1: Fast variants
-      - "!publish-vax*"     # Exclude (handled below)
-      - "!publish-docker*"  # Exclude (handled below)
       - "publish-vax"       # Mode 2: VAX/Docker
       - "publish-vax-*"     # Mode 2: VAX/Docker variants
       - "publish-docker"    # Mode 2: VAX/Docker (alias)
       - "publish-docker-*"  # Mode 2: VAX/Docker variants
+      - "publish"           # Mode 1: Fast (local)
+      - "publish-fast"      # Mode 1: Fast (explicit)
   workflow_dispatch:
     inputs:
       vax_mode:
