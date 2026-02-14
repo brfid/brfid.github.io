@@ -1,16 +1,30 @@
 # Project Status
 
-**Last updated:** 2026-02-13
+**Last updated:** 2026-02-13 (Evening)
 
 ## Current State
+
+### 🚧 IN PROGRESS: Uuencode Console Transfer
+- **Goal**: Discrete machine-to-machine file transfer without shared filesystem
+- **Method**: VAX encodes files → Console transfer → PDP-11 decodes and validates
+- **Status**: Architecture documented, implementation starting
+- **Why**: Historically accurate (1970s-80s serial/terminal file transfer)
+- **Doc**: `docs/integration/UUENCODE-CONSOLE-TRANSFER.md`
+
+### ✅ DRY Logging System (2026-02-13 Evening)
+- **Build Widget**: Hover/dropdown showing build stats deployed to site
+- **Logs**: Chronological merge of VAX, PDP-11, GitHub Actions
+- **Retention**: Last 20 builds on EFS
+- **Scripts**: `arpanet-log.sh`, `merge-logs.py`, `generate-build-info.py`
+- **Status**: Deployed to GitHub Pages, waiting for first VAX build
 
 ### ✅ Production Deployment (2026-02-13)
 - **AWS Infrastructure**: ArpanetProductionStack deployed
   - VAX: 3.80.32.255 (t3.micro, 172.20.0.10)
   - PDP-11: 3.87.125.203 (t3.micro, 172.20.0.50)
-  - Shared EFS logging: `/mnt/arpanet-logs/`
+  - Shared EFS: `/mnt/arpanet-logs/` (used for logs only, not data transfer)
   - Cost: ~$17.90/month (~$0.60/day)
-- **Architecture**: Direct VAX ↔ PDP-11 TCP/IP (no IMPs)
+- **Architecture**: Discrete VAX → PDP-11 via console (uuencode transfer)
 - **IMPs Archived**: Protocol incompatibility (see `arpanet/archived/imp-phase/`)
 
 ### ✅ Tape Transfer Validation Complete (2026-02-13)
@@ -39,9 +53,30 @@
 
 **Key Achievement**: Proven end-to-end file transfer workflow using SIMH TS11 tape emulation, with host-side extraction as reliable alternative to BSD tape access.
 
+## Just Completed (2026-02-13 Evening)
+
+### ✅ DRY Logging System with Build Widget
+- **Duration**: ~4 hours
+- **Achievement**: Complete logging infrastructure for multi-machine builds
+- **Components**:
+  - `scripts/arpanet-log.sh` - DRY timestamped logging for BSD machines
+  - `scripts/merge-logs.py` - Chronological log merger across all sources
+  - `scripts/generate-build-info.py` - Build metadata and HTML widget generator
+  - `templates/build-info.css` - Professional dropdown widget styling
+- **Features**:
+  - Captures ALL build output from VAX, PDP-11, and GitHub Actions
+  - Merges logs chronologically with `[YYYY-MM-DD HH:MM:SS MACHINE]` format
+  - Shows pytest-style summary stats (events, errors, warnings)
+  - Clean hover/click dropdown in site footer (bottom-right)
+  - Keeps last 20 builds with automatic cleanup
+  - Links to raw logs for detailed inspection
+- **Integration**: GitHub Actions workflow updated, landing page includes widget
+- **Tests**: 196 passing (added `test_merge_logs.py`)
+- **Status**: ✅ Deployed, waiting for first VAX build to populate widget
+
 ## Previously Completed
 
-### ✅ Completed (2026-02-13 Evening)
+### ✅ Completed (2026-02-13 Afternoon)
 - **YAML Parser Enhancement** - Enhanced VAX C parser to handle standard YAML
   - Unquoted string support (simple values no longer need quotes)
   - Smart Python preprocessor (quotes only when YAML requires)

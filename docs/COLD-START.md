@@ -4,14 +4,17 @@ Use this page when starting from zero context.
 
 ## 0) Current State (read this first)
 
-**Date**: 2026-02-13
-**Status**: ⏸️ STOPPED (for cost savings), ✅ Tape transfer validated
+**Date**: 2026-02-13 (Evening)
+**Status**: 🚧 IN PROGRESS - Uuencode console transfer implementation
 
-- **AWS Infrastructure**: ⏸️ STOPPED (2x t3.micro)
-- **Last state**: Tape transfer working, VAX + PDP-11 file transfer proven
-- **Achievement**: End-to-end tape transfer validated with SIMH TAP extraction
-- **Cost**: ~$2/month (stopped - storage only)
-- **Latest**: See `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
+- **AWS Infrastructure**: ✅ RUNNING (2x t3.micro)
+- **Latest Achievement**: DRY logging system deployed with build widget
+- **Current Work**: Implementing uuencode console transfer (discrete machines)
+- **Architecture**: VAX → uuencode → console → PDP-11 (no shared filesystem for data)
+- **Cost**: ~$17.90/month running, ~$2/month stopped (storage only)
+- **Latest Docs**:
+  - Logging: Integrated into GitHub workflow, widget on site
+  - Transfer: `docs/integration/UUENCODE-CONSOLE-TRANSFER.md` (being created)
 
 **Canonical references**:
 - `STATUS.md` - Overall project status

@@ -145,72 +145,162 @@ jobs:
             sleep 10
           done
 
-      - name: Transfer logging scripts to AWS
+      - name: Get PDP-11 IP
+        if: steps.mode.outputs.vax_mode == 'docker'
+        id: pdp11_ip
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          echo "📡 Getting PDP-11 IP..."
+          PDP11_IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "pdp11_ip=$PDP11_IP" >> $GITHUB_OUTPUT
+          echo "✅ PDP-11 instance at $PDP11_IP"
+
+      - name: Transfer scripts to AWS
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          PDP11_IP: ${{ steps.pdp11_ip.outputs.pdp11_ip }}
         run: |
-          echo "📤 Transferring logging scripts to AWS..."
+          echo "📤 Transferring scripts to AWS instances..."
+
+          # Transfer to VAX
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
             scripts/arpanet-log.sh \
-            ubuntu@$VAX_IP:/tmp/arpanet-log.sh
-
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            scripts/vax-build-and-encode.sh \
             scripts/merge-logs.py \
-            ubuntu@$VAX_IP:/tmp/merge-logs.py
+            ubuntu@$VAX_IP:/tmp/
 
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            'chmod +x /tmp/arpanet-log.sh /tmp/merge-logs.py'
+            'chmod +x /tmp/*.sh /tmp/*.py'
 
-          echo "✅ Logging scripts transferred"
+          # Transfer to PDP-11
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            scripts/arpanet-log.sh \
+            ubuntu@$PDP11_IP:/tmp/
 
-      - name: Generate site (HTML + PDF + VAX artifacts)
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$PDP11_IP \
+            'chmod +x /tmp/*.sh'
+
+          echo "✅ Scripts transferred to both instances"
+
+      - name: Stage 1 - VAX Build & Encode
+        if: steps.mode.outputs.vax_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
-          echo "🔨 Building resume with VAX mode: ${{ steps.mode.outputs.vax_mode }}"
+          echo "=== STAGE 1: VAX BUILD & ENCODE ==="
+          echo "VAX IP: $VAX_IP"
+          echo "Build ID: $BUILD_ID"
 
-          if [[ "${{ steps.mode.outputs.vax_mode }}" == "docker" ]]; then
-            echo "🖥️  Using AWS VAX instance at $VAX_IP"
-            echo "📝 Build ID: $BUILD_ID"
+          # Log GitHub Actions activity
+          exec > >(tee >(while IFS= read -r line; do echo "[$(date -u '+%Y-%m-%d %H:%M:%S') GITHUB] $line"; done >> /tmp/github.log)) 2>&1
 
-            # Log GitHub Actions activity
-            exec > >(tee >(while IFS= read -r line; do echo "[$(date -u '+%Y-%m-%d %H:%M:%S') GITHUB] $line"; done >> /tmp/github.log)) 2>&1
+          # Generate resume.vax.yaml locally
+          echo "Generating resume.vax.yaml locally..."
+          python -m resume_generator --out site --with-vax --vax-mode local
 
-            # Generate resume.vax.yaml locally
-            echo "Generating resume.vax.yaml locally..."
-            python -m resume_generator --out site --with-vax --vax-mode local
+          # Transfer source files to VAX
+          echo "Transferring source files to VAX..."
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            build/vax/resume.vax.yaml \
+            ubuntu@$VAX_IP:/tmp/resume.vax.yaml
 
-            # Transfer to VAX
-            echo "Transferring files to VAX..."
-            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-              build/vax/resume.vax.yaml \
-              ubuntu@$VAX_IP:/tmp/resume.vax.yaml
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            vax/bradman.c \
+            ubuntu@$VAX_IP:/tmp/bradman.c
 
-            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-              vax/bradman.c \
-              ubuntu@$VAX_IP:/tmp/bradman.c
+          # Run VAX build script (compile + encode)
+          echo "Running VAX build & encode script..."
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            "bash /tmp/vax-build-and-encode.sh $BUILD_ID"
 
-            # Run build on VAX with logging
-            echo "Running build on AWS VAX (4.3BSD)..."
-            ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-              "cd /tmp && (cc -o bradman bradman.c 2>&1; ./bradman -i resume.vax.yaml -o brad.1 2>&1; echo 'VAX build complete') | /tmp/arpanet-log.sh VAX $BUILD_ID"
+          echo "✓ VAX build & encode complete"
 
-            # Retrieve output
-            echo "Retrieving build output..."
+      - name: Stage 2 - Console Transfer (VAX → PDP-11)
+        if: steps.mode.outputs.vax_mode == 'docker'
+        env:
+          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          PDP11_IP: ${{ steps.pdp11_ip.outputs.pdp11_ip }}
+          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
+        run: |
+          echo "=== STAGE 2: CONSOLE TRANSFER ==="
+          echo "VAX IP: $VAX_IP"
+          echo "PDP-11 IP: $PDP11_IP"
+          echo "Build ID: $BUILD_ID"
+
+          # Retrieve encoded file from VAX
+          echo "Retrieving encoded file from VAX..."
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            ubuntu@$VAX_IP:/tmp/brad.1.uu \
+            /tmp/brad.1.uu
+
+          # Install screen if not present
+          if ! command -v screen &> /dev/null; then
+            echo "Installing screen..."
+            sudo apt-get update -qq
+            sudo apt-get install -y screen
+          fi
+
+          # Run console transfer
+          echo "Starting console transfer to PDP-11..."
+          python3 scripts/console-transfer.py "$BUILD_ID" "$VAX_IP" "$PDP11_IP"
+
+          echo "✓ Console transfer complete"
+
+      - name: Stage 3 - PDP-11 Validation
+        if: steps.mode.outputs.vax_mode == 'docker'
+        env:
+          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
+        run: |
+          echo "=== STAGE 3: PDP-11 VALIDATION ==="
+          echo "Build ID: $BUILD_ID"
+
+          # Run validation commands on PDP-11 console
+          echo "Sending validation commands to PDP-11..."
+          bash scripts/pdp11-validate.sh "$BUILD_ID"
+
+          echo "✓ PDP-11 validation complete"
+
+      - name: Stage 4 - Retrieve Final Output
+        if: steps.mode.outputs.vax_mode == 'docker'
+        env:
+          VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
+          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
+        run: |
+          echo "=== STAGE 4: RETRIEVE FINAL OUTPUT ==="
+
+          # Retrieve validated output from PDP-11 via EFS (mounted on VAX)
+          echo "Retrieving validated output from PDP-11..."
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/pdp-output/brad.txt \
+            build/vax/brad.txt || echo "Warning: brad.txt not found, using original"
+
+          # Fallback: if PDP-11 output not available, get from VAX
+          if [[ ! -f build/vax/brad.txt ]]; then
+            echo "Using VAX original output..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               ubuntu@$VAX_IP:/tmp/brad.1 \
               build/vax/brad.1
-
-            # Render to text
-            python -m resume_generator.manpage --in build/vax/brad.1 --out site/brad.man.txt
-
-            echo "AWS VAX build complete"
-          else
-            python -m resume_generator --out site --with-vax \
-              --vax-mode ${{ steps.mode.outputs.vax_mode }}
+            python -m resume_generator.manpage --in build/vax/brad.1 --out build/vax/brad.txt
           fi
+
+          # Copy to site
+          cp build/vax/brad.txt site/brad.man.txt
+
+          echo "✓ Final output retrieved"
+
+      - name: Generate site (Local mode fallback)
+        if: steps.mode.outputs.vax_mode != 'docker'
+        run: |
+          python -m resume_generator --out site --with-vax \
+            --vax-mode ${{ steps.mode.outputs.vax_mode }}
 
       - name: Merge and retrieve build logs
         if: steps.mode.outputs.vax_mode == 'docker'
@@ -218,17 +308,22 @@ jobs:
           VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
-          echo "📋 Merging build logs..."
+          echo "📋 Merging build logs from all sources..."
 
-          # Upload GitHub log to VAX
+          # Upload GitHub log to VAX (for EFS)
           if [[ -f /tmp/github.log ]]; then
-            echo "Uploading GitHub Actions log..."
+            echo "Uploading GitHub Actions log to EFS..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               /tmp/github.log \
               ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/GITHUB.log
           fi
 
-          # Merge logs chronologically on VAX
+          # Verify all log sources exist
+          echo "Checking log sources..."
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+            "ls -lh /mnt/arpanet-logs/builds/$BUILD_ID/*.log"
+
+          # Merge logs chronologically (VAX, PDP11, COURIER, GITHUB)
           echo "Merging logs chronologically..."
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
             "python3 /tmp/merge-logs.py $BUILD_ID"
@@ -243,21 +338,24 @@ jobs:
             site/build-logs/merged.log
 
           # Retrieve individual component logs
-          for component in VAX PDP11 GITHUB; do
+          for component in VAX PDP11 COURIER GITHUB; do
             if ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
               "test -f /mnt/arpanet-logs/builds/$BUILD_ID/${component}.log"; then
+              echo "Retrieving ${component}.log..."
               scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
                 ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/${component}.log \
                 site/build-logs/${component}.log
+            else
+              echo "Warning: ${component}.log not found"
             fi
           done
 
           # Cleanup old builds (keep last 20)
-          echo "Cleaning up old builds..."
+          echo "Cleaning up old builds on EFS..."
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
             'cd /mnt/arpanet-logs/builds && ls -t | tail -n +21 | xargs -r rm -rf'
 
-          echo "✅ Logs merged and retrieved"
+          echo "✅ Logs merged and retrieved from all sources"
 
       - name: Generate build info widget
         if: steps.mode.outputs.vax_mode == 'docker'
