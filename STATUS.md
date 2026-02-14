@@ -10,11 +10,14 @@
 
 **Impact**: Violates "show not tell" principle - claiming to use vintage tools but actually using modern ones
 
-**Status**: ❌ BLOCKED - Need file sharing method between container and BSD layers
+**Status**: ❌ BLOCKED - Need file input method to get files into VAX BSD
 
-**Research**: `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md`
+**Solution Options**: `docs/research/VAX-FILE-INPUT-OPTIONS.md` ⭐ START HERE
+- Option 1: FTP transfer (test first - fastest if available)
+- Option 2: Console I/O (maximum authenticity, proven method)
+- Option 3: Custom VAX image (fallback)
 
-**Details**: `docs/integration/ARCHITECTURE-STACK.md` (explains layer confusion)
+**Research Background**: `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md`
 
 ---
 

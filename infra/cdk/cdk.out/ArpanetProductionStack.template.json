@@ -425,7 +425,7 @@
         {
          "Ref": "ArpanetLogsF6E5B81E"
         },
-        ":/ /mnt/arpanet-logs efs _netdev,tls,iam 0 0' >> /etc/fstab\nmount -a -t efs defaults\n\n# Create log directories\nmkdir -p /mnt/arpanet-logs/vax\nmkdir -p /mnt/arpanet-logs/pdp11\nmkdir -p /mnt/arpanet-logs/shared\nchown -R ubuntu:ubuntu /mnt/arpanet-logs\n\n# Clone repository\ncd /home/ubuntu\ngit clone https://github.com/brfid/brfid.github.io.git\nchown -R ubuntu:ubuntu brfid.github.io\n\n# Setup S3 sync cron (daily at 2 AM)\ncat > /etc/cron.daily/arpanet-log-sync <<'EOF'\n#!/bin/bash\naws s3 sync /mnt/arpanet-logs/ s3://",
+        ":/ /mnt/arpanet-logs efs _netdev,tls,iam 0 0' >> /etc/fstab\nmount -a -t efs defaults\n\n# Create log directories\nmkdir -p /mnt/arpanet-logs/vax\nmkdir -p /mnt/arpanet-logs/pdp11\nmkdir -p /mnt/arpanet-logs/shared\nmkdir -p /mnt/arpanet-logs/builds\nchown -R ubuntu:ubuntu /mnt/arpanet-logs\n\n# Clone repository\ncd /home/ubuntu\ngit clone https://github.com/brfid/brfid.github.io.git\nchown -R ubuntu:ubuntu brfid.github.io\n\n# Setup S3 sync cron (daily at 2 AM)\ncat > /etc/cron.daily/arpanet-log-sync <<'EOF'\n#!/bin/bash\naws s3 sync /mnt/arpanet-logs/ s3://",
         {
          "Ref": "ArpanetLogArchive17AFFD47"
         },
@@ -502,7 +502,7 @@
         {
          "Ref": "ArpanetLogsF6E5B81E"
         },
-        ":/ /mnt/arpanet-logs efs _netdev,tls,iam 0 0' >> /etc/fstab\nmount -a -t efs defaults\n\n# Create log directories\nmkdir -p /mnt/arpanet-logs/vax\nmkdir -p /mnt/arpanet-logs/pdp11\nmkdir -p /mnt/arpanet-logs/shared\nchown -R ubuntu:ubuntu /mnt/arpanet-logs\n\n# Clone repository\ncd /home/ubuntu\ngit clone https://github.com/brfid/brfid.github.io.git\nchown -R ubuntu:ubuntu brfid.github.io\n\n# Setup S3 sync cron (daily at 2 AM)\ncat > /etc/cron.daily/arpanet-log-sync <<'EOF'\n#!/bin/bash\naws s3 sync /mnt/arpanet-logs/ s3://",
+        ":/ /mnt/arpanet-logs efs _netdev,tls,iam 0 0' >> /etc/fstab\nmount -a -t efs defaults\n\n# Create log directories\nmkdir -p /mnt/arpanet-logs/vax\nmkdir -p /mnt/arpanet-logs/pdp11\nmkdir -p /mnt/arpanet-logs/shared\nmkdir -p /mnt/arpanet-logs/builds\nchown -R ubuntu:ubuntu /mnt/arpanet-logs\n\n# Clone repository\ncd /home/ubuntu\ngit clone https://github.com/brfid/brfid.github.io.git\nchown -R ubuntu:ubuntu brfid.github.io\n\n# Setup S3 sync cron (daily at 2 AM)\ncat > /etc/cron.daily/arpanet-log-sync <<'EOF'\n#!/bin/bash\naws s3 sync /mnt/arpanet-logs/ s3://",
         {
          "Ref": "ArpanetLogArchive17AFFD47"
         },
