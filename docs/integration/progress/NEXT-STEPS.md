@@ -1,31 +1,127 @@
 # ARPANET Next Steps
 
-**Last updated:** 2026-02-13
-**Status**: ⚠️ **Tape transfer in progress** - then direct connection - then IMPs
+**Last updated:** 2026-02-14
+**Status**: ✅ **Uuencode transfer operational** - Now improving observability
 
 ---
 
 ## Current Situation
 
-**Date**: 2026-02-13
-**Phase**: Production deployment complete, PDP-11 kernel issue identified
+**Date**: 2026-02-14
+**Phase**: Uuencode console transfer fully deployed and operational
+
+**Just Completed (2026-02-14)**:
+- ✅ Uuencode console transfer system (VAX → PDP-11)
+- ✅ EFS permissions fix (builds directory in CDK)
+- ✅ Screen session auto-recovery (telnet timeout handling)
+- ✅ All 4 stages completing successfully
+- ✅ Build logs merged chronologically (VAX, COURIER, GITHUB)
+- ✅ Build widget showing component stats
+- ✅ Deployment: publish-vax-uuencode-v3 (successful)
+
+**Current Focus**: Improve observability and clarify PDP-11 role
+- Need: Better logging from VAX and PDP-11 machines
+- Need: Clear documentation of what PDP-11 is doing
+- Goal: Make the multi-machine build process transparent
 
 **Infrastructure**:
 - ✅ ArpanetProductionStack deployed to AWS
 - ✅ 2x t3.micro instances (VAX + PDP-11)
 - ✅ Shared EFS logging at `/mnt/arpanet-logs/`
+- ✅ Uuencode console transfer operational
 - ✅ IMP phase archived (protocol incompatibility)
 
-**Network Status**:
-- **VAX**: 172.20.0.10 (de0) - ✅ FULLY OPERATIONAL, FTP running
-- **PDP-11**: 172.20.0.50 (xq0) - ❌ BLOCKED - No working kernel
+**System Status**:
+- **VAX**: 172.20.0.10 (de0) - ✅ FULLY OPERATIONAL
+  - Compiling bradman.c
+  - Generating manpage
+  - Encoding with uuencode
+  - Logging to EFS
+- **PDP-11**: 172.20.0.50 (console) - ✅ OPERATIONAL VIA CONSOLE
+  - Receiving via console I/O
+  - Decoding with uudecode
+  - Validating with nroff
+  - Results copied to EFS
+- **COURIER** (GitHub Actions): ✅ OPERATIONAL
+  - Orchestrating all stages
+  - Console transfer automation
+  - Log aggregation
 
-**PDP-11 Kernel Issue**:
-- Default `unix` kernel: Boots but no xq/Ethernet driver
-- `netnix` kernel: Crashes with "Trap stack push abort"
-- `genunix` kernel: Configuration error during boot
+---
 
-See: `docs/pdp/pdp11/operations/PDP11-KERNEL-ISSUE-2026-02-13.md`
+## Immediate Next Steps (Current Session)
+
+### Phase 1: Improve VAX and PDP-11 Logging (30-45 min)
+
+**Goal**: Get more detailed logs from both machines to understand what they're doing
+
+**Current Issue**:
+- VAX logs only show 13 lines (basic build info)
+- PDP-11 logs don't exist (validation happens via console commands)
+- Build process is opaque - hard to see what's actually happening
+
+**Improvements Needed**:
+
+#### 1.1 Enhanced VAX Logging
+- Add compilation output (not just "success/fail")
+- Show manpage generation details
+- Log file sizes and line counts
+- Add timestamps for each step
+- Show encoding statistics
+
+#### 1.2 PDP-11 Logging System
+- Create PDP-11 logging script (similar to VAX)
+- Log decode progress
+- Log validation steps
+- Capture nroff output samples
+- Write to EFS for merging
+
+#### 1.3 COURIER Enhancements
+- Log each line during transfer (progress indicator)
+- Add transfer statistics (bytes, duration, speed)
+- Log console output captures
+- Better error diagnostics
+
+**Files to Modify**:
+- `scripts/vax-build-and-encode.sh` - Add verbose logging
+- `scripts/pdp11-validate.sh` - Create proper logging (not just echo)
+- `scripts/console-transfer.py` - Add transfer progress logging
+- `scripts/arpanet-log.sh` - Already good, use more extensively
+
+---
+
+### Phase 2: Clarify PDP-11 Role (15-30 min)
+
+**Goal**: Document exactly what the PDP-11 is doing and why
+
+**Questions to Answer**:
+- What does uudecode do? (binary-to-text decoding)
+- What does nroff do? (manpage rendering)
+- Why is PDP-11 validation important? (authentic 1970s-80s toolchain)
+- What would break if we skipped PDP-11? (miss historical accuracy)
+
+**Deliverables**:
+- Update README with PDP-11 role explanation
+- Add comments to validation script
+- Create architecture diagram showing data flow
+- Document historical context
+
+---
+
+### Phase 3: Make Build Process Transparent (30-45 min)
+
+**Goal**: Show the complete build pipeline on the website
+
+**Ideas**:
+- Build timeline visualization (VAX → COURIER → PDP-11 → GitHub)
+- Show each machine's output in build widget
+- Add "What happened" summary to build logs
+- Link to architectural docs from site
+
+**Files to Create/Modify**:
+- `scripts/generate-build-summary.py` - Create human-readable summary
+- `templates/build-timeline.html` - Visual timeline component
+- `site/index.html` - Link to build process explanation
 
 ---
 
