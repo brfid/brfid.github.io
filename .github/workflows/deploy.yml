@@ -145,27 +145,43 @@ jobs:
             sleep 10
           done
 
-      - name: Get PDP-11 IP
+      - name: Start AWS PDP-11 instance
         if: steps.mode.outputs.vax_mode == 'docker'
-        id: pdp11_ip
+        id: pdp11_start
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          echo "📡 Getting PDP-11 IP..."
+          echo "🚀 Starting AWS PDP-11 instance..."
+          aws ec2 start-instances --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+
+          echo "⏳ Waiting for instance to be running..."
+          aws ec2 wait instance-running --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+
+          echo "📡 Getting instance IP..."
           PDP11_IP=$(aws ec2 describe-instances \
             --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }} \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
           echo "pdp11_ip=$PDP11_IP" >> $GITHUB_OUTPUT
-          echo "✅ PDP-11 instance at $PDP11_IP"
+          echo "✅ PDP-11 instance ready at $PDP11_IP"
+
+          echo "⏳ Waiting for SSH to be available..."
+          for i in {1..30}; do
+            if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /tmp/aws-key.pem ubuntu@$PDP11_IP echo "ready" 2>/dev/null; then
+              echo "✅ SSH ready"
+              break
+            fi
+            echo "Attempt $i/30: SSH not ready yet..."
+            sleep 10
+          done
 
       - name: Transfer scripts to AWS
         if: steps.mode.outputs.vax_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_start.outputs.vax_ip }}
-          PDP11_IP: ${{ steps.pdp11_ip.outputs.pdp11_ip }}
+          PDP11_IP: ${{ steps.pdp11_start.outputs.pdp11_ip }}
         run: |
           echo "📤 Transferring scripts to AWS instances..."
 
@@ -410,7 +426,18 @@ jobs:
         run: |
           echo "🛑 Stopping AWS VAX instance..."
           aws ec2 stop-instances --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }}
-          echo "✅ Instance stopped (cost savings mode)"
+          echo "✅ VAX instance stopped (cost savings mode)"
+
+      - name: Stop AWS PDP-11 instance
+        if: always() && steps.mode.outputs.vax_mode == 'docker'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          echo "🛑 Stopping AWS PDP-11 instance..."
+          aws ec2 stop-instances --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+          echo "✅ PDP-11 instance stopped (cost savings mode)"
 
       - name: Summary
         run: |
