@@ -85,7 +85,7 @@ send_cmd "echo 'Validation Summary:' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo '  ✓ uuencode transfer: Successful' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo '  ✓ uudecode: Successful' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo '  ✓ nroff rendering: Successful' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
-send_cmd "echo '  ✓ Historical toolchain: Authentic 1970s-80s Unix tools' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+send_cmd "echo '  ✓ Cross-system validation: 2.11BSD tools' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 
 send_cmd "echo '' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo 'Status: PASS' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"

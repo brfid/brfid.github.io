@@ -1,8 +1,8 @@
 # Build Pipeline Architecture
 
-**What This Is**: A historically-accurate resume generation pipeline using authentic 1970s-80s Unix toolchains running on vintage operating systems.
+**What This Is**: Resume generation using 1980s-90s Unix toolchains (4.3BSD VAX, 2.11BSD PDP-11).
 
-**Why It Matters**: This demonstrates that software built with modern tools (Python) can be processed by authentic vintage Unix systems from 40+ years ago, proving the longevity and compatibility of Unix/C ecosystems.
+**Goal**: Process modern YAML data through vintage C compilers and formatters.
 
 ---
 
@@ -89,14 +89,14 @@
 **Operating System**: 4.3BSD (1986)
 **Tools**:
 - `cc` - K&R C compiler (pre-ANSI, no prototypes)
-- `bradman` - Custom YAML parser written in authentic 1986-era C
+- `bradman` - Custom YAML parser written in K&R C
 - `uuencode` - Binary-to-text encoding (for serial transfer)
 
 **What it does**:
 1. **Compiles bradman.c**
    - Uses 4.3BSD's native K&R C compiler
    - No modern C99/C11 features
-   - Authentic 1980s compilation
+   - 1980s-era compilation constraints
 
 2. **Parses YAML**
    - Custom parser handles 95% of YAML syntax
@@ -105,14 +105,13 @@
 
 3. **Encodes output**
    - Uses `uuencode` to prepare for console transfer
-   - Historical method: Used in 1970s-80s for modem/serial transfers
-   - Converts binary to ASCII for reliable terminal transmission
+   - Method from 1970s-80s modem/serial transfers
+   - Converts binary to ASCII for terminal transmission
 
 **Why VAX?**
-- Most powerful Unix system of the 1980s
-- 4.3BSD was the reference Unix implementation
-- Demonstrates C compiler from before ANSI standardization
-- Shows YAML can be parsed with 40-year-old tools
+- 4.3BSD from 1986
+- K&R C compiler (pre-ANSI)
+- Tests YAML parsing with 40-year-old tools
 
 ---
 
@@ -123,39 +122,32 @@
 - `uudecode` - Decode transmitted file
 - `nroff` - Text formatter/manpage renderer
 
-**What it does**:
-1. **Receives encoded file**
+**What it should do** (currently debugging):
+1. **Receive encoded file**
    - Via console I/O (telnet terminal emulation)
    - No network/FTP (kernel lacks TCP/IP drivers)
-   - Authentic serial/terminal transfer method
+   - Serial/terminal transfer method
 
-2. **Decodes with uudecode**
-   - Reverses the encoding from VAX
-   - Validates data integrity
-   - Produces original troff manpage
+2. **Decode with uudecode**
+   - Reverse the encoding from VAX
+   - Validate data integrity
+   - Produce original troff manpage
 
-3. **Validates with nroff**
-   - Renders manpage to text using 2.11BSD's nroff
-   - Proves manpage format is correct
-   - Shows compatibility with vintage formatter
-
-4. **Provides historical authenticity**
-   - Demonstrates multi-machine Unix workflow
-   - Uses tools from different eras (1986 + 1992)
-   - Proves cross-system compatibility
+3. **Validate with nroff**
+   - Render manpage to text using 2.11BSD's nroff
+   - Test manpage format compatibility
+   - Show cross-system compatibility
 
 **Why PDP-11?**
-- **Historical significance**: PDP-11 was the original Unix development platform
-- **Different era**: 2.11BSD (1992) is newer than 4.3BSD (1986), showing forward compatibility
-- **Tool validation**: nroff on PDP-11 validates troff output from VAX
-- **Constraint-based design**: Console-only transfer mimics real limitations of vintage systems
-- **Educational value**: Shows how Unix systems communicated before modern networking
+- PDP-11 was original Unix development platform
+- 2.11BSD (1992) vs 4.3BSD (1986) tests forward compatibility
+- nroff validates troff output across systems
+- Console-only transfer tests constraint-based design
 
-**What would we lose without PDP-11?**
-- Historical multi-machine workflow demonstration
-- Cross-system validation (different BSD versions, different architectures)
-- Authentic serial/terminal transfer method
-- Proof that output works with tools from different Unix eras
+**Current Status**:
+- Commands being sent via console
+- Not executing successfully yet
+- Debugging needed (see debugging plan below)
 
 ---
 
@@ -216,18 +208,18 @@ EXPERIENCE
 ## Historical Context
 
 ### Why uuencode?
-**Historical use**: Standard method for transferring binary files over:
+**Method from**: Binary file transfers over:
 - Serial connections (RS-232)
 - Modems (300-9600 baud)
 - UUCP networks (Unix-to-Unix Copy)
 - Email (before MIME)
-- Terminal connections (like we're using)
+- Terminal connections
 
 **Why we use it**:
 - PDP-11's kernel lacks network drivers
 - Console I/O is the only available interface
-- Demonstrates authentic 1970s-80s file transfer
-- Shows constraints of vintage systems
+- Tests file transfer over terminal connections
+- Works within system constraints
 
 ### Why multiple machines?
 **Historical reality**: In the 1970s-80s:
@@ -272,25 +264,18 @@ EXPERIENCE
 
 ---
 
-## Why This Matters
+## Technical Notes
 
-### Technical Demonstration
-1. **Cross-era compatibility**: 2026 Python → 1986 C → 1992 nroff
-2. **Constraint-based design**: Working within PDP-11's limitations
-3. **Historical accuracy**: Real tools, real methods, real systems
-4. **System integration**: Three very different platforms cooperating
+### What This Tests
+1. Cross-era compatibility: 2026 Python → 1986 C → 1992 nroff
+2. Constraint-based design: Working within PDP-11's limitations
+3. System integration: Multiple platforms cooperating
 
-### Educational Value
-1. **Shows Unix philosophy**: Small tools, simple interfaces, composability
-2. **Demonstrates longevity**: 40-year-old tools still work with modern data
-3. **Explains constraints**: Why we use console I/O, why uuencode matters
-4. **Preserves knowledge**: Documents techniques from computing history
-
-### Portfolio Impact
-1. **Unique approach**: Not many resumes built this way!
-2. **Deep expertise**: Shows understanding of systems, history, integration
-3. **Problem-solving**: Working around PDP-11 kernel limitations
-4. **Documentation**: Clear explanation of complex multi-system pipeline
+### What This Shows
+1. Unix philosophy: Small tools, simple interfaces, composability
+2. Longevity: 40-year-old tools processing modern data
+3. Constraints: Console I/O, uuencode for terminal transfer
+4. Problem-solving: Working around kernel limitations
 
 ---
 
