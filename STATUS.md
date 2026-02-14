@@ -302,4 +302,21 @@ d1c2d0d fix: ensure build directory exists before uploading logs
 
 ---
 
-**NEXT SESSION**: Start by reading research prompt in `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md` and attempting to find solution for VAX file sharing.
+**NEXT SESSION**: Continue with VAX → PDP-11 pipeline validation - see `docs/integration/VAX-PDP11-VALIDATION-2026-02-14.md` for latest status.
+
+## 2026-02-14: Console Validation Complete
+
+**Validated**:
+- ✅ AWS instances running (VAX + PDP-11)
+- ✅ Console access via screen+telnet works
+- ✅ File upload via heredoc works (tested)
+- ✅ VAX has vintage compiler at /bin/cc
+- ✅ PDP-11 booted with /usr mounted
+
+**Key Finding**: 
+- /machines volume mount is NOT accessible inside BSD
+- Must use console-based file upload (heredoc method)
+- This is by design - ensures vintage tools are actually used
+- The console upload scripts are the correct approach
+
+**Documentation**: `docs/integration/VAX-PDP11-VALIDATION-2026-02-14.md`
