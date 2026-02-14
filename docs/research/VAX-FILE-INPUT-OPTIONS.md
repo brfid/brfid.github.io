@@ -1,7 +1,44 @@
 # VAX File Input Options - Historical Fidelity Analysis
 
 **Date**: 2026-02-14
-**Status**: DECISION REQUIRED - Choose approach for getting files into VAX BSD
+**Status**: ✅ TESTED - Console I/O works! FTP doesn't work.
+
+---
+
+## Test Results (2026-02-14)
+
+**Summary**:
+- ❌ **Option 1: FTP** - Tested and FAILED
+  - ftpd is configured in inetd.conf
+  - Port 21 is exposed and listening
+  - But ftpd crashes with "421 Service not available" when connections attempted
+  - Binary exists (/etc/ftpd, 52224 bytes from Jun 6 1986 - vintage!)
+  
+- ✅ **Option 2: Console I/O** - TESTED AND WORKS!
+  - Successfully sent test.c via console using heredoc
+  - Method: `cat > file.c << "EOF"` + line-by-line transfer via screen
+  - Successfully compiled test.c using BSD's vintage `cc` compiler!
+  - Created `scripts/vax-console-upload.sh` for automation
+  
+- ⏳ **Option 3: Custom VAX Image** - Not tested (fallback)
+
+**Verified Blockers**:
+- `/machines/data` NOT visible inside BSD (container mount doesn't propagate)
+- `/var/log/arpanet` NOT visible inside BSD (same issue)
+- No path to get container files into BSD except via console
+
+**Breakthrough**: Console upload works! Can compile with vintage cc!
+- Upload C source via console (~3-4 min for 1037 lines)
+- Compile inside BSD: `cc -o program source.c`
+- Output: vintage binary compiled with real 1986 K&R C!
+
+**Next Session**:
+1. Upload bradman.c via console
+2. Compile: `cc -o bradman bradman.c`
+3. Generate manpage: `./bradman -i resume.vax.yaml -o brad.1`
+4. Encode: `uuencode brad.1 brad.1 > brad.1.uu`
+5. Transfer to PDP-11 via console
+6. PDP-11 validates, renders, puts on EFS
 
 ---
 
@@ -12,8 +49,8 @@ The VAX build pipeline is **blocked** because files in the container layer (`/tm
 **Historical Fidelity Status**: ✅ Project architecture is sound, ❌ one execution bug to fix
 
 **Three viable options** (in priority order):
-1. **FTP Transfer** (fastest if available)
-2. **Console I/O** (maximum authenticity)
+1. ~~**FTP Transfer**~~ - Tested, doesn't work (ftpd crashes)
+2. **Console I/O** - TESTED AND WORKS! ✅
 3. **Custom VAX Image** (fallback)
 
 ---

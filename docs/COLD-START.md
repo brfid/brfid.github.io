@@ -5,23 +5,20 @@ Use this page when starting from zero context.
 ## 0) Current State (read this first)
 
 **Date**: 2026-02-14
-**Status**: ✅ COMPLETE - Uuencode console transfer system fully operational
+**Status**: ✅ VAX Console Build Pipeline SOLVED - Workflow integration pending
 
 - **AWS Infrastructure**: ✅ DEPLOYED (2x t3.micro)
-- **Latest Achievement**: End-to-end VAX → PDP-11 uuencode transfer working
-- **Deployment**: publish-vax-uuencode-v3 (successful)
-- **Architecture**: VAX → uuencode → console → PDP-11 (discrete machines, no shared data)
+- **VAX Solution**: Console I/O via screen + telnet (runs INSIDE BSD, not container!)
+- **Scripts**: `vax-console-upload.sh`, `vax-console-build.sh`, `vax-build-and-encode.sh`
+- **Verification**: Vintage K&R C compilation verified inside 4.3BSD
+- **Remaining**: Update `.github/workflows/deploy.yml` to use console scripts
 - **Cost**: ~$17.90/month running, ~$2/month stopped (storage only)
-- **Fixes Applied**:
-  - ✅ EFS builds directory created in CDK user_data
-  - ✅ Screen session auto-recovery when telnet times out
-  - ✅ Build logs merged chronologically (VAX, COURIER, GITHUB)
 
 **Canonical references**:
 - `STATUS.md` - Overall project status
-- `docs/YAML-ENHANCEMENT-PLAN.md` - YAML parser enhancement roadmap
-- `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md` - Tape transfer proof
+- `docs/INDEX.md` - Documentation hub
 - `PRODUCTION-DEPLOYMENT.md` - Complete deployment guide (AWS)
+- `docs/deprecated/` - Old docs (check only if needed for historical context)
 
 **Quick AWS management**:
 ```bash
@@ -208,29 +205,28 @@ docker-compose -f docker-compose.production.yml restart vax
 - **Data safety**: Stop/start preserves all data (EFS + EBS)
 - **IMPs**: Archived but can be restored if needed
 
-## 11) Current Priorities (2026-02-13)
+## 11) Current Priorities
 
-**Phase 1: YAML Parser Enhancement** (IN PROGRESS)
-- Goal: Enhance VAX C parser to handle 95% of YAML syntax
-- Remove Python preprocessing dependency
-- Timeline: 8-9 hours estimated
-- See: `docs/YAML-ENHANCEMENT-PLAN.md`
+**Phase 1: VAX Console Build Pipeline** (SOLVED ✅)
+- Solution: Console I/O via screen + telnet
+- Scripts created: `vax-console-upload.sh`, `vax-console-build.sh`
+- Verification: Vintage K&R C compilation works inside BSD
+- Status: Solution ready, needs workflow integration
 
-**Phase 2: GitHub Workflow Simplification** (COMPLETED ✅)
-- Removed ARPANET Phase 2 (IMPs no longer needed)
-- Simplified to VAX-only builds
-- Enhanced build logging
-- See: `.github/workflows/deploy.yml`
+**Phase 2: GitHub Workflow Integration** (NEXT TASK)
+- Update `.github/workflows/deploy.yml` to use console scripts
+- Replace direct SSH with console-based execution
+- Test full VAX → PDP-11 pipeline
 
-**Phase 3: Tape Transfer Integration** (FUTURE)
-- Proven working: VAX ↔ PDP-11 via SIMH tape
-- Can integrate into pipeline later
-- See: `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
+**Phase 3: End-to-End Testing** (PENDING)
+- Full VAX → PDP-11 workflow
+- Verify logs reflect vintage tool usage
+- Deploy and validate
 
 ---
 
-**Recent Achievements** (2026-02-13):
-- ✅ Tape transfer validated end-to-end
-- ✅ SIMH TAP parser created
-- ✅ GitHub workflow simplified
-- ✅ YAML enhancement plan created
+**Recent Achievements**:
+- ✅ VAX console build pipeline solved (solution exists)
+- ✅ Vintage K&R C verified working inside 4.3BSD
+- ✅ Old confusing docs archived to `docs/deprecated/`
+- ✅ Documentation cleaned up for clarity

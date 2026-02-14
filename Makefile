@@ -150,7 +150,7 @@ publish:
 	@./scripts/publish-local.sh
 
 publish_arpanet:
-	@./scripts/publish-arpanet.sh
+	@./scripts/publish-vintage.sh
 
 docs:
 	@.venv/bin/pdoc resume_generator arpanet_logging arpanet -o site/api --docformat google
