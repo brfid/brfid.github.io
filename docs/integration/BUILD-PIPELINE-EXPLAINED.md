@@ -122,7 +122,7 @@
 - `uudecode` - Decode transmitted file
 - `nroff` - Text formatter/manpage renderer
 
-**What it should do** (currently debugging):
+**What it does in current distributed vintage runs**:
 1. **Receive encoded file**
    - Via console I/O (telnet terminal emulation)
    - No network/FTP (kernel lacks TCP/IP drivers)
@@ -145,9 +145,9 @@
 - Console-only transfer tests constraint-based design
 
 **Current Status**:
-- Commands being sent via console
-- Not executing successfully yet
-- Debugging needed (see debugging plan below)
+- Commands are sent via console automation and execute in BSD userland
+- Validation/log extraction are integrated into the publish workflow
+- Distributed vintage runs publish merged evidence logs to the site
 
 ---
 
@@ -319,7 +319,7 @@ EXPERIENCE
 
 ## Quick Reference
 
-**Latest successful build**: publish-vax-uuencode-v3
+**Latest successful build**: See latest successful `publish-vintage*` run in GitHub Actions
 **Date**: 2026-02-14
 **Status**: All stages operational, 0 errors, 0 warnings
 

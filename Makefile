@@ -1,15 +1,15 @@
-# ARPANET Build Integration - Makefile
+# Distributed Vintage Build Integration - Makefile
 # Convenience commands for testing and development
 
 .PHONY: help test test_docker test_aws check_env clean build up down logs \
         serial-tunnel-start serial-tunnel-stop serial-tunnel-status \
         chaosnet-build chaosnet-up chaosnet-down chaosnet-logs chaosnet-test \
         aws-up aws-ssh aws-down aws-test aws-status aws-teardown-imps \
-        publish publish_arpanet docs
+        publish publish-vintage publish_arpanet docs
 
 # Default target
 help:
-	@echo "ARPANET Build Integration - Make Commands"
+	@echo "Distributed Vintage Build Integration - Make Commands"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test          Run all tests"
@@ -32,15 +32,16 @@ help:
 	@echo "  make chaosnet-test   Run Chaosnet transfer test"
 	@echo ""
 	@echo "Publishing:"
-	@echo "  make publish       Fast publish (Mode 3)"
-	@echo "  make publish_arpanet  Full ARPANET publish (Mode 4)"
+	@echo "  make publish          Fast local publish"
+	@echo "  make publish-vintage  Distributed vintage publish"
+	@echo "  make publish_arpanet  Legacy alias for publish-vintage"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  make docs          Generate API docs from docstrings into site/api"
 	@echo ""
 	@echo "Archived (IMP chain — blocked on HI1 framing):"
-	@echo "  Compose files in arpanet/archived/"
-	@echo "  See arpanet/archived/README.md"
+	@echo "  Compose files in docs/legacy/archived/"
+	@echo "  See docs/legacy/archived/README.md"
 	@echo ""
 
 # Testing
@@ -84,18 +85,18 @@ aws-status:
 aws-teardown-imps:
 	@echo "Tearing down archived IMP containers on old t3.medium..."
 	@ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
-		"cd brfid.github.io && docker compose -f arpanet/archived/docker-compose.arpanet.phase2.yml down 2>/dev/null; true"
+		"cd brfid.github.io && docker compose --project-directory . -f docs/legacy/archived/docker-compose.vintage-phase2.yml down 2>/dev/null; true"
 	@echo "✅ IMP containers stopped"
 	@echo ""
 	@echo "Consider terminating the t3.medium instance after new t3.micro VMs are up."
 
 # Serial Tunnel Operations (Phase 1: VAX <-> PDP-10 via socat)
-# See docs/arpanet/SERIAL-TUNNEL.md for full architecture
+# See docs/vax/SERIAL-TUNNEL.md for full architecture
 serial-tunnel-start:
 	@echo "Starting VAX <-> PDP-10 serial tunnel..."
 	@echo ""
 	@echo "Make sure containers are running first:"
-	@echo "  docker compose -f docker-compose.vax-pdp10-serial.yml up -d"
+	@echo "  docker compose --project-directory . -f docs/legacy/archived/docker-compose.vax-pdp10-serial.yml up -d"
 	@echo ""
 	./arpanet/scripts/serial-tunnel.sh start
 
@@ -149,8 +150,10 @@ clean:
 publish:
 	@./scripts/publish-local.sh
 
-publish_arpanet:
+publish-vintage:
 	@./scripts/publish-vintage.sh
 
+publish_arpanet: publish-vintage
+
 docs:
-	@.venv/bin/pdoc resume_generator host_logging arpanet -o site/api --docformat google
+	@.venv/bin/pdoc resume_generator host_logging -o site/api --docformat google

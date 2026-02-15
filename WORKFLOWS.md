@@ -23,9 +23,11 @@ Early-development note:
   - quality checks (same toolchain as CI)
   - integration lane:
     - `pytest -q -m "integration and not docker and not slow"`
-  - ARPANET Phase 1 docker bring-up test (`docker-compose.arpanet.phase1.yml`)
-  - ARPANET Phase 2 docker smoke test (`docker-compose.arpanet.phase2.yml` + `arpanet/scripts/test-phase2-imp-link.sh`)
-  - uploads test artifacts/logs
+
+Note:
+- Legacy ARPANET phase docker jobs were removed from `test.yml` because they
+  referenced archived/missing compose files and scripts.
+- End-to-end distributed vintage verification runs in publish workflow lanes.
 
 ## Test marker taxonomy
 
@@ -41,22 +43,26 @@ coverage in separate jobs.
 ## 3) Publish workflow (`deploy.yml`)
 
 - Trigger:
-  - tags: `publish`, `publish-fast`, `publish-vax`, `publish-vax-*`, `publish-docker`, `publish-docker-*`
+  - tags:
+    - Fast local: `publish`, `publish-fast`, `publish-fast-*`
+    - Distributed vintage (canonical): `publish-vintage`, `publish-vintage-*`
+    - Distributed vintage (legacy aliases): `publish-vax*`, `publish-docker*`
   - manual dispatch
 - Runs quality checks, generates site artifacts, deploys to GitHub Pages.
 
 ### Important mode note (current behavior)
 
 - `resume_generator` CLI supports `--vax-mode local` and `--vax-mode docker`.
+- Workflow mode resolution uses `build_mode` output naming for clarity.
 
 `deploy.yml` mode resolution:
-- `publish-vax*` / `publish-docker*` tags → docker mode
+- `publish-vintage*` tags (and legacy aliases `publish-vax*` / `publish-docker*`) → distributed vintage backend (`docker`)
 - manual dispatch → selected input (`local` or `docker`)
-- otherwise (`publish`, `publish-fast`) → local mode
+- otherwise (`publish`, `publish-fast*`) → local mode
 
 Operationally, that means:
 - Local publish tags run fast local generation.
-- Docker publish tags run the full AWS-backed VAX/PDP-11 pipeline.
+- Distributed vintage tags run the full AWS-backed VAX/PDP-11 pipeline.
 
 ### AWS lifecycle behavior in `deploy.yml` (docker mode)
 

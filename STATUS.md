@@ -1,6 +1,6 @@
 # Project Status
 
-**Last updated:** 2026-02-14 (post AWS lifecycle hardening)
+**Last updated:** 2026-02-14 (workflow/codebase alignment + AWS lifecycle hardening)
 
 ---
 
@@ -39,7 +39,7 @@
 **Integration**:
 - Updated `site/index.html` footer: `/vax-build.log` → `/logs/`
 - Added workflow step in `.github/workflows/deploy.yml`
-- Auto-generates on every `publish-vax` or `publish-docker` deploy
+- Auto-generates on every distributed vintage deploy (`publish-vintage*`, with legacy aliases supported)
 
 **Next**: Test during next full pipeline run
 
@@ -60,7 +60,7 @@
 - `5a58852` - Comprehensive logging overhaul
 - `dd58356` - Log format examples and webpage templates
 
-**Next**: Run a full tagged docker publish to verify end-to-end evidence on live AWS
+**Next**: Run a full tagged distributed vintage publish to verify end-to-end evidence on live AWS
 
 ---
 
@@ -99,7 +99,7 @@
 
 **Root Cause**: `/usr` filesystem not mounted at boot (disk image was complete all along!)
 
-**Solution**: Created `arpanet/pdp11-boot.sh` wrapper script that auto-mounts `/usr` after boot
+**Solution**: Created `vintage/pdp11-boot.sh` wrapper script that auto-mounts `/usr` after boot
 
 **Verification**: All tools confirmed working:
 - ✅ `/usr/bin/uuencode` (6366 bytes, from Nov 1999)
@@ -147,7 +147,7 @@ AWS EC2 (Ubuntu 22.04)
 - **IP**: Use `./aws-status.sh` to get current IP
 - **Instance**: t3.micro on AWS
 - **Boot**: ✅ Boots correctly with auto-mount wrapper
-- **Filesystems**: ✅ `/usr` auto-mounted via `pdp11-boot.sh`
+- **Filesystems**: ✅ `/usr` auto-mounted via `vintage/pdp11-boot.sh`
 - **Tools**: ✅ All utilities present and working
 - **Console**: telnet <ip> 2327
 - **Status**: ✅ FULLY OPERATIONAL - Ready for validation workflow
@@ -233,7 +233,7 @@ Merge: merge-logs.py → merged.log
 - `scripts/vax-console-upload.sh` - Upload files via console
 - `scripts/vax-console-build.sh` - Build inside BSD via console
 - `scripts/vax-build-and-encode.sh` - Build script (runs inside BSD)
-- `arpanet/pdp11-boot.sh` - PDP-11 auto-mount wrapper (working)
+- `vintage/pdp11-boot.sh` - PDP-11 auto-mount wrapper (working)
 
 ### Archived (see `docs/deprecated/`)
 - Old debugging session logs
@@ -357,7 +357,7 @@ telnet <pdp11-ip> 2327
 ## Files Changed Today (2026-02-14)
 
 **Created**:
-- `arpanet/pdp11-boot.sh` - Auto-mount wrapper
+- `vintage/pdp11-boot.sh` - Auto-mount wrapper
 - `scripts/vax-console-build.sh` - Console-based build attempt
 - `docs/integration/PDP11-USR-MOUNT-FIX.md` - Solution doc
 - `docs/integration/ARCHITECTURE-STACK.md` - Layer explanation
@@ -367,9 +367,9 @@ telnet <pdp11-ip> 2327
 - `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md` - Research request (open)
 
 **Modified**:
-- `arpanet/Dockerfile.pdp11` - Added boot wrapper
+- `vintage/Dockerfile.pdp11` - Added boot wrapper
 - `docker-compose.production.yml` - Updated PDP-11 volume mount + VAX command
-- `arpanet/configs/pdp11.ini` - Reviewed (no changes needed)
+- `vintage/configs/pdp11.ini` - Reviewed (no changes needed)
 
 ---
 

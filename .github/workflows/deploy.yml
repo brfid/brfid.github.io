@@ -1,21 +1,24 @@
 name: Publish Site
 
-# Mode 1: Tag 'publish' or 'publish-*' → Fast publish (local mode)
-# Mode 2: Tag 'publish-vax' or 'publish-docker' → Full VAX/Docker build
+# Mode 1: Fast local publish tags
+# Mode 2: Distributed vintage publish tags (VAX build host + PDP-11 validation)
 
 on:
   push:
     tags:
-      - "publish-vax"       # Mode 2: VAX/Docker
-      - "publish-vax-*"     # Mode 2: VAX/Docker variants
-      - "publish-docker"    # Mode 2: VAX/Docker (alias)
-      - "publish-docker-*"  # Mode 2: VAX/Docker variants
+      - "publish-vintage"     # Mode 2: Distributed vintage pipeline
+      - "publish-vintage-*"   # Mode 2: Distributed vintage variants
+      - "publish-vax"         # Mode 2 legacy alias
+      - "publish-vax-*"       # Mode 2 legacy alias
+      - "publish-docker"      # Mode 2 legacy alias
+      - "publish-docker-*"    # Mode 2 legacy alias
       - "publish"           # Mode 1: Fast (local)
       - "publish-fast"      # Mode 1: Fast (explicit)
+      - "publish-fast-*"    # Mode 1: Fast variants
   workflow_dispatch:
     inputs:
-      vax_mode:
-        description: 'Build mode (local or docker)'
+      build_mode:
+        description: 'Build mode (local or distributed vintage backend)'
         required: true
         default: 'local'
         type: choice
@@ -30,7 +33,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -66,22 +69,22 @@ jobs:
           python -m pylint resume_generator -sn
           python -m vulture --config pyproject.toml resume_generator
 
-      - name: Determine VAX mode
+      - name: Determine build mode
         id: mode
         run: |
           # Determine mode based on tag name
           TAG_NAME="${{ github.ref_name }}"
 
-          if [[ "$TAG_NAME" == *"vax"* ]] || [[ "$TAG_NAME" == *"docker"* ]]; then
-            echo "vax_mode=docker" >> $GITHUB_OUTPUT
-            echo "mode_name=VAX/Docker (authentic build)" >> $GITHUB_OUTPUT
-            echo "🚀 Building with VAX/Docker mode (authentic 1980s BSD build)"
+          if [[ "$TAG_NAME" == *"vax"* ]] || [[ "$TAG_NAME" == *"docker"* ]] || [[ "$TAG_NAME" == *"vintage"* ]] || [[ "$TAG_NAME" == *"distributed"* ]]; then
+            echo "build_mode=docker" >> $GITHUB_OUTPUT
+            echo "mode_name=Distributed vintage (authentic build)" >> $GITHUB_OUTPUT
+            echo "🚀 Building with distributed vintage mode (authentic BSD pipeline)"
           elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "vax_mode=${{ inputs.vax_mode }}" >> $GITHUB_OUTPUT
-            echo "mode_name=Manual (${{ inputs.vax_mode }})" >> $GITHUB_OUTPUT
-            echo "🎮 Building with manual mode: ${{ inputs.vax_mode }}"
+            echo "build_mode=${{ inputs.build_mode }}" >> $GITHUB_OUTPUT
+            echo "mode_name=Manual (${{ inputs.build_mode }})" >> $GITHUB_OUTPUT
+            echo "🎮 Building with manual mode: ${{ inputs.build_mode }}"
           else
-            echo "vax_mode=local" >> $GITHUB_OUTPUT
+            echo "build_mode=local" >> $GITHUB_OUTPUT
             echo "mode_name=Local (fast)" >> $GITHUB_OUTPUT
             echo "⚡ Building with local mode (fast)"
           fi
@@ -98,7 +101,7 @@ jobs:
         run: python -m playwright install --with-deps chromium
 
       - name: Generate build ID
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         id: build_id
         run: |
           BUILD_ID="build-$(date -u '+%Y%m%d-%H%M%S')"
@@ -106,13 +109,13 @@ jobs:
           echo "📝 Build ID: $BUILD_ID"
 
       - name: Setup SSH key
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         run: |
           echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > /tmp/aws-key.pem
           chmod 600 /tmp/aws-key.pem
 
       - name: Activate AWS infrastructure
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         id: aws_activate
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -178,7 +181,7 @@ jobs:
           echo "✅ AWS infrastructure activated"
 
       - name: Transfer scripts to AWS
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
@@ -208,7 +211,7 @@ jobs:
           echo "✅ Scripts transferred to both instances"
 
       - name: Stage 1 - VAX Build & Encode
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
@@ -323,7 +326,7 @@ jobs:
           echo "✓ VAX build & encode complete (executed in BSD with vintage tools)"
 
       - name: Stage 2 - Console Transfer (VAX → PDP-11)
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
@@ -395,7 +398,7 @@ jobs:
           echo "✓ Console transfer complete"
 
       - name: Verify screen session persists
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         run: |
           echo "📡 Verifying screen session..."
           if screen -ls | grep -q "pdp11-console"; then
@@ -411,7 +414,7 @@ jobs:
           fi
 
       - name: Stage 3 - PDP-11 Validation
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
           PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
@@ -458,7 +461,7 @@ jobs:
           echo "✓ PDP-11 validation complete"
 
       - name: Stage 4 - Retrieve Final Output
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
@@ -486,13 +489,13 @@ jobs:
           echo "✓ Final output retrieved"
 
       - name: Generate site (Local mode fallback)
-        if: steps.mode.outputs.vax_mode != 'docker'
+        if: steps.mode.outputs.build_mode != 'docker'
         run: |
           python -m resume_generator --out site --with-vax \
-            --vax-mode ${{ steps.mode.outputs.vax_mode }}
+            --vax-mode ${{ steps.mode.outputs.build_mode }}
 
       - name: Merge and retrieve build logs
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
@@ -559,7 +562,7 @@ jobs:
           echo "✅ Logs merged and retrieved from all sources"
 
       - name: Generate enterprise logs page
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
@@ -573,7 +576,7 @@ jobs:
           echo "✅ Logs page generated at site/logs/index.html"
 
       - name: Generate build info widget
-        if: steps.mode.outputs.vax_mode == 'docker'
+        if: steps.mode.outputs.build_mode == 'docker'
         env:
           VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
@@ -617,7 +620,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Deactivate AWS infrastructure
-        if: always() && steps.mode.outputs.vax_mode == 'docker'
+        if: always() && steps.mode.outputs.build_mode == 'docker'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

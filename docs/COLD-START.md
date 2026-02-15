@@ -64,7 +64,7 @@ Then apply repository workflow constraints from `AGENTS.md`.
 
 - Use `.venv/` Python only.
 - Do not install globally.
-- Do not create/push publish tags unless intentional (`publish`, `publish-*`).
+- Do not create/push publish tags unless intentional (`publish*`, `publish-fast*`, `publish-vintage*`).
 - Prefer evidence-backed changes and preserve manifest/log workflow.
 - AWS instances can be stopped/started without data loss (EFS + EBS persist).
 
@@ -220,6 +220,11 @@ docker-compose -f docker-compose.production.yml restart vax
 - Lifecycle markers emitted to `GITHUB.log`:
   - `AWS_ACTIVATE_BEGIN`, `AWS_ACTIVATE_READY`, `AWS_ACTIVATE_FAILED`
   - `AWS_DEACTIVATE_BEGIN`, `AWS_DEACTIVATE_COMPLETE`
+
+**Publish tags (current canonical)**:
+- Fast local: `publish`, `publish-fast`, `publish-fast-*`
+- Distributed vintage: `publish-vintage`, `publish-vintage-*`
+- Legacy aliases still accepted: `publish-vax*`, `publish-docker*`
 
 **Phase 3: End-to-End Testing** (PENDING)
 - Full VAX → PDP-11 workflow

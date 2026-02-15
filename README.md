@@ -1,6 +1,6 @@
 # brfid.github.io
 
-This project generates and publishes a static resume site, with an optional VAX/ARPANET build stage as a technical signal.
+This project generates and publishes a static resume site, with an optional distributed vintage build stage (VAX + PDP-11) as a technical signal.
 
 ## How it works
 
@@ -45,14 +45,16 @@ If you are starting with little or no context, use this exact read order:
 
 Then apply repository workflow constraints from `AGENTS.md`.
 
-## Build Modes
+## Build modes (CLI)
 
 - `--vax-mode local`: host-only VAX stage emulation (fast iteration)
 - `--vax-mode docker`: authentic SIMH/VAX 11/780 build (4.3BSD, K&R C)
 
-**Publish Tags**:
-- `publish` or `publish-*`: Fast local build
-- `publish-vax` or `publish-docker`: Full VAX/Docker build with enhanced logging
+## Publish tags (GitHub Actions)
+
+- Fast local (canonical): `publish`, `publish-fast`, `publish-fast-*`
+- Distributed vintage (canonical): `publish-vintage`, `publish-vintage-*`
+- Distributed vintage (legacy aliases): `publish-vax*`, `publish-docker*`
 
 **Note**: ARPANET Phase 2 (IMPs) removed from CI as of 2026-02-13. Tape transfer functionality preserved for future integration.
 
@@ -70,16 +72,16 @@ python3 -m venv .venv
 .venv/bin/resume-gen --out site --with-vax --vax-mode local
 ```
 
-### Build site (docker VAX mode)
+### Build site (distributed vintage backend)
 
 ```bash
 .venv/bin/resume-gen --out site --with-vax --vax-mode docker
 ```
 
-### Build site with VAX Docker mode
+### Build site with distributed vintage backend
 
 ```bash
-# VAX/Docker mode (authentic 4.3BSD build)
+# Distributed vintage backend (authentic 4.3BSD + 2.11BSD pipeline)
 .venv/bin/resume-gen --out site --with-vax --vax-mode docker
 
 # Local mode (fast)
@@ -89,8 +91,8 @@ python3 -m venv .venv
 ## Useful Make targets
 
 ```bash
-make test-phase2
-make test-imp-logging
+make publish
+make publish-vintage
 make docs
 ```
 
@@ -105,7 +107,7 @@ make docs
 ## CI/CD overview
 
 - `ci.yml`: quality gate on `main` and PRs
-- `test.yml`: feature-branch + integration/docker smoke lanes
+- `test.yml`: feature-branch quality + integration tests
 - `deploy.yml`: publish/tag deployment to GitHub Pages
 
 Details: `WORKFLOWS.md`
@@ -122,7 +124,7 @@ Details: `WORKFLOWS.md`
 
 Per project direction, historical and in-progress records are retained.
 
-- Transport history: `docs/project/transport-archive.md`
+- Transport history: `docs/deprecated/transport-archive.md`
 - Integration and historical records: see `docs/integration/` and `docs/legacy/`
 
 ## Local preview

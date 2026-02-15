@@ -31,7 +31,7 @@ Implemented and tested the PDP-10 TOPS-20 Boot Completion Plan, including:
 ✅ arpanet/configs/pdp11.ini         - SIMH config (XQ network working)
 ✅ arpanet/scripts/test_pdp11_vax.py - Validation tests
 ✅ arpanet/scripts/pdp11_autoboot.exp - Boot automation (blocked)
-✅ docker-compose.panda-vax.yml      - Multi-host orchestration (updated)
+✅ docs/legacy/archived/docker-compose.panda-vax.yml - Multi-host orchestration (updated, archived)
 ```
 
 **Documentation:**
@@ -258,7 +258,7 @@ docs/arpanet/IMPLEMENTATION-SUMMARY-2026-02-12.md (this file)
 
 ### Modified Files
 ```
-docker-compose.panda-vax.yml  (added pdp11 service)
+docs/legacy/archived/docker-compose.panda-vax.yml  (added pdp11 service; later archived)
 STATUS.md                     (updated with findings)
 docs/arpanet/progress/NEXT-STEPS.md (updated with decision)
 ```

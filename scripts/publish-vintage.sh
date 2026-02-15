@@ -1,25 +1,25 @@
 #!/bin/bash
-# ARPANET publish script - Mode 4 (full stack)
-# Creates a dated tag and pushes for full ARPANET build
+# Distributed vintage publish helper
+# Creates a dated publish tag and pushes for full AWS-backed pipeline
 
 set -e
 
 # Generate timestamp
 TIMESTAMP=$(date +%Y%m%d-%H%M)
-TAG_NAME="publish-arpanet-${TIMESTAMP}"
+TAG_NAME="publish-vintage-${TIMESTAMP}"
 
 echo "========================================="
-echo "ARPANET Publish (Mode 4)"
+echo "Distributed Vintage Publish"
 echo "========================================="
 echo ""
 echo "Tag: ${TAG_NAME}"
-echo "Mode: ARPANET (full network stack)"
+echo "Mode: Distributed vintage (authentic BSD pipeline)"
 echo "Expected time: 10-12 minutes"
 echo ""
 echo "This will:"
-echo "  - Start Phase 2 ARPANET containers (VAX + IMP1 + IMP2 + PDP10)"
-echo "  - Compile on authentic 4.3BSD"
-echo "  - Generate site with ARPANET logs"
+echo "  - Start AWS instances for distributed vintage build"
+echo "  - Run authentic 4.3BSD + 2.11BSD stages"
+echo "  - Generate site with merged build logs"
 echo "  - Deploy to GitHub Pages"
 echo ""
 
@@ -47,6 +47,6 @@ echo ""
 echo "Site will be available at:"
 echo "  https://brfid.github.io/"
 echo ""
-echo "ARPANET logs will be at:"
-echo "  https://brfid.github.io/arpanet-logs/"
+echo "Build logs viewer will be at:"
+echo "  https://brfid.github.io/logs/"
 echo ""

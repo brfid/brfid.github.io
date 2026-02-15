@@ -46,7 +46,7 @@ This document describes the serial tunnel connection between VAX/4.3BSD and PDP-
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.vax-pdp10-serial.yml` | Phase 1: Serial tunnel |
+| `docs/legacy/archived/docker-compose.vax-pdp10-serial.yml` | Phase 1: Serial tunnel (archived) |
 | `docker-compose.vax-pdp10-chaosnet.yml` | Phase 2-3: Chaosnet |
 
 ### Scripts
@@ -76,7 +76,7 @@ This document describes the serial tunnel connection between VAX/4.3BSD and PDP-
 
 ```bash
 # Start both containers
-docker-compose -f docker-compose.vax-pdp10-serial.yml up -d
+docker compose --project-directory . -f docs/legacy/archived/docker-compose.vax-pdp10-serial.yml up -d
 
 # Test network connectivity
 docker exec vax-host ping -c 3 172.20.0.40

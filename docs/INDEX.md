@@ -25,7 +25,7 @@ Then apply repository workflow constraints from `../AGENTS.md`.
 
 ### Vintage Systems (VAX ↔ PDP-11)
 - **`../vintage/`** - Active VAX/PDP-11 configs
-- **`docker-compose.production.yml`** - Production orchestration
+- **`../docker-compose.production.yml`** - Production orchestration (active root compose)
 - **`vax/INDEX.md`** - VAX/BSD documentation
 - **`pdp/pdp11/`** - PDP-11/2.11BSD systems
 - **Scripts**: `vax-console-upload.sh`, `vax-console-build.sh`
@@ -36,7 +36,16 @@ Then apply repository workflow constraints from `../AGENTS.md`.
 
 ### Legacy / Historical
 - **`legacy/arpanet-history/`** - ARPANET IMP research (archived)
-- **`legacy/archived/`** - Superseded configurations
+- **`legacy/archived/`** - Superseded configurations and test/debug artifacts
+  - Archived compose files moved from repo root:
+    - `docker-compose.panda-vax.yml`
+    - `docker-compose.pdp10-test.yml`
+    - `docker-compose.vax-pdp10-serial.yml`
+    - `docker-compose.vintage-phase1.yml`
+    - `docker-compose.vintage-phase2.yml`
+  - Archived debug scripts moved from repo root:
+    - `test_ftp_connect.py`
+    - `test_packet_debug.py`
 
 ## Current Priority
 
