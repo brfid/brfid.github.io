@@ -1,14 +1,24 @@
 # Integration Documentation (VAX ↔ PDP-11)
 
-Multi-machine connections and file transfer documentation.
+Integration records for VAX/PDP-11 transfer and IMP experiments.
 
-## Current Architecture (2026-02-14)
+## Status And Scope
 
-**✅ OPERATIONAL**: Uuencode console transfer for discrete machine-to-machine communication
+- **Current active production path**: single-host `edcloud` lifecycle + `docker-compose.production.yml` in this repo.
+- **This section**: mixed operational notes and historical records from prior multi-machine/EFS phases.
+- **Source of truth for "current" behavior**:
+  - `../README.md`
+  - `../STATUS.md`
+  - `../WORKFLOWS.md`
+
+## Current Architecture (2026-02-15)
+
+**Historical milestone (retained):** Uuencode console transfer for discrete machine-to-machine communication.
+The active deployment path is now single-host `edcloud`; this section is retained primarily as integration evidence.
 
 - **Method**: VAX encodes → Console I/O → PDP-11 decodes
 - **Why**: Historically accurate (1970s-80s), no shared filesystem
-- **Status**: Fully deployed and operational (publish-vax-uuencode-v3)
+- **Status at time of write**: Fully deployed and operational (`publish-vax-uuencode-v3`)
 - **Docs**:
   - [UUENCODE-CONSOLE-TRANSFER.md](UUENCODE-CONSOLE-TRANSFER.md) - Architecture
   - [UUENCODE-IMPLEMENTATION-STATUS.md](UUENCODE-IMPLEMENTATION-STATUS.md) - Deployment status

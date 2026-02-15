@@ -67,12 +67,15 @@ Operationally, that means:
 ### Infrastructure lifecycle behavior in `deploy.yml` (docker mode)
 
 - A single **Activate edcloud infrastructure** step:
-  - starts edcloud instance (via `edcloud` CLI or boto3),
-  - waits for instance to be `running`,
-  - establishes Tailscale connectivity (GHA runner joins tailnet),
-  - validates SSH connectivity to edcloud host.
+  - resolves one edcloud instance ID (secret `EDCLOUD_INSTANCE_ID` or tag lookup),
+  - starts the instance and waits for `running`,
+  - resolves host public IP and validates SSH connectivity.
+- A **Prepare edcloud host** step:
+  - ensures repo checkout exists on the host,
+  - checks out the current workflow commit,
+  - starts `docker-compose.production.yml`.
 - A single **Deactivate edcloud infrastructure** step (with `always()`):
-  - stops edcloud instance (auto-shutdown handles typical cases, explicit stop for failures).
+  - stops the same edcloud instance.
 - Lifecycle log markers are written to `GITHUB.log`:
   - `EDCLOUD_ACTIVATE_BEGIN`
   - `EDCLOUD_ACTIVATE_READY`

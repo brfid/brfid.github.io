@@ -33,10 +33,17 @@ Then apply repository workflow constraints from `../AGENTS.md`.
 ### AWS Infrastructure
 - **`aws-*.sh`** - Instance management scripts
 - **`aws/INDEX.md`** - AWS infrastructure docs
+- **edcloud platform docs (external)**:
+  - `https://github.com/brfid/edcloud/blob/main/README.md`
+  - `https://github.com/brfid/edcloud/blob/main/SETUP.md`
+  - `https://github.com/brfid/edcloud/blob/main/DESIGN.md`
+- **Legacy orchestration**:
+  - historical deployment/config context is retained in docs under `integration/` and `legacy/`
 
 ### Legacy / Historical
 - **`legacy/arpanet-history/`** - ARPANET IMP research (archived)
 - **`legacy/archived/`** - Superseded configurations and test/debug artifacts
+- **`test-infra/`** - Retired AWS test-infra documentation (historical reference only)
   - Archived compose files moved from repo root:
     - `docker-compose.panda-vax.yml`
     - `docker-compose.pdp10-test.yml`
@@ -49,7 +56,7 @@ Then apply repository workflow constraints from `../AGENTS.md`.
 
 ## Current Priority
 
-The current priority is **nailing down the VAX → PDP-11 model in AWS**:
+The current priority is **nailing down the VAX → PDP-11 model on edcloud**:
 - Focus on `STATUS.md` and `COLD-START.md` for current state
 - Vintage configs in `vintage/` are actively used
 - IMP research preserved in `docs/legacy/` for historical reference

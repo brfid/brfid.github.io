@@ -108,10 +108,10 @@ send_cmd "echo '' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo 'Status: PASS' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 send_cmd "echo '================================' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 
-# Copy output to shared EFS for retrieval
+# Copy output to shared host log path for retrieval
 send_cmd "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID/pdp-output"
 send_cmd "cp /tmp/brad.txt /mnt/arpanet-logs/builds/$BUILD_ID/pdp-output/ 2>&1"
-send_cmd "echo 'Output copied to EFS for retrieval' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
+send_cmd "echo 'Output copied to host log path for retrieval' | /tmp/arpanet-log.sh PDP11 $BUILD_ID"
 
 echo "[COURIER] Validation commands sent to PDP-11"
 echo "[COURIER] Waiting for completion..."

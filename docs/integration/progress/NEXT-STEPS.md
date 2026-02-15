@@ -1,5 +1,9 @@
 # ARPANET Next Steps
 
+> Historical planning log retained for evidence.
+> Current production truth is in `STATUS.md`, `README.md`, and `WORKFLOWS.md`.
+> Legacy two-host/EFS/CDK details below are not the active deployment model.
+
 **Last updated:** 2026-02-14
 **Status**: ✅ **Uuencode transfer operational** - Now improving observability
 
@@ -599,9 +603,10 @@ du -sh /mnt/arpanet-logs/*
 - `PRODUCTION-DEPLOYMENT.md` - Full deployment guide
 
 **Infrastructure**:
-- `infra/cdk/arpanet_production_stack.py` - CDK stack code
 - `docker-compose.production.yml` - Container orchestration
-- `infra/cdk/PRODUCTION-README.md` - Infrastructure guide
+- `README.md` - Current single-host `edcloud` lifecycle model
+- `STATUS.md` - Current platform boundary and operations status
+- `https://github.com/brfid/edcloud/blob/main/SETUP.md` - Active platform setup guide
 
 **Historical**:
 - `docs/arpanet/PRODUCTION-STATUS-2026-02-13.md` - Deployment report

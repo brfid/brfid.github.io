@@ -1,5 +1,10 @@
 # AWS Testing Environment
 
+> Retired path (2026-02-15): `test_infra` orchestration code is no longer part
+> of active repo workflows. Keep this document as historical context only.
+> Current lifecycle ownership is in `edcloud`:
+> `https://github.com/brfid/edcloud/blob/main/SETUP.md`.
+
 **Purpose**: Development and debugging environment for ARPANET orchestration that will run in the build pipeline.
 
 ## Why AWS Testing?

@@ -23,16 +23,26 @@ For deeper component detail, see `ARCHITECTURE.md`.
 
 ## Production Infrastructure Management
 
-**Quick commands** (edcloud single-host backend):
+`brfid.github.io` does minimal orchestration and plugs into the single-host `edcloud` platform.
+Infrastructure lifecycle ownership is in the `edcloud` project:
+`https://github.com/brfid/edcloud` (or your fork URL).
+
+**Quick commands** (single-host backend):
 ```bash
-./aws-status.sh  # Check edcloud host status, Tailscale IP, cost estimate
-./aws-stop.sh    # Stop edcloud (saves compute cost, ~$6.40/month storage only)
-./aws-start.sh   # Start edcloud (shows new public IP)
+./aws-status.sh  # Check edcloud instance status
+./aws-stop.sh    # Stop edcloud instance
+./aws-start.sh   # Start edcloud instance
 ```
 
-**Backend**: Single t3a.medium instance running both VAX + PDP-11 containers via Docker Compose. Managed via `edcloud` CLI (sibling repo).
+**Backend**: Single t3a.medium instance running both VAX + PDP-11 containers via Docker Compose.
+**Lifecycle lookup**: `EDCLOUD_INSTANCE_ID` env var or tag lookup (`edcloud:managed=true`, `Name=edcloud`).
+**Operator footprint**: Intended to run from small ARM control nodes as well (for example, Pi Zero 2 class systems) as long as AWS CLI access is available.
 **Cost**: ~$11/month at 4hrs/day or ~$6.40/month stopped (storage only). Auto-shutdown after 30min idle.
 **Data safety**: All scripts preserve EBS volume - no data loss.
+
+For host baseline tooling, rebuild policy, and backup/recovery standards, use edcloud docs:
+- `https://github.com/brfid/edcloud/blob/main/SETUP.md`
+- `https://github.com/brfid/edcloud/blob/main/DESIGN.md`
 
 ## LLM / operator cold-start quickstart
 
@@ -102,7 +112,7 @@ make docs
 ```bash
 .venv/bin/python -m pytest -q
 .venv/bin/python -m mypy resume_generator host_logging tests
-.venv/bin/python -m ruff check .
+.venv/bin/python -m ruff check resume_generator
 ```
 
 ## CI/CD overview

@@ -4,7 +4,9 @@
 **⚠️ DEPRECATED (2026-02-14)**
 
 This guide documents the old ArpanetProductionStack (2x t3.micro + EFS).
-**Current deployment**: See `edcloud/MIGRATION.md` and `edcloud/README.md` for the new single-host backend.
+**Current deployment**: See edcloud docs:
+- `https://github.com/brfid/edcloud/blob/main/README.md`
+- `https://github.com/brfid/edcloud/blob/main/MIGRATION.md`
 
 Stack destroyed 2026-02-14. Retained for historical reference only.
 
@@ -88,7 +90,7 @@ tail -f /mnt/arpanet-logs/vax/boot.log
 telnet $VAX_IP 2323
 
 # PDP-11 console
-telnet $VAX_IP 2327
+telnet $PDP11_IP 2327
 
 # Or from local machine:
 telnet <vax-public-ip> 2323
@@ -381,18 +383,14 @@ aws ec2 stop-instances --instance-ids <vax-id> <pdp11-id>
 
 ### Permanent Deletion
 
-⚠️ **WARNING**: This will delete everything except EFS and S3 (they have RETAIN policy).
+⚠️ **WARNING**: Legacy two-host stack commands below are retained for historical traceability only.
+Current lifecycle ownership is in `edcloud`.
 
 ```bash
-# Destroy stack
-cd /home/whf/brfid.github.io/infra/cdk
-cdk destroy -a "python3 app_production.py" ArpanetProductionStack --force
+# Current decommission flow (edcloud-managed)
+# See: https://github.com/brfid/edcloud/blob/main/SETUP.md
 
-# Manually delete EFS (if desired)
-aws efs delete-file-system --file-system-id <fs-id>
-
-# Manually delete S3 (if desired)
-aws s3 rb s3://arpanet-logs-972626128180 --force
+# Legacy examples below were for the retired ArpanetProductionStack model.
 ```
 
 ---
@@ -412,10 +410,9 @@ After deployment:
 
 ## References
 
-- **Stack code**: `infra/cdk/arpanet_production_stack.py`
-- **CDK app**: `infra/cdk/app_production.py`
 - **Docker compose**: `docker-compose.production.yml`
-- **Detailed README**: `infra/cdk/PRODUCTION-README.md`
+- **Current platform docs**: `https://github.com/brfid/edcloud/blob/main/README.md`
+- **Current setup docs**: `https://github.com/brfid/edcloud/blob/main/SETUP.md`
 
 ---
 

@@ -1,152 +1,60 @@
-# Distributed Vintage Build Integration - Makefile
-# Convenience commands for testing and development
+# brfid.github.io Makefile
+# Minimal active workflow commands.
 
-.PHONY: help test test_docker test_aws check_env clean build up down logs \
-        serial-tunnel-start serial-tunnel-stop serial-tunnel-status \
-        chaosnet-build chaosnet-up chaosnet-down chaosnet-logs chaosnet-test \
-        aws-up aws-ssh aws-down aws-test aws-status aws-teardown-imps \
+.PHONY: help test test_docker check_env clean \
+        aws-start aws-stop aws-status \
         publish publish-vintage publish_arpanet docs
 
-# Default target
 help:
-	@echo "Distributed Vintage Build Integration - Make Commands"
+	@echo "brfid.github.io - Active Make Commands"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test          Run all tests"
-	@echo "  make test_docker   Run Docker integration tests"
-	@echo "  make check_env     Verify prerequisites"
+	@echo "  make test          Run fast unit test lane"
+	@echo "  make test_docker   Deprecated legacy target (no-op)"
+	@echo "  make check_env     Verify local prerequisites"
 	@echo ""
-	@echo "AWS Infrastructure:"
-	@echo "  make aws-up        Provision AWS test instance"
-	@echo "  make aws-ssh       SSH into AWS instance"
-	@echo "  make aws-down      Destroy AWS instance"
-	@echo "  make aws-test      Run tests on AWS (provision, test, destroy)"
-	@echo "  make aws-status    Show AWS instance status"
-	@echo "  make aws-teardown-imps  Tear down archived IMP containers on AWS"
-	@echo ""
-	@echo "Chaosnet-Direct (active topology):"
-	@echo "  make chaosnet-build  Build Chaosnet-direct containers"
-	@echo "  make chaosnet-up     Start Chaosnet-direct topology"
-	@echo "  make chaosnet-down   Stop Chaosnet-direct topology"
-	@echo "  make chaosnet-logs   Show Chaosnet container logs"
-	@echo "  make chaosnet-test   Run Chaosnet transfer test"
+	@echo "edcloud lifecycle:"
+	@echo "  make aws-status    Check edcloud instance status"
+	@echo "  make aws-start     Start edcloud instance"
+	@echo "  make aws-stop      Stop edcloud instance"
 	@echo ""
 	@echo "Publishing:"
 	@echo "  make publish          Fast local publish"
 	@echo "  make publish-vintage  Distributed vintage publish"
 	@echo "  make publish_arpanet  Legacy alias for publish-vintage"
 	@echo ""
-	@echo "Documentation:"
-	@echo "  make docs          Generate API docs from docstrings into site/api"
-	@echo ""
-	@echo "Archived (IMP chain — blocked on HI1 framing):"
-	@echo "  Compose files in docs/legacy/archived/"
-	@echo "  See docs/legacy/archived/README.md"
-	@echo ""
+	@echo "Docs:"
+	@echo "  make docs          Generate API docs into site/api"
 
-# Testing
-test: test_docker
-	@echo "✅ All tests completed"
+test:
+	@echo "Running unit tests..."
+	@.venv/bin/python -m pytest -q -m "unit and not docker and not slow"
 
 test_docker:
-	@echo "Running Docker integration tests..."
-	@./test_infra/docker/test_arpanet.py
-
-test_aws:
-	@echo "Checking AWS environment..."
-	@./test_infra/aws/setup.sh
+	@echo "Legacy Docker integration harness removed from this repo."
+	@echo "Use publish-vintage workflow lanes for end-to-end vintage validation."
 
 check_env:
 	@echo "Checking prerequisites..."
-	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker not found"; exit 1; }
-	@command -v docker compose >/dev/null 2>&1 || { echo "❌ Docker Compose not found"; exit 1; }
-	@command -v python3 >/dev/null 2>&1 || { echo "⚠️  Python 3 not found"; }
-	@echo "✅ Environment OK"
-
-# AWS Infrastructure
-aws-up:
-	@echo "Provisioning AWS test instance..."
-	@./test_infra/scripts/provision.py
-
-aws-ssh:
-	@./test_infra/scripts/connect.py
-
-aws-down:
-	@echo "Destroying AWS test instance..."
-	@./test_infra/scripts/destroy.py
-
-aws-test:
-	@echo "Running tests on AWS instance..."
-	@./test_infra/scripts/test_remote.py
+	@command -v docker >/dev/null 2>&1 || { echo "Docker not found"; exit 1; }
+	@docker compose version >/dev/null 2>&1 || { echo "Docker Compose plugin not found"; exit 1; }
+	@command -v python3 >/dev/null 2>&1 || { echo "Python 3 not found"; exit 1; }
+	@echo "Environment OK"
 
 aws-status:
-	@./test_infra/scripts/status.py
+	@./aws-status.sh
 
-aws-teardown-imps:
-	@echo "Tearing down archived IMP containers on old t3.medium..."
-	@ssh -i ~/.ssh/id_ed25519 ubuntu@34.227.223.186 \
-		"cd brfid.github.io && docker compose --project-directory . -f docs/legacy/archived/docker-compose.vintage-phase2.yml down 2>/dev/null; true"
-	@echo "✅ IMP containers stopped"
-	@echo ""
-	@echo "Consider terminating the t3.medium instance after new t3.micro VMs are up."
+aws-start:
+	@./aws-start.sh
 
-# Serial Tunnel Operations (Phase 1: VAX <-> PDP-10 via socat)
-# See docs/vax/SERIAL-TUNNEL.md for full architecture
-serial-tunnel-start:
-	@echo "Starting VAX <-> PDP-10 serial tunnel..."
-	@echo ""
-	@echo "Make sure containers are running first:"
-	@echo "  docker compose --project-directory . -f docs/legacy/archived/docker-compose.vax-pdp10-serial.yml up -d"
-	@echo ""
-	./arpanet/scripts/serial-tunnel.sh start
-
-serial-tunnel-stop:
-	@echo "Stopping VAX <-> PDP-10 serial tunnel..."
-	./arpanet/scripts/serial-tunnel.sh stop
-
-serial-tunnel-status:
-	@echo "VAX <-> PDP-10 serial tunnel status..."
-	./arpanet/scripts/serial-tunnel.sh status
-
-# Chaosnet-Direct operations (active topology)
-chaosnet-build:
-	@echo "Building Chaosnet-direct containers..."
-	@docker compose -f docker-compose.arpanet.chaosnet.yml build
-
-chaosnet-up:
-	@echo "Starting Chaosnet-direct topology (VAX <-> PDP-10/ITS)..."
-	@docker compose -f docker-compose.arpanet.chaosnet.yml up -d
-	@echo "Waiting for boot (60s)..."
-	@sleep 60
-	@echo "✅ Chaosnet topology ready"
-	@echo ""
-	@echo "Connect to VAX console:    telnet localhost 2323"
-	@echo "Connect to PDP-10 console: telnet localhost 2326"
-
-chaosnet-down:
-	@echo "Stopping Chaosnet-direct topology..."
-	@docker compose -f docker-compose.arpanet.chaosnet.yml down
-
-chaosnet-logs:
-	@echo "=== VAX Logs ==="
-	@docker logs arpanet-vax --tail 50
-	@echo ""
-	@echo "=== Chaosnet Shim Logs ==="
-	@docker logs arpanet-chaosnet-shim --tail 50
-	@echo ""
-	@echo "=== PDP-10 Logs ==="
-	@docker logs arpanet-pdp10 --tail 50
-
-chaosnet-test:
-	@echo "Running Chaosnet transfer test..."
-	@.venv/bin/python arpanet/scripts/test_chaosnet_transfer.py
+aws-stop:
+	@./aws-stop.sh
 
 clean:
-	@echo "Cleaning up containers and volumes..."
-	@docker compose -f docker-compose.arpanet.chaosnet.yml down -v 2>/dev/null; true
-	@echo "✅ Cleanup complete"
+	@echo "Stopping production compose stack (if running)..."
+	@docker compose -f docker-compose.production.yml down 2>/dev/null || true
+	@echo "Cleanup complete"
 
-# Publishing
 publish:
 	@./scripts/publish-local.sh
 

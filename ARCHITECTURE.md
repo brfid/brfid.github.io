@@ -3,8 +3,8 @@
 Canonical companion docs:
 - `README.md` (how it works + quickstart)
 - `WORKFLOWS.md` (CI/test/publish behavior)
-- `arpanet/README.md` (ARPANET runtime topology/ops)
-- `docs/transport-archive.md` (retained transport history)
+- `docs/integration/INDEX.md` (integration docs map; mixed current/historical)
+- `docs/deprecated/transport-archive.md` (retained transport history)
 
 This project turns a single source resume (`resume.yaml`) into a small static website
 that includes:
@@ -25,7 +25,7 @@ If you are new to the repo, start with the **Overview** and the **Pipeline** dia
 4. **Host render:** `brad.1` is rendered into `site/brad.man.txt`.
 5. **Output:** Everything ends up in `site/` for static hosting.
 
-**Current enhancement (2026-02-13):** Upgrading VAX C parser to handle standard YAML, removing Python preprocessing dependency. See `docs/YAML-ENHANCEMENT-PLAN.md`.
+**Current enhancement (2026-02-13):** Upgrading VAX C parser to handle standard YAML, removing Python preprocessing dependency. See `docs/deprecated/YAML-ENHANCEMENT-PLAN.md`.
 
 ---
 
@@ -82,7 +82,7 @@ flowchart LR
 - Enhanced VAX C parser handles standard YAML (unquoted strings, lists, nested maps)
 - Direct parsing of `resume.yaml` without preprocessing
 - 95% YAML coverage (excludes comments, anchors, complex multiline)
-- See: `docs/YAML-ENHANCEMENT-PLAN.md`
+- See: `docs/deprecated/YAML-ENHANCEMENT-PLAN.md`
 
 **ARPANET Components (Archived):**
 - ARPANET Phase 2 (IMPs + multi-hop) removed from CI as of 2026-02-13
@@ -147,8 +147,7 @@ flowchart LR
 ## Retained implementation records
 
 In-progress and historical implementation records are intentionally retained, especially under
-`arpanet/` (for example `PHASE2-PLAN.md`, `PHASE3-IMPLEMENTATION-PLAN.md`, and
-`PHASE3-PROGRESS.md`).
+`docs/integration/` and `docs/legacy/` (for example progress logs and archive records).
 
 ---
 
@@ -179,5 +178,5 @@ In-progress and historical implementation records are intentionally retained, es
 ## Where to Look Next
 
 - `README.md` for quickstart commands.
-- `PLAN.md` for project status and next steps.
+- `STATUS.md` for current architecture and lifecycle boundary.
 - `resume_generator/` for pipeline implementation.

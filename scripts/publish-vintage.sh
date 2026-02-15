@@ -1,6 +1,6 @@
 #!/bin/bash
 # Distributed vintage publish helper
-# Creates a dated publish tag and pushes for full AWS-backed pipeline
+# Creates a dated publish tag and pushes for full edcloud-backed pipeline
 
 set -e
 
@@ -17,7 +17,7 @@ echo "Mode: Distributed vintage (authentic BSD pipeline)"
 echo "Expected time: 10-12 minutes"
 echo ""
 echo "This will:"
-echo "  - Start AWS instances for distributed vintage build"
+echo "  - Start edcloud host for distributed vintage build"
 echo "  - Run authentic 4.3BSD + 2.11BSD stages"
 echo "  - Generate site with merged build logs"
 echo "  - Deploy to GitHub Pages"

@@ -108,46 +108,62 @@ jobs:
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "📝 Build ID: $BUILD_ID"
 
-      - name: Setup SSH key
+      - name: Setup edcloud SSH key
         if: steps.mode.outputs.build_mode == 'docker'
+        env:
+          EDCLOUD_SSH_PRIVATE_KEY: ${{ secrets.EDCLOUD_SSH_PRIVATE_KEY }}
+          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
         run: |
-          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > /tmp/aws-key.pem
+          KEY="${EDCLOUD_SSH_PRIVATE_KEY:-$AWS_SSH_PRIVATE_KEY}"
+          if [[ -z "$KEY" ]]; then
+            echo "Missing SSH private key secret (EDCLOUD_SSH_PRIVATE_KEY or AWS_SSH_PRIVATE_KEY)."
+            exit 1
+          fi
+          echo "$KEY" > /tmp/aws-key.pem
           chmod 600 /tmp/aws-key.pem
 
-      - name: Activate AWS infrastructure
+      - name: Activate edcloud infrastructure
         if: steps.mode.outputs.build_mode == 'docker'
-        id: aws_activate
+        id: edcloud_activate
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          EDCLOUD_INSTANCE_ID: ${{ secrets.EDCLOUD_INSTANCE_ID }}
         run: |
           ts() { date -u '+%Y-%m-%d %H:%M:%S'; }
 
-          echo "[$(ts) GITHUB] AWS_ACTIVATE_BEGIN vax=${{ secrets.AWS_VAX_INSTANCE_ID }} pdp11=${{ secrets.AWS_PDP11_INSTANCE_ID }}" >> /tmp/github.log
-          echo "🚀 Starting AWS VAX and PDP-11 instances..."
-          aws ec2 start-instances --instance-ids \
-            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
-            ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+          INSTANCE_ID="${EDCLOUD_INSTANCE_ID}"
+          if [[ -z "$INSTANCE_ID" ]]; then
+            INSTANCE_ID="$(aws ec2 describe-instances \
+              --filters \
+                Name=tag:edcloud:managed,Values=true \
+                Name=tag:Name,Values=edcloud \
+                Name=instance-state-name,Values=pending,running,stopping,stopped \
+              --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[-1].InstanceId" \
+              --output text)"
+          fi
+          if [[ -z "$INSTANCE_ID" || "$INSTANCE_ID" == "None" ]]; then
+            echo "❌ No edcloud instance found (set EDCLOUD_INSTANCE_ID or tag instance)."
+            exit 1
+          fi
 
-          echo "⏳ Waiting for instances to be running..."
-          aws ec2 wait instance-running --instance-ids \
-            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
-            ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+          echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_BEGIN instance_id=$INSTANCE_ID" >> /tmp/github.log
+          echo "🚀 Starting edcloud instance..."
+          aws ec2 start-instances --instance-ids "$INSTANCE_ID" >/dev/null
 
-          echo "📡 Getting instance IPs..."
-          VAX_IP=$(aws ec2 describe-instances \
-            --instance-ids ${{ secrets.AWS_VAX_INSTANCE_ID }} \
+          echo "⏳ Waiting for instance to be running..."
+          aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+
+          echo "📡 Getting instance IP..."
+          EDCLOUD_IP=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
             --query 'Reservations[0].Instances[0].PublicIpAddress' \
             --output text)
-          PDP11_IP=$(aws ec2 describe-instances \
-            --instance-ids ${{ secrets.AWS_PDP11_INSTANCE_ID }} \
-            --query 'Reservations[0].Instances[0].PublicIpAddress' \
-            --output text)
 
-          if [[ -z "$VAX_IP" || "$VAX_IP" == "None" || -z "$PDP11_IP" || "$PDP11_IP" == "None" ]]; then
-            echo "❌ Failed to resolve AWS instance public IPs"
-            echo "[$(ts) GITHUB] AWS_ACTIVATE_FAILED reason=missing_public_ip vax_ip=$VAX_IP pdp11_ip=$PDP11_IP" >> /tmp/github.log
+          if [[ -z "$EDCLOUD_IP" || "$EDCLOUD_IP" == "None" ]]; then
+            echo "❌ Failed to resolve edcloud public IP"
+            echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_FAILED reason=missing_public_ip" >> /tmp/github.log
             exit 1
           fi
 
@@ -167,53 +183,74 @@ jobs:
             done
             if [[ "$ready" -ne 1 ]]; then
               echo "❌ SSH readiness timeout for $name ($ip)"
-              echo "[$(ts) GITHUB] AWS_ACTIVATE_FAILED reason=ssh_timeout host=$name ip=$ip" >> /tmp/github.log
+              echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_FAILED reason=ssh_timeout host=$name ip=$ip" >> /tmp/github.log
               exit 1
             fi
           }
 
-          wait_for_ssh "VAX" "$VAX_IP"
-          wait_for_ssh "PDP11" "$PDP11_IP"
+          wait_for_ssh "edcloud" "$EDCLOUD_IP"
 
-          echo "vax_ip=$VAX_IP" >> $GITHUB_OUTPUT
-          echo "pdp11_ip=$PDP11_IP" >> $GITHUB_OUTPUT
-          echo "[$(ts) GITHUB] AWS_ACTIVATE_READY vax_ip=$VAX_IP pdp11_ip=$PDP11_IP" >> /tmp/github.log
-          echo "✅ AWS infrastructure activated"
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+          echo "edcloud_ip=$EDCLOUD_IP" >> $GITHUB_OUTPUT
+          # Keep legacy output names for downstream steps.
+          echo "vax_ip=$EDCLOUD_IP" >> $GITHUB_OUTPUT
+          echo "pdp11_ip=$EDCLOUD_IP" >> $GITHUB_OUTPUT
+          echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_READY instance_id=$INSTANCE_ID ip=$EDCLOUD_IP" >> /tmp/github.log
+          echo "✅ edcloud infrastructure activated"
 
-      - name: Transfer scripts to AWS
+      - name: Prepare edcloud host
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
-          PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
+          GIT_SHA: ${{ github.sha }}
         run: |
-          echo "📤 Transferring scripts to AWS instances..."
+          echo "🛠️ Preparing edcloud host runtime..."
 
-          # Transfer to VAX
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          set -euo pipefail
+
+          if [[ ! -d "\$HOME/brfid.github.io/.git" ]]; then
+            git clone https://github.com/brfid/brfid.github.io.git "\$HOME/brfid.github.io"
+          fi
+
+          cd "\$HOME/brfid.github.io"
+          git fetch --all --prune
+          git checkout "$GIT_SHA"
+          mkdir -p build/vax build/pdp11
+
+          sudo mkdir -p /mnt/arpanet-logs/builds
+          sudo chown -R ubuntu:ubuntu /mnt/arpanet-logs
+
+          docker compose -f docker-compose.production.yml up -d --build
+          docker compose -f docker-compose.production.yml ps
+          EOF
+
+          echo "✅ edcloud host prepared"
+
+      - name: Transfer scripts to edcloud
+        if: steps.mode.outputs.build_mode == 'docker'
+        env:
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
+        run: |
+          echo "📤 Transferring scripts to edcloud host..."
+
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
             scripts/arpanet-log.sh \
             scripts/vax-build-and-encode.sh \
             scripts/merge-logs.py \
             scripts/extract-vax-logs.py \
             scripts/extract-pdp11-logs.py \
-            ubuntu@$VAX_IP:/tmp/
+            ubuntu@$EDCLOUD_IP:/tmp/
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
             'chmod +x /tmp/*.sh /tmp/*.py'
 
-          # Transfer to PDP-11
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            scripts/arpanet-log.sh \
-            ubuntu@$PDP11_IP:/tmp/
-
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$PDP11_IP \
-            'chmod +x /tmp/*.sh'
-
-          echo "✅ Scripts transferred to both instances"
+          echo "✅ Scripts transferred to edcloud host"
 
       - name: Stage 1 - VAX Build & Encode
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
+          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 1: VAX BUILD & ENCODE ==="
@@ -306,14 +343,14 @@ jobs:
                 /tmp/vax-build-console.txt \
                 ubuntu@$VAX_IP:/tmp/vax-build-console.txt
 
-              # Extract logs from console capture to EFS
+              # Extract logs from console capture to host log storage
               ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
                 "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
                  python3 /tmp/extract-vax-logs.py \
                    /tmp/vax-build-console.txt \
                    /mnt/arpanet-logs/builds/$BUILD_ID/VAX.log"
 
-              echo "✓ Logs extracted to EFS"
+              echo "✓ Logs extracted to host log storage"
             else
               echo "⚠️  Build status unclear from console output"
               echo "Console output (last 50 lines):"
@@ -328,8 +365,8 @@ jobs:
       - name: Stage 2 - Console Transfer (VAX → PDP-11)
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
-          PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
+          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
+          PDP11_IP: ${{ steps.edcloud_activate.outputs.pdp11_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 2: CONSOLE TRANSFER ==="
@@ -417,8 +454,8 @@ jobs:
         if: steps.mode.outputs.build_mode == 'docker'
         env:
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-          PDP11_IP: ${{ steps.aws_activate.outputs.pdp11_ip }}
-          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
+          PDP11_IP: ${{ steps.edcloud_activate.outputs.pdp11_ip }}
+          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
         run: |
           echo "=== STAGE 3: PDP-11 VALIDATION ==="
           echo "Build ID: $BUILD_ID"
@@ -441,14 +478,14 @@ jobs:
                 /tmp/pdp11-validation-$BUILD_ID.txt \
                 ubuntu@$VAX_IP:/tmp/pdp11-validation-$BUILD_ID.txt
 
-              # Extract logs from console capture to EFS (using VAX container which has EFS mounted)
+              # Extract logs from console capture to host log storage
               ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
                 "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
                  python3 /tmp/extract-pdp11-logs.py \
                    /tmp/pdp11-validation-$BUILD_ID.txt \
                    /mnt/arpanet-logs/builds/$BUILD_ID/PDP11.log"
 
-              echo "✓ PDP-11 logs extracted to EFS"
+              echo "✓ PDP-11 logs extracted to host log storage"
             else
               echo "⚠️  Validation status unclear from console output"
               echo "Console output (last 50 lines):"
@@ -463,12 +500,12 @@ jobs:
       - name: Stage 4 - Retrieve Final Output
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
+          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 4: RETRIEVE FINAL OUTPUT ==="
 
-          # Retrieve validated output from PDP-11 via EFS (mounted on VAX)
+          # Retrieve validated output from host log storage
           echo "Retrieving validated output from PDP-11..."
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
             ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/pdp-output/brad.txt \
@@ -497,26 +534,26 @@ jobs:
       - name: Merge and retrieve build logs
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
+          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📋 Merging build logs from all sources..."
 
-          # Ensure build directory exists on EFS
+          # Ensure build directory exists on host log storage
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
             "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID"
 
-          # Upload GitHub log to VAX (for EFS)
+          # Upload GitHub log to host log storage
           if [[ -f /tmp/github.log ]]; then
-            echo "Uploading GitHub Actions log to EFS..."
+            echo "Uploading GitHub Actions log..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               /tmp/github.log \
               ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/GITHUB.log
           fi
 
-          # Upload COURIER log to VAX (for EFS)
+          # Upload COURIER log to host log storage
           if [[ -f /tmp/COURIER-$BUILD_ID.log ]]; then
-            echo "Uploading COURIER log to EFS..."
+            echo "Uploading COURIER log..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               /tmp/COURIER-$BUILD_ID.log \
               ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/COURIER.log
@@ -555,7 +592,7 @@ jobs:
           done
 
           # Cleanup old builds (keep last 20)
-          echo "Cleaning up old builds on EFS..."
+          echo "Cleaning up old builds in host log storage..."
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
             'cd /mnt/arpanet-logs/builds && ls -t | tail -n +21 | xargs -r rm -rf'
 
@@ -578,7 +615,7 @@ jobs:
       - name: Generate build info widget
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.aws_activate.outputs.vax_ip }}
+          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📊 Generating build info widget..."
@@ -619,28 +656,41 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Deactivate AWS infrastructure
+      - name: Deactivate edcloud infrastructure
         if: always() && steps.mode.outputs.build_mode == 'docker'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          EDCLOUD_INSTANCE_ID: ${{ secrets.EDCLOUD_INSTANCE_ID }}
+          ACTIVATED_INSTANCE_ID: ${{ steps.edcloud_activate.outputs.instance_id }}
         run: |
           ts() { date -u '+%Y-%m-%d %H:%M:%S'; }
 
-          echo "[$(ts) GITHUB] AWS_DEACTIVATE_BEGIN vax=${{ secrets.AWS_VAX_INSTANCE_ID }} pdp11=${{ secrets.AWS_PDP11_INSTANCE_ID }}" >> /tmp/github.log
-          echo "🛑 Stopping AWS VAX and PDP-11 instances..."
-          aws ec2 stop-instances --instance-ids \
-            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
-            ${{ secrets.AWS_PDP11_INSTANCE_ID }} >/dev/null
+          INSTANCE_ID="${ACTIVATED_INSTANCE_ID:-$EDCLOUD_INSTANCE_ID}"
+          if [[ -z "$INSTANCE_ID" ]]; then
+            INSTANCE_ID="$(aws ec2 describe-instances \
+              --filters \
+                Name=tag:edcloud:managed,Values=true \
+                Name=tag:Name,Values=edcloud \
+                Name=instance-state-name,Values=pending,running,stopping,stopped \
+              --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[-1].InstanceId" \
+              --output text)"
+          fi
+          if [[ -z "$INSTANCE_ID" || "$INSTANCE_ID" == "None" ]]; then
+            echo "No edcloud instance found to deactivate."
+            exit 0
+          fi
 
-          echo "⏳ Waiting for instances to stop..."
-          aws ec2 wait instance-stopped --instance-ids \
-            ${{ secrets.AWS_VAX_INSTANCE_ID }} \
-            ${{ secrets.AWS_PDP11_INSTANCE_ID }}
+          echo "[$(ts) GITHUB] EDCLOUD_DEACTIVATE_BEGIN instance_id=$INSTANCE_ID" >> /tmp/github.log
+          echo "🛑 Stopping edcloud instance..."
+          aws ec2 stop-instances --instance-ids "$INSTANCE_ID" >/dev/null
 
-          echo "[$(ts) GITHUB] AWS_DEACTIVATE_COMPLETE" >> /tmp/github.log
-          echo "✅ AWS infrastructure deactivated (cost savings mode)"
+          echo "⏳ Waiting for instance to stop..."
+          aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+
+          echo "[$(ts) GITHUB] EDCLOUD_DEACTIVATE_COMPLETE instance_id=$INSTANCE_ID" >> /tmp/github.log
+          echo "✅ edcloud infrastructure deactivated"
 
       - name: Summary
         run: |

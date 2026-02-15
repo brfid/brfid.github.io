@@ -4,6 +4,10 @@ __pycache__/
 *.egg-info/
 .venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
 
 # Generated files
 site/resume/
@@ -27,6 +31,7 @@ build/
 arpanet-upstream/
 
 # CDK
+infra/cdk/cdk.out/
 test_infra/cdk/cdk.out/
 test_infra/cdk/cdk.context.json
 test_infra/cdk/.venv/

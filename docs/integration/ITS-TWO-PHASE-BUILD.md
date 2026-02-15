@@ -4,6 +4,10 @@
 **Blocker**: ITS build system requires x86_64; Pi (ARM64) cannot run it natively;
 Docker/QEMU double-emulation on Pi is too slow.
 
+> Historical note: the `tools/its-build/` helper scripts referenced in this
+> document were retired from active repo paths during orchestration cleanup.
+> Keep this file as design context only.
+
 ## Approach
 
 Split the build into two phases:
@@ -17,10 +21,8 @@ Split the build into two phases:
 
 ## Implementation
 
-See `tools/its-build/` for scripts:
-- `build-its-image.sh` — Phase 1 (run on Mac)
-- `run-its-on-pi.sh` — Phase 2 (run on Pi)
-- `Dockerfile` — x86_64 build container
+Script implementation references are historical only; active lifecycle
+automation now lives in the `edcloud` platform repository.
 
 ## Alternatives Considered
 
