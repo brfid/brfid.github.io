@@ -1,17 +1,20 @@
 # Host Systems Production Docker Compose
 # VAX ↔ PDP-11 direct TCP/IP connection (no IMPs)
 #
+# Deployment: edcloud (single-host Docker platform)
+# Triggered by: GitHub Actions workflow on publish-vintage* tags
+#
 # Prerequisites:
-#   - EFS mounted at /mnt/host-logs
 #   - Docker and docker-compose installed
-#   - Repository cloned to /home/ubuntu/brfid.github.io
+#   - Build directory structure (./build/vax/, ./build/pdp11/)
+#   - Vintage configs (./vintage/)
 #
 # Usage:
 #   docker compose -f docker-compose.production.yml up -d
 #
-# Logs location:
-#   VAX:    /mnt/host-logs/vax/
-#   PDP-11: /mnt/host-logs/pdp11/
+# Console access:
+#   telnet <host> 2323   # VAX 4.3BSD
+#   telnet <host> 2327   # PDP-11 2.11BSD
 #
 # Note: IMP/ARPANET historical research archived to docs/legacy/
 #       (protocol incompatibility: VAX/PDP-11 use TCP/IP, IMPs use 1822)
@@ -34,13 +37,12 @@ services:
       - "23:23"      # Telnet
     volumes:
       - ./build/vax:/machines/data
-      - /mnt/arpanet-logs/vax:/var/log/arpanet  # EFS shared logs
       - ./vintage/vax-boot.sh:/opt/vax-boot.sh:ro  # Auto-mount wrapper
+      - build-shared:/opt/shared  # Shared space for artifact transfer
     command: ["/bin/bash", "/opt/vax-boot.sh"]
     networks:
       host:
         ipv4_address: 172.20.0.10
-    restart: unless-stopped
     logging:
       driver: "json-file"
       options:
@@ -63,11 +65,10 @@ services:
     volumes:
       - ./build/pdp11:/opt/pdp11/data
       - ./vintage/configs/pdp11.ini:/opt/pdp11/pdp11.ini:ro
-      - /mnt/arpanet-logs:/mnt/arpanet-logs  # EFS full mount for builds access
+      - build-shared:/opt/shared  # Shared space for artifact transfer
     networks:
       host:
         ipv4_address: 172.20.0.50
-    restart: unless-stopped
     logging:
       driver: "json-file"
       options:
@@ -87,11 +88,9 @@ networks:
           gateway: 172.20.0.1
 
 # =============================================================================
-# Volumes - Note: Most volumes are bind mounts to EFS
+# Volumes
 # =============================================================================
 volumes:
-  # Local build artifacts (not logged to EFS)
-  vax-data:
-    driver: local
-  pdp11-data:
+  # Shared volume for artifact transfer between VAX and PDP-11
+  build-shared:
     driver: local

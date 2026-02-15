@@ -1,5 +1,15 @@
 # ARPANET Production Deployment Guide
 
+---
+**⚠️ DEPRECATED (2026-02-14)**
+
+This guide documents the old ArpanetProductionStack (2x t3.micro + EFS).
+**Current deployment**: See `edcloud/MIGRATION.md` and `edcloud/README.md` for the new single-host backend.
+
+Stack destroyed 2026-02-14. Retained for historical reference only.
+
+---
+
 ## Overview
 
 This guide deploys the permanent two-machine ARPANET infrastructure to AWS.

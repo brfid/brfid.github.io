@@ -5,27 +5,28 @@ Use this page when starting from zero context.
 ## 0) Current State (read this first)
 
 **Date**: 2026-02-14
-**Status**: ✅ GitHub Actions + AWS lifecycle stabilized (activate → run → deactivate)
+**Status**: ✅ GitHub Actions + edcloud lifecycle stable (activate → run → deactivate)
 
-- **AWS Infrastructure**: ✅ DEPLOYED (2x t3.micro)
+- **Infrastructure**: ✅ DEPLOYED (edcloud single host: t3a.medium with Docker)
+- **Architecture**: VAX + PDP-11 containers on single host, shared volume for transfer
 - **VAX Solution**: Console I/O via screen + telnet (runs INSIDE BSD, not container!)
 - **Scripts**: `vax-console-upload.sh`, `vax-console-build.sh`, `vax-build-and-encode.sh`
 - **Verification**: Vintage K&R C compilation verified inside 4.3BSD
-- **Workflow**: `.github/workflows/deploy.yml` now uses consolidated AWS activation/deactivation
-- **Logging**: `GITHUB.log` now includes AWS lifecycle markers for activate/deactivate
-- **Cost**: ~$17.90/month running, ~$2/month stopped (storage only)
+- **Workflow**: `.github/workflows/deploy.yml` uses edcloud activation/deactivation
+- **Logging**: `GITHUB.log` includes edcloud lifecycle markers
+- **Cost**: ~$11/month at 4hrs/day, ~$6.40/month stopped (storage only)
 
 **Canonical references**:
 - `STATUS.md` - Overall project status
 - `docs/INDEX.md` - Documentation hub
-- `PRODUCTION-DEPLOYMENT.md` - Complete deployment guide (AWS)
-- `docs/deprecated/` - Old docs (check only if needed for historical context)
+- `edcloud/MIGRATION.md` - Migration from old AWS stack (completed 2026-02-14)
+- `docs/deprecated/` - Old docs (historical context only)
 
-**Quick AWS management**:
+**Quick infrastructure management**:
 ```bash
-./aws-status.sh  # Check instance state and costs
-./aws-stop.sh    # Stop instances (saves $15/month, keeps data)
-./aws-start.sh   # Start instances (shows new IPs)
+./aws-status.sh  # Check edcloud status, Tailscale IP, costs
+./aws-stop.sh    # Stop edcloud (saves compute cost, keeps data)
+./aws-start.sh   # Start edcloud (shows new public IP)
 ```
 
 ## 1) Read order
@@ -181,13 +182,23 @@ docker-compose -f docker-compose.production.yml restart vax
 ./aws-stop.sh  # $17/month → $2/month (storage only)
 ```
 
-## 9) What Changed Recently (2026-02-13)
+## 9) What Changed Recently
+
+**2026-02-14: Migration to edcloud backend**
+- Replaced ArpanetProductionStack (2x t3.micro) with single edcloud host (t3a.medium)
+- Both VAX + PDP-11 now run as containers on single Docker host
+- Shared volume (`build-shared`) replaces EFS for artifact transfer
+- Console-based transfer preserved for historical fidelity
+- Cost reduction: $17.90/mo → $11/mo at 4hrs/day, $6.40/mo stopped
+- See `edcloud/MIGRATION.md` for full migration details
+
+**2026-02-13: IMP Phase Archived and Production Deployed**
 
 1. **IMP Phase Archived**: Protocol incompatibility (Ethernet/TCP-IP vs ARPANET 1822)
    - All IMP materials moved to `docs/integration/archive/`
    - Simplified to direct VAX ↔ PDP-11 TCP/IP
 
-2. **Production Infrastructure Deployed**:
+2. **Production Infrastructure Deployed** (now superseded by edcloud):
    - 2x t3.micro instances (VAX + PDP-11)
    - Shared EFS logging at `/mnt/arpanet-logs/`
    - Simple management scripts at repo root
@@ -200,11 +211,12 @@ docker-compose -f docker-compose.production.yml restart vax
 ## 10) Important Notes
 
 - **AWS credentials**: Account 972626128180, region us-east-1
-- **SSH key**: `~/.ssh/arpanet-temp.pem`
-- **EFS ID**: `fs-03cd0abbb728b4ad8`
-- **Network**: Docker bridge `172.20.0.0/16`
-- **Data safety**: Stop/start preserves all data (EFS + EBS)
-- **IMPs**: Archived but can be restored if needed
+- **edcloud instance**: i-01798b99c71dd93a5 (t3a.medium, 80GB gp3)
+- **Tailscale**: 100.127.208.71 (hostname "edcloud")
+- **SSH access**: EC2 Instance Connect (temp) + authorized_keys (permanent)
+- **Network**: Docker bridge `172.20.0.0/16` (VAX .10, PDP-11 .50)
+- **Data safety**: Stop/start preserves EBS volume - no data loss
+- **Old stack**: ArpanetProductionStack destroyed 2026-02-14 (EFS fs-03cd0abbb728b4ad8 deleted)
 
 ## 11) Current Priorities
 

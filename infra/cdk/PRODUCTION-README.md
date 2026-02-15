@@ -1,5 +1,15 @@
 # ARPANET Production Infrastructure
 
+---
+**⚠️ DEPRECATED (2026-02-14)**
+
+This CDK stack (ArpanetProductionStack) has been destroyed and replaced with edcloud backend.
+See `edcloud/MIGRATION.md` and `edcloud/README.md` for current deployment.
+
+Retained for historical reference only.
+
+---
+
 Permanent two-machine setup with shared EFS logging.
 
 ## Architecture

@@ -62,24 +62,23 @@ coverage in separate jobs.
 
 Operationally, that means:
 - Local publish tags run fast local generation.
-- Distributed vintage tags run the full AWS-backed VAX/PDP-11 pipeline.
+- Distributed vintage tags run the full edcloud-backed VAX/PDP-11 pipeline (single host, both containers).
 
-### AWS lifecycle behavior in `deploy.yml` (docker mode)
+### Infrastructure lifecycle behavior in `deploy.yml` (docker mode)
 
-- A single **Activate AWS infrastructure** step:
-  - starts both EC2 instances,
-  - waits for both to be `running`,
-  - resolves and validates both public IPs,
-  - waits for SSH readiness with timeout + hard failure.
-- A single **Deactivate AWS infrastructure** step (with `always()`):
-  - stops both EC2 instances,
-  - waits for both to be `stopped`.
+- A single **Activate edcloud infrastructure** step:
+  - starts edcloud instance (via `edcloud` CLI or boto3),
+  - waits for instance to be `running`,
+  - establishes Tailscale connectivity (GHA runner joins tailnet),
+  - validates SSH connectivity to edcloud host.
+- A single **Deactivate edcloud infrastructure** step (with `always()`):
+  - stops edcloud instance (auto-shutdown handles typical cases, explicit stop for failures).
 - Lifecycle log markers are written to `GITHUB.log`:
-  - `AWS_ACTIVATE_BEGIN`
-  - `AWS_ACTIVATE_READY`
-  - `AWS_ACTIVATE_FAILED` (on failure paths)
-  - `AWS_DEACTIVATE_BEGIN`
-  - `AWS_DEACTIVATE_COMPLETE`
+  - `EDCLOUD_ACTIVATE_BEGIN`
+  - `EDCLOUD_ACTIVATE_READY`
+  - `EDCLOUD_ACTIVATE_FAILED` (on failure paths)
+  - `EDCLOUD_DEACTIVATE_BEGIN`
+  - `EDCLOUD_DEACTIVATE_COMPLETE`
 
 ## Operational guidance
 

@@ -124,13 +124,23 @@ flowchart LR
 - TS11 tape transfer
 - Authentic but slower (~60 seconds)
 
+**Production Deployment (publish-vintage tags):**
+- Single `t3a.medium` edcloud host (managed via `edcloud` CLI from sibling repo)
+- Both VAX + PDP-11 containers on single Docker network (`docker-compose.production.yml`)
+- Shared volume (`build-shared`) for artifact transfer between containers
+- GitHub Actions workflow: SCP compose file → start containers → telnet consoles → retrieve artifacts
+- Auto-shutdown after 30min idle (~$11/mo at 4hrs/day usage)
+
 **GitHub Actions Tags:**
 - `publish` or `publish-*`: Local mode (fast)
-- `publish-vax` or `publish-docker`: Docker mode (authentic)
+- `publish-vintage` or `publish-vintage-*`: edcloud backend (authentic 4.3BSD + 2.11BSD pipeline)
+- Legacy aliases: `publish-vax`, `publish-docker` (still supported)
 
 **Notes:**
 - Docker mode uses pinned SIMH image (`jguillaumes/simh-vaxbsd`)
 - File transfer via TS11 tape image
+- Production backend: single edcloud host with both VAX + PDP-11 containers
+- Shared volume pattern enables console-based transfer preservation
 - ARPANET multi-hop removed from CI (archived)
 - Historical ARPANET work: `docs/integration/TAPE-TRANSFER-VALIDATION-2026-02-13.md`
 

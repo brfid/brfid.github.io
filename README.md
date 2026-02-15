@@ -21,17 +21,18 @@ This project generates and publishes a static resume site, with an optional dist
 
 For deeper component detail, see `ARCHITECTURE.md`.
 
-## AWS Production Infrastructure Management
+## Production Infrastructure Management
 
-**Quick commands** (2x t3.micro + shared EFS storage):
+**Quick commands** (edcloud single-host backend):
 ```bash
-./aws-status.sh  # Check if running/stopped, show IPs and costs
-./aws-stop.sh    # Stop instances (saves ~$15/month, keeps all data)
-./aws-start.sh   # Start instances (shows new IPs)
+./aws-status.sh  # Check edcloud host status, Tailscale IP, cost estimate
+./aws-stop.sh    # Stop edcloud (saves compute cost, ~$6.40/month storage only)
+./aws-start.sh   # Start edcloud (shows new public IP)
 ```
 
-**Cost**: ~$17/month running or ~$2/month stopped (storage only).
-**Data safety**: All scripts preserve EFS and EBS volumes - no data loss.
+**Backend**: Single t3a.medium instance running both VAX + PDP-11 containers via Docker Compose. Managed via `edcloud` CLI (sibling repo).
+**Cost**: ~$11/month at 4hrs/day or ~$6.40/month stopped (storage only). Auto-shutdown after 30min idle.
+**Data safety**: All scripts preserve EBS volume - no data loss.
 
 ## LLM / operator cold-start quickstart
 
