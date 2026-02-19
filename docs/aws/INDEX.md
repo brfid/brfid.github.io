@@ -1,15 +1,18 @@
-# AWS Infrastructure Documentation
+# AWS Documentation Index
 
-## Overview
-AWS-facing docs for the current `edcloud` single-host platform and retained historical context.
+AWS-facing docs in this repo are limited to wrappers and cost guidance for the current `edcloud` single-host model.
 
-Active lifecycle management is handled by `edcloud` (single-host platform).  
-Current platform docs:
-- `https://github.com/brfid/edcloud/blob/main/README.md`
-- `https://github.com/brfid/edcloud/blob/main/SETUP.md`
+## Source of truth
 
-## Documentation
-- [AWS Cost Optimization](aws-cost-optimization.md) - Current single-host cost baseline and controls
+- `edcloud` platform docs:
+  - `https://github.com/brfid/edcloud/blob/main/README.md`
+  - `https://github.com/brfid/edcloud/blob/main/SETUP.md`
+  - `https://github.com/brfid/edcloud/blob/main/DESIGN.md`
 
-## Historical References
-- [Production Deployment](../../PRODUCTION-DEPLOYMENT.md) - Retired two-host/CDK deployment guide
+## Active docs
+
+- [aws-cost-optimization.md](aws-cost-optimization.md) — single-host cost baseline and controls
+
+## Historical reference
+
+- [../../PRODUCTION-DEPLOYMENT.md](../../PRODUCTION-DEPLOYMENT.md) — retired two-host deployment model

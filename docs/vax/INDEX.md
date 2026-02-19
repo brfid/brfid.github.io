@@ -1,15 +1,20 @@
-# VAX Documentation
+# VAX Documentation Index
 
-## Operational Guides
-- [VAX PDP11 FTP Setup](VAX-PDP11-FTP-SETUP.md)
-- [VAX PDP11 FTP Validation](VAX-PDP11-FTP-VALIDATION-2026-02-13.md)
-- [Telnet Console Method](TELNET-CONSOLE-METHOD.md)
-- [Serial Tunnel](SERIAL-TUNNEL.md)
+VAX docs cover the active VAX build stage and retained transfer history.
 
-## Reference
-- [VAX README](README.md)
-- [Examples](examples/README.md)
+## Primary references
 
-## Quick Links
-- [Integration](../integration/) - Multi-machine connections
-- [PDP](../pdp/) - PDP systems documentation
+- [README.md](README.md) — VAX stage overview
+- [examples/README.md](examples/README.md) — sample VAX inputs
+- [TELNET-CONSOLE-METHOD.md](TELNET-CONSOLE-METHOD.md) — console access method
+- [SERIAL-TUNNEL.md](SERIAL-TUNNEL.md) — serial tunnel notes
+
+## Historical transfer records
+
+- [VAX-PDP11-FTP-SETUP.md](VAX-PDP11-FTP-SETUP.md)
+- [VAX-PDP11-FTP-VALIDATION-2026-02-13.md](VAX-PDP11-FTP-VALIDATION-2026-02-13.md)
+
+## Related indexes
+
+- [../integration/INDEX.md](../integration/INDEX.md)
+- [../pdp/INDEX.md](../pdp/INDEX.md)

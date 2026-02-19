@@ -2,48 +2,56 @@
 
 **Last updated:** 2026-02-15
 
-## Current Architecture
+## Current architecture
 
-- **Platform**: `edcloud` single-host backend (AWS EC2 + Docker).
-- **Workloads**: VAX + PDP-11 containers run on the same host.
-- **Repo boundary**:
-  - `brfid.github.io`: build/publish logic and minimal orchestration hooks.
-  - `edcloud`: infrastructure lifecycle and platform operations.
+- Platform: `edcloud` single-host backend (AWS EC2 + Docker)
+- Workloads: VAX and PDP-11 containers on the same host
+- Ownership boundary:
+  - `brfid.github.io`: build/publish pipeline and minimal lifecycle hooks
+  - `edcloud`: infrastructure lifecycle and platform operations
 
-## Lifecycle Model
+## Lifecycle model
 
-- Legacy two-instance VAX/PDP-11 orchestration in this repo is retired.
-- Root scripts `aws-start.sh`, `aws-stop.sh`, `aws-status.sh` now target one edcloud instance.
-- Instance selection is:
-  1. `EDCLOUD_INSTANCE_ID` env var, else
-  2. tag lookup (`edcloud:managed=true`, `Name=edcloud`).
+- Multi-instance orchestration in this repo is retired.
+- `aws-start.sh`, `aws-stop.sh`, and `aws-status.sh` target one edcloud instance.
+- Instance resolution order:
+  1. `EDCLOUD_INSTANCE_ID`
+  2. tag lookup (`edcloud:managed=true`, `Name=edcloud`)
 
-## Publish Workflow
+## Publish behavior (distributed vintage lane)
 
-- `.github/workflows/deploy.yml` distributed vintage lane now:
-  1. activates one edcloud instance,
-  2. prepares host checkout + starts `docker-compose.production.yml`,
-  3. runs staged VAX/PDP-11 build logic against that single host,
-  4. deactivates that same instance in `always()` cleanup.
+`deploy.yml` in docker mode:
 
-## What Is Stable
+1. starts one edcloud instance,
+2. prepares host checkout and starts `docker-compose.production.yml`,
+3. runs VAX/PDP-11 build stages,
+4. stops that same instance in `always()` cleanup.
 
-- Local fast build path (`--vax-mode local`).
-- Single-host lifecycle scripts from this repo.
-- Documentation baseline shifted to integration paths (`docs/integration/*`) instead of removed `docs/arpanet/*`.
+## Stable now
 
-## Known Follow-Up
+- Local build path (`--vax-mode local`)
+- Single-host lifecycle hooks in this repo
+- Active docs rooted in `docs/INDEX.md` and `docs/integration/INDEX.md`
 
-- Distributed vintage lane still carries historical log path conventions (`/mnt/arpanet-logs`) for compatibility.
-- Additional cleanup is still possible in deep archive docs and legacy notes.
-- Legacy multi-machine orchestration code has been removed from active repo paths; keep lifecycle changes in `edcloud`.
-- edcloud next priority: define and enforce a reproducible core host-tools/settings baseline, with snapshot + restore drill standards (tracked in `https://github.com/brfid/edcloud/blob/main/SETUP.md` and `https://github.com/brfid/edcloud/blob/main/DESIGN.md`).
+## Follow-up
 
-## Source Of Truth Pointers
+- Historical log path conventions (`/mnt/arpanet-logs`) still appear in some integration paths for compatibility.
+- Archive docs can be trimmed further, but remain intentionally retained.
+- Lifecycle/platform changes should continue in `edcloud`, not in this repo.
 
-- Overview: `README.md`
-- Cold start: `docs/COLD-START.md`
-- Workflow behavior: `WORKFLOWS.md`
-- Documentation index: `docs/INDEX.md`
-- Integration index: `docs/integration/INDEX.md`
-- Historical transport archive: `docs/deprecated/transport-archive.md`
+## Next work (in progress)
+
+Restoring the uuencode console transfer pipeline (Option B) on edcloud:
+
+1. **CI gate** — pylint scope was widened to include `tests`, failing since 2026-02-15. Fix: scope back to `resume_generator` only (matching `deploy.yml`).
+2. **deploy.yml stages 1–3** — `screen`/telnet console commands must run on edcloud via SSH (ports 2323/2327 are localhost-only there, not reachable from the GH Actions runner). Refactor to wrap console ops in `ssh ubuntu@$EDCLOUD_IP "bash -se" <<EOF`.
+3. **Log paths** — `/mnt/arpanet-logs` (old EFS path) must become `~/arpanet-logs` (local on edcloud state volume).
+4. **PDP-11 image** — build `vintage/Dockerfile.pdp11` on edcloud and confirm `unix` kernel boots + `/usr` mounts + `uudecode`/`nroff` are present.
+
+## Source-of-truth pointers
+
+- `README.md`
+- `docs/COLD-START.md`
+- `WORKFLOWS.md`
+- `docs/INDEX.md`
+- `docs/integration/INDEX.md`

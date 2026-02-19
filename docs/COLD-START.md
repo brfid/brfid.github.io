@@ -1,70 +1,64 @@
-# Cold Start Guide (LLM / New Operator)
+# Cold Start Guide
 
-Use this page when starting from zero context.
+Use when starting with no local context.
 
-## 0) Current State
+## Current state
 
-**Date**: 2026-02-15  
-**Status**: Active path is single-host `edcloud` + containerized VAX/PDP-11.
+- Active architecture: single-host `edcloud` backend running containerized VAX/PDP-11 workloads.
+- Repo boundary:
+  - `brfid.github.io`: build/publish pipeline
+  - `edcloud`: infrastructure lifecycle
+- Legacy multi-instance + EFS deployment is archived.
 
-- `brfid.github.io` owns resume generation, vintage build scripts, and site publish workflow.
-- `edcloud` owns infrastructure lifecycle (provision/up/down/snapshot/destroy).
-- Legacy two-instance VAX/PDP-11 + EFS orchestration is archived and not used.
-- Orchestration is designed to run from small ARM controller systems too (for example, Pi Zero 2 class nodes).
-
-## 1) Read Order
+## Read order
 
 1. `README.md`
-2. `docs/COLD-START.md` (this file)
+2. `docs/COLD-START.md`
 3. `STATUS.md`
 4. `docs/INDEX.md`
-5. `docs/integration/INDEX.md` (if touching distributed vintage/integration work)
+5. `docs/integration/INDEX.md` (integration/history work)
 
-Then apply repository workflow constraints from `AGENTS.md`.
+Then apply `AGENTS.md` constraints.
 
-## 2) Source Of Truth
+## Source of truth
 
 - Project status: `STATUS.md`
-- Documentation hub: `docs/INDEX.md`
-- Integration map (current + historical): `docs/integration/INDEX.md`
 - Workflow behavior: `WORKFLOWS.md`
+- Documentation hub: `docs/INDEX.md`
+- Integration map: `docs/integration/INDEX.md`
 
-Infrastructure platform docs live in `edcloud`:
+`edcloud` platform docs:
 - `https://github.com/brfid/edcloud/blob/main/README.md`
 - `https://github.com/brfid/edcloud/blob/main/SETUP.md`
-- `https://github.com/brfid/edcloud/blob/main/MIGRATION.md`
-- `https://github.com/brfid/edcloud/blob/main/DESIGN.md` (baseline tools/rebuild/backup rationale)
+- `https://github.com/brfid/edcloud/blob/main/DESIGN.md`
 
-## 3) Lifecycle Boundary
+## Lifecycle boundary
 
-- Do not reintroduce two-machine orchestration in this repo.
-- Keep `brfid.github.io` orchestration minimal: start/stop/check the single edcloud host and run build stages.
-- Prefer platform-level changes in `edcloud` instead of embedding infra logic here.
+- Do not add multi-host orchestration back into this repo.
+- Keep local lifecycle hooks minimal (`aws-*.sh`).
+- Put platform/lifecycle changes in `edcloud`.
 
-## 4) Quick Commands
+## Quick commands
 
 ```bash
-# Check/start/stop the single edcloud host from this repo
 ./aws-status.sh
 ./aws-start.sh
 ./aws-stop.sh
 
-# Build locally (fast)
 .venv/bin/resume-gen --out site --with-vax --vax-mode local
-
-# Build with distributed vintage mode
 .venv/bin/resume-gen --out site --with-vax --vax-mode docker
 ```
 
-## 5) Publish Tags
+## Publish tags
 
-- Fast local: `publish`, `publish-fast`, `publish-fast-*`
+- Fast/local: `publish`, `publish-fast`, `publish-fast-*`
 - Distributed vintage: `publish-vintage`, `publish-vintage-*`
 - Legacy aliases accepted: `publish-vax*`, `publish-docker*`
 
-## 6) Archives And Historical Context
+## Historical context
 
-- Historical transport decisions: `docs/deprecated/transport-archive.md`
-- Legacy ARPANET/IMP materials: `docs/legacy/`, `docs/integration/archive/`
+- `docs/deprecated/transport-archive.md`
+- `docs/legacy/`
+- `docs/integration/archive/`
 
-Treat archive material as evidence/history, not active runbook.
+Treat these as historical evidence, not active runbooks.

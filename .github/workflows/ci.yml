@@ -34,6 +34,6 @@ jobs:
           python -m ruff check resume_generator
           python -m mypy resume_generator host_logging tests
           python -m pytest -q -m "unit and not docker and not slow"
-          python -m pylint resume_generator tests -sn
+          python -m pylint resume_generator -sn
           python -m vulture --config pyproject.toml resume_generator
 

@@ -1,44 +1,41 @@
 # Integration Documentation (VAX ↔ PDP-11)
 
-Integration records for VAX/PDP-11 transfer and IMP experiments.
+Integration records for cross-system transfer experiments and validation.
 
-## Status And Scope
+## Scope
 
-- **Current active production path**: single-host `edcloud` lifecycle + `docker-compose.production.yml` in this repo.
-- **This section**: mixed operational notes and historical records from prior multi-machine/EFS phases.
-- **Source of truth for "current" behavior**:
+- Active production path is single-host `edcloud` + `docker-compose.production.yml`.
+- This section is primarily retained integration evidence from earlier multi-machine phases.
+- Source of truth for current behavior:
   - `../README.md`
   - `../STATUS.md`
   - `../WORKFLOWS.md`
 
-## Current Architecture (2026-02-15)
+## Active path (in progress)
 
-**Historical milestone (retained):** Uuencode console transfer for discrete machine-to-machine communication.
-The active deployment path is now single-host `edcloud`; this section is retained primarily as integration evidence.
+Uuencode console transfer (Option B) on single-host edcloud is the current target:
 
-- **Method**: VAX encodes → Console I/O → PDP-11 decodes
-- **Why**: Historically accurate (1970s-80s), no shared filesystem
-- **Status at time of write**: Fully deployed and operational (`publish-vax-uuencode-v3`)
-- **Docs**:
-  - [UUENCODE-CONSOLE-TRANSFER.md](UUENCODE-CONSOLE-TRANSFER.md) - Architecture
-  - [UUENCODE-IMPLEMENTATION-STATUS.md](UUENCODE-IMPLEMENTATION-STATUS.md) - Deployment status
+- VAX encodes artifact → GH Actions SSHes into edcloud → `screen`/telnet injects data into PDP-11 console at `localhost:2327` → PDP-11 decodes with `uudecode`/`nroff`
+- Last confirmed working: `publish-vax-uuencode-v3` (2026-02-14, prior to single-host migration)
+- Blocking items tracked in `../STATUS.md` under "Next work"
 
-## Key Documents
+## Key records
 
-### Current (Operational)
-- **[UUENCODE-CONSOLE-TRANSFER.md](UUENCODE-CONSOLE-TRANSFER.md)** - ✅ Console-based file transfer architecture
-- **[UUENCODE-IMPLEMENTATION-STATUS.md](UUENCODE-IMPLEMENTATION-STATUS.md)** - ✅ Implementation and deployment status
-- **[TAPE-TRANSFER-VALIDATION-2026-02-13.md](TAPE-TRANSFER-VALIDATION-2026-02-13.md)** - ✅ Tape transfer validation (proof of concept)
+- [TAPE-TRANSFER-VALIDATION-2026-02-13.md](TAPE-TRANSFER-VALIDATION-2026-02-13.md) — tape transfer validation record
+- [UUENCODE-CONSOLE-TRANSFER.md](UUENCODE-CONSOLE-TRANSFER.md) — console transfer design
+- [UUENCODE-IMPLEMENTATION-STATUS.md](UUENCODE-IMPLEMENTATION-STATUS.md) — deployment status at time of implementation
 
-### Organization
-- **[Progress](progress/)** - Timeline and progress logs
-- **[Overview](overview/)** - Architecture overviews
-- **[Operations](operations/)** - Operational guides
-- **[Research](research/)** - Research and analysis
-- **[Archive](archive/)** - Historical approaches (IMPs, etc.)
-- **[Handoffs](handoffs/)** - LLM research handoffs
+## Subsections
 
-## Quick Links
-- **[VAX Documentation](../vax/)** - 4.3BSD VAX 11/780
-- **[PDP Documentation](../pdp/)** - 2.11BSD PDP-11/73
-- **[AWS Infrastructure](../aws/)** - Cloud deployment
+- [progress/](progress/) — timeline/progress logs
+- [overview/](overview/) — architecture overviews
+- [operations/](operations/) — retained runbooks and notes
+- [research/](research/) — research artifacts
+- [archive/](archive/) — archived approaches
+- [handoffs/](handoffs/) — handoff notes
+
+## Related indexes
+
+- [../vax/INDEX.md](../vax/INDEX.md)
+- [../pdp/INDEX.md](../pdp/INDEX.md)
+- [../aws/INDEX.md](../aws/INDEX.md)

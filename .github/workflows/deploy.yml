@@ -218,8 +218,8 @@ jobs:
           git checkout "$GIT_SHA"
           mkdir -p build/vax build/pdp11
 
-          sudo mkdir -p /mnt/arpanet-logs/builds
-          sudo chown -R ubuntu:ubuntu /mnt/arpanet-logs
+          mkdir -p \$HOME/arpanet-logs/builds
+          sudo apt-get install -y screen 2>/dev/null || true
 
           docker compose -f docker-compose.production.yml up -d --build
           docker compose -f docker-compose.production.yml ps
@@ -237,6 +237,9 @@ jobs:
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
             scripts/arpanet-log.sh \
             scripts/vax-build-and-encode.sh \
+            scripts/vax-console-upload.sh \
+            scripts/console-transfer.py \
+            scripts/pdp11-validate.sh \
             scripts/merge-logs.py \
             scripts/extract-vax-logs.py \
             scripts/extract-pdp11-logs.py \
@@ -250,11 +253,11 @@ jobs:
       - name: Stage 1 - VAX Build & Encode
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 1: VAX BUILD & ENCODE ==="
-          echo "VAX IP: $VAX_IP"
+          echo "edcloud IP: $EDCLOUD_IP"
           echo "Build ID: $BUILD_ID"
 
           # Log GitHub Actions activity
@@ -264,243 +267,203 @@ jobs:
           echo "Generating resume.vax.yaml locally..."
           python -m resume_generator --out site --with-vax --vax-mode local
 
-          # Install screen for console automation
-          if ! command -v screen &> /dev/null; then
-            echo "Installing screen..."
-            sudo apt-get update -qq
-            sudo apt-get install -y screen
-          fi
+          # Upload generated input to edcloud
+          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            build/vax/resume.vax.yaml ubuntu@$EDCLOUD_IP:/tmp/resume.vax.yaml
 
-          # Upload arpanet-log.sh to VAX BSD via console
-          echo "Uploading arpanet-log.sh to VAX BSD..."
-          bash scripts/vax-console-upload.sh scripts/arpanet-log.sh /tmp/arpanet-log.sh "$VAX_IP"
+          # All screen/telnet console ops run on edcloud.
+          # VAX console (port 2323) and PDP-11 console (port 2327) are bound to
+          # localhost on edcloud and are not reachable from the GH Actions runner.
+          echo "Running VAX build via edcloud SSH (console ports are localhost-only)..."
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          set -euo pipefail
+          cd \$HOME/brfid.github.io
 
-          # Make it executable inside BSD
-          SESSION="vax-chmod-$$"
-          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
+          echo "Uploading arpanet-log.sh to VAX BSD via console..."
+          bash /tmp/vax-console-upload.sh scripts/arpanet-log.sh /tmp/arpanet-log.sh 127.0.0.1
+
+          screen -dmS vax-chmod telnet 127.0.0.1 2323
           sleep 3
-          screen -S "$SESSION" -X stuff "\n"
+          screen -S vax-chmod -X stuff "\n"
           sleep 0.5
-          screen -S "$SESSION" -X stuff "root\n"
+          screen -S vax-chmod -X stuff "root\n"
           sleep 2
-          screen -S "$SESSION" -X stuff "chmod +x /tmp/arpanet-log.sh\n"
+          screen -S vax-chmod -X stuff "chmod +x /tmp/arpanet-log.sh\n"
           sleep 1
-          screen -S "$SESSION" -X quit 2>/dev/null || true
+          screen -S vax-chmod -X quit 2>/dev/null || true
 
-          # Upload source files to VAX BSD via console
           echo "Uploading bradman.c to VAX BSD..."
-          bash scripts/vax-console-upload.sh vax/bradman.c /tmp/bradman.c "$VAX_IP"
+          bash /tmp/vax-console-upload.sh vax/bradman.c /tmp/bradman.c 127.0.0.1
 
           echo "Uploading resume.vax.yaml to VAX BSD..."
-          bash scripts/vax-console-upload.sh build/vax/resume.vax.yaml /tmp/resume.vax.yaml "$VAX_IP"
+          bash /tmp/vax-console-upload.sh /tmp/resume.vax.yaml /tmp/resume.vax.yaml 127.0.0.1
 
-          # Upload build script to VAX BSD via console
           echo "Uploading vax-build-and-encode.sh to VAX BSD..."
-          bash scripts/vax-console-upload.sh scripts/vax-build-and-encode.sh /tmp/vax-build-and-encode.sh "$VAX_IP"
+          bash /tmp/vax-console-upload.sh /tmp/vax-build-and-encode.sh /tmp/vax-build-and-encode.sh 127.0.0.1
 
-          # Make build script executable inside BSD
-          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
+          screen -dmS vax-chmod2 telnet 127.0.0.1 2323
           sleep 3
-          screen -S "$SESSION" -X stuff "\n"
+          screen -S vax-chmod2 -X stuff "\n"
           sleep 0.5
-          screen -S "$SESSION" -X stuff "root\n"
+          screen -S vax-chmod2 -X stuff "root\n"
           sleep 2
-          screen -S "$SESSION" -X stuff "chmod +x /tmp/vax-build-and-encode.sh\n"
+          screen -S vax-chmod2 -X stuff "chmod +x /tmp/vax-build-and-encode.sh\n"
           sleep 1
-          screen -S "$SESSION" -X quit 2>/dev/null || true
+          screen -S vax-chmod2 -X quit 2>/dev/null || true
 
-          # Execute build script INSIDE VAX BSD
           echo "Executing build inside VAX BSD (vintage K&R C)..."
-          SESSION="vax-build-$$"
-          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
+          screen -dmS vax-build telnet 127.0.0.1 2323
           sleep 3
-          screen -S "$SESSION" -X stuff "\n"
+          screen -S vax-build -X stuff "\n"
           sleep 0.5
-          screen -S "$SESSION" -X stuff "root\n"
+          screen -S vax-build -X stuff "root\n"
           sleep 2
-          screen -S "$SESSION" -X stuff "cd /tmp\n"
+          screen -S vax-build -X stuff "cd /tmp\n"
           sleep 1
-          screen -S "$SESSION" -X stuff "/tmp/vax-build-and-encode.sh $BUILD_ID\n"
+          screen -S vax-build -X stuff "/tmp/vax-build-and-encode.sh $BUILD_ID\n"
 
-          # Wait for build to complete (adjust timing as needed)
           echo "Waiting for build to complete..."
           sleep 30
 
-          # Capture console output
-          screen -S "$SESSION" -X hardcopy "/tmp/vax-build-console.txt"
-          screen -S "$SESSION" -X quit 2>/dev/null || true
-
-          # Extract logs from console capture
-          echo "Extracting logs from console output..."
+          screen -S vax-build -X hardcopy "/tmp/vax-build-console.txt"
+          screen -S vax-build -X quit 2>/dev/null || true
 
           if [ -f /tmp/vax-build-console.txt ]; then
-            # Verify build succeeded
             if grep -q "VAX build complete" /tmp/vax-build-console.txt; then
-              echo "✓ Build succeeded (verified via console)"
-
-              # Upload console capture to container for processing
-              scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+              echo "✓ Build succeeded"
+              mkdir -p \$HOME/arpanet-logs/builds/$BUILD_ID
+              python3 /tmp/extract-vax-logs.py \
                 /tmp/vax-build-console.txt \
-                ubuntu@$VAX_IP:/tmp/vax-build-console.txt
-
-              # Extract logs from console capture to host log storage
-              ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-                "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
-                 python3 /tmp/extract-vax-logs.py \
-                   /tmp/vax-build-console.txt \
-                   /mnt/arpanet-logs/builds/$BUILD_ID/VAX.log"
-
-              echo "✓ Logs extracted to host log storage"
+                \$HOME/arpanet-logs/builds/$BUILD_ID/VAX.log
+              echo "✓ Logs extracted"
             else
-              echo "⚠️  Build status unclear from console output"
-              echo "Console output (last 50 lines):"
+              echo "⚠️  Build status unclear"
               tail -50 /tmp/vax-build-console.txt
             fi
           else
             echo "⚠️  Console capture not found"
           fi
+          EOF
 
-          echo "✓ VAX build & encode complete (executed in BSD with vintage tools)"
+          echo "✓ Stage 1 complete"
 
       - name: Stage 2 - Console Transfer (VAX → PDP-11)
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
-          PDP11_IP: ${{ steps.edcloud_activate.outputs.pdp11_ip }}
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 2: CONSOLE TRANSFER ==="
-          echo "VAX IP: $VAX_IP"
-          echo "PDP-11 IP: $PDP11_IP"
+          echo "edcloud IP: $EDCLOUD_IP"
           echo "Build ID: $BUILD_ID"
 
-          # Retrieve encoded file from VAX BSD via console cat
-          echo "Retrieving encoded file from VAX BSD..."
-          SESSION="vax-retrieve-$$"
-          screen -dmS "$SESSION" telnet "$VAX_IP" 2323
-          sleep 3
-          screen -S "$SESSION" -X stuff "\n"
-          sleep 0.5
-          screen -S "$SESSION" -X stuff "root\n"
-          sleep 2
-          screen -S "$SESSION" -X stuff "cat /tmp/brad.1.uu\n"
-          sleep 5
-          screen -S "$SESSION" -X hardcopy "/tmp/vax-cat-output.txt"
-          screen -S "$SESSION" -X quit 2>/dev/null || true
+          # All console ops run on edcloud (VAX:2323 and PDP-11:2327 are localhost there)
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          set -euo pipefail
 
-          # Extract just the uuencoded content (skip prompts)
+          echo "Retrieving encoded file from VAX BSD via console..."
+          screen -dmS vax-retrieve telnet 127.0.0.1 2323
+          sleep 3
+          screen -S vax-retrieve -X stuff "\n"
+          sleep 0.5
+          screen -S vax-retrieve -X stuff "root\n"
+          sleep 2
+          screen -S vax-retrieve -X stuff "cat /tmp/brad.1.uu\n"
+          sleep 5
+          screen -S vax-retrieve -X hardcopy "/tmp/vax-cat-output.txt"
+          screen -S vax-retrieve -X quit 2>/dev/null || true
+
           grep -E '^(begin|M|end)' /tmp/vax-cat-output.txt > /tmp/brad.1.uu || echo "Warning: Could not extract uuencoded file"
 
-          # Verify we got the file
           if [ -f /tmp/brad.1.uu ] && [ -s /tmp/brad.1.uu ]; then
-            echo "✓ Retrieved brad.1.uu ($(wc -l < /tmp/brad.1.uu) lines)"
+            echo "✓ Retrieved brad.1.uu (\$(wc -l < /tmp/brad.1.uu) lines)"
           else
             echo "❌ Failed to retrieve brad.1.uu from VAX BSD"
             exit 1
           fi
 
-          # Upload arpanet-log.sh to PDP-11 BSD
-          echo "Uploading arpanet-log.sh to PDP-11 BSD..."
-
-          # Create a console upload helper for PDP-11
-          SESSION="pdp11-upload-$$"
-          screen -dmS "$SESSION" telnet "$PDP11_IP" 2327
+          echo "Uploading arpanet-log.sh to PDP-11 BSD via console..."
+          screen -dmS pdp11-upload telnet 127.0.0.1 2327
           sleep 3
-          screen -S "$SESSION" -X stuff "\n"
+          screen -S pdp11-upload -X stuff "\n"
           sleep 0.5
-          screen -S "$SESSION" -X stuff "root\n"
+          screen -S pdp11-upload -X stuff "root\n"
           sleep 2
-
-          # Upload arpanet-log.sh via heredoc
-          screen -S "$SESSION" -X stuff "cat > /tmp/arpanet-log.sh << 'UPLOAD_EOF'\n"
+          screen -S pdp11-upload -X stuff "cat > /tmp/arpanet-log.sh << 'UPLOAD_EOF'\n"
           sleep 0.5
-
           while IFS= read -r line; do
-            screen -S "$SESSION" -X stuff "$line\r"
+            screen -S pdp11-upload -X stuff "\$line\r"
             sleep 0.02
-          done < scripts/arpanet-log.sh
-
-          screen -S "$SESSION" -X stuff "UPLOAD_EOF\n"
+          done < \$HOME/brfid.github.io/scripts/arpanet-log.sh
+          screen -S pdp11-upload -X stuff "UPLOAD_EOF\n"
           sleep 1
-          screen -S "$SESSION" -X stuff "chmod +x /tmp/arpanet-log.sh\n"
+          screen -S pdp11-upload -X stuff "chmod +x /tmp/arpanet-log.sh\n"
           sleep 1
-          screen -S "$SESSION" -X quit 2>/dev/null || true
-
+          screen -S pdp11-upload -X quit 2>/dev/null || true
           echo "✓ arpanet-log.sh uploaded to PDP-11 BSD"
 
-          # Run console transfer
           echo "Starting console transfer to PDP-11..."
-          python3 scripts/console-transfer.py "$BUILD_ID" "$VAX_IP" "$PDP11_IP"
-
+          python3 /tmp/console-transfer.py "$BUILD_ID" 127.0.0.1 127.0.0.1
           echo "✓ Console transfer complete"
+          EOF
+
+          echo "✓ Stage 2 complete"
 
       - name: Verify screen session persists
         if: steps.mode.outputs.build_mode == 'docker'
+        env:
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
         run: |
-          echo "📡 Verifying screen session..."
-          if screen -ls | grep -q "pdp11-console"; then
-            echo "✅ Screen session 'pdp11-console' is active"
-            screen -ls
-          else
-            echo "❌ Screen session 'pdp11-console' not found"
-            echo "Available sessions:"
-            screen -ls || echo "No screen sessions found"
-            echo "Processes:"
-            ps aux | grep screen || true
-            exit 1
-          fi
+          echo "📡 Verifying screen session on edcloud..."
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+            'if screen -ls 2>/dev/null | grep -q "pdp11-console"; then
+               echo "✅ Screen session pdp11-console is active"
+               screen -ls
+             else
+               echo "❌ Screen session pdp11-console not found"
+               screen -ls 2>/dev/null || echo "No screen sessions"
+               exit 1
+             fi'
 
       - name: Stage 3 - PDP-11 Validation
         if: steps.mode.outputs.build_mode == 'docker'
         env:
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-          PDP11_IP: ${{ steps.edcloud_activate.outputs.pdp11_ip }}
-          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
         run: |
           echo "=== STAGE 3: PDP-11 VALIDATION ==="
           echo "Build ID: $BUILD_ID"
-          echo "PDP-11 IP: $PDP11_IP"
 
-          # Run validation commands on PDP-11 console
+          # Validation runs on edcloud (PDP-11 console is localhost:2327 there)
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          set -euo pipefail
+
           echo "Sending validation commands to PDP-11..."
-          bash scripts/pdp11-validate.sh "$BUILD_ID"
-
-          # Extract logs from PDP-11 console capture
-          echo "Extracting PDP-11 logs from console output..."
+          PDP11_IP=127.0.0.1 bash /tmp/pdp11-validate.sh "$BUILD_ID"
 
           if [ -f /tmp/pdp11-validation-$BUILD_ID.txt ]; then
-            # Verify validation succeeded
             if grep -q "Status: PASS" /tmp/pdp11-validation-$BUILD_ID.txt; then
-              echo "✓ Validation succeeded (verified via console)"
-
-              # Upload console capture to container for processing
-              scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+              echo "✓ Validation succeeded"
+              mkdir -p \$HOME/arpanet-logs/builds/$BUILD_ID
+              python3 /tmp/extract-pdp11-logs.py \
                 /tmp/pdp11-validation-$BUILD_ID.txt \
-                ubuntu@$VAX_IP:/tmp/pdp11-validation-$BUILD_ID.txt
-
-              # Extract logs from console capture to host log storage
-              ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-                "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID && \
-                 python3 /tmp/extract-pdp11-logs.py \
-                   /tmp/pdp11-validation-$BUILD_ID.txt \
-                   /mnt/arpanet-logs/builds/$BUILD_ID/PDP11.log"
-
-              echo "✓ PDP-11 logs extracted to host log storage"
+                \$HOME/arpanet-logs/builds/$BUILD_ID/PDP11.log
+              echo "✓ PDP-11 logs extracted"
             else
-              echo "⚠️  Validation status unclear from console output"
-              echo "Console output (last 50 lines):"
+              echo "⚠️  Validation status unclear"
               tail -50 /tmp/pdp11-validation-$BUILD_ID.txt
             fi
           else
             echo "⚠️  PDP-11 console capture not found"
           fi
+          EOF
 
-          echo "✓ PDP-11 validation complete"
+          echo "✓ Stage 3 complete"
 
       - name: Stage 4 - Retrieve Final Output
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 4: RETRIEVE FINAL OUTPUT ==="
@@ -508,14 +471,14 @@ jobs:
           # Retrieve validated output from host log storage
           echo "Retrieving validated output from PDP-11..."
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/pdp-output/brad.txt \
+            ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/pdp-output/brad.txt \
             build/vax/brad.txt || echo "Warning: brad.txt not found, using original"
 
           # Fallback: if PDP-11 output not available, get from VAX
           if [[ ! -f build/vax/brad.txt ]]; then
             echo "Using VAX original output..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-              ubuntu@$VAX_IP:/tmp/brad.1 \
+              ubuntu@$EDCLOUD_IP:/tmp/brad.1 \
               build/vax/brad.1
             python -m resume_generator.manpage --in build/vax/brad.1 --out build/vax/brad.txt
           fi
@@ -534,69 +497,48 @@ jobs:
       - name: Merge and retrieve build logs
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📋 Merging build logs from all sources..."
 
-          # Ensure build directory exists on host log storage
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            "mkdir -p /mnt/arpanet-logs/builds/$BUILD_ID"
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+            "mkdir -p ~/arpanet-logs/builds/$BUILD_ID"
 
-          # Upload GitHub log to host log storage
           if [[ -f /tmp/github.log ]]; then
-            echo "Uploading GitHub Actions log..."
             scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
               /tmp/github.log \
-              ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/GITHUB.log
+              ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/GITHUB.log
           fi
 
-          # Upload COURIER log to host log storage
-          if [[ -f /tmp/COURIER-$BUILD_ID.log ]]; then
-            echo "Uploading COURIER log..."
-            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-              /tmp/COURIER-$BUILD_ID.log \
-              ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/COURIER.log
-          fi
+          # COURIER log was written on edcloud by console-transfer.py
+          # (already present at ~/arpanet-logs/builds/$BUILD_ID/COURIER.log)
 
-          # Verify all log sources exist
-          echo "Checking log sources..."
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            "ls -lh /mnt/arpanet-logs/builds/$BUILD_ID/*.log"
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+            "ls -lh ~/arpanet-logs/builds/$BUILD_ID/*.log 2>/dev/null || true"
 
-          # Merge logs chronologically (VAX, PDP11, COURIER, GITHUB)
-          echo "Merging logs chronologically..."
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            "python3 /tmp/merge-logs.py $BUILD_ID"
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+            "python3 /tmp/merge-logs.py $BUILD_ID ~/arpanet-logs"
 
-          # Retrieve all logs
-          echo "Retrieving build logs..."
           mkdir -p site/build-logs
 
-          # Retrieve merged log
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/merged.log \
-            site/build-logs/merged.log
+            ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/merged.log \
+            site/build-logs/merged.log || true
 
-          # Retrieve individual component logs
           for component in VAX PDP11 COURIER GITHUB; do
-            if ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-              "test -f /mnt/arpanet-logs/builds/$BUILD_ID/${component}.log"; then
-              echo "Retrieving ${component}.log..."
+            if ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+              "test -f ~/arpanet-logs/builds/$BUILD_ID/${component}.log"; then
               scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-                ubuntu@$VAX_IP:/mnt/arpanet-logs/builds/$BUILD_ID/${component}.log \
+                ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/${component}.log \
                 site/build-logs/${component}.log
-            else
-              echo "Warning: ${component}.log not found"
             fi
           done
 
-          # Cleanup old builds (keep last 20)
-          echo "Cleaning up old builds in host log storage..."
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            'cd /mnt/arpanet-logs/builds && ls -t | tail -n +21 | xargs -r rm -rf'
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+            'cd ~/arpanet-logs/builds && ls -t | tail -n +21 | xargs -r rm -rf'
 
-          echo "✅ Logs merged and retrieved from all sources"
+          echo "✅ Logs merged and retrieved"
 
       - name: Generate enterprise logs page
         if: steps.mode.outputs.build_mode == 'docker'
@@ -615,34 +557,23 @@ jobs:
       - name: Generate build info widget
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          VAX_IP: ${{ steps.edcloud_activate.outputs.vax_ip }}
+          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📊 Generating build info widget..."
 
-          # Transfer generate-build-info.py to VAX
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
             scripts/generate-build-info.py \
-            ubuntu@$VAX_IP:/tmp/generate-build-info.py
+            ubuntu@$EDCLOUD_IP:/tmp/generate-build-info.py
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            'chmod +x /tmp/generate-build-info.py'
+          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+            "python3 /tmp/generate-build-info.py $BUILD_ID ~/arpanet-logs /tmp/build-info"
 
-          # Generate build info on VAX
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$VAX_IP \
-            "python3 /tmp/generate-build-info.py $BUILD_ID /mnt/arpanet-logs /tmp/build-info"
-
-          # Retrieve generated files
           mkdir -p site/build-info
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$VAX_IP:/tmp/build-info/build-info.json \
-            site/build-info/
-
+            ubuntu@$EDCLOUD_IP:/tmp/build-info/build-info.json site/build-info/
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$VAX_IP:/tmp/build-info/build-info.html \
-            site/build-info/
-
-          # Copy CSS
+            ubuntu@$EDCLOUD_IP:/tmp/build-info/build-info.html site/build-info/
           cp templates/build-info.css site/build-info/
 
           echo "✅ Build info widget generated"
