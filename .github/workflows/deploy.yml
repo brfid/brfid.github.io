@@ -220,35 +220,13 @@ jobs:
 
           mkdir -p \$HOME/arpanet-logs/builds
           sudo apt-get install -y screen 2>/dev/null || true
+          chmod +x scripts/*.sh scripts/*.py
 
           docker compose -f docker-compose.production.yml up -d --build
           docker compose -f docker-compose.production.yml ps
           EOF
 
           echo "✅ edcloud host prepared"
-
-      - name: Transfer scripts to edcloud
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
-        run: |
-          echo "📤 Transferring scripts to edcloud host..."
-
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            scripts/arpanet-log.sh \
-            scripts/vax-build-and-encode.sh \
-            scripts/vax-console-upload.sh \
-            scripts/console-transfer.py \
-            scripts/pdp11-validate.sh \
-            scripts/merge-logs.py \
-            scripts/extract-vax-logs.py \
-            scripts/extract-pdp11-logs.py \
-            ubuntu@$EDCLOUD_IP:/tmp/
-
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
-            'chmod +x /tmp/*.sh /tmp/*.py'
-
-          echo "✅ Scripts transferred to edcloud host"
 
       - name: Stage 1 - VAX Build & Encode
         if: steps.mode.outputs.build_mode == 'docker'
@@ -280,7 +258,7 @@ jobs:
           cd \$HOME/brfid.github.io
 
           echo "Uploading arpanet-log.sh to VAX BSD via console..."
-          bash /tmp/vax-console-upload.sh scripts/arpanet-log.sh /tmp/arpanet-log.sh 127.0.0.1
+          bash scripts/vax-console-upload.sh scripts/arpanet-log.sh /tmp/arpanet-log.sh 127.0.0.1
 
           screen -dmS vax-chmod telnet 127.0.0.1 2323
           sleep 3
@@ -293,13 +271,13 @@ jobs:
           screen -S vax-chmod -X quit 2>/dev/null || true
 
           echo "Uploading bradman.c to VAX BSD..."
-          bash /tmp/vax-console-upload.sh vax/bradman.c /tmp/bradman.c 127.0.0.1
+          bash scripts/vax-console-upload.sh vax/bradman.c /tmp/bradman.c 127.0.0.1
 
           echo "Uploading resume.vax.yaml to VAX BSD..."
-          bash /tmp/vax-console-upload.sh /tmp/resume.vax.yaml /tmp/resume.vax.yaml 127.0.0.1
+          bash scripts/vax-console-upload.sh /tmp/resume.vax.yaml /tmp/resume.vax.yaml 127.0.0.1
 
           echo "Uploading vax-build-and-encode.sh to VAX BSD..."
-          bash /tmp/vax-console-upload.sh /tmp/vax-build-and-encode.sh /tmp/vax-build-and-encode.sh 127.0.0.1
+          bash scripts/vax-console-upload.sh scripts/vax-build-and-encode.sh /tmp/vax-build-and-encode.sh 127.0.0.1
 
           screen -dmS vax-chmod2 telnet 127.0.0.1 2323
           sleep 3
@@ -332,7 +310,7 @@ jobs:
             if grep -q "VAX build complete" /tmp/vax-build-console.txt; then
               echo "✓ Build succeeded"
               mkdir -p \$HOME/arpanet-logs/builds/$BUILD_ID
-              python3 /tmp/extract-vax-logs.py \
+              python3 scripts/extract-vax-logs.py \
                 /tmp/vax-build-console.txt \
                 \$HOME/arpanet-logs/builds/$BUILD_ID/VAX.log
               echo "✓ Logs extracted"
@@ -360,6 +338,19 @@ jobs:
           # All console ops run on edcloud (VAX:2323 and PDP-11:2327 are localhost there)
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
           set -euo pipefail
+          cd \$HOME/brfid.github.io
+
+          echo "Waiting for PDP-11 console (port 2327)..."
+          RETRY=0
+          while ! timeout 1 bash -c 'echo > /dev/tcp/127.0.0.1/2327' 2>/dev/null; do
+            RETRY=\$((RETRY + 1))
+            if [ \$RETRY -ge 60 ]; then
+              echo "❌ PDP-11 console port 2327 not ready after 60s"
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "✓ PDP-11 console port 2327 ready"
 
           echo "Retrieving encoded file from VAX BSD via console..."
           screen -dmS vax-retrieve telnet 127.0.0.1 2323
@@ -394,7 +385,7 @@ jobs:
           while IFS= read -r line; do
             screen -S pdp11-upload -X stuff "\$line\r"
             sleep 0.02
-          done < \$HOME/brfid.github.io/scripts/arpanet-log.sh
+          done < scripts/arpanet-log.sh
           screen -S pdp11-upload -X stuff "UPLOAD_EOF\n"
           sleep 1
           screen -S pdp11-upload -X stuff "chmod +x /tmp/arpanet-log.sh\n"
@@ -403,7 +394,7 @@ jobs:
           echo "✓ arpanet-log.sh uploaded to PDP-11 BSD"
 
           echo "Starting console transfer to PDP-11..."
-          python3 /tmp/console-transfer.py "$BUILD_ID" 127.0.0.1 127.0.0.1
+          python3 scripts/console-transfer.py "$BUILD_ID" 127.0.0.1 127.0.0.1
           echo "✓ Console transfer complete"
           EOF
 
@@ -437,15 +428,16 @@ jobs:
           # Validation runs on edcloud (PDP-11 console is localhost:2327 there)
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
           set -euo pipefail
+          cd \$HOME/brfid.github.io
 
           echo "Sending validation commands to PDP-11..."
-          PDP11_IP=127.0.0.1 bash /tmp/pdp11-validate.sh "$BUILD_ID"
+          PDP11_IP=127.0.0.1 bash scripts/pdp11-validate.sh "$BUILD_ID"
 
           if [ -f /tmp/pdp11-validation-$BUILD_ID.txt ]; then
             if grep -q "Status: PASS" /tmp/pdp11-validation-$BUILD_ID.txt; then
               echo "✓ Validation succeeded"
               mkdir -p \$HOME/arpanet-logs/builds/$BUILD_ID
-              python3 /tmp/extract-pdp11-logs.py \
+              python3 scripts/extract-pdp11-logs.py \
                 /tmp/pdp11-validation-$BUILD_ID.txt \
                 \$HOME/arpanet-logs/builds/$BUILD_ID/PDP11.log
               echo "✓ PDP-11 logs extracted"
@@ -518,7 +510,7 @@ jobs:
             "ls -lh ~/arpanet-logs/builds/$BUILD_ID/*.log 2>/dev/null || true"
 
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
-            "python3 /tmp/merge-logs.py $BUILD_ID ~/arpanet-logs"
+            "python3 ~/brfid.github.io/scripts/merge-logs.py $BUILD_ID ~/arpanet-logs"
 
           mkdir -p site/build-logs
 
@@ -562,12 +554,8 @@ jobs:
         run: |
           echo "📊 Generating build info widget..."
 
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            scripts/generate-build-info.py \
-            ubuntu@$EDCLOUD_IP:/tmp/generate-build-info.py
-
           ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
-            "python3 /tmp/generate-build-info.py $BUILD_ID ~/arpanet-logs /tmp/build-info"
+            "python3 ~/brfid.github.io/scripts/generate-build-info.py $BUILD_ID ~/arpanet-logs /tmp/build-info"
 
           mkdir -p site/build-info
           scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
