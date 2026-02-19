@@ -19,8 +19,9 @@
 
 - Current project snapshot: `STATUS.md`
 - Documentation hub: `docs/INDEX.md`
-- Integration active execution path: `docs/integration/progress/NEXT-STEPS.md`
-- Integration progress timeline: `docs/integration/progress/PHASE3-PROGRESS.md`
+- Integration active path + known-good evidence: `docs/integration/INDEX.md`
+- Integration history log (retained, not active): `docs/integration/progress/NEXT-STEPS.md`
+- Integration progress timeline (retained): `docs/integration/progress/PHASE3-PROGRESS.md`
 - Historical transport decisions: `docs/deprecated/transport-archive.md`
 
 ## Virtualenv-only

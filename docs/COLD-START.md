@@ -9,6 +9,10 @@ Use when starting with no local context.
   - `brfid.github.io`: build/publish pipeline
   - `edcloud`: infrastructure lifecycle
 - Legacy multi-instance + EFS deployment is archived.
+- **Active work**: restoring the uuencode console transfer pipeline (Option B) to the
+  single-host edcloud model. Items 1–3 of 4 blocking issues resolved (2026-02-18).
+  The one remaining step before triggering a live end-to-end run is building and
+  boot-verifying the revised PDP-11 Docker image on edcloud. See `STATUS.md` → "Next work".
 
 ## Read order
 
