@@ -1,26 +1,21 @@
 # PDP-11/73 with 2.11BSD
-# Pre-built turnkey image for rapid deployment
-# Provides TCP/IP networking via SIMH xu device
+# Headless console-only image for Option B (uuencode console transfer).
+# Networking (xq/DEUNA) is intentionally disabled: the netnix kernel crashes
+# on xq init, and the plain unix kernel is sufficient for uudecode + nroff.
+# Console is exposed on port 2327 via SIMH telnet.
 
 FROM debian:bookworm-slim
 
-# Install SIMH dependencies and network tools
+# Install SIMH build dependencies.
+# No pcap/SDL2/vdeplug: networking devices are disabled in pdp11.ini.
 RUN apt-get update && apt-get install -y \
     build-essential \
-    libpcap-dev \
-    libpcre3-dev \
     libedit-dev \
-    libpng-dev \
-    libsdl2-dev \
-    libvdeplug-dev \
+    libpcre3-dev \
     wget \
     ca-certificates \
-    unzip \
-    curl \
     git \
-    telnet \
     netcat-openbsd \
-    iproute2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and build SIMH (PDP-11 simulator) from GitHub
@@ -32,7 +27,8 @@ RUN git clone --depth 1 https://github.com/simh/simh.git && \
     cd .. && \
     rm -rf simh
 
-# Download pre-built 2.11BSD disk image with networking support
+# Download pre-built 2.11BSD disk image (rpethset contains both unix and
+# netnix kernels; we boot unix via Enter at the "Boot:" prompt)
 # Source: https://wfjm.github.io/home/w11/inst/systems.html
 WORKDIR /opt/pdp11
 RUN wget -q https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
