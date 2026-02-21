@@ -55,28 +55,6 @@ jobs:
           hugo-version: '0.156.0'
           extended: true
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: "pyproject.toml"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
-
-      - name: Quality checks
-        run: |
-          # Keep publish checks aligned with CI/test policy to avoid unrelated
-          # full-repo lint/type failures during deployment runs.
-          python -m ruff check resume_generator
-          python -m mypy resume_generator host_logging tests
-          python -m pytest -q -m "unit and not docker and not slow"
-          python -m pylint resume_generator -sn
-          python -m vulture --config pyproject.toml resume_generator
-
       - name: Determine build mode
         id: mode
         run: |
@@ -97,7 +75,32 @@ jobs:
             echo "⚡ Building with local mode (fast)"
           fi
 
+      - name: Setup Python
+        if: steps.mode.outputs.build_mode == 'docker'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: Install dependencies
+        if: steps.mode.outputs.build_mode == 'docker'
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Quality checks
+        if: steps.mode.outputs.build_mode == 'docker'
+        run: |
+          # Quality gates for vintage pipeline artifacts
+          python -m ruff check resume_generator
+          python -m mypy resume_generator host_logging tests
+          python -m pytest -q -m "unit and not docker and not slow"
+          python -m pylint resume_generator -sn
+          python -m vulture --config pyproject.toml resume_generator
+
       - name: Cache Playwright browsers
+        if: steps.mode.outputs.build_mode == 'docker'
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
@@ -106,6 +109,7 @@ jobs:
             playwright-${{ runner.os }}-
 
       - name: Install Playwright browsers
+        if: steps.mode.outputs.build_mode == 'docker'
         run: python -m playwright install --with-deps chromium
 
       - name: Generate build ID
