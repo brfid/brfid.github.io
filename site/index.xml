@@ -101,5 +101,41 @@ where I live, known mostly to local historians.</p>
 </ul>
 ]]></content:encoded>
     </item>
+    <item>
+      <title>Work</title>
+      <link>https://www.jockeyholler.net/work/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <guid>https://www.jockeyholler.net/work/</guid>
+      <description>Writing samples and documentation portfolio</description>
+      <content:encoded><![CDATA[<h2 id="api-reference-and-developer-docs">API Reference and Developer Docs</h2>
+<p><strong><a href="https://docs.domaintools.com/feeds/openapi/">Threat Feeds OpenAPI Specification</a></strong> (2025)
+OpenAPI 3.0.3 specification for DomainTools Feeds — real-time and batch endpoints, download
+workflow, reusable components, examples, and error contracts. Built for code generation,
+Swagger UI rendering, and contract validation.</p>
+<p><strong><a href="https://docs.domaintools.com/api/">DomainTools API Reference</a></strong> (2025)
+API reference documentation for DomainTools data products and endpoints, including the
+<a href="https://docs.domaintools.com/api/threat-feeds/">Threat Intelligence Feeds API</a>.</p>
+<p><strong><a href="https://docs.domaintools.com/python-sdk/">DomainTools Python SDK</a></strong> (2025)
+Developer guide and API reference: installation, authentication, usage patterns, method reference.</p>
+<p><strong><a href="https://docs.domaintools.com">DomainTools Product Documentation</a></strong> (2025)
+User-facing documentation for DomainTools security intelligence products and workflows.</p>
+<hr>
+<h2 id="llm-and-ai-documentation">LLM and AI Documentation</h2>
+<p>Auto-generated structured context files covering DomainTools API products and data schemas,
+produced by CI/CD pipeline for use in LLM tooling and retrieval workflows. (Internal; not publicly linked.)</p>
+<hr>
+<h2 id="research-and-commissioned-history">Research and Commissioned History</h2>
+<p><strong><a href="https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf">The Creation and Administration of Unique Identifiers, 1967–2017</a></strong> (2020)
+Comprehensive history of internet unique identifier creation and administration from ARPANET
+origins through 2017. Co-authored with Russ Mundy; jointly commissioned by ICANN and Google.
+Foreword by Vint Cerf and Steve Crocker.</p>
+<p><strong><a href="https://www.usenix.org/conference/usenixsecurity23/presentation/jones">Work-From-Home and COVID-19: Trajectories of Endpoint Security Management in a Security Operations Center</a></strong> (2023)
+Peer-reviewed paper at USENIX Security &lsquo;23. Co-authored historical analysis tracing endpoint
+security management from the 1970s through the COVID-19 WFH transition, complementing a
+1,000-hour SOC ethnography study.</p>
+<p><strong><a href="https://doi.org/10.1109/MAHC.2016.49">Edge Cryptography and the Codevelopment of Computer Networks and Cybersecurity</a></strong> (2016)
+Peer-reviewed article in IEEE Annals of the History of Computing.</p>
+]]></content:encoded>
+    </item>
   </channel>
 </rss>

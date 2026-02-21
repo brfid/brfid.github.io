@@ -16,8 +16,10 @@ semantic version tags.
   C037890339C8W3JAICBDC, submitted 2026-02-21). CloudFront aliases removed.
 
 ### Active Priorities
-- Wire vintage pipeline outputs into `hugo/static/` (brad.man.txt, build logs).
-- Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings.
+- Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings
+  (requires GitHub UI action — set custom domain to `www.jockeyholler.net`).
+- Flesh out portfolio page: DomainTools LLM context files URL when available;
+  review work page copy for tone.
 
 ### In Progress
 - None.
@@ -35,6 +37,10 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Portfolio page (`hugo/content/portfolio.md`) created from `portfolio.yaml` data;
+  added "Work" nav item to `hugo.toml` menu (weight 15, between Writing and About).
+- `deploy.yml` Stage 4: changed `brad.man.txt` destination from `site/` to
+  `hugo/static/` so Hugo owns that path in the build.
 - `deploy.yml`: added Hugo build step (runs for all modes before Pages upload);
   added submodule checkout and Hugo setup via `peaceiris/actions-hugo@v3 0.156.0`.
   Removed Python site generator step for local mode (Hugo replaces it).

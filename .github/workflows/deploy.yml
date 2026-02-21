@@ -447,8 +447,8 @@ jobs:
             python -m resume_generator.manpage --in build/vintage/brad.1 --out build/vintage/brad.txt
           fi
 
-          # Copy to site
-          cp build/vintage/brad.txt site/brad.man.txt
+          # Drop into hugo/static/ so Hugo includes it at /brad.man.txt
+          cp build/vintage/brad.txt hugo/static/brad.man.txt
 
           echo "✓ Final output retrieved"
 

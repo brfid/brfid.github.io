@@ -40,6 +40,11 @@ buildFuture = false
     url = "/posts/"
     weight = 10
   [[menu.main]]
+    identifier = "work"
+    name = "Work"
+    url = "/work/"
+    weight = 15
+  [[menu.main]]
     identifier = "about"
     name = "About"
     url = "/about/"
