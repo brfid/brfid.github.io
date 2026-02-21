@@ -1,0 +1,68 @@
+name: Test
+
+# Mode 2: Push and test (no publish)
+# Triggers on pushes to feature branches and PRs
+
+on:
+  push:
+    branches:
+      - '**'          # All branches
+      - '!main'       # Except main (main uses ci.yml)
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Quality checks
+        run: |
+          # Keep feature-branch lint scope aligned with CI policy.
+          python -m ruff check resume_generator
+          python -m mypy resume_generator host_logging tests
+          python -m pytest -q -m "unit and not docker and not slow"
+          python -m pylint resume_generator tests -sn
+          python -m vulture --config pyproject.toml resume_generator
+
+  integration-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Run integration-marked tests
+        run: python -m pytest -q -m "integration and not docker and not slow"
+
+  # NOTE:
+  # Archived ARPANET Phase 1/2 docker jobs were removed because they referenced
+  # non-existent compose files/scripts and made feature-branch validation flaky.
+  # Distributed vintage end-to-end verification runs in deploy.yml publish lanes.
