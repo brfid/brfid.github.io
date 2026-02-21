@@ -71,6 +71,19 @@ def format_date_range(start: str | None, end: str | None) -> str | None:
     return None
 
 
+def _add_date_ranges(items: list[dict[str, Any]]) -> None:
+    """Mutate resume items in place, adding a computed ``dateRange`` display field.
+
+    Args:
+        items: List of work or project items.
+    """
+    for item in items:
+        if isinstance(item, dict):
+            date_range = format_date_range(item.get("startDate"), item.get("endDate"))
+            if date_range is not None:
+                item["dateRange"] = date_range
+
+
 def normalize_resume(resume: Resume) -> ResumeView:
     """Normalize a JSON Resume dict for rendering.
 
@@ -103,19 +116,8 @@ def normalize_resume(resume: Resume) -> ResumeView:
     projects = cast(list[ProjectItemView], sorted(projects_raw, key=_date_key, reverse=True))
 
     # Add computed ranges for templating convenience.
-    for work_item in work:
-        if isinstance(work_item, dict):
-            date_range = format_date_range(work_item.get("startDate"), work_item.get("endDate"))
-            if date_range is not None:
-                work_item["dateRange"] = date_range
-    for project_item in projects:
-        if isinstance(project_item, dict):
-            date_range = format_date_range(
-                project_item.get("startDate"),
-                project_item.get("endDate"),
-            )
-            if date_range is not None:
-                project_item["dateRange"] = date_range
+    _add_date_ranges(work)
+    _add_date_ranges(projects)
 
     out = cast(ResumeView, dict(resume))
     out["basics"] = basics

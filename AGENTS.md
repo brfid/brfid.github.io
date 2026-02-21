@@ -9,11 +9,12 @@
 
 ## Start-here order (for new LLM sessions)
 
+`README.md` is the cold-start entry point (infrastructure boundary, source-of-truth map, quickstart, publish tags).
+
 1. `README.md`
-2. `docs/COLD-START.md`
-3. `STATUS.md`
-4. `docs/INDEX.md`
-5. `docs/integration/INDEX.md` (if touching integration/ARPANET history)
+2. `STATUS.md`
+3. `docs/INDEX.md`
+4. `docs/integration/INDEX.md` (if touching integration/ARPANET history)
 
 ## Source-of-truth map
 

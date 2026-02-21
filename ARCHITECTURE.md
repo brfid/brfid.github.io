@@ -79,6 +79,46 @@ flowchart LR
 - `site/brad.man.txt` (rendered manpage summary)
 - `site/vax-build.log` (muted transcript)
 
+### `resume.vax.yaml` contract (v1)
+
+Host-produced; not committed. Rules exist so the guest C parser stays trivial.
+
+**Encoding:**
+- UTF-8, LF newlines, no tabs, 2-space indentation
+- Mappings and sequences only — no anchors, tags, or aliases
+- Scalars are single-line strings only (no `|`/`>` blocks); host flattens whitespace
+- Strings are always double-quoted; `\` and `"` are escaped by the host
+- First field: `schemaVersion: "v1"` (guest fails fast on mismatch)
+
+**Required fields:** `schemaVersion`, `name`, `label`, `summary`
+
+**Optional fields:** `contact.email`, `contact.url`, `contact.linkedin`
+
+### `brad.1` transformation rules (v1)
+
+Guest (`bradman.c`) produces roff `man(7)` source; host renders to `site/brad.man.txt`.
+
+- `name` + `label` → `.TH` header + `NAME` section line (`brad \- <label>`), plus optional `AUTHOR`
+- `summary` → `DESCRIPTION` section
+- `contact.*` → `CONTACT` section
+- Host render: wrap to 66 columns; `DESCRIPTION` truncated to 4 wrapped lines with `...`
+
+**Escape rules (guest output):**
+- Lines starting with `.` or `'` are prefixed with `\&` (troff zero-width escape)
+- Backslashes are doubled; hyphen-minus in `NAME` synopsis uses `\-`
+
+### Console protocol (v1)
+
+Hard markers bracket the uuencode block in the telnet transcript:
+
+```
+<<<BRAD_1_UU_BEGIN>>>
+uuencode brad.1 brad.1
+<<<BRAD_1_UU_END>>>
+```
+
+Host decodes, writes `build/vax/brad.1`, then renders `site/brad.man.txt`. Decoder is tolerant of trailing garbage on lines (SIMH console occasionally appends noise).
+
 ---
 
 ## Runtime modes

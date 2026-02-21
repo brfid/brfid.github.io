@@ -235,6 +235,13 @@ class VaxStageRunner:
         )
         log.add(f"      Output: {self._paths.contact_html_path}")
 
+    def _run_host_postprocess(self, *, resume: Resume, log: VaxBuildLog) -> None:
+        """Run host-side post-processing: compile bradman, generate HTML fragment and man txt."""
+        self._compile_bradman(log=log)
+        self._generate_contact_json(resume=resume, log=log)
+        self._run_bradman_html(log=log)
+        self._render_brad_man_txt(log=log)
+
     def _render_brad_man_txt(self, *, log: VaxBuildLog) -> None:
         log.add("[6/7] Render brad.man.txt (man page text for reference)")
         log.add("      Parser: Python roff subset (host-side)")
@@ -315,10 +322,7 @@ class VaxStageRunner:
 
             # Generate HTML fragment using host-compiled bradman
             log.add("[3/7] Compile bradman (host-side for HTML generation)")
-            self._compile_bradman(log=log)
-            self._generate_contact_json(resume=resume, log=log)
-            self._run_bradman_html(log=log)
-            self._render_brad_man_txt(log=log)
+            self._run_host_postprocess(resume=resume, log=log)
 
             log.add("[7/7] Render landing page")
             log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
@@ -390,10 +394,7 @@ class VaxStageRunner:
 
         # Generate HTML fragment using host-compiled bradman
         log.add("[5/7] Compile bradman (host-side for HTML generation)")
-        self._compile_bradman(log=log)
-        self._generate_contact_json(resume=resume, log=log)
-        self._run_bradman_html(log=log)
-        self._render_brad_man_txt(log=log)
+        self._run_host_postprocess(resume=resume, log=log)
 
         log.add("[7/7] Render landing page")
         log.add(f"      Output: {self._paths.site_dir / 'index.html'}")
@@ -599,8 +600,7 @@ class VaxStageRunner:
         run_output = session.exec_cmd("./bradman -i resume.vax.yaml -o brad.1")
         self._append_console_log("bradman", run_output)
         output = session.exec_cmd(
-            "echo '<<<BRAD_1_UU_BEGIN>>>'; uuencode brad.1 brad.1; "
-            "echo '<<<BRAD_1_UU_END>>>'"
+            "echo '<<<BRAD_1_UU_BEGIN>>>'; uuencode brad.1 brad.1; echo '<<<BRAD_1_UU_END>>>'"
         )
         self._append_console_log("uuencode", output)
         return output
@@ -637,9 +637,7 @@ class VaxStageRunner:
                 )
                 if status.returncode != 0:
                     with wait_log_path.open("a", encoding="utf-8") as fh:
-                        fh.write(
-                            f"t+{now - start:0.1f}s inspect_failed rc={status.returncode}\n"
-                        )
+                        fh.write(f"t+{now - start:0.1f}s inspect_failed rc={status.returncode}\n")
                     _pause(1.0)
                     continue
                 if status.stdout.strip() == "exited":
@@ -813,22 +811,7 @@ class TelnetSession:
                 raise TimeoutError("Timed out waiting for XON")
 
     def _read_until(self, needle: bytes, timeout: int) -> bytes:
-        end_time = time.time() + timeout
-        buf = bytearray()
-        if self._read_buffer:
-            buf.extend(self._read_buffer)
-            self._read_buffer.clear()
-        while time.time() < end_time:
-            idx = buf.find(needle)
-            if idx != -1:
-                end = idx + len(needle)
-                result = bytes(buf[:end])
-                self._read_buffer.extend(buf[end:])
-                return result
-            if self._poll_incoming(timeout=0.1):
-                buf.extend(self._read_buffer)
-                self._read_buffer.clear()
-        raise TimeoutError(f"Timed out waiting for {needle!r}")
+        return self._read_until_any([needle], timeout=timeout)
 
     def _read_until_any(self, needles: list[bytes], timeout: int) -> bytes:
         end_time = time.time() + timeout
@@ -975,10 +958,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--docker-image",
         default=DOCKER_IMAGE_DEFAULT,
-        help=(
-            "Docker image to run for SIMH "
-            f"(default: {DOCKER_IMAGE_DEFAULT})"
-        ),
+        help=(f"Docker image to run for SIMH (default: {DOCKER_IMAGE_DEFAULT})"),
     )
     return parser.parse_args(argv)
 

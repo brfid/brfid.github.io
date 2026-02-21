@@ -28,6 +28,25 @@ def load_resume(path: Path) -> Resume:
         return cast(Resume, yaml.safe_load(f))
 
 
+def make_jinja_env(templates_dir: Path) -> Environment:
+    """Create a Jinja2 environment configured for HTML templates.
+
+    Shared by both the resume and landing renderers so settings stay in sync.
+
+    Args:
+        templates_dir: Directory to load templates from.
+
+    Returns:
+        Configured Jinja2 environment.
+    """
+    return Environment(
+        loader=FileSystemLoader(str(templates_dir)),
+        autoescape=select_autoescape(["html", "xml"]),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
+
 def render_resume_html(
     *,
     resume: Resume,
@@ -44,12 +63,7 @@ def render_resume_html(
     Returns:
         Rendered HTML as a string.
     """
-    env = Environment(
-        loader=FileSystemLoader(str(templates_dir)),
-        autoescape=select_autoescape(["html", "xml"]),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
+    env = make_jinja_env(templates_dir)
 
     template = env.get_template(template_name)
     view: ResumeView = normalize_resume(resume)

@@ -5,9 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
+from .render import make_jinja_env
 from .types import Resume
 
 
@@ -22,15 +22,6 @@ class LandingContext:  # pylint: disable=too-many-instance-attributes
     vax_log_path: str | None
     build_info_html: str | None
     build_info_css_path: str | None
-
-
-def _env_for_templates(templates_dir: Path) -> Environment:
-    return Environment(
-        loader=FileSystemLoader(str(templates_dir)),
-        autoescape=select_autoescape(["html", "xml"]),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
 
 
 def _read_optional_text(path: Path) -> str | None:
@@ -102,7 +93,7 @@ def build_landing_page(
     """
     ctx = _build_context(resume=resume, out_dir=out_dir)
 
-    env = _env_for_templates(templates_dir)
+    env = make_jinja_env(templates_dir)
     template = env.get_template(template_name)
     html = template.render(**ctx.__dict__)
 

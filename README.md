@@ -15,9 +15,11 @@ Architecture detail: `ARCHITECTURE.md`.
 ## Infrastructure boundary
 
 This repo owns build/publish logic and minimal lifecycle hooks.
+Infrastructure lifecycle is owned by `edcloud`: `https://github.com/brfid/edcloud`
 
-Infrastructure lifecycle is owned by `edcloud`:
-`https://github.com/brfid/edcloud`
+- Do not add multi-host orchestration back into this repo.
+- Keep local lifecycle hooks minimal (`aws-*.sh`).
+- Put platform/lifecycle changes in `edcloud`.
 
 Local helper scripts call into that lifecycle model:
 
@@ -27,17 +29,32 @@ Local helper scripts call into that lifecycle model:
 ./aws-stop.sh
 ```
 
-Lookup model:
-- `EDCLOUD_INSTANCE_ID` when set
-- otherwise tag lookup: `edcloud:managed=true`, `Name=edcloud`
+Instance resolution order:
+1. `EDCLOUD_INSTANCE_ID` when set
+2. tag lookup: `edcloud:managed=true`, `Name=edcloud`
+
+`edcloud` platform docs:
+- `https://github.com/brfid/edcloud/blob/main/README.md`
+- `https://github.com/brfid/edcloud/blob/main/SETUP.md`
+- `https://github.com/brfid/edcloud/blob/main/DESIGN.md`
+
+## Source of truth
+
+| Doc | Role |
+|-----|------|
+| `STATUS.md` | Current project state and pending work |
+| `WORKFLOWS.md` | CI/test/publish behavior |
+| `ARCHITECTURE.md` | System design |
+| `docs/INDEX.md` | Documentation hub |
+| `docs/integration/INDEX.md` | Integration/ARPANET history map |
+| `docs/deprecated/`, `docs/legacy/` | Historical evidence (not active runbooks) |
 
 ## Cold start order
 
-1. `README.md`
-2. `docs/COLD-START.md`
-3. `STATUS.md`
-4. `docs/INDEX.md`
-5. `docs/integration/INDEX.md` (when working integration/history topics)
+1. This file (`README.md`)
+2. `STATUS.md`
+3. `docs/INDEX.md`
+4. `docs/integration/INDEX.md` (when working integration/history topics)
 
 Then apply `AGENTS.md` constraints.
 

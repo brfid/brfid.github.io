@@ -4,10 +4,9 @@ Primary documentation hub for active project docs.
 
 ## Start here
 
-1. `../README.md`
-2. `COLD-START.md`
-3. `../STATUS.md`
-4. this index
+1. `../README.md` — cold-start entry point (infrastructure boundary, source-of-truth map, quickstart)
+2. `../STATUS.md`
+3. this index
 
 Then apply `../AGENTS.md` constraints.
 
@@ -15,6 +14,7 @@ Then apply `../AGENTS.md` constraints.
 
 ### Core
 - `../resume.yaml` — canonical resume source
+- `../ARCHITECTURE.md` — pipeline design, data contracts (`resume.vax.yaml` schema, console protocol)
 - `../resume_generator/` — build implementation
 - `../scripts/` — automation helpers
 - `../templates/` — rendering templates
