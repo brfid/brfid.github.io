@@ -1,14 +1,20 @@
 # brfid.github.io
 
-Static resume site generator with an optional vintage build stage (VAX/PDP-11) used as a technical signal.
+Hugo-based personal site and technical writing portfolio at [jockeyholler.net](https://www.jockeyholler.net/).
+Optional vintage build stage (VAX/PDP-11 via SIMH) generates artifact resume as a technical signal.
 
 ## Pipeline summary
 
-1. Source: `resume.yaml`
-2. Host build (`resume_generator`): HTML, PDF, VAX-stage inputs
-3. Optional vintage stage (`--with-vintage`): produces `build/vintage/brad.1`
-4. Host render: `brad.1` → `site/brad.man.txt`
-5. Output: deployable static artifacts in `site/`
+**Local publish (Hugo):**
+1. Author content in `hugo/content/`
+2. `hugo --source hugo --destination site` → generates `site/`
+3. Push `publish` tag → GitHub Actions builds and deploys to GitHub Pages
+
+**Vintage publish (on-demand):**
+1. `resume_generator` produces inputs for VAX build
+2. VAX/PDP-11 pipeline (on edcloud) generates `brad.man.txt`
+3. Artifact drops into `hugo/static/` before Hugo build
+4. Push `publish-vintage` tag → full pipeline runs in CI
 
 Architecture detail: `ARCHITECTURE.md`.
 
@@ -54,43 +60,38 @@ Instance resolution order:
 
 1. This file (`README.md`)
 2. `CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
-3. `docs/INDEX.md`
-4. `docs/integration/INDEX.md` (when working integration/history topics)
+3. `hugo/` (Hugo site root — theme, content, config)
+4. `docs/INDEX.md`
+5. `docs/integration/INDEX.md` (when working integration/history topics)
 
 Then apply `AGENTS.md` constraints.
 
-## Build modes
-
-- `--vintage-mode local` — host-only fast iteration
-- `--vintage-mode docker` — SIMH historical host mode (4.3BSD/K&R C on VAX machine target)
-
 ## Publish tags
 
-- Fast/local: `publish`, `publish-fast`, `publish-fast-*`
+- Hugo local: `publish`, `publish-fast`, `publish-fast-*`
 - Distributed vintage: `publish-vintage`, `publish-vintage-*`
 - Legacy alias tags still accepted: `publish-vax*`, `publish-docker*`
 
-## Quickstart (venv only)
+## Quickstart (Hugo)
+
+Requires Hugo extended ≥ 0.156.0. ARM64 binary available from Hugo releases.
+
+```bash
+# Local preview with live reload
+hugo server --source hugo
+
+# Build to site/
+hugo --source hugo --destination site
+```
+
+## Quickstart (vintage pipeline, optional)
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m playwright install chromium
 ```
 
-Build (local mode):
-
-```bash
-.venv/bin/resume-gen --out site --with-vintage --vintage-mode local
-```
-
-Build (distributed vintage mode):
-
-```bash
-.venv/bin/resume-gen --out site --with-vintage --vintage-mode docker
-```
-
-## Quality checks
+Quality checks (vintage mode only):
 
 ```bash
 .venv/bin/python -m pytest -q
@@ -112,7 +113,7 @@ Workflow behavior: `WORKFLOWS.md`
 ## Local preview
 
 ```bash
-.venv/bin/python -m http.server --directory site 8000
+hugo server --source hugo
 ```
 
-Open `http://127.0.0.1:8000/`.
+Open `http://localhost:1313/`.
