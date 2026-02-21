@@ -6,8 +6,9 @@ under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entr
 
 ## Mission (stable constraints)
 
-- Build and publish a static resume site, with optional vintage/ARPANET stages used as a technical signal.
-- Keep build outputs reproducible and historically grounded where intended (vintage/SIMH + ARPANET tracks).
+- Build and publish a Hugo-based personal site and technical writing portfolio at jockeyholler.net.
+- Hugo owns the full site (landing page, blog, resume, portfolio). The vintage pipeline (VAX/PDP-11 via SIMH) remains as an on-demand artifact generator feeding Hugo inputs — not a site generator.
+- Blog and portfolio are the primary content surfaces; the vintage pipeline is a technical signal, not the product.
 - Prefer clear, evidence-backed updates over broad speculative changes.
 - Keep infrastructure orchestration minimal in this repo; lifecycle control belongs to `edcloud` and should be operable from small ARM controller hosts (for example, Pi Zero 2 class devices).
 
@@ -17,8 +18,9 @@ under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entr
 
 1. `README.md`
 2. `CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
-3. `docs/INDEX.md`
-4. `docs/integration/INDEX.md` (if touching integration/ARPANET history)
+3. `hugo/` (Hugo site root — theme, content, config)
+4. `docs/INDEX.md`
+5. `docs/integration/INDEX.md` (only if touching vintage pipeline internals)
 
 ## Source-of-truth map
 
@@ -58,6 +60,12 @@ Update rules:
 6. On milestone/date cut, move `Recently Completed` items into a dated entry and
    classify under standard Keep a Changelog categories.
 
+## Local dev
+
+Run `hugo server --source hugo` from the repo root to preview locally.
+The operator node is a Raspberry Pi — the server is accessible in-browser on
+that machine. No staging environment or remote preview URL is needed.
+
 ## Virtualenv-only
 
 - Use the repo-local venv at `.venv/` for all Python commands.
@@ -67,10 +75,11 @@ Update rules:
 
 Commit at significant milestones so the history stays readable and bisectable. Examples:
 
-- Landing page / UX milestone complete
-- Vintage stage milestone complete (local mode, then docker/SIMH mode)
-- CI workflow changes
-- Artifact format changes (`resume.vintage.yaml`, transcript parsing, manifest format)
+- Hugo scaffold complete (theme, config, first content)
+- Landing page / design milestone complete
+- New post published or portfolio entry added
+- Deploy workflow changes (Hugo build step, Pages config)
+- Vintage pipeline changes (SIMH stages, artifact format)
 
 Pre-commit checks are optional by default in this repo workflow.
 

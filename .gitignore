@@ -36,3 +36,4 @@ test_infra/cdk/cdk.out/
 test_infra/cdk/cdk.context.json
 test_infra/cdk/.venv/
 test_infra/cdk/__pycache__/
+hugo/.hugo_build.lock

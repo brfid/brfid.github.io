@@ -10,10 +10,17 @@ semantic version tags.
 
 ### Current State
 - `CHANGELOG.md` `[Unreleased]` is the primary mutable LLM memory section.
-- The legacy status file has been retired.
+- Hugo scaffold complete at `hugo/`. PaperMod theme, dark mode default,
+  canonical URL `www.jockeyholler.net`. Builds clean to `site/` in 78ms.
+- DNS updated: jockeyholler.net now points to GitHub Pages (Route 53 change
+  C037890339C8W3JAICBDC, submitted 2026-02-21). CloudFront aliases removed.
 
 ### Active Priorities
-- None.
+- Wire vintage pipeline outputs into `hugo/static/` (brad.man.txt, build logs).
+- Update `deploy.yml`: add `hugo build` step before Pages upload.
+- Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings.
+- Write first post: keepachangelog/LLM memory model.
+- Add thin `CLAUDE.md` that `@imports` AGENTS.md (Claude-specific entry point).
 
 ### In Progress
 - None.
@@ -22,25 +29,27 @@ semantic version tags.
 - None.
 
 ### Decisions Needed
-- None.
+- None. Key decisions made this session:
+  - Hugo + PaperMod, dark mode, `hugo/` subdir in repo root.
+  - `www.jockeyholler.net` as canonical URL; apex redirects to www.
+  - GitHub Actions + GitHub Pages for deployment (unchanged pattern).
+  - Vintage pipeline stays as on-demand job (`publish-vintage` tag), not part
+    of every Hugo content push.
+  - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
-- Initial changelog scaffold and historical backfill from commit history and
-  retained status/session notes.
-- Documentation model split introducing a dedicated current-state file and
-  `CHANGELOG.md` as historical/cold-start record.
-- Initial `[Unreleased]` memory sections (`Planned`, `Decisions Needed`) added
-  before moving to the fixed custom schema.
-- Defined and documented fixed `[Unreleased]` memory subcategories in `AGENTS.md`.
-- Aligned `README.md` and `docs/INDEX.md` to use `CHANGELOG.md` `[Unreleased]`
-  as the primary mutable state source.
-- Converted the legacy status file into a compatibility pointer to the changelog
-  memory schema, then removed it.
-- Replaced active-doc references (`AGENTS.md`, `ARCHITECTURE.md`,
-  `docs/pdp/INDEX.md`, `docs/integration/INDEX.md`) with `CHANGELOG.md`
-  `[Unreleased]` guidance.
-- Migrated legacy docs and retained history notes to `CHANGELOG.md` references
-  where they describe current-state pointers.
+- Hugo scaffold: `hugo/` at repo root, PaperMod theme (git submodule), dark
+  mode default, `hugo.toml` configured, `about.md` and `posts/_index.md`
+  created, `static/CNAME` set to `www.jockeyholler.net`. Hugo v0.156.0
+  extended installed at `/usr/local/bin/hugo` (ARM64).
+- Build command: `hugo --source hugo --destination ../site` (outputs into
+  existing `site/` alongside pipeline artifacts).
+- DNS migration: jockeyholler.net apex (A + AAAA) and www (CNAME) switched from
+  CloudFront aliases to GitHub Pages. Orphaned `loopback.api` alias removed.
+- Architectural decision: Hugo absorbs site templating/generation; vintage
+  pipeline shrinks to build-artifact role only.
+- AGENTS.md updated: mission, start-here order, commit cadence reflect Hugo.
+- Initial changelog scaffold and historical backfill from commit history.
 
 ## [2026-02-21]
 
