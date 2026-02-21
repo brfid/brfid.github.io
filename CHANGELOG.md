@@ -18,8 +18,7 @@ semantic version tags.
 ### Active Priorities
 - Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings
   (requires GitHub UI action — set custom domain to `www.jockeyholler.net`).
-- Flesh out portfolio page: DomainTools LLM context files URL when available;
-  review work page copy for tone.
+- Portfolio page: add DomainTools LLM context files URL when available.
 
 ### In Progress
 - None.
@@ -37,6 +36,9 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- README, WORKFLOWS, ARCHITECTURE updated for Hugo-first model.
+- deploy.yml restructured: mode detected before Python setup; Python/quality
+  checks/Playwright gated on `docker` mode only. Local publish skips all Python.
 - `site/` gitignored; all tracked files removed from repo. Hugo (and vintage pipeline
   mkdir calls) generate `site/` fresh in CI. Repo is now clean of build artifacts.
 - Portfolio page (`hugo/content/portfolio.md`) created from `portfolio.yaml` data;
