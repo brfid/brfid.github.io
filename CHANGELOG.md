@@ -17,10 +17,7 @@ semantic version tags.
 
 ### Active Priorities
 - Wire vintage pipeline outputs into `hugo/static/` (brad.man.txt, build logs).
-- Update `deploy.yml`: add `hugo build` step before Pages upload.
 - Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings.
-- Write first post: keepachangelog/LLM memory model.
-- Add thin `CLAUDE.md` that `@imports` AGENTS.md (Claude-specific entry point).
 
 ### In Progress
 - None.
@@ -38,6 +35,11 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- `deploy.yml`: added Hugo build step (runs for all modes before Pages upload);
+  added submodule checkout and Hugo setup via `peaceiris/actions-hugo@v3 0.156.0`.
+  Removed Python site generator step for local mode (Hugo replaces it).
+- First post published: `hugo/content/posts/changelog-as-llm-memory.md`.
+- Added thin `CLAUDE.md` at repo root (`@AGENTS.md` import).
 - Hugo scaffold: `hugo/` at repo root, PaperMod theme (git submodule), dark
   mode default, `hugo.toml` configured, `about.md` and `posts/_index.md`
   created, `static/CNAME` set to `www.jockeyholler.net`. Hugo v0.156.0

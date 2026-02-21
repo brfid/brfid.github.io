@@ -46,6 +46,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Setup Hugo
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: '0.156.0'
+          extended: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -444,12 +452,6 @@ jobs:
 
           echo "✓ Final output retrieved"
 
-      - name: Generate site (Local mode fallback)
-        if: steps.mode.outputs.build_mode != 'docker'
-        run: |
-          python -m resume_generator --out site --with-vintage \
-            --vintage-mode ${{ steps.mode.outputs.build_mode }}
-
       - name: Merge and retrieve build logs
         if: steps.mode.outputs.build_mode == 'docker'
         env:
@@ -527,6 +529,9 @@ jobs:
           cp templates/build-info.css site/build-info/
 
           echo "✅ Build info widget generated"
+
+      - name: Build Hugo site
+        run: hugo --source hugo --destination ../site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

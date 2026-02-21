@@ -1,254 +1,230 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bradley Fidler</title>
-    <meta name="color-scheme" content="dark" />
-<link rel="stylesheet" href="/build-info/build-info.css" />
+<!DOCTYPE html>
+<html lang="en" dir="auto" data-theme="dark">
+
+<head>
+	<meta name="generator" content="Hugo 0.156.0"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Bradley Fidler</title>
+
+<meta name="description" content="Technical writer. Docs platforms, AI workflows, delivery.">
+<meta name="author" content="Bradley Fidler">
+<link rel="canonical" href="https://www.jockeyholler.net/">
+<link crossorigin="anonymous" href="/assets/css/stylesheet.da3211e5ef867bf2b75fd5a6515cfed7195c011e8ab735694e203810a827097b.css" integrity="sha256-2jIR5e&#43;Ge/K3X9WmUVz&#43;1xlcAR6KtzVpTiA4EKgnCXs=" rel="preload stylesheet" as="style">
+<link rel="icon" href="https://www.jockeyholler.net/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://www.jockeyholler.net/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://www.jockeyholler.net/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://www.jockeyholler.net/apple-touch-icon.png">
+<link rel="mask-icon" href="https://www.jockeyholler.net/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" type="application/rss+xml" href="https://www.jockeyholler.net/index.xml" title="rss">
+<link rel="alternate" type="application/json" href="https://www.jockeyholler.net/index.json" title="json">
+<link rel="alternate" hreflang="en" href="https://www.jockeyholler.net/">
+<noscript>
     <style>
-      :root {
-        --bg: #0f1115;
-        --card: #151a23;
-        --text: #e8eefc;
-        --muted: #a8b3cf;
-        --border: rgba(232, 238, 252, 0.12);
-        --link: #e8eefc;
-        --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-      }
-      html, body {
-        height: 100%;
-      }
-      body {
-        margin: 0;
-        background: radial-gradient(1200px 600px at 20% 0%, #131a2b, var(--bg));
-        color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
-          "Apple Color Emoji", "Segoe UI Emoji";
-        line-height: 1.45;
-      }
-      a {
-        color: var(--link);
-        text-decoration: none;
-      }
-      a:hover, a:focus-visible {
-        text-decoration: underline;
-        outline: none;
-      }
-      .wrap {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 3rem 1.25rem 4rem;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1.25rem 1.25rem;
-        box-shadow: var(--shadow);
-      }
-      header {
-        display: grid;
-        gap: 0.35rem;
-        margin-bottom: 1rem;
-      }
-      h1 {
-        font-size: 1.35rem;
-        font-weight: 650;
-        margin: 0;
-        letter-spacing: 0.2px;
-      }
-      .subtitle {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.98rem;
-      }
-      .contact-email {
-        margin: 0.5rem 0 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        font-size: 0.9rem;
-        color: var(--text);
-      }
-      nav {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem 1.25rem;
-        margin: 0.75rem 0 0;
-        padding: 0;
-        list-style: none;
-      }
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0.65rem;
-        border-radius: 999px;
-        border: 1px solid rgba(232, 238, 252, 0.08);
-        background: rgba(255, 255, 255, 0.015);
-        font-size: 0.88rem;
-        color: var(--muted);
-      }
-      .pill:hover {
-        border-color: var(--border);
-        background: rgba(255, 255, 255, 0.03);
-        color: var(--text);
-      }
-      .section {
-        margin-top: 1.25rem;
-      }
-      .section h2 {
-        margin: 0 0 0.5rem;
-        font-size: 0.95rem;
-        font-weight: 650;
-        letter-spacing: 0.35px;
-        color: var(--muted);
-        text-transform: uppercase;
-      }
-      .section-content {
-        font-size: 0.95rem;
-        line-height: 1.6;
-        color: var(--text);
-      }
-      .section-content.mono {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        font-size: 0.9rem;
-        line-height: 1.5;
-      }
-      footer {
-        margin-top: 1.25rem;
-        color: rgba(168, 179, 207, 0.4);
-        font-size: 0.8rem;
-      }
-      footer a {
-        color: rgba(168, 179, 207, 0.5);
-      }
-      footer a:hover {
-        color: var(--muted);
-      }
-    </style>
-  </head>
-  <body>
-    <main class="wrap">
-<section class="card">
-    <header>
-  <h1>Bradley Fidler</h1>
-  <p class="subtitle">Technical Writer: docs platforms, AI workflows, delivery</p>
-  <p class="contact-email">brfid@icloud.com</p>
-  <nav>
-    <a class="pill" href="https://www.linkedin.com/in/brfid/" rel="me noopener noreferrer">LinkedIn</a>
-    <a class="pill" href="https://github.com/brfid" rel="me noopener noreferrer">GitHub</a>
-  </nav>
-</header>
-    <script>
-      // Add nav links to VAX-generated nav
-      (function() {
-        var nav = document.querySelector('header nav');
-        if (nav) {
-          var resumeHtml = document.createElement('a');
-          resumeHtml.className = 'pill';
-          resumeHtml.href = '/resume/';
-          resumeHtml.textContent = 'Resume (HTML)';
-          nav.appendChild(resumeHtml);
-
-          var resumePdf = document.createElement('a');
-          resumePdf.className = 'pill';
-          resumePdf.href = '/resume.pdf';
-          resumePdf.textContent = 'Resume (PDF)';
-          nav.appendChild(resumePdf);
-
-          var portfolio = document.createElement('a');
-          portfolio.className = 'pill';
-          portfolio.href = '/portfolio/';
-          portfolio.textContent = 'Writing Samples';
-          nav.appendChild(portfolio);
+        #theme-toggle,
+        .top-link {
+            display: none;
         }
-      })();
-    </script>
 
-  <footer>
-      <a href="/vax-build.log">source</a>
-  </footer>
-</section>
-    </main>
-<div class="build-info">
-  <button class="build-badge" onclick="this.parentElement.classList.toggle('expanded')">
-    Build: build-20260213-154523 <span class="status success">✓</span>
-  </button>
-  <div class="build-details">
-    <div class="build-summary">
-      <h3>Build Information</h3>
-      <table>
-        <tr>
-          <th>Build ID:</th>
-          <td>build-20260213-154523</td>
-        </tr>
-        <tr>
-          <th>Status:</th>
-          <td class="success">SUCCESS ✓</td>
-        </tr>
-        <tr>
-          <th>Timestamp:</th>
-          <td>2026-02-13T15:45:23Z</td>
-        </tr>
-        <tr>
-          <th>Total Events:</th>
-          <td>1,247</td>
-        </tr>
-        <tr>
-          <th>Errors:</th>
-          <td>0</td>
-        </tr>
-        <tr>
-          <th>Warnings:</th>
-          <td>3</td>
-        </tr>
-      </table>
+    </style>
+</noscript>
+<script>
+    if (localStorage.getItem("pref-theme") === "light") {
+        document.querySelector("html").dataset.theme = 'light';
+    }
+
+</script><meta property="og:url" content="https://www.jockeyholler.net/">
+  <meta property="og:site_name" content="Bradley Fidler">
+  <meta property="og:title" content="Bradley Fidler">
+  <meta property="og:description" content="Technical writer. Docs platforms, AI workflows, delivery.">
+  <meta property="og:locale" content="en-us">
+  <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Bradley Fidler">
+<meta name="twitter:description" content="Technical writer. Docs platforms, AI workflows, delivery.">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Bradley Fidler",
+  "url": "https://www.jockeyholler.net/",
+  "description": "Technical writer. Docs platforms, AI workflows, delivery.",
+  "logo": "https://www.jockeyholler.net/favicon.ico",
+  "sameAs": [
+      "https://www.linkedin.com/in/brfid/", "https://github.com/brfid"
+  ]
+}
+</script>
+</head>
+<body class="list" id="top">
+    <header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://www.jockeyholler.net/" accesskey="h" title="Bradley Fidler (Alt + H)">Bradley Fidler</a>
+            <div class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="18" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://www.jockeyholler.net/posts/" title="Writing">
+                    <span>Writing</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://www.jockeyholler.net/about/" title="About">
+                    <span>About</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main"> 
+<article class="first-entry home-info">
+    <header class="entry-header">
+        <h1>Bradley Fidler</h1>
+    </header>
+    <div class="entry-content">
+        Technical writer — docs platforms, AI workflows, delivery.
     </div>
-    <div class="component-stats">
-      <h4>Components</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Component</th>
-            <th>Events</th>
-            <th>Errors</th>
-            <th>Warnings</th>
-          </tr>
-        </thead>
-        <tbody>
-        <tr>
-          <td>VAX</td>
-          <td>847</td>
-          <td>0</td>
-          <td class="warning">2</td>
-        </tr>
-        <tr>
-          <td>GITHUB</td>
-          <td>234</td>
-          <td>0</td>
-          <td class="warning">1</td>
-        </tr>
-        <tr>
-          <td>PDP11</td>
-          <td>166</td>
-          <td>0</td>
-          <td>0</td>
-        </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="build-logs">
-      <h4>Logs</h4>
-      <ul>
-        <li><a href="build-logs/merged.log" target="_blank">📄 merged.log</a> - Chronological from all sources</li>
-        <li><a href="build-logs/VAX.log" target="_blank">📄 VAX.log</a> - VAX-specific events</li>
-        <li><a href="build-logs/PDP11.log" target="_blank">📄 PDP11.log</a> - PDP-11-specific events</li>
-        <li><a href="build-logs/GITHUB.log" target="_blank">📄 GITHUB.log</a> - GitHub Actions events</li>
-      </ul>
-    </div>
-  </div>
+    <footer class="entry-footer">
+        <div class="social-icons" >
+    <a href="https://www.linkedin.com/in/brfid/" target="_blank" rel="noopener noreferrer me"
+        title="Linkedin">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+    <rect x="2" y="9" width="4" height="12"></rect>
+    <circle cx="4" cy="4" r="2"></circle>
+</svg>
+    </a>
+    <a href="https://github.com/brfid" target="_blank" rel="noopener noreferrer me"
+        title="Github">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+    <path
+        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+    </path>
+</svg>
+    </a>
 </div>
-  </body>
+
+    </footer>
+</article>
+
+<article class="post-entry"> 
+  <header class="entry-header">
+    <h2 class="entry-hint-parent">Using CHANGELOG.md as LLM session memory
+    </h2>
+  </header>
+  <div class="entry-content">
+    <p>Most LLM coding assistants have no memory between sessions. You reload the conversation, re-explain the project, re-establish context, and hope the model picks up where you left off. The standard workaround — a large CLAUDE.md or AGENTS.md with everything in it — breaks down quickly. It turns static context into a dumping ground, grows without discipline, and gives the model no signal about what’s currently changing.
+The fix I landed on is simple: treat CHANGELOG.md [Unreleased] as the primary mutable state document.
+...</p>
+  </div>
+  <footer class="entry-footer"><span title='2026-02-21 00:00:00 +0000 UTC'>February 21, 2026</span>&nbsp;·&nbsp;<span>3 min</span>&nbsp;·&nbsp;<span>Bradley Fidler</span></footer>
+  <a class="entry-link" aria-label="post link to Using CHANGELOG.md as LLM session memory" href="https://www.jockeyholler.net/posts/changelog-as-llm-memory/"></a>
+</article>
+    </main>
+    
+<footer class="footer">
+        <span>&copy; 2026 <a href="https://www.jockeyholler.net/">Bradley Fidler</a></span> · 
+
+    <span>
+        Powered by
+        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
+</footer>
+<a href="#top" aria-label="go to top" title="Go to Top (Alt + G)" class="top-link" id="top-link" accesskey="g">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
+        <path d="M12 6H0l6-6z" />
+    </svg>
+</a>
+
+<script>
+    let menu = document.getElementById('menu');
+    if (menu) {
+        
+        const scrollPosition = localStorage.getItem("menu-scroll-position");
+        if (scrollPosition) {
+            menu.scrollLeft = parseInt(scrollPosition, 10);
+        }
+        
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        const html = document.querySelector("html");
+        if (html.dataset.theme === "dark") {
+            html.dataset.theme = 'light';
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            html.dataset.theme = 'dark';
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+</body>
+
 </html>
