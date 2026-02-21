@@ -1,0 +1,146 @@
+{{- define "main" }}
+{{- $r := .Site.Data.resume }}
+{{- $basics := $r.basics }}
+
+<article class="post-single">
+  <header class="post-header">
+    <div class="resume-header">
+      <div class="resume-header-left">
+        <h1 class="post-title">{{ $basics.name }}</h1>
+        <p class="resume-label">{{ $basics.label }}</p>
+        {{- with $basics.location }}
+        <p class="resume-location">{{ .city }}, {{ .region }}</p>
+        {{- end }}
+      </div>
+      <div class="resume-header-right">
+        {{- with $basics.email }}
+        <p><a href="mailto:{{ . }}">{{ . }}</a></p>
+        {{- end }}
+        {{- with $basics.phone }}
+        <p>{{ . }}</p>
+        {{- end }}
+        {{- range $basics.profiles }}
+        <p><a href="{{ .url }}">{{ .network }}</a></p>
+        {{- end }}
+        <p><a class="resume-pdf-link" href="/resume.pdf">Download PDF</a></p>
+      </div>
+    </div>
+  </header>
+
+  <div class="post-content">
+
+    {{- with $basics.summary }}
+    <section class="resume-section">
+      <h2>Summary</h2>
+      <p>{{ . }}</p>
+    </section>
+    {{- end }}
+
+    {{- with $r.work }}
+    <section class="resume-section">
+      <h2>Experience</h2>
+      {{- range . }}
+      <div class="resume-item">
+        <div class="resume-item-head">
+          <strong>{{ .position }}</strong>
+          <span class="resume-dates">
+            {{ dateFormat "Jan 2006" (time .startDate) }} –
+            {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
+            {{- else }} Present{{ end }}
+          </span>
+        </div>
+        <div class="resume-item-sub">
+          {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
+          {{- with .location }} · {{ . }}{{ end }}
+        </div>
+        {{- with .summary }}<p>{{ . }}</p>{{ end }}
+        {{- with .highlights }}
+        <ul>
+          {{- range . }}
+          <li>{{ . }}</li>
+          {{- end }}
+        </ul>
+        {{- end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.skills }}
+    <section class="resume-section">
+      <h2>Skills</h2>
+      {{- range . }}
+      <div class="resume-item">
+        <div class="resume-item-head">
+          <strong>{{ .name }}</strong>
+        </div>
+        {{- with .keywords }}
+        <span class="resume-keywords">{{ delimit . " · " }}</span>
+        {{- end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.projects }}
+    <section class="resume-section">
+      <h2>Projects</h2>
+      {{- range . }}
+      <div class="resume-item">
+        <div class="resume-item-head">
+          <strong>
+            {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
+          </strong>
+        </div>
+        {{- with .description }}<p>{{ . }}</p>{{ end }}
+        {{- with .keywords }}
+        <span class="resume-keywords">{{ delimit . " · " }}</span>
+        {{- end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.education }}
+    <section class="resume-section">
+      <h2>Education</h2>
+      {{- range . }}
+      <div class="resume-item">
+        <div class="resume-item-head">
+          <strong>{{ .institution }}</strong>
+          {{- if and .startDate .endDate }}
+          <span class="resume-dates">
+            {{ dateFormat "Jan 2006" (time .startDate) }} – {{ dateFormat "Jan 2006" (time .endDate) }}
+          </span>
+          {{- end }}
+        </div>
+        <div class="resume-item-sub">{{ .studyType }}{{ with .area }}, {{ . }}{{ end }}</div>
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.publications }}
+    <section class="resume-section">
+      <h2>Publications</h2>
+      {{- range . }}
+      <div class="resume-item">
+        <div class="resume-item-head">
+          <strong>
+            {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
+          </strong>
+          {{- with .releaseDate }}
+          <span class="resume-dates">{{ dateFormat "Jan 2006" (time .) }}</span>
+          {{- end }}
+        </div>
+        <div class="resume-item-sub">{{ .publisher }}</div>
+        {{- with .summary }}<p>{{ . }}</p>{{ end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+  </div>
+</article>
+
+{{- end }}
