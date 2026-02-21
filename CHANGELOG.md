@@ -37,6 +37,8 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- `site/` gitignored; all tracked files removed from repo. Hugo (and vintage pipeline
+  mkdir calls) generate `site/` fresh in CI. Repo is now clean of build artifacts.
 - Portfolio page (`hugo/content/portfolio.md`) created from `portfolio.yaml` data;
   added "Work" nav item to `hugo.toml` menu (weight 15, between Writing and About).
 - `deploy.yml` Stage 4: changed `brad.man.txt` destination from `site/` to
