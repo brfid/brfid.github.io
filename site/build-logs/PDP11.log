@@ -1,3 +1,0 @@
-# PDP-11 validation incomplete in this build
-# Need to run new build with enhanced logging scripts
-# See: scripts/pdp11-validate.sh

@@ -1,9 +1,0 @@
-[2026-02-14 12:17:34 GITHUB] Generating resume.vax.yaml locally...
-[2026-02-14 12:17:38 GITHUB] Wrote: site/brad.man.txt
-[2026-02-14 12:17:38 GITHUB] Wrote: site/vax-build.log
-[2026-02-14 12:17:38 GITHUB] Wrote: site/resume/index.html
-[2026-02-14 12:17:38 GITHUB] Wrote: site/index.html
-[2026-02-14 12:17:38 GITHUB] Wrote: site/vax-manifest.txt
-[2026-02-14 12:17:38 GITHUB] Transferring source files to VAX...
-[2026-02-14 12:17:38 GITHUB] Running VAX build & encode script...
-[2026-02-14 12:17:39 GITHUB] ✓ VAX build & encode complete

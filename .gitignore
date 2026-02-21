@@ -9,12 +9,8 @@ __pycache__/
 .coverage
 .coverage.*
 
-# Generated files
-site/resume/
-site/resume.pdf
-site/brad.man.txt
-site/vax-build.log
-site/vax-manifest.txt
+# Generated files — Hugo builds site/ fresh in CI; do not commit
+site/
 build/
 
 # IDE
