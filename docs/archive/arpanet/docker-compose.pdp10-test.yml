@@ -1,0 +1,32 @@
+# PDP-10 SIMH Telnet Console Test
+# Testing the telnet console method on SIMH PDP-10 KS with TOPS-20 V4.1
+# Based on archived/Dockerfile.pdp10 with telnet console enabled
+
+version: '3.8'
+
+services:
+  pdp10-simh:
+    container_name: pdp10-simh-test
+    hostname: pdp10-tops20
+    build:
+      context: ./arpanet
+      dockerfile: archived/Dockerfile.pdp10
+    ports:
+      - "2326:2323"  # Telnet console (mapped to avoid conflicts)
+      - "2001:2000/udp"  # IMP interface (if needed)
+    volumes:
+      - ./build/pdp10:/machines/data
+      - ./arpanet/configs/pdp10-noboot.ini:/machines/pdp10.ini:ro
+    networks:
+      pdp-test:
+        ipv4_address: 172.20.1.10
+    restart: unless-stopped
+
+networks:
+  pdp-test:
+    name: pdp10-test-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.1.0/24
+          gateway: 172.20.1.1

@@ -1,0 +1,291 @@
+#!/usr/bin/expect -f
+# TOPS-20 V4.1 Automated Installation Script
+# This script automates the installation of TOPS-20 on PDP-10 KS10
+
+set timeout 3600
+set date "8-FEB-26"
+set time "12:00:00"
+
+log_user 1
+
+# Connect to PDP-10 console
+spawn telnet localhost 2326
+
+# Wait for connection
+expect {
+    "Connected to" { send_user "\n=== Connected to PDP-10 console ===\n" }
+    timeout { send_user "\n!!! Connection timeout !!!\n"; exit 1 }
+}
+
+# Wait for boot to complete - should reach MTBOOT prompt
+send_user "\n=== Waiting for MTBOOT prompt ===\n"
+expect {
+    "MTBOOT>" { send_user "\n=== MTBOOT prompt reached ===\n" }
+    "KS10 monitor" { send_user "\n=== Monitor already loaded ===\n" }
+    timeout { send_user "\n!!! MTBOOT timeout - may need manual intervention !!!\n" }
+}
+
+# Start disk formatter
+send_user "\n=== Starting disk formatter ===\n"
+sleep 2
+send "/L\r"
+expect "MTBOOT>"
+sleep 2
+send "/G143\r"
+
+# Wait for formatter to start
+expect {
+    "DO YOU WANT TO REPLACE" { send_user "\n=== Formatter started ===\n" }
+    "file system" { send_user "\n=== Formatter started ===\n" }
+    timeout { send_user "\n!!! Formatter start timeout !!!\n"; exit 1 }
+}
+
+# Answer formatter questions
+send_user "\n=== Answering formatter questions ===\n"
+
+# Replace file system?
+sleep 1
+send "Y\r"
+
+# Define public structure?
+expect "DEFINE A PUBLIC"
+sleep 1
+send "Y\r"
+
+# Structure name
+expect "STRUCTURE NAME"
+sleep 1
+send "PS\r"
+
+# Number of packs
+expect "NUMBER OF PACKS"
+sleep 1
+send "1\r"
+
+# Pack location
+expect "LOGICAL PACK"
+sleep 1
+send "0,0\r"
+
+# Swapping space
+expect "SWAPPING SPACE"
+sleep 1
+send "Y\r"
+
+# Front-end file system
+expect "FRONT-END"
+sleep 1
+send "Y\r"
+
+# Bootstrap area
+expect "BOOTSTRAP AREA"
+sleep 1
+send "Y\r"
+
+# BAT blocks
+expect "BAT BLOCKS"
+sleep 1
+send "Y\r"
+
+# Password encryption
+expect "PASSWORD ENCRYPTION"
+sleep 1
+send "N\r"
+
+# Date and time
+expect "DATE AND TIME"
+sleep 1
+send "$date $time\r"
+
+# Confirm date/time
+expect "IS THIS CORRECT"
+sleep 1
+send "Y\r"
+
+# Reason for reload
+expect "REASON"
+sleep 1
+send "INSTALLATION\r"
+
+# Wait for disk formatting to complete - this takes several minutes
+send_user "\n=== Disk formatting in progress (this may take 5-10 minutes) ===\n"
+set timeout 900
+expect {
+    "RUNNING DDMP" { send_user "\n=== Disk format complete, DDMP running ===\n" }
+    "MX>" { send_user "\n=== Already at MX prompt ===\n" }
+    timeout { send_user "\n!!! Disk format timeout !!!\n"; exit 1 }
+}
+
+# Interrupt to monitor prompt if at DDMP
+if {[string match "*RUNNING DDMP*" $expect_out(buffer)]} {
+    sleep 2
+    send "\003"
+    expect "MX>"
+    send_user "\n=== Interrupted to MX prompt ===\n"
+}
+
+# Load monitor from tape
+send_user "\n=== Loading monitor from tape ===\n"
+sleep 2
+send "GET FILE MTA0:\r"
+sleep 2
+expect {
+    "MX>" {
+        send_user "\n=== First GET FILE command sent ===\n"
+        sleep 2
+        send "GET FILE MTA0:\r"
+        sleep 2
+    }
+    timeout { }
+}
+
+# Start the monitor
+expect "MX>"
+sleep 2
+send "START\r"
+
+# Wait for TOPS-20 prompt
+send_user "\n=== Waiting for TOPS-20 prompt (monitor loading...) ===\n"
+set timeout 300
+expect {
+    "@" { send_user "\n=== TOPS-20 system prompt reached! ===\n" }
+    "TOPS-20" {
+        send_user "\n=== TOPS-20 banner seen ===\n"
+        expect "@"
+    }
+    timeout { send_user "\n!!! Monitor start timeout !!!\n"; exit 1 }
+}
+
+# Enable privileged mode
+send_user "\n=== Enabling privileged mode ===\n"
+sleep 2
+send "ENABLE\r"
+expect "@"
+
+# Run DUMPER to restore files
+send_user "\n=== Starting DUMPER for file restoration ===\n"
+sleep 2
+send "RUN DUMPER\r"
+expect "DUMPER>"
+
+# Configure tape
+send_user "\n=== Configuring tape device ===\n"
+sleep 2
+send "TAPE MTA0:\r"
+expect "DUMPER>"
+
+# Rewind tape
+send_user "\n=== Rewinding tape ===\n"
+sleep 2
+send "REWIND\r"
+expect "DUMPER>"
+
+# Skip to savesets (may need to adjust)
+send_user "\n=== Skipping to savesets ===\n"
+sleep 2
+send "SKIP 2\r"
+expect "DUMPER>"
+
+# Restore all files - THIS WILL TAKE A LONG TIME (30-60 minutes)
+send_user "\n=== Starting file restoration - THIS WILL TAKE 30-60 MINUTES ===\n"
+send_user "\n=== Started at: [clock format [clock seconds]] ===\n"
+set timeout 7200
+send "RESTORE <*>*.*.*\r"
+
+# Wait for restoration to complete
+expect {
+    "DUMPER>" {
+        send_user "\n=== File restoration complete! ===\n"
+        send_user "\n=== Completed at: [clock format [clock seconds]] ===\n"
+    }
+    timeout {
+        send_user "\n=== File restoration still in progress after 2 hours ===\n"
+        send_user "\n=== You may need to wait longer or check manually ===\n"
+        exit 1
+    }
+}
+
+# Exit DUMPER
+send_user "\n=== Exiting DUMPER ===\n"
+sleep 2
+send "EXIT\r"
+expect "@"
+
+# Create OPERATOR account
+send_user "\n=== Creating OPERATOR account ===\n"
+sleep 2
+send "ENABLE\r"
+expect "@"
+sleep 2
+send "RUN DLUSER\r"
+expect "*"
+
+# Add OPERATOR user
+sleep 2
+send "ADD OPERATOR 1,2\r"
+expect "Password:"
+sleep 1
+send "operator\r"
+expect "Re-enter"
+sleep 1
+send "operator\r"
+expect "*"
+
+# Exit DLUSER
+sleep 2
+send "EXIT\r"
+expect "@"
+
+# Write bootstrap to disk
+send_user "\n=== Writing bootstrap to disk ===\n"
+sleep 2
+send "RUN SMFILE\r"
+expect "*"
+sleep 2
+send "WRITE /BOOTSTRAP\r"
+expect "*"
+sleep 2
+send "EXIT\r"
+expect "@"
+
+# Shutdown system
+send_user "\n=== Shutting down system ===\n"
+sleep 2
+send "ENABLE\r"
+expect "@"
+sleep 2
+send "SHUTDOWN\r"
+expect "Reason"
+sleep 1
+send "Installation complete\r"
+expect "uptime"
+sleep 1
+send "0\r"
+expect "minutes"
+sleep 1
+send "0\r"
+expect "@"
+
+# Cease system
+sleep 2
+send "CEASE NOW\r"
+
+# Wait for system halt
+send_user "\n=== Waiting for system halt ===\n"
+expect {
+    "sim>" { send_user "\n=== System halted successfully ===\n" }
+    "HALT" { send_user "\n=== System halted ===\n" }
+    timeout { send_user "\n=== System may have halted ===\n" }
+}
+
+send_user "\n========================================\n"
+send_user "=== TOPS-20 INSTALLATION COMPLETE! ===\n"
+send_user "========================================\n"
+send_user "\nNext steps:\n"
+send_user "1. Update pdp10.ini to boot from disk (rpa0) instead of tape\n"
+send_user "2. Restart the container\n"
+send_user "3. Connect and login with: OPERATOR / operator\n"
+send_user "\n"
+
+# Exit cleanly
+exit 0

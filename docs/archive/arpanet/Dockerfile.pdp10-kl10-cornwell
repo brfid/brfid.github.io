@@ -1,0 +1,50 @@
+# PDP-10 KL10 with Richard Cornwell's SIMH fork
+# Supports TOPS-20 V2-V7 (not just V4.x)
+# See: https://github.com/rcornwell/sims
+
+FROM ubuntu:22.04
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    ca-certificates \
+    libedit-dev \
+    libpng-dev \
+    libpcap-dev \
+    libvdeplug-dev \
+    curl \
+    telnet \
+    socat \
+    wget \
+    bzip2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build Cornwell's SIMH fork with KL10 support
+WORKDIR /tmp
+RUN git clone https://github.com/rcornwell/sims.git && \
+    cd sims && \
+    make pdp10-ka
+
+# Install SIMH
+RUN mkdir -p /usr/local/bin && \
+    cp /tmp/sims/BIN/pdp10-ka /usr/local/bin/pdp10 && \
+    chmod +x /usr/local/bin/pdp10
+
+# Download TOPS-20 V7.0 installation tape
+RUN mkdir -p /machines/pdp10 && \
+    cd /machines/pdp10 && \
+    wget -q http://pdp-10.trailing-edge.com/tapes/bb-h137f-bm.tap.bz2 && \
+    bunzip2 bb-h137f-bm.tap.bz2
+
+# Create data directory for disk
+RUN mkdir -p /machines/data
+
+# Copy configs (will create V7.0 specific ones)
+COPY arpanet/configs/kl10-v7-install.ini /machines/pdp10/install.ini
+COPY arpanet/configs/kl10-v7-runtime.ini /machines/pdp10/runtime.ini
+
+WORKDIR /machines/pdp10
+
+# Start with installation config
+CMD ["pdp10", "install.ini"]

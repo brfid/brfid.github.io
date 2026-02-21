@@ -1,0 +1,88 @@
+#!/usr/bin/expect -f
+# TOPS-20 Final Installation Attempt
+# This script connects when the container is at sim> prompt
+
+set timeout 30
+log_user 1
+
+send_user "\n=== TOPS-20 Installation - Final Attempt ===\n"
+send_user "Connecting to PDP-10 at sim> prompt...\n\n"
+
+spawn telnet localhost 2326
+
+# We should immediately see sim> prompt since boot timed out
+expect {
+    "sim>" {
+        send_user "\n=== At sim> prompt - Good! ===\n"
+    }
+    "Connected to" {
+        send_user "\n=== Telnet connected ===\n"
+        expect "sim>"
+    }
+    timeout {
+        send_user "\n!!! No sim> prompt - container may be booting !!!\n"
+        send_user "Sending enter to check...\n"
+        send "\r"
+        expect "sim>"
+    }
+}
+
+send_user "\n=== Manually booting from tape ===\n"
+sleep 2
+send "boot tua0\r"
+
+# Now wait for MTBOOT
+set timeout 120
+expect {
+    "MTBOOT>" {
+        send_user "\n=== MTBOOT REACHED! ===\n"
+    }
+    "BOOT" {
+        send_user "\n=== Boot sequence started ===\n"
+        expect "MTBOOT>"
+    }
+    timeout {
+        send_user "\n!!! Still no MTBOOT !!!\n"
+        send_user "Trying to send ? for help...\n"
+        send "?\r"
+        sleep 3
+        expect "MTBOOT>"
+    }
+}
+
+send_user "\n========================================\n"
+send_user "=== SUCCESS! MTBOOT prompt reached ===\n"
+send_user "========================================\n"
+send_user "\nNow proceeding with installation...\n\n"
+sleep 3
+
+# Continue with installation...
+send "/L\r"
+sleep 2
+expect "MTBOOT>"
+send "/G143\r"
+
+# [Rest of installation script continues as before...]
+# For now, let's just confirm we can reach MTBOOT and pause
+
+set timeout 60
+expect {
+    "REPLACE" {
+        send_user "\n=== FORMATTER STARTED! ===\n"
+        send_user "\n========================================\n"
+        send_user "Installation can proceed from here!\n"
+        send_user "========================================\n"
+    }
+    timeout {
+        send_user "\n!!! Formatter didn't start !!!\n"
+    }
+}
+
+# Let's pause here and keep the connection open
+send_user "\nKeeping connection open for manual intervention if needed...\n"
+send_user "Press Ctrl-C to exit\n"
+
+# Wait indefinitely
+expect timeout
+
+exit 0

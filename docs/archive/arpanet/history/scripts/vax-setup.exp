@@ -1,0 +1,86 @@
+#!/usr/bin/expect -f
+# VAX BSD 4.3 network and daemon setup
+# Usage: expect vax-setup.exp <host> <port>
+
+set timeout 30
+set host [lindex $argv 0]
+set port [lindex $argv 1]
+
+if {$argc != 2} {
+    puts "Usage: vax-setup.exp <host> <port>"
+    exit 1
+}
+
+spawn telnet $host $port
+
+# Send newline to wake up console
+sleep 2
+send "\r"
+
+# Wait for login prompt
+expect {
+    "login:" { send "root\r" }
+    "login" { send "root\r" }
+    "#" { puts "Already logged in" }
+    timeout {
+        puts "No login prompt, trying to send login anyway"
+        send "root\r"
+    }
+}
+
+# Wait for shell prompt
+expect {
+    "#" { puts "Logged in as root" }
+    timeout { puts "Timeout waiting for prompt"; exit 1 }
+}
+
+# Check current network configuration
+send "/etc/ifconfig de0\r"
+expect "#"
+
+# Configure network if needed
+send "/etc/ifconfig de0 172.20.0.10 netmask 255.255.0.0 up\r"
+expect "#"
+
+# Verify configuration
+send "/etc/ifconfig de0\r"
+expect "#"
+
+# Check routing
+send "netstat -rn\r"
+expect "#"
+
+# Check if inetd is running
+send "ps aux | grep inetd\r"
+expect "#"
+
+# Check /etc/inetd.conf
+send "cat /etc/inetd.conf | grep -E 'ftp|telnet'\r"
+expect "#"
+
+# Start inetd if not running
+send "if ! ps aux | grep -q '[i]netd'; then /etc/inetd; fi\r"
+expect "#"
+
+# Verify inetd started
+send "ps aux | grep inetd\r"
+expect "#"
+
+# Check listening ports
+send "netstat -an | grep LISTEN\r"
+expect "#"
+
+# Test FTP daemon
+send "echo 'Test file content' > /tmp/testfile.txt\r"
+expect "#"
+
+send "ls -l /tmp/testfile.txt\r"
+expect "#"
+
+puts "\n=== VAX Setup Complete ==="
+puts "Network configured: 172.20.0.10/16"
+puts "Daemons should be running"
+
+# Leave session open for manual inspection
+send "echo 'VAX setup complete - press Ctrl-] then quit to exit'\r"
+interact

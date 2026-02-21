@@ -1,0 +1,63 @@
+# PDP-10 KL10 with Panda TOPS-20 Distribution
+# Uses KLH10 emulator with pre-built disk image
+# Provides TCP/IP networking directly (no 1822 protocol needed)
+
+FROM debian:bookworm-slim
+
+# Install build dependencies and runtime tools
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libncurses-dev \
+    linux-libc-dev \
+    iproute2 \
+    wget \
+    telnet \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and extract Panda distribution (~221MB)
+WORKDIR /tmp
+RUN wget -q http://panda.trailing-edge.com/panda-dist.tar.gz && \
+    tar xzf panda-dist.tar.gz && \
+    rm panda-dist.tar.gz
+
+# Build KLH10 emulator
+# The build directory name varies by architecture
+# Disable LITES (hardware lights) - requires unavailable asm/io.h
+WORKDIR /tmp/panda-dist/klh10-2.0h
+RUN if [ -d bld-linux ]; then \
+        cd bld-linux && sed -i 's/-DKLH10_DEV_LITES=1//' Makefile && make base-kl; \
+    elif [ -d bld/lnx86 ]; then \
+        cd bld/lnx86 && sed -i 's/-DKLH10_DEV_LITES=1//' Makefile && make base-kl; \
+    elif [ -d bld/lnx ]; then \
+        cd bld/lnx && sed -i 's/-DKLH10_DEV_LITES=1//' Makefile && make base-kl; \
+    else \
+        echo "ERROR: Could not find build directory" && exit 1; \
+    fi
+
+# Create runtime directory and install binaries
+RUN mkdir -p /opt/tops20 && \
+    find . -name "kn10-kl" -exec cp {} /opt/tops20/ \; && \
+    cp /tmp/panda-dist/klt20.ini /opt/tops20/ && \
+    cp /tmp/panda-dist/RH20.RP07.1 /opt/tops20/ && \
+    cp /tmp/panda-dist/boot.sav /opt/tops20/ && \
+    cp /tmp/panda-dist/dpni20 /opt/tops20/ 2>/dev/null || true && \
+    cp /tmp/panda-dist/dprpxx /opt/tops20/ 2>/dev/null || true
+
+# Set permissions for network access (dpni20 driver needs root)
+RUN chown root:root /opt/tops20/kn10-kl && \
+    chmod +s /opt/tops20/kn10-kl
+
+# Create data directory for persistent storage
+RUN mkdir -p /machines/data
+
+# Clean up build artifacts
+RUN rm -rf /tmp/panda-dist
+
+WORKDIR /opt/tops20
+
+# Expose ports: 2323 (console), 21 (FTP), 23 (telnet)
+EXPOSE 2323 21 23
+
+# Default: run with base config (will be overridden by volume mount)
+CMD ["./kn10-kl", "panda.ini"]

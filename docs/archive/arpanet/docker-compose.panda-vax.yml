@@ -1,0 +1,74 @@
+# Multi-Host Test Configuration
+# VAX (4.3BSD) + PDP-10 (TOPS-20 Panda) + PDP-11 (2.11BSD)
+# Uses TCP/IP directly (no ARPANET 1822 protocol)
+# Goal: Establish FTP connections between vintage hosts
+
+version: '3.8'
+
+services:
+  vax:
+    container_name: panda-vax
+    hostname: vax-host
+    image: jguillaumes/simh-vaxbsd@sha256:1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215
+    ports:
+      - "2323:2323"
+    volumes:
+      - ./build/vax/simh-tape:/machines
+      - ./arpanet/scripts/simh-automation:/machines/automation:ro
+    networks:
+      panda-net:
+        ipv4_address: 172.20.0.10
+    environment:
+      - SIMH_NETWORK=enabled
+    restart: unless-stopped
+
+  pdp10-panda:
+    container_name: panda-pdp10
+    hostname: pdp10-panda
+    build:
+      context: ./arpanet
+      dockerfile: Dockerfile.pdp10-panda
+    ports:
+      - "2326:2323"  # Console
+      - "21:21"      # FTP
+      - "23:23"      # Telnet
+    volumes:
+      - ./build/panda:/machines/data
+      - ./arpanet/configs/panda.ini:/opt/tops20/panda.ini:ro
+    networks:
+      panda-net:
+        ipv4_address: 172.20.0.40
+    restart: unless-stopped
+    depends_on:
+      - vax
+    # Need privileged mode for dpni20 network driver
+    privileged: true
+
+  pdp11:
+    container_name: pdp11-host
+    hostname: pdp11-bsd
+    build:
+      context: ./arpanet
+      dockerfile: Dockerfile.pdp11
+    ports:
+      - "2327:2327"  # Console
+      - "2121:21"    # FTP (mapped to avoid conflict)
+      - "2324:23"    # Telnet (mapped to avoid conflict)
+    volumes:
+      - ./build/pdp11:/machines/data
+      - ./arpanet/configs/pdp11.ini:/opt/pdp11/pdp11.ini:ro
+    networks:
+      panda-net:
+        ipv4_address: 172.20.0.50
+    restart: unless-stopped
+    depends_on:
+      - vax
+
+networks:
+  panda-net:
+    name: panda-test
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

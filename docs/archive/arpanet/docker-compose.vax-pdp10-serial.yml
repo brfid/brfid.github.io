@@ -1,0 +1,65 @@
+# VAX + PDP-10 (KL10) Serial Tunnel + FTP
+# KL10 + Serial + FTP Plan - Phase 1: Fix PDP-10 Boot
+#
+# This compose file sets up:
+#   - VAX/4.3BSD with FTP server (validated)
+#   - PDP-10/TOPS-20 with KL10 emulator (community-proven)
+#   - Direct network connection for FTP
+#   - Optional serial tunnel for debugging
+#
+# Usage:
+#   1. Build: docker-compose -f docker-compose.vax-pdp10-serial.yml build
+#   2. Start: docker-compose -f docker-compose.vax-pdp10-serial.yml up -d
+#   3. Install TOPS-20 (interactive): docker attach pdp10-kl10
+#   4. Test FTP: docker exec vax-host ftp 172.20.0.40
+#
+# See: docs/arpanet/KL10-SERIAL-FTP-PLAN.md
+
+version: '3.8'
+
+services:
+  vax:
+    container_name: vax-host
+    hostname: vax
+    image: jguillaumes/simh-vaxbsd@sha256:1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215
+    networks:
+      serial-net:
+        ipv4_address: 172.20.0.10
+    ports:
+      - "2323:2323"    # SIMH console
+    volumes:
+      - vax-data:/machines/data
+    environment:
+      - SIMH_NETWORK=enabled
+      - SIMH_USE_CONTAINER=yes
+    stdin_open: true
+    tty: true
+
+  pdp10:
+    container_name: pdp10-kl10
+    hostname: pdp10
+    build:
+      context: .
+      dockerfile: arpanet/Dockerfile.pdp10-kl10-cornwell
+    networks:
+      serial-net:
+        ipv4_address: 172.20.0.40
+    ports:
+      - "2326:2326"    # Console (telnet mode when using runtime.ini)
+      - "9001:9001"    # Serial tunnel
+    volumes:
+      - pdp10-data:/machines/data
+    stdin_open: true
+    tty: true
+
+networks:
+  serial-net:
+    name: vax-pdp10-serial
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  vax-data:
+  pdp10-data:

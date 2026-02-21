@@ -1,0 +1,305 @@
+#!/usr/bin/expect -f
+#
+# Authentic ARPANET FTP Transfer Script
+# =====================================
+#
+# Historical Fidelity: Uses BSD 4.3's native FTP client (1986)
+# This script automates what a user would do manually on ARPANET
+#
+# Usage: authentic-ftp-transfer.exp <vax_host> <vax_port> <source_file> <dest_file> <ftp_dest>
+#
+# Example: authentic-ftp-transfer.exp localhost 2323 /tmp/test.txt /tmp/received.txt localhost
+#
+# Architecture:
+#   Modern Script (expect)
+#     → VAX Console Login
+#       → BSD 4.3 FTP Client (1986) ← AUTHENTIC!
+#         → FTP Server (1986) ← AUTHENTIC!
+#           → File Transfer via TCP/IP
+#
+
+set timeout 60
+set vax_host [lindex $argv 0]
+set vax_port [lindex $argv 1]
+set source_file [lindex $argv 2]
+set dest_file [lindex $argv 3]
+set ftp_destination [lindex $argv 4]
+
+if {$argc != 5} {
+    puts "Usage: $argv0 <vax_host> <vax_port> <source_file> <dest_file> <ftp_destination>"
+    puts "Example: $argv0 localhost 2323 /tmp/test.txt /tmp/received.txt localhost"
+    exit 1
+}
+
+puts "=============================================="
+puts "AUTHENTIC ARPANET FTP TRANSFER"
+puts "=============================================="
+puts "Source File: $source_file"
+puts "Destination: $dest_file"
+puts "FTP Host: $ftp_destination"
+puts "Using: BSD 4.3 FTP Client (1986)"
+puts "=============================================="
+puts ""
+
+# Connect to VAX console
+spawn telnet $vax_host $vax_port
+
+# Wake up console - send multiple newlines
+sleep 3
+send "\r\r"
+sleep 2
+
+# Try to get to a prompt - be very patient
+set login_attempts 0
+while {$login_attempts < 3} {
+    expect {
+        "login:" {
+            puts "✓ Got login prompt"
+            send "root\r"
+            expect {
+                -re "#.*" {
+                    puts "✓ Logged in as root"
+                    break
+                }
+                timeout {
+                    incr login_attempts
+                    send "\r"
+                }
+            }
+        }
+        -re "#.*" {
+            puts "✓ Already at shell prompt"
+            break
+        }
+        timeout {
+            incr login_attempts
+            if {$login_attempts < 3} {
+                puts "→ Retrying login (attempt [expr $login_attempts + 1])..."
+                send "\r"
+                sleep 1
+                send "root\r"
+                sleep 2
+            }
+        }
+    }
+}
+
+# Final check for prompt
+send "\r"
+expect {
+    -re "#" { puts "✓ Shell prompt confirmed" }
+    timeout { puts "✗ Cannot get shell prompt"; exit 1 }
+}
+
+# Verify source file exists
+puts "\n→ Verifying source file exists..."
+send "ls -l $source_file\r"
+expect {
+    "No such file" {
+        puts "✗ Source file not found!"
+        send "logout\r"
+        exit 1
+    }
+    "#" { puts "✓ Source file exists" }
+}
+
+# Show file content (for documentation)
+puts "\n→ Source file content:"
+send "cat $source_file\r"
+expect "#"
+
+# Record file size before transfer
+send "wc -c $source_file\r"
+expect -re {(\d+)\s+} {
+    set source_size $expect_out(1,string)
+    puts "✓ Source file size: $source_size bytes"
+}
+expect "#"
+
+# Now run the AUTHENTIC BSD 4.3 FTP client!
+puts "\n→ Starting BSD 4.3 FTP client (1986)..."
+send "ftp $ftp_destination\r"
+
+# Wait for FTP to connect
+expect {
+    "220" { puts "✓ FTP server responded (220 Ready)" }
+    "Connection refused" {
+        puts "✗ FTP server not available"
+        send "\003"
+        expect "#"
+        send "logout\r"
+        exit 1
+    }
+    timeout {
+        puts "✗ FTP connection timeout"
+        send "\003"
+        expect "#"
+        send "logout\r"
+        exit 1
+    }
+}
+
+# Login prompt
+expect {
+    "Name" {
+        puts "✓ FTP asking for username"
+        send "operator\r"
+    }
+    timeout {
+        puts "✗ No login prompt"
+        send "quit\r"
+        expect "#"
+        send "logout\r"
+        exit 1
+    }
+}
+
+# Password prompt
+expect {
+    "Password" {
+        puts "✓ FTP asking for password"
+        send "test123\r"
+    }
+}
+
+# Wait for successful login
+expect {
+    "230" { puts "✓ FTP login successful (230 User logged in)" }
+    "530" {
+        puts "✗ FTP login failed (530 Access denied)"
+        send "quit\r"
+        expect "#"
+        send "logout\r"
+        exit 1
+    }
+    timeout {
+        puts "✗ FTP login timeout"
+        send "quit\r"
+        expect "#"
+        send "logout\r"
+        exit 1
+    }
+}
+
+expect "ftp>"
+
+# Set binary mode
+puts "\n→ Setting binary transfer mode..."
+send "binary\r"
+expect {
+    "200" { puts "✓ Binary mode set (200 Type set to I)" }
+    "ftp>" { puts "✓ Binary mode acknowledged" }
+}
+expect "ftp>"
+
+# Show current directory
+puts "\n→ Checking remote directory..."
+send "pwd\r"
+expect -re {257 "([^"]+)"} {
+    puts "✓ Remote directory: $expect_out(1,string)"
+}
+expect "ftp>"
+
+# THE AUTHENTIC FILE TRANSFER HAPPENS HERE!
+puts "\n→ ═══════════════════════════════════════"
+puts "→ TRANSFERRING FILE VIA AUTHENTIC BSD FTP"
+puts "→ Using 1986 FTP client + 1986 FTP server"
+puts "→ ═══════════════════════════════════════"
+
+send "put $source_file $dest_file\r"
+
+# Watch for transfer progress
+expect {
+    "Opening BINARY" {
+        puts "✓ Opening binary data connection..."
+        exp_continue
+    }
+    "Transfer complete" {
+        puts "✓ ═══════════════════════════════════════"
+        puts "✓ FILE TRANSFER COMPLETE!"
+        puts "✓ ═══════════════════════════════════════"
+    }
+    "550" {
+        puts "✗ Transfer failed (550 Permission denied)"
+        send "quit\r"
+        expect "#"
+        send "logout\r"
+        exit 1
+    }
+    -re {(\d+) bytes sent} {
+        set bytes_sent $expect_out(1,string)
+        puts "✓ Bytes sent: $bytes_sent"
+        exp_continue
+    }
+    timeout {
+        puts "✗ Transfer timeout (but may have completed)"
+    }
+}
+
+expect "ftp>"
+
+# Close FTP session
+puts "\n→ Closing FTP session..."
+send "quit\r"
+expect {
+    "221" { puts "✓ FTP session closed (221 Goodbye)" }
+    "#" { puts "✓ Back to shell" }
+}
+expect "#"
+
+# Verify transferred file exists
+puts "\n→ Verifying transferred file..."
+send "ls -l $dest_file\r"
+expect {
+    "No such file" {
+        puts "✗ Destination file not found!"
+        puts "✗ TRANSFER FAILED"
+        send "logout\r"
+        exit 1
+    }
+    "#" { puts "✓ Destination file exists" }
+}
+
+# Check destination file size
+send "wc -c $dest_file\r"
+expect -re {(\d+)\s+} {
+    set dest_size $expect_out(1,string)
+    puts "✓ Destination file size: $dest_size bytes"
+}
+expect "#"
+
+# Verify file integrity
+puts "\n→ Verifying file integrity..."
+send "diff $source_file $dest_file\r"
+expect {
+    "differ" {
+        puts "✗ FILES DIFFER - Transfer corrupted!"
+        send "logout\r"
+        exit 1
+    }
+    "#" {
+        puts "✓ FILES ARE IDENTICAL - Transfer successful!"
+    }
+}
+
+# Show destination file content
+puts "\n→ Destination file content:"
+send "cat $dest_file\r"
+expect "#"
+
+# Success summary
+puts "\n=============================================="
+puts "✓ AUTHENTIC ARPANET FTP TRANSFER SUCCESS!"
+puts "=============================================="
+puts "Source: $source_file ($source_size bytes)"
+puts "Destination: $dest_file ($dest_size bytes)"
+puts "Method: BSD 4.3 FTP (1986)"
+puts "Integrity: Verified (files identical)"
+puts "=============================================="
+puts ""
+
+# Logout
+send "logout\r"
+expect eof
+
+exit 0

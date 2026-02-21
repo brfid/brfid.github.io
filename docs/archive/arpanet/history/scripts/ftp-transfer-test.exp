@@ -1,0 +1,85 @@
+#!/usr/bin/expect -f
+# FTP File Transfer Test Script
+# Tests downloading a file via FTP on VAX BSD 4.3
+
+set timeout 30
+set vax_host [lindex $argv 0]
+set vax_port [lindex $argv 1]
+
+if {$argc != 2} {
+    puts "Usage: ftp-transfer-test.exp <host> <port>"
+    exit 1
+}
+
+# Connect to VAX console
+spawn telnet $vax_host $vax_port
+
+# Send newline to wake up console
+sleep 2
+send "\r"
+
+# Wait for login prompt or shell
+expect {
+    "login:" { send "root\r"; exp_continue }
+    "#" { puts "Already at shell" }
+    timeout {
+        puts "No immediate prompt, trying login anyway"
+        send "root\r"
+    }
+}
+
+expect "#"
+
+# Show source file
+send "echo '=== Source File ==='\r"
+expect "#"
+send "cat /usr/guest/operator/arpanet-test.txt\r"
+expect "#"
+send "ls -l /usr/guest/operator/arpanet-test.txt\r"
+expect "#"
+
+# Create a simpler test - just use the ftp command with a here-document
+send "cat > /tmp/ftp-commands << 'EOF'\r"
+sleep 1
+send "open localhost\r"
+sleep 1
+send "operator\r"
+sleep 1
+send "test123\r"
+sleep 1
+send "binary\r"
+sleep 1
+send "cd /usr/guest/operator\r"
+sleep 1
+send "ls\r"
+sleep 1
+send "get arpanet-test.txt /tmp/downloaded-via-ftp.txt\r"
+sleep 1
+send "bye\r"
+sleep 1
+send "EOF\r"
+expect "#"
+
+# Now run FTP with the command file
+send "ftp -n < /tmp/ftp-commands\r"
+expect {
+    "#" { puts "\nFTP command completed" }
+    timeout { puts "\nFTP timeout"; send "\003"; expect "#" }
+}
+
+# Check if download succeeded
+send "echo '=== Download Result ==='\r"
+expect "#"
+send "ls -l /tmp/downloaded-via-ftp.txt\r"
+expect "#"
+send "cat /tmp/downloaded-via-ftp.txt\r"
+expect "#"
+
+# Compare files
+send "diff /usr/guest/operator/arpanet-test.txt /tmp/downloaded-via-ftp.txt && echo 'SUCCESS: Files are identical!'\r"
+expect "#"
+
+puts "\n=== FTP Transfer Test Complete ===\r\n"
+
+send "logout\r"
+expect eof
