@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+
+      - name: Quality checks
+        run: |
+          # Early-stage policy: lint only the primary portfolio module.
+          python -m ruff check resume_generator
+          python -m mypy resume_generator host_logging tests
+          python -m pytest -q -m "unit and not docker and not slow"
+          python -m pylint resume_generator -sn
+          python -m vulture --config pyproject.toml resume_generator
+
