@@ -1,0 +1,66 @@
+baseURL = "https://www.jockeyholler.net/"
+languageCode = "en-us"
+title = "Bradley Fidler"
+theme = "PaperMod"
+paginate = 10
+
+enableRobotsTXT = true
+buildDrafts = false
+buildFuture = false
+
+[params]
+  env = "production"
+  author = "Bradley Fidler"
+  description = "Technical writer. Docs platforms, AI workflows, delivery."
+  defaultTheme = "dark"
+  disableThemeToggle = false
+  ShowReadingTime = true
+  ShowPostNavLinks = true
+  ShowBreadCrumbs = false
+  ShowCodeCopyButtons = true
+  ShowShareButtons = false
+  ShowFullTextinRSS = true
+
+  [params.homeInfoParams]
+    Title = "Bradley Fidler"
+    Content = "Technical writer — docs platforms, AI workflows, delivery."
+
+  [[params.socialIcons]]
+    name = "linkedin"
+    url = "https://www.linkedin.com/in/brfid/"
+
+  [[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/brfid"
+
+[menu]
+  [[menu.main]]
+    identifier = "posts"
+    name = "Blog"
+    url = "/posts/"
+    weight = 10
+  [[menu.main]]
+    identifier = "work"
+    name = "Work"
+    url = "/work/"
+    weight = 15
+  [[menu.main]]
+    identifier = "resume"
+    name = "Resume"
+    url = "/resume/"
+    weight = 17
+  [[menu.main]]
+    identifier = "about"
+    name = "About"
+    url = "/about/"
+    weight = 20
+
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
+
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = false
+  [markup.highlight]
+    noClasses = false
+    style = "monokai"

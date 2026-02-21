@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+
+# Generated files — Hugo builds site/ fresh in CI; do not commit
+site/
+build/
+hugo/public/
+
+# IDE
+*.code-workspace
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ARPANET upstream repository (cloned for reference)
+arpanet-upstream/
+
+# CDK
+infra/cdk/cdk.out/
+test_infra/cdk/cdk.out/
+test_infra/cdk/cdk.context.json
+test_infra/cdk/.venv/
+test_infra/cdk/__pycache__/
+hugo/.hugo_build.lock
