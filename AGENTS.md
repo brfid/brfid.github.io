@@ -59,6 +59,8 @@ Update rules:
 5. On architecture/runtime truth changes, update `Current State`.
 6. On milestone/date cut, move `Recently Completed` items into a dated entry and
    classify under standard Keep a Changelog categories.
+7. Do not record routine blog content authoring/editing/import work in `CHANGELOG.md`;
+   reserve changelog updates for repo workflow, infrastructure, tooling, and runtime-status changes.
 
 ## Local dev
 

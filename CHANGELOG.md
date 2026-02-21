@@ -12,30 +12,27 @@ semantic version tags.
 - Hugo site at `hugo/`. PaperMod, dark mode, canonical URL `www.jockeyholler.net`.
   Content: `about.md`, `portfolio.md` (Work page), `resume.md` (Resume page),
   first post (`posts/changelog-as-llm-memory.md`). Builds clean locally.
-- `hugo/data/resume.yaml` is a copy of `resume.yaml` (symlink not followed by Hugo
-  data loader in this version). Keep in sync manually when `resume.yaml` changes.
+- `hugo/data/resume.yaml` remains a copy of `resume.yaml` (symlink not followed by
+  this Hugo data loader), but sync is now automated in CI (`deploy.yml` step) and
+  available locally via `make sync-resume-data` / `make hugo-build`.
 - `site/` is gitignored — Hugo (and vintage pipeline mkdir calls) generate it
   fresh in CI. Do not commit anything to `site/`.
 - `deploy.yml` restructured: mode detected first; Python/quality checks/Playwright
   run only in `docker` (vintage) mode. Local publish path is Hugo-only.
 - Vintage pipeline: Stage 4 now copies `brad.man.txt` to `hugo/static/brad.man.txt`
   (not `site/`), so Hugo owns that path in the build.
+- edcloud lifecycle entrypoints (`aws-start.sh`, `aws-stop.sh`, `aws-status.sh`)
+  now delegate to a shared Python CLI (`scripts/edcloud_lifecycle.py`) to reduce
+  duplicated AWS instance-resolution logic while keeping shell wrappers for operators.
 - DNS: jockeyholler.net apex A/AAAA → GitHub Pages IPs; www CNAME → brfid.github.io.
   Route 53 change C037890339C8W3JAICBDC (2026-02-21). CloudFront aliases removed.
-- GitHub Pages custom domain (`www.jockeyholler.net`) not yet set in repo UI settings.
-  This is the last manual step before the site resolves at the custom domain.
-- No `publish` tag has been pushed since Hugo migration. First live deploy pending.
+- GitHub Pages custom domain (`www.jockeyholler.net`) is now set in repo UI settings.
+- First Hugo-era publish is still pending to replace pre-Hugo content currently served.
 
 ### Active Priorities
-- Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings
-  (requires GitHub UI action — set custom domain to `www.jockeyholler.net`).
-- Resolve `resume.yaml` sync: `hugo/data/resume.yaml` is a manual copy; symlink not
-  followed by Hugo data loader. Options: (a) CI step `cp resume.yaml hugo/data/resume.yaml`
-  before Hugo build in `deploy.yml`, (b) Makefile target, (c) Hugo module mounts
-  (risky: mounting `..` to `data` would also pull `.github/workflows/*.yml`).
-  Preferred: CI step + Makefile target covering both local and production paths.
-- Generate and commit `hugo/static/resume.pdf` (or wire into publish workflow):
-  `.venv/bin/python -m resume_generator --out hugo/static`. Currently 404s on `/resume/`.
+- Commit `hugo/static/resume.pdf` (generated locally) so `/resume.pdf` is present on
+  next deploy.
+- Run first intentional Hugo-era deploy after custom-domain UI step is complete.
 
 ### In Progress
 - None.
@@ -53,6 +50,17 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Consolidated duplicated AWS lifecycle logic into `scripts/edcloud_lifecycle.py`
+  and converted `aws-start.sh`, `aws-stop.sh`, and `aws-status.sh` into thin
+  wrappers that call the shared Python implementation.
+- Updated `scripts/publish-local.sh` tag format to `publish-fast-<timestamp>` so
+  local helper-generated tags match `.github/workflows/deploy.yml` trigger patterns.
+- Added automated resume data sync before Hugo build in CI:
+  `cp resume.yaml hugo/data/resume.yaml` in `.github/workflows/deploy.yml`.
+- Added local parity targets in `Makefile`: `sync-resume-data`, `hugo-build`,
+  and `resume-pdf`.
+- Generated `hugo/static/resume.pdf` locally via `make resume-pdf` without
+  introducing extra static artifacts.
 - Resume page (`hugo/content/resume.md`): Hugo-native resume from `resume.yaml` data.
   PaperMod chrome (dark mode, nav, fonts). Sections: Summary, Experience, Skills,
   Projects, Education, Publications. PDF download link at `/resume.pdf`.

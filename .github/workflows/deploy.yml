@@ -534,6 +534,9 @@ jobs:
 
           echo "✅ Build info widget generated"
 
+      - name: Sync resume data for Hugo
+        run: cp resume.yaml hugo/data/resume.yaml
+
       - name: Build Hugo site
         run: hugo --source hugo --destination ../site
 

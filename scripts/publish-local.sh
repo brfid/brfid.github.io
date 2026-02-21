@@ -6,7 +6,7 @@ set -e
 
 # Generate timestamp
 TIMESTAMP=$(date +%Y%m%d-%H%M)
-TAG_NAME="publish-${TIMESTAMP}"
+TAG_NAME="publish-fast-${TIMESTAMP}"
 
 echo "========================================="
 echo "Fast Publish (Mode 3)"
