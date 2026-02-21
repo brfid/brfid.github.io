@@ -13,17 +13,17 @@ def test_manifest_is_deterministic_and_excludes_self(tmp_path: Path) -> None:
     (root / "sub").mkdir()
     (root / "sub" / "c.txt").write_text("ccc", encoding="utf-8")
 
-    out_path = root / "vax-manifest.txt"
+    out_path = root / "vintage-manifest.txt"
     written = write_manifest(root=root, out_path=out_path)
     assert written.exists()
 
     text1 = out_path.read_text(encoding="utf-8")
     text2 = write_manifest(root=root, out_path=out_path).read_text(encoding="utf-8")
     assert text1 == text2
-    assert "vax-manifest.txt" not in text1
+    assert "vintage-manifest.txt" not in text1
 
     # Order is lexicographic by relative path.
-    entries = build_manifest_entries(root=root, exclude_relpaths={"vax-manifest.txt"})
+    entries = build_manifest_entries(root=root, exclude_relpaths={"vintage-manifest.txt"})
     rendered = render_manifest(entries)
     lines = [line for line in rendered.splitlines() if line.strip()]
     assert lines[0].endswith("  a.txt")

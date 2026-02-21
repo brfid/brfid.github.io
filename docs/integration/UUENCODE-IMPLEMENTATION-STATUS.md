@@ -218,7 +218,7 @@ All logs are merged chronologically with format: `[YYYY-MM-DD HH:MM:SS SOURCE]`
 **Modified Files**:
 - `.github/workflows/deploy.yml` (complete rewrite of VAX build stages)
 - `docs/integration/INDEX.md` (added references)
-- `STATUS.md` (updated current state)
+- `CHANGELOG.md` (updated current state)
 - `docs/COLD-START.md` (updated current state)
 - Memory file (updated architecture)
 

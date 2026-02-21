@@ -4,7 +4,7 @@
 **Status**: In progress (BOOT handoff not yet proven to `@`)
 **Goal**: VAX → PDP-10 file transfer using TCP/IP (bypassing ARPANET 1822)
 
-> **Current-truth note**: This document explains architecture and intent. For live pass/fail status, use `STATUS.md` and `docs/arpanet/progress/NEXT-STEPS.md`.
+> **Current-truth note**: This document explains architecture and intent. For live pass/fail status, use `CHANGELOG.md` and `docs/arpanet/progress/NEXT-STEPS.md`.
 
 ---
 

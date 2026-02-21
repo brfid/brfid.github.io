@@ -5,7 +5,7 @@ Primary documentation hub for active project docs.
 ## Start here
 
 1. `../README.md` — cold-start entry point (infrastructure boundary, source-of-truth map, quickstart)
-2. `../STATUS.md`
+2. `../CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
 3. this index
 
 Then apply `../AGENTS.md` constraints.
@@ -14,7 +14,8 @@ Then apply `../AGENTS.md` constraints.
 
 ### Core
 - `../resume.yaml` — canonical resume source
-- `../ARCHITECTURE.md` — pipeline design, data contracts (`resume.vax.yaml` schema, console protocol)
+- `../CHANGELOG.md` — chronological project history and milestone evidence
+- `../ARCHITECTURE.md` — pipeline design, data contracts (`resume.vintage.yaml` schema, console protocol)
 - `../resume_generator/` — build implementation
 - `../scripts/` — automation helpers
 - `../templates/` — rendering templates
@@ -44,5 +45,6 @@ When adding/updating docs:
 
 1. update this index,
 2. update the relevant domain index,
-3. update `../STATUS.md` if behavior/architecture changed,
-4. prefer editing existing docs over creating near-duplicates.
+3. update `../CHANGELOG.md` `[Unreleased]` for current-state/priority changes,
+4. update dated `../CHANGELOG.md` entries for notable completed milestones,
+5. prefer editing existing docs over creating near-duplicates.

@@ -38,7 +38,7 @@ Implemented and tested the PDP-10 TOPS-20 Boot Completion Plan, including:
 ```
 ✅ docs/arpanet/PDP11-DEPLOYMENT-RESULTS-2026-02-12.md - Comprehensive findings
 ✅ docs/arpanet/IMPLEMENTATION-SUMMARY-2026-02-12.md    - This file
-✅ STATUS.md                                            - Updated with decision
+✅ CHANGELOG.md                                            - Updated with decision
 ✅ docs/arpanet/progress/NEXT-STEPS.md                  - Updated with results
 ```
 
@@ -101,7 +101,7 @@ Core Infrastructure: 4/6 passed (network pending boot completion)
 
 ### Phase 4: Documentation & Cleanup (21:35 - 22:15 UTC)
 - **21:35**: Created PDP11-DEPLOYMENT-RESULTS-2026-02-12.md
-- **21:45**: Updated STATUS.md with findings
+- **21:45**: Updated CHANGELOG.md with findings
 - **21:50**: Updated NEXT-STEPS.md with decision
 - **22:00**: Destroyed AWS infrastructure (✅ ArpanetTestStack destroyed)
 - **22:10**: Created this implementation summary
@@ -228,7 +228,7 @@ Cost:      ~$0.12 total
 
 ### Immediate (Completed ✅)
 1. ✅ Document PDP-10 and PDP-11 findings
-2. ✅ Update STATUS.md with decision
+2. ✅ Update CHANGELOG.md with decision
 3. ✅ Update NEXT-STEPS.md
 4. ✅ Destroy AWS infrastructure
 
@@ -259,7 +259,7 @@ docs/arpanet/IMPLEMENTATION-SUMMARY-2026-02-12.md (this file)
 ### Modified Files
 ```
 docs/legacy/archived/docker-compose.panda-vax.yml  (added pdp11 service; later archived)
-STATUS.md                     (updated with findings)
+CHANGELOG.md                     (updated with findings)
 docs/arpanet/progress/NEXT-STEPS.md (updated with decision)
 ```
 
@@ -285,7 +285,7 @@ build/pdp11/                  (runtime data directory)
 
 ### Documentation ✅
 - [x] Comprehensive findings documented → ✅ Multiple docs created
-- [x] Decision rationale clear → ✅ STATUS.md and NEXT-STEPS.md updated
+- [x] Decision rationale clear → ✅ CHANGELOG.md and NEXT-STEPS.md updated
 - [x] Future path defined → ✅ Continue with VAX
 
 ---
@@ -311,5 +311,5 @@ Successfully implemented and tested the PDP-10/PDP-11 investigation plan. **Key 
 - **PDP-10 Results**: docs/arpanet/PANDA-TEST-RESULTS-2026-02-12.md
 - **PDP-11 Results**: docs/arpanet/PDP11-DEPLOYMENT-RESULTS-2026-02-12.md
 - **PDP-11 Plan**: docs/arpanet/PDP11-HOST-REPLACEMENT-PLAN.md
-- **Status**: STATUS.md
+- **Status**: CHANGELOG.md
 - **Next Steps**: docs/arpanet/progress/NEXT-STEPS.md

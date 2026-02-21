@@ -511,7 +511,7 @@ md5sum <OPERATOR>vax-test.txt     # On PDP-10
 | File | Changes |
 |------|---------|
 | `docker-compose.vax-pdp10-serial.yml` | Update for KL10 container |
-| `STATUS.md` | Update current path and next steps |
+| `CHANGELOG.md` | Update current path and next steps |
 | `docs/arpanet/progress/NEXT-STEPS.md` | Replace with KL10 plan |
 | `docs/arpanet/SERIAL-TUNNEL.md` | Update for KL10 requirement |
 | `docs/COLD-START.md` | Update quick start instructions |
@@ -678,7 +678,7 @@ cdk destroy --force
 2. **Create KL10 configs** → `arpanet/configs/kl10-*.ini`
 3. **Update docker-compose** → Add KL10 service
 4. **Archive KS10 docs** → Move to `docs/arpanet/archive/ks10/`
-5. **Update STATUS.md** → Reflect new plan
+5. **Update CHANGELOG.md** → Reflect new plan
 6. **Deploy to AWS** → Begin Phase 1
 
 ---

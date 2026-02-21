@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Bradley Fidler</title>
     <meta name="color-scheme" content="dark" />
-    <link rel="stylesheet" href="/build-info/build-info.css" />
+<link rel="stylesheet" href="/build-info/build-info.css" />
     <style>
       :root {
         --bg: #0f1115;
@@ -131,8 +131,8 @@
   </head>
   <body>
     <main class="wrap">
-      <section class="card">
-          <header>
+<section class="card">
+    <header>
   <h1>Bradley Fidler</h1>
   <p class="subtitle">Technical Writer: docs platforms, AI workflows, delivery</p>
   <p class="contact-email">brfid@icloud.com</p>
@@ -141,32 +141,38 @@
     <a class="pill" href="https://github.com/brfid" rel="me noopener noreferrer">GitHub</a>
   </nav>
 </header>
-          <script>
-            // Add resume links to VAX-generated nav
-            (function() {
-              var nav = document.querySelector('header nav');
-              if (nav) {
-                var resumeHtml = document.createElement('a');
-                resumeHtml.className = 'pill';
-                resumeHtml.href = '/resume/';
-                resumeHtml.textContent = 'Resume (HTML)';
-                nav.appendChild(resumeHtml);
+    <script>
+      // Add nav links to VAX-generated nav
+      (function() {
+        var nav = document.querySelector('header nav');
+        if (nav) {
+          var resumeHtml = document.createElement('a');
+          resumeHtml.className = 'pill';
+          resumeHtml.href = '/resume/';
+          resumeHtml.textContent = 'Resume (HTML)';
+          nav.appendChild(resumeHtml);
 
-                var resumePdf = document.createElement('a');
-                resumePdf.className = 'pill';
-                resumePdf.href = '/resume.pdf';
-                resumePdf.textContent = 'Resume (PDF)';
-                nav.appendChild(resumePdf);
-              }
-            })();
-          </script>
+          var resumePdf = document.createElement('a');
+          resumePdf.className = 'pill';
+          resumePdf.href = '/resume.pdf';
+          resumePdf.textContent = 'Resume (PDF)';
+          nav.appendChild(resumePdf);
 
-        <footer>
-            <a href="/logs/">build logs</a>
-        </footer>
-      </section>
+          var portfolio = document.createElement('a');
+          portfolio.className = 'pill';
+          portfolio.href = '/portfolio/';
+          portfolio.textContent = 'Writing Samples';
+          nav.appendChild(portfolio);
+        }
+      })();
+    </script>
+
+  <footer>
+      <a href="/vax-build.log">source</a>
+  </footer>
+</section>
     </main>
-    <div class="build-info">
+<div class="build-info">
   <button class="build-badge" onclick="this.parentElement.classList.toggle('expanded')">
     Build: build-20260213-154523 <span class="status success">✓</span>
   </button>

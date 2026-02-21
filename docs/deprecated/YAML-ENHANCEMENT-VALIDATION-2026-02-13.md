@@ -264,7 +264,7 @@ Both styles parse correctly.
 ## Next Steps
 
 ### Immediate (Recommended)
-- [x] ✅ Update STATUS.md with completion status
+- [x] ✅ Update CHANGELOG.md with completion status
 - [ ] Update COLD-START.md to reflect YAML v2 is complete
 - [ ] Create git commit with enhancement
 

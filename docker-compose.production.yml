@@ -6,7 +6,7 @@
 #
 # Prerequisites:
 #   - Docker and docker-compose installed
-#   - Build directory structure (./build/vax/, ./build/pdp11/)
+#   - Build directory structure (./build/vintage/, ./build/pdp11/)
 #   - Vintage configs (./vintage/)
 #
 # Usage:
@@ -36,8 +36,8 @@ services:
       - "21:21"      # FTP
       - "23:23"      # Telnet
     volumes:
-      - ./build/vax:/machines/data
-      - ./vintage/vax-boot.sh:/opt/vax-boot.sh:ro  # Auto-mount wrapper
+      - ./build/vintage:/machines/data
+      - ./vintage/machines/vax/vax-boot.sh:/opt/vax-boot.sh:ro  # Auto-mount wrapper
       - build-shared:/opt/shared  # Shared space for artifact transfer
     command: ["/bin/bash", "/opt/vax-boot.sh"]
     networks:
@@ -56,7 +56,7 @@ services:
     container_name: pdp11-host
     hostname: pdp11-host
     build:
-      context: ./vintage
+      context: ./vintage/machines/pdp11
       dockerfile: Dockerfile.pdp11
     ports:
       - "2327:2327"  # Telnet console
@@ -64,7 +64,7 @@ services:
       - "2023:23"    # Telnet (changed from 2324 to avoid conflict)
     volumes:
       - ./build/pdp11:/opt/pdp11/data
-      - ./vintage/configs/pdp11.ini:/opt/pdp11/pdp11.ini:ro
+      - ./vintage/machines/pdp11/configs/pdp11.ini:/opt/pdp11/pdp11.ini:ro
       - build-shared:/opt/shared  # Shared space for artifact transfer
     networks:
       host:

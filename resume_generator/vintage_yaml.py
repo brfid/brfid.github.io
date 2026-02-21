@@ -1,12 +1,12 @@
-"""Emit standard YAML from a JSON Resume input for VAX processing.
+"""Emit standard YAML from a JSON Resume input for vintage processing.
 
-The VAX-side program (`vax/bradman.c`) now parses standard YAML including:
+The vintage-side program (`vintage/machines/vax/bradman.c`) now parses standard YAML including:
 - Unquoted strings (default for simple values)
 - Quoted strings (when containing YAML special characters)
 - Lists with '-' markers
 - Nested mappings
 
-This module generates clean, readable YAML that is both human-friendly and VAX-compatible.
+This module generates clean, readable YAML that is both human-friendly and vintage-compatible.
 """
 
 from __future__ import annotations
@@ -56,7 +56,7 @@ def _needs_quoting(value: str) -> bool:
     return ': ' in value or ':\t' in value or value.endswith(':')
 
 
-def _quote_vax_yaml_string(value: str) -> str:
+def _quote_vintage_yaml_string(value: str) -> str:
     r"""Quote a string if required by YAML syntax.
 
     Now supports both quoted and unquoted strings:
@@ -93,12 +93,12 @@ def _dump_mapping(items: Iterable[tuple[str, Any]], *, level: int) -> list[str]:
             lines.append(f"{_indent(level)}{key}:")
             lines.extend(_dump_list(value, level=level + 1))
         elif isinstance(value, str):
-            lines.append(f"{_indent(level)}{key}: {_quote_vax_yaml_string(value)}")
+            lines.append(f"{_indent(level)}{key}: {_quote_vintage_yaml_string(value)}")
         elif value is None:
             # Omit None values entirely in the caller; this is defensive.
             continue
         else:
-            raise TypeError(f"Unsupported VAX-YAML scalar type for key {key!r}: {type(value)}")
+            raise TypeError(f"Unsupported vintage-YAML scalar type for key {key!r}: {type(value)}")
     return lines
 
 
@@ -112,14 +112,14 @@ def _dump_list(values: list[Any], *, level: int) -> list[str]:
             lines.append(f"{_indent(level)}-")
             lines.extend(_dump_list(value, level=level + 1))
         elif isinstance(value, str):
-            lines.append(f"{_indent(level)}- {_quote_vax_yaml_string(value)}")
+            lines.append(f"{_indent(level)}- {_quote_vintage_yaml_string(value)}")
         else:
-            raise TypeError(f"Unsupported VAX-YAML list item type: {type(value)}")
+            raise TypeError(f"Unsupported vintage-YAML list item type: {type(value)}")
     return lines
 
 
 @dataclass(frozen=True)
-class VaxYamlEmitOptions:
+class VintageYamlEmitOptions:
     """Options controlling what fields are emitted."""
 
     schema_version: str = "v1"
@@ -145,7 +145,7 @@ def _build_contact(basics: Mapping[str, Any]) -> dict[str, str]:
     return contact
 
 
-def _build_work_items(resume: Resume, opts: VaxYamlEmitOptions) -> list[dict[str, Any]]:
+def _build_work_items(resume: Resume, opts: VintageYamlEmitOptions) -> list[dict[str, Any]]:
     work_items_raw = cast(list[Mapping[str, Any]], (resume.get("work") or []))
     out: list[dict[str, Any]] = []
     for item in work_items_raw:
@@ -186,7 +186,7 @@ def _build_work_items(resume: Resume, opts: VaxYamlEmitOptions) -> list[dict[str
     return out
 
 
-def _build_skills(resume: Resume, opts: VaxYamlEmitOptions) -> list[dict[str, Any]]:
+def _build_skills(resume: Resume, opts: VintageYamlEmitOptions) -> list[dict[str, Any]]:
     skills_raw = cast(list[Mapping[str, Any]], (resume.get("skills") or []))
     out: list[dict[str, Any]] = []
     for skill in skills_raw:
@@ -211,13 +211,13 @@ def _build_skills(resume: Resume, opts: VaxYamlEmitOptions) -> list[dict[str, An
     return out
 
 
-def build_vax_resume_v1(
+def build_vintage_resume_v1(
     resume: Resume,
     *,
     build_date: date,
-    options: VaxYamlEmitOptions | None = None,
+    options: VintageYamlEmitOptions | None = None,
 ) -> Mapping[str, Any]:
-    """Build the VAX-YAML v1 data structure from a JSON Resume dict.
+    """Build the vintage-YAML v1 data structure from a JSON Resume dict.
 
     Args:
         resume: Parsed JSON Resume dict (from `resume.yaml`).
@@ -227,7 +227,7 @@ def build_vax_resume_v1(
     Returns:
         A nested mapping/list structure containing only supported subset types.
     """
-    opts = options or VaxYamlEmitOptions()
+    opts = options or VintageYamlEmitOptions()
 
     basics = cast(Mapping[str, Any], (resume.get("basics") or {}))
 
@@ -257,8 +257,8 @@ def build_vax_resume_v1(
     return out
 
 
-def emit_vax_yaml(value: Mapping[str, Any]) -> str:
-    """Emit a VAX-YAML subset document.
+def emit_vintage_yaml(value: Mapping[str, Any]) -> str:
+    """Emit a vintage-YAML subset document.
 
     Args:
         value: Mapping produced by `build_vax_resume_v1`.

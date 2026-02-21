@@ -31,7 +31,7 @@ What needs to be done before pushing to GitHub.
 - [x] `docs/LOGS-STATUS.md` - Log analysis and locations
 - [x] `docs/MANUAL-BUILD-PROCEDURE.md` - How to run builds
 - [x] `docs/integration/EXPECTED-LOG-FORMAT.md` - Format spec and examples
-- [x] `STATUS.md` updated with logging architecture
+- [x] `CHANGELOG.md` updated with logging architecture
 - [x] Example logs: `site/build-logs/*.log.example`
 
 ### Templates

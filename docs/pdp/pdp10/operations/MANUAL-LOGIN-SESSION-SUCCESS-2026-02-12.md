@@ -226,7 +226,7 @@ arpanet/scripts/pdp11_autoboot.exp                      ⭐ Production ready
 
 ### Modified Files
 ```
-STATUS.md                                    Updated with success
+CHANGELOG.md                                    Updated with success
 arpanet/configs/pdp11.ini                    Telnet console enabled
 docker-compose.panda-vax.yml                 PDP-11 service added
 ```
@@ -400,7 +400,7 @@ AWS i-0f791de93bcafbe51 @ 98.88.20.18
 - arpanet/scripts/pdp11_autoboot.exp
 - arpanet/configs/pdp11.ini
 - docker-compose.panda-vax.yml
-- STATUS.md
+- CHANGELOG.md
 
 ### 3. Update Memory (10 min)
 

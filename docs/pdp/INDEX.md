@@ -4,7 +4,7 @@ PDP documentation is primarily historical integration evidence.
 
 ## Scope
 
-- Current production behavior is defined in `../README.md`, `../STATUS.md`, and `../WORKFLOWS.md`.
+- Current production behavior is defined in `../README.md`, `../CHANGELOG.md` (`[Unreleased]`), and `../WORKFLOWS.md`.
 - PDP records here capture experiments, boot attempts, and transport work retained for traceability.
 
 ## PDP-10 / KS10 / KL10

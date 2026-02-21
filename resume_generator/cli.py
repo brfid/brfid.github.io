@@ -41,8 +41,8 @@ def build_html(*, src: Path, out_dir: Path, templates_dir: Path) -> tuple[Path, 
 
 
 @dataclass(frozen=True)
-class VaxOptions:
-    """VAX stage options for the build."""
+class VintageOptions:
+    """Vintage stage options for the build."""
 
     enabled: bool
     mode: str
@@ -58,7 +58,7 @@ class BuildRequest:
     templates_dir: Path
     build_dir: Path
     html_only: bool
-    vax: VaxOptions
+    vintage: VintageOptions
     arpanet: bool = False
     arpanet_execute: bool = False
 
@@ -81,38 +81,43 @@ def build_site(req: BuildRequest) -> None:
 
         build_pdf(out_dir=req.out_dir, resume_url_path="/resume/", pdf_name="resume.pdf")
 
-    if req.vax.enabled:
+    if req.vintage.enabled:
         # pylint: disable=import-outside-toplevel
-        from .vax_stage import VaxStageConfig, VaxStageRunner
+        from .vintage_stage import VintageStageConfig, VintageStageRunner
 
-        config = VaxStageConfig(
+        config = VintageStageConfig(
             resume_path=req.src,
             site_dir=req.out_dir,
             build_dir=req.build_dir,
-            mode=req.vax.mode,
-            transcript_path=req.vax.transcript,
+            mode=req.vintage.mode,
+            transcript_path=req.vintage.transcript,
         )
         runner: Any
         if req.arpanet:
             # pylint: disable=import-outside-toplevel
-            from .vax_arpanet_stage import VaxArpanetStageRunner
+            from .vintage_arpanet_stage import VintageArpanetStageRunner
 
-            runner = VaxArpanetStageRunner(
+            runner = VintageArpanetStageRunner(
                 config=config,
                 repo_root=Path.cwd(),
                 execute_commands=req.arpanet_execute,
             )
         else:
-            runner = VaxStageRunner(config=config, repo_root=Path.cwd())
+            runner = VintageStageRunner(config=config, repo_root=Path.cwd())
         runner.run()
         print(f"Wrote: {runner.paths.brad_man_txt_path}")
-        print(f"Wrote: {runner.paths.vax_build_log_path}")
+        print(f"Wrote: {runner.paths.vintage_build_log_path}")
 
-    # Build landing page after VAX stage so it can link to vax-build.log
+    # Auto-discover portfolio data adjacent to resume source
+    portfolio_src = req.src.parent / "portfolio.yaml"
+    portfolio_nav_path: str | None = "/portfolio/" if portfolio_src.exists() else None
+
+    # Build landing page after vintage stage so it can link to vintage-build.log
     landing_path = build_landing_page(
         resume=resume,
         out_dir=req.out_dir,
         templates_dir=req.templates_dir,
+        portfolio_path=portfolio_nav_path,
     )
 
     nojekyll_path = req.out_dir / ".nojekyll"
@@ -122,7 +127,22 @@ def build_site(req: BuildRequest) -> None:
     print(f"Wrote: {resume_index_path}")
     print(f"Wrote: {landing_path}")
 
-    manifest_path = write_manifest(root=req.out_dir, out_path=req.out_dir / "vax-manifest.txt")
+    # Build portfolio page if data file exists (progressive enhancement)
+    if portfolio_src.exists():
+        # pylint: disable=import-outside-toplevel
+        from .portfolio import build_portfolio_page
+
+        basics = resume.get("basics") or {}
+        author = str(basics.get("name") or "").strip()
+        portfolio_out = build_portfolio_page(
+            portfolio_src=portfolio_src,
+            out_dir=req.out_dir,
+            templates_dir=req.templates_dir,
+            author=author,
+        )
+        print(f"Wrote: {portfolio_out}")
+
+    manifest_path = write_manifest(root=req.out_dir, out_path=req.out_dir / "vintage-manifest.txt")
     print(f"Wrote: {manifest_path}")
 
 
@@ -160,14 +180,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Only generate HTML/CSS (skip PDF).",
     )
     parser.add_argument(
-        "--with-vax",
+        "--with-vintage",
         action="store_true",
-        help="Run the VAX stage after generating the resume (local compile or docker).",
+        help="Run the vintage stage after generating the resume (local compile or docker).",
     )
     parser.add_argument(
         "--with-arpanet",
         action="store_true",
-        help="Enable ARPANET transfer-stage scaffolding (requires --with-vax).",
+        help="Enable ARPANET transfer-stage scaffolding (requires --with-vintage).",
     )
     parser.add_argument(
         "--arpanet-execute",
@@ -175,10 +195,10 @@ def main(argv: list[str] | None = None) -> int:
         help="Execute ARPANET scaffold commands (requires --with-arpanet).",
     )
     parser.add_argument(
-        "--vax-mode",
+        "--vintage-mode",
         choices=["local", "docker"],
         default="local",
-        help="VAX stage mode when `--with-vax` is set (default: local).",
+        help="Vintage stage mode when `--with-vintage` is set (default: local).",
     )
     parser.add_argument(
         "--build-dir",
@@ -186,14 +206,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Build directory for intermediate artifacts (default: build).",
     )
     parser.add_argument(
-        "--vax-transcript",
+        "--vintage-transcript",
         default=None,
         help="Replay docker/SIMH transcript (docker mode only).",
     )
 
     args = parser.parse_args(argv)
-    if args.with_arpanet and not args.with_vax:
-        parser.error("--with-arpanet requires --with-vax")
+    if args.with_arpanet and not args.with_vintage:
+        parser.error("--with-arpanet requires --with-vintage")
     if args.arpanet_execute and not args.with_arpanet:
         parser.error("--arpanet-execute requires --with-arpanet")
 
@@ -204,10 +224,10 @@ def main(argv: list[str] | None = None) -> int:
             templates_dir=Path(args.templates),
             build_dir=Path(args.build_dir),
             html_only=bool(args.html_only),
-            vax=VaxOptions(
-                enabled=bool(args.with_vax),
-                mode=str(args.vax_mode),
-                transcript=Path(args.vax_transcript) if args.vax_transcript else None,
+            vintage=VintageOptions(
+                enabled=bool(args.with_vintage),
+                mode=str(args.vintage_mode),
+                transcript=Path(args.vintage_transcript) if args.vintage_transcript else None,
             ),
             arpanet=bool(args.with_arpanet),
             arpanet_execute=bool(args.arpanet_execute),

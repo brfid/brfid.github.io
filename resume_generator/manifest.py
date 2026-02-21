@@ -78,7 +78,7 @@ def write_manifest(*, root: Path, out_path: Path) -> Path:
 
     Args:
         root: Directory to scan (typically `site/`).
-        out_path: Destination path for the manifest (typically `site/vax-manifest.txt`).
+        out_path: Destination path for the manifest (typically `site/vintage-manifest.txt`).
 
     Returns:
         The written path.

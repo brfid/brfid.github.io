@@ -4,10 +4,10 @@ from datetime import date
 from typing import cast
 
 from resume_generator.types import Resume
-from resume_generator.vax_yaml import VaxYamlEmitOptions, build_vax_resume_v1, emit_vax_yaml
+from resume_generator.vintage_yaml import VintageYamlEmitOptions, build_vintage_resume_v1, emit_vintage_yaml
 
 
-def test_emit_vax_yaml_uses_double_quotes_and_two_space_indent() -> None:
+def test_emit_vintage_yaml_uses_double_quotes_and_two_space_indent() -> None:
     resume = {
         "basics": {
             "name": "Test User",
@@ -28,8 +28,8 @@ def test_emit_vax_yaml_uses_double_quotes_and_two_space_indent() -> None:
         "skills": [{"name": "Tools", "keywords": ["Python", "pytest"]}],
     }
 
-    built = build_vax_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25))
-    text = emit_vax_yaml(built)
+    built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25))
+    text = emit_vintage_yaml(built)
 
     assert "\t" not in text
     assert "\r" not in text
@@ -51,7 +51,7 @@ def test_build_limits_work_and_skills() -> None:
         "work": [{"name": f"C{i}", "position": "P"} for i in range(10)],
         "skills": [{"name": f"S{i}", "keywords": ["A"]} for i in range(10)],
     }
-    opts = VaxYamlEmitOptions(max_work_items=2, max_skill_groups=3)
-    built = build_vax_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25), options=opts)
+    opts = VintageYamlEmitOptions(max_work_items=2, max_skill_groups=3)
+    built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25), options=opts)
     assert len(built["work"]) == 2
     assert len(built["skills"]) == 3

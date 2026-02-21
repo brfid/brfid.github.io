@@ -11,13 +11,13 @@ from typing import Any, cast
 import pytest
 from pytest import MonkeyPatch
 
-from resume_generator.vax_stage import (
+from resume_generator.vintage_stage import (
     DockerContext,
     TelnetSession,
-    VaxBuildLog,
-    VaxStageConfig,
-    VaxStagePaths,
-    VaxStageRunner,
+    VintageBuildLog,
+    VintageStageConfig,
+    VintageStagePaths,
+    VintageStageRunner,
     _build_tar_bytes,
     _filter_telnet,
     _parse_args,
@@ -28,7 +28,7 @@ from tests.helpers import uuencode_bytes, write_minimal_resume
 
 
 def test_build_log_renders_with_trailing_newline() -> None:
-    log = VaxBuildLog()
+    log = VintageBuildLog()
     log.add("step one")
     rendered = log.render()
     assert rendered.endswith("\n")
@@ -36,9 +36,9 @@ def test_build_log_renders_with_trailing_newline() -> None:
 
 
 def test_stage_paths_are_stable() -> None:
-    paths = VaxStagePaths(repo_root=Path("/repo"), site_dir=Path("site"), build_dir=Path("build"))
-    assert paths.vax_build_dir.as_posix().endswith("build/vax")
-    assert paths.brad_1_path.as_posix().endswith("build/vax/brad.1")
+    paths = VintageStagePaths(repo_root=Path("/repo"), site_dir=Path("site"), build_dir=Path("build"))
+    assert paths.vintage_build_dir.as_posix().endswith("build/vintage")
+    assert paths.brad_1_path.as_posix().endswith("build/vintage/brad.1")
     assert paths.brad_man_txt_path.as_posix().endswith("site/brad.man.txt")
 
 
@@ -59,8 +59,8 @@ def test_docker_replay_mode_writes_outputs(tmp_path: Path) -> None:
     )
     transcript_path.write_text(transcript, encoding="utf-8")
 
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=resume_path,
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -71,15 +71,15 @@ def test_docker_replay_mode_writes_outputs(tmp_path: Path) -> None:
     )
     runner.run()
 
-    assert (tmp_path / "build" / "vax" / "brad.1").exists()
+    assert (tmp_path / "build" / "vintage" / "brad.1").exists()
     assert (tmp_path / "site" / "brad.man.txt").exists()
-    assert (tmp_path / "site" / "vax-build.log").exists()
+    assert (tmp_path / "site" / "vintage-build.log").exists()
     assert (tmp_path / "site" / "index.html").exists()
 
 
 def test_run_rejects_unsupported_mode(tmp_path: Path) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -176,28 +176,31 @@ def test_filter_telnet_negotiation_and_escaped_iac() -> None:
 
 def test_prepare_tape_media_writes_tap_and_updates_ini(tmp_path: Path) -> None:
     repo_root = tmp_path / "repo"
-    (repo_root / "vax").mkdir(parents=True)
-    (repo_root / "vax" / "bradman.c").write_text("int main(void){return 0;}\n", encoding="utf-8")
+    (repo_root / "vintage" / "machines" / "vax").mkdir(parents=True)
+    (repo_root / "vintage" / "machines" / "vax" / "bradman.c").write_text(
+        "int main(void){return 0;}\n",
+        encoding="utf-8",
+    )
 
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
         ),
         repo_root=repo_root,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
-    runner.paths.resume_vax_yaml_path.write_text('schemaVersion: "v1"\n', encoding="utf-8")
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.resume_vintage_yaml_path.write_text('schemaVersion: "v1"\n', encoding="utf-8")
 
-    simh_cfg_dir = runner.paths.vax_build_dir / "simh"
+    simh_cfg_dir = runner.paths.vintage_build_dir / "simh"
     simh_cfg_dir.mkdir(parents=True)
     (simh_cfg_dir / "vax780.ini").write_text(
         "set ts enabled\nset ts0 online\n",
         encoding="utf-8",
     )
 
-    simh_dir = runner.paths.vax_build_dir / "simh-tape"
+    simh_dir = runner.paths.vintage_build_dir / "simh-tape"
     simh_dir.mkdir(parents=True)
     runner._prepare_tape_media(simh_dir)
 
@@ -207,45 +210,45 @@ def test_prepare_tape_media_writes_tap_and_updates_ini(tmp_path: Path) -> None:
     assert "set ts0 online" not in ini_text
 
 
-def test_emit_resume_vax_yaml_writes_output_and_returns_resume(
+def test_emit_resume_vintage_yaml_writes_output_and_returns_resume(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
     resume_path = tmp_path / "resume.yaml"
     resume_path.write_text("basics: {name: T}\n", encoding="utf-8")
 
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=resume_path,
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
 
     fake_resume = cast(Any, {"name": "Test"})
-    monkeypatch.setattr("resume_generator.vax_stage.load_resume", lambda _p: fake_resume)
+    monkeypatch.setattr("resume_generator.vintage_stage.load_resume", lambda _p: fake_resume)
 
     def _build_vax(_resume: Any, build_date: date) -> dict[str, str]:
         return {"date": str(build_date)}
 
-    monkeypatch.setattr("resume_generator.vax_stage.build_vax_resume_v1", _build_vax)
+    monkeypatch.setattr("resume_generator.vintage_stage.build_vintage_resume_v1", _build_vax)
     monkeypatch.setattr(
-        "resume_generator.vax_stage.emit_vax_yaml",
+        "resume_generator.vintage_stage.emit_vintage_yaml",
         lambda _built: 'schemaVersion: "v1"\n',
     )
 
-    log = VaxBuildLog()
-    result = runner._emit_resume_vax_yaml(build_date=date(2026, 2, 8), log=log)
+    log = VintageBuildLog()
+    result = runner._emit_resume_vintage_yaml(build_date=date(2026, 2, 8), log=log)
 
     assert result is fake_resume
-    assert runner.paths.resume_vax_yaml_path.read_text(encoding="utf-8") == 'schemaVersion: "v1"\n'
+    assert runner.paths.resume_vintage_yaml_path.read_text(encoding="utf-8") == 'schemaVersion: "v1"\n'
 
 
 def test_compile_bradman_raises_when_source_missing(tmp_path: Path) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -254,18 +257,21 @@ def test_compile_bradman_raises_when_source_missing(tmp_path: Path) -> None:
     )
 
     with pytest.raises(FileNotFoundError, match="Missing source file"):
-        runner._compile_bradman(log=VaxBuildLog())
+        runner._compile_bradman(log=VintageBuildLog())
 
 
 def test_compile_bradman_raises_when_compiler_missing(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    (tmp_path / "vax").mkdir(parents=True)
-    (tmp_path / "vax" / "bradman.c").write_text("int main(void){return 0;}\n", encoding="utf-8")
+    (tmp_path / "vintage" / "machines" / "vax").mkdir(parents=True)
+    (tmp_path / "vintage" / "machines" / "vax" / "bradman.c").write_text(
+        "int main(void){return 0;}\n",
+        encoding="utf-8",
+    )
 
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -273,32 +279,35 @@ def test_compile_bradman_raises_when_compiler_missing(
         repo_root=tmp_path,
     )
 
-    monkeypatch.setattr("resume_generator.vax_stage.shutil.which", lambda _name: None)
+    monkeypatch.setattr("resume_generator.vintage_stage.shutil.which", lambda _name: None)
     with pytest.raises(RuntimeError, match="No C compiler found"):
-        runner._compile_bradman(log=VaxBuildLog())
+        runner._compile_bradman(log=VintageBuildLog())
 
 
 def test_compile_and_run_commands_are_formed_correctly(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    (tmp_path / "vax").mkdir(parents=True)
-    (tmp_path / "vax" / "bradman.c").write_text("int main(void){return 0;}\n", encoding="utf-8")
+    (tmp_path / "vintage" / "machines" / "vax").mkdir(parents=True)
+    (tmp_path / "vintage" / "machines" / "vax" / "bradman.c").write_text(
+        "int main(void){return 0;}\n",
+        encoding="utf-8",
+    )
 
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
-    runner.paths.resume_vax_yaml_path.write_text('schemaVersion: "v1"\n', encoding="utf-8")
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.resume_vintage_yaml_path.write_text('schemaVersion: "v1"\n', encoding="utf-8")
     runner.paths.contact_json_path.write_text("{}\n", encoding="utf-8")
 
     monkeypatch.setattr(
-        "resume_generator.vax_stage.shutil.which",
+        "resume_generator.vintage_stage.shutil.which",
         lambda name: "/usr/bin/cc" if name == "cc" else None,
     )
 
@@ -311,8 +320,8 @@ def test_compile_and_run_commands_are_formed_correctly(
         assert kwargs["text"] is True
         return cast(Any, object())
 
-    monkeypatch.setattr("resume_generator.vax_stage.subprocess.run", _fake_run)
-    log = VaxBuildLog()
+    monkeypatch.setattr("resume_generator.vintage_stage.subprocess.run", _fake_run)
+    log = VintageBuildLog()
 
     runner._compile_bradman(log=log)
     runner._run_bradman(log=log)
@@ -323,7 +332,7 @@ def test_compile_and_run_commands_are_formed_correctly(
     assert calls[1][0] == str(runner.paths.bradman_exe_path)
     assert calls[1][1:] == [
         "-i",
-        str(runner.paths.resume_vax_yaml_path),
+        str(runner.paths.resume_vintage_yaml_path),
         "-o",
         str(runner.paths.brad_1_path),
     ]
@@ -342,8 +351,8 @@ def test_run_docker_live_raises_when_docker_missing(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -351,17 +360,17 @@ def test_run_docker_live_raises_when_docker_missing(
         ),
         repo_root=tmp_path,
     )
-    monkeypatch.setattr("resume_generator.vax_stage.shutil.which", lambda _name: None)
+    monkeypatch.setattr("resume_generator.vintage_stage.shutil.which", lambda _name: None)
     with pytest.raises(RuntimeError, match="Docker is not available"):
-        runner._run_docker_live(resume=cast(Any, {}), log=VaxBuildLog())
+        runner._run_docker_live(resume=cast(Any, {}), log=VintageBuildLog())
 
 
 def test_run_docker_live_quick_mode_stops_after_log_write(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -370,7 +379,7 @@ def test_run_docker_live_quick_mode_stops_after_log_write(
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
 
     flags: dict[str, bool] = {
         "prepared_tape": False,
@@ -383,7 +392,7 @@ def test_run_docker_live_quick_mode_stops_after_log_write(
     }
 
     monkeypatch.setattr(
-        "resume_generator.vax_stage.shutil.which",
+        "resume_generator.vintage_stage.shutil.which",
         lambda name: "/usr/bin/docker" if name == "docker" else None,
     )
 
@@ -394,13 +403,13 @@ def test_run_docker_live_quick_mode_stops_after_log_write(
         *,
         docker_bin: str,
         simh_dir: Path,
-        log: VaxBuildLog,
+        log: VintageBuildLog,
     ) -> DockerContext:
         del simh_dir, log
         flags["started"] = True
         return DockerContext(docker_bin=docker_bin, container_name="fake", host_port=2323)
 
-    def _wait_for_console(*, ctx: DockerContext, log: VaxBuildLog, timeout: int) -> Any:
+    def _wait_for_console(*, ctx: DockerContext, log: VintageBuildLog, timeout: int) -> Any:
         del ctx, log, timeout
         return cast(Any, object())
 
@@ -416,7 +425,7 @@ def test_run_docker_live_quick_mode_stops_after_log_write(
     def _stop_docker_container(_ctx: DockerContext) -> None:
         flags["stopped"] = True
 
-    def _write_build_log(_log: VaxBuildLog) -> None:
+    def _write_build_log(_log: VintageBuildLog) -> None:
         flags["wrote_log"] = True
 
     monkeypatch.setattr(runner, "_prepare_tape_media", _prepare_tape_media)
@@ -438,7 +447,7 @@ def test_run_docker_live_quick_mode_stops_after_log_write(
         lambda _session: (_ for _ in ()).throw(AssertionError("compile should be skipped")),
     )
 
-    runner._run_docker_live(resume=cast(Any, {}), log=VaxBuildLog())
+    runner._run_docker_live(resume=cast(Any, {}), log=VintageBuildLog())
 
     assert flags == {
         "prepared_tape": True,
@@ -455,8 +464,8 @@ def test_run_docker_live_full_path_runs_transfer_decode_and_render(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -465,12 +474,12 @@ def test_run_docker_live_full_path_runs_transfer_decode_and_render(
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
     runner.paths.site_dir.mkdir(parents=True, exist_ok=True)
 
     events: list[str] = []
     monkeypatch.setattr(
-        "resume_generator.vax_stage.shutil.which",
+        "resume_generator.vintage_stage.shutil.which",
         lambda name: "/usr/bin/docker" if name == "docker" else None,
     )
 
@@ -481,13 +490,13 @@ def test_run_docker_live_full_path_runs_transfer_decode_and_render(
         *,
         docker_bin: str,
         simh_dir: Path,
-        log: VaxBuildLog,
+        log: VintageBuildLog,
     ) -> DockerContext:
         del simh_dir, log
         events.append(f"start:{docker_bin}")
         return DockerContext(docker_bin=docker_bin, container_name="fake", host_port=2323)
 
-    def _wait_for_console(*, ctx: DockerContext, log: VaxBuildLog, timeout: int) -> Any:
+    def _wait_for_console(*, ctx: DockerContext, log: VintageBuildLog, timeout: int) -> Any:
         del ctx, log, timeout
         events.append("wait")
         return cast(Any, object())
@@ -516,23 +525,23 @@ def test_run_docker_live_full_path_runs_transfer_decode_and_render(
         events.append("decode")
         return b".TH BRAD 1\n"
 
-    def _compile_bradman(*, log: VaxBuildLog) -> None:
+    def _compile_bradman(*, log: VintageBuildLog) -> None:
         del log
         events.append("compile_host")
 
-    def _generate_contact_json(*, resume: Any, log: VaxBuildLog) -> None:
+    def _generate_contact_json(*, resume: Any, log: VintageBuildLog) -> None:
         del resume, log
         events.append("contact")
 
-    def _run_bradman_html(*, log: VaxBuildLog) -> None:
+    def _run_bradman_html(*, log: VintageBuildLog) -> None:
         del log
         events.append("html")
 
-    def _render_brad_man_txt(*, log: VaxBuildLog) -> None:
+    def _render_brad_man_txt(*, log: VintageBuildLog) -> None:
         del log
         events.append("render")
 
-    def _write_build_log(_log: VaxBuildLog) -> None:
+    def _write_build_log(_log: VintageBuildLog) -> None:
         events.append("write_log")
 
     monkeypatch.setattr(runner, "_prepare_tape_media", _prepare_tape_media)
@@ -551,11 +560,11 @@ def test_run_docker_live_full_path_runs_transfer_decode_and_render(
     monkeypatch.setattr(runner, "_render_brad_man_txt", _render_brad_man_txt)
     monkeypatch.setattr(runner, "_write_build_log", _write_build_log)
     monkeypatch.setattr(
-        "resume_generator.vax_stage.build_landing_page",
+        "resume_generator.vintage_stage.build_landing_page",
         lambda **_kwargs: events.append("landing"),
     )
 
-    runner._run_docker_live(resume=cast(Any, {"name": "t"}), log=VaxBuildLog())
+    runner._run_docker_live(resume=cast(Any, {"name": "t"}), log=VintageBuildLog())
 
     assert "transfer" in events
     assert "capture" in events
@@ -570,8 +579,8 @@ def test_run_docker_live_stops_container_when_wait_fails(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -579,11 +588,11 @@ def test_run_docker_live_stops_container_when_wait_fails(
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
 
     stopped = {"value": False}
     monkeypatch.setattr(
-        "resume_generator.vax_stage.shutil.which",
+        "resume_generator.vintage_stage.shutil.which",
         lambda name: "/usr/bin/docker" if name == "docker" else None,
     )
     monkeypatch.setattr(runner, "_prepare_tape_media", lambda _simh_dir: None)
@@ -609,7 +618,7 @@ def test_run_docker_live_stops_container_when_wait_fails(
     )
 
     with pytest.raises(TimeoutError, match="boom"):
-        runner._run_docker_live(resume=cast(Any, {}), log=VaxBuildLog())
+        runner._run_docker_live(resume=cast(Any, {}), log=VintageBuildLog())
     assert stopped["value"] is True
 
 
@@ -617,8 +626,8 @@ def test_start_docker_container_builds_expected_command(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -630,10 +639,10 @@ def test_start_docker_container_builds_expected_command(
     simh_dir.mkdir(parents=True)
 
     monkeypatch.setattr(
-        "resume_generator.vax_stage.uuid.uuid4",
+        "resume_generator.vintage_stage.uuid.uuid4",
         lambda: uuid.UUID("12345678-1234-5678-1234-567812345678"),
     )
-    monkeypatch.setattr("resume_generator.vax_stage._find_free_port", lambda: 3456)
+    monkeypatch.setattr("resume_generator.vintage_stage._find_free_port", lambda: 3456)
 
     called: dict[str, Any] = {}
 
@@ -642,21 +651,21 @@ def test_start_docker_container_builds_expected_command(
         called["kwargs"] = kwargs
         return cast(Any, object())
 
-    monkeypatch.setattr("resume_generator.vax_stage.subprocess.run", _fake_run)
+    monkeypatch.setattr("resume_generator.vintage_stage.subprocess.run", _fake_run)
 
     ctx = runner._start_docker_container(
         docker_bin="/usr/bin/docker",
         simh_dir=simh_dir,
-        log=VaxBuildLog(),
+        log=VintageBuildLog(),
     )
 
-    assert ctx.container_name == "vaxbsd-12345678"
+    assert ctx.container_name == "vintagebsd-12345678"
     assert ctx.host_port == 3456
     assert called["command"] == [
         "/usr/bin/docker",
         "run",
         "--name",
-        "vaxbsd-12345678",
+        "vintagebsd-12345678",
         "-d",
         "-p",
         "3456:2323",
@@ -668,8 +677,8 @@ def test_start_docker_container_builds_expected_command(
 
 
 def test_stop_docker_container_best_effort(monkeypatch: MonkeyPatch, tmp_path: Path) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -684,7 +693,7 @@ def test_stop_docker_container_best_effort(monkeypatch: MonkeyPatch, tmp_path: P
         called["kwargs"] = kwargs
         return cast(Any, object())
 
-    monkeypatch.setattr("resume_generator.vax_stage.subprocess.run", _fake_run)
+    monkeypatch.setattr("resume_generator.vintage_stage.subprocess.run", _fake_run)
 
     runner._stop_docker_container(
         DockerContext(docker_bin="/usr/bin/docker", container_name="abc", host_port=2323)
@@ -698,8 +707,8 @@ def test_container_ip_parses_output_and_validates_non_empty(
     monkeypatch: MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -712,14 +721,14 @@ def test_container_ip_parses_output_and_validates_non_empty(
             self.stdout = stdout
 
     monkeypatch.setattr(
-        "resume_generator.vax_stage.subprocess.run",
+        "resume_generator.vintage_stage.subprocess.run",
         lambda *args, **kwargs: _CP("172.20.0.10\n"),
     )
     ip = runner._container_ip(docker_bin="/usr/bin/docker", container_name="abc")
     assert ip == "172.20.0.10"
 
     monkeypatch.setattr(
-        "resume_generator.vax_stage.subprocess.run",
+        "resume_generator.vintage_stage.subprocess.run",
         lambda *args, **kwargs: _CP("\n"),
     )
     with pytest.raises(RuntimeError, match="Failed to determine container IP"):
@@ -727,15 +736,15 @@ def test_container_ip_parses_output_and_validates_non_empty(
 
 
 def test_compile_and_capture_executes_expected_guest_commands(tmp_path: Path) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
     runner._init_console_log()
 
     class _FakeSession:
@@ -753,15 +762,15 @@ def test_compile_and_capture_executes_expected_guest_commands(tmp_path: Path) ->
     transcript = runner._compile_and_capture(cast(Any, session))
 
     assert session.commands[0] == "cc -O -o bradman bradman.c"
-    assert session.commands[1] == "ls -l bradman bradman.c resume.vax.yaml"
-    assert session.commands[2] == "./bradman -i resume.vax.yaml -o brad.1"
+    assert session.commands[1] == "ls -l bradman bradman.c resume.vintage.yaml"
+    assert session.commands[2] == "./bradman -i resume.vintage.yaml -o brad.1"
     assert "uuencode brad.1 brad.1" in session.commands[3]
     assert "<<<BRAD_1_UU_BEGIN>>>" in transcript
 
 
 def test_write_diagnostics_runs_expected_commands_and_sections(tmp_path: Path) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -801,8 +810,8 @@ def test_write_diagnostics_runs_expected_commands_and_sections(tmp_path: Path) -
 
 
 def test_transfer_guest_inputs_tape_selects_working_device(tmp_path: Path) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -836,15 +845,15 @@ def test_transfer_guest_inputs_tape_selects_working_device(tmp_path: Path) -> No
     assert "tar tbf 20 /dev/rmt12 > /tmp/tar.log 2>&1; echo __RC__=$?" in session.commands
     assert "/bin/mt -f /dev/rmt12 rewind" in session.commands
     assert "tar xvf /dev/rmt12 > /tmp/tar.extract 2>&1; echo __RC__=$?" in session.commands
-    assert "ls -l bradman.c resume.vax.yaml" in session.commands
+    assert "ls -l bradman.c resume.vintage.yaml" in session.commands
     assert "/bin/mt -f /dev/rmt0 status" not in session.commands
     assert "tape extract" in logged_sections
     assert "tape ls" in logged_sections
 
 
 def test_transfer_guest_inputs_tape_raises_when_no_device_works(tmp_path: Path) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -878,15 +887,15 @@ def test_wait_for_console_raises_if_container_exits(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
 
     class _CP:
         def __init__(self, stdout: str, returncode: int = 0) -> None:
@@ -903,13 +912,13 @@ def test_wait_for_console_raises_if_container_exits(
         return _CP("exited\n", 0)
 
     ticks = iter([0.0, 0.1, 6.1])
-    monkeypatch.setattr("resume_generator.vax_stage.subprocess.run", _fake_run)
-    monkeypatch.setattr("resume_generator.vax_stage.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("resume_generator.vintage_stage.subprocess.run", _fake_run)
+    monkeypatch.setattr("resume_generator.vintage_stage.time.monotonic", lambda: next(ticks))
 
     with pytest.raises(RuntimeError, match="Docker container exited"):
         runner._wait_for_console(
             ctx=DockerContext(docker_bin="/usr/bin/docker", container_name="c1", host_port=2323),
-            log=VaxBuildLog(),
+            log=VintageBuildLog(),
             timeout=30,
         )
 
@@ -920,8 +929,8 @@ def test_wait_for_console_recovers_after_inspect_failure(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -929,7 +938,7 @@ def test_wait_for_console_recovers_after_inspect_failure(
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
 
     class _CP:
         def __init__(self, stdout: str, returncode: int = 0) -> None:
@@ -945,7 +954,7 @@ def test_wait_for_console_recovers_after_inspect_failure(
     pauses: list[float] = []
 
     class _FakeTelnetSession:
-        def __init__(self, *, host: str, port: int, log: VaxBuildLog, send_timeout: int) -> None:
+        def __init__(self, *, host: str, port: int, log: VintageBuildLog, send_timeout: int) -> None:
             del log
             assert host == "127.0.0.1"
             assert port == 2323
@@ -955,20 +964,20 @@ def test_wait_for_console_recovers_after_inspect_failure(
             assert timeout == 60
 
     ticks = iter([0.0, 1.0, 6.2, 7.0, 7.1])
-    monkeypatch.setattr("resume_generator.vax_stage.subprocess.run", _fake_run)
-    monkeypatch.setattr("resume_generator.vax_stage.time.monotonic", lambda: next(ticks))
-    monkeypatch.setattr("resume_generator.vax_stage._pause", lambda seconds: pauses.append(seconds))
-    monkeypatch.setattr("resume_generator.vax_stage.TelnetSession", _FakeTelnetSession)
+    monkeypatch.setattr("resume_generator.vintage_stage.subprocess.run", _fake_run)
+    monkeypatch.setattr("resume_generator.vintage_stage.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("resume_generator.vintage_stage._pause", lambda seconds: pauses.append(seconds))
+    monkeypatch.setattr("resume_generator.vintage_stage.TelnetSession", _FakeTelnetSession)
 
     session = runner._wait_for_console(
         ctx=DockerContext(docker_bin="/usr/bin/docker", container_name="c2", host_port=2323),
-        log=VaxBuildLog(),
+        log=VintageBuildLog(),
         timeout=30,
     )
 
     assert isinstance(session, _FakeTelnetSession)
     assert pauses == [1.0]
-    wait_log = (runner.paths.vax_build_dir / "vax-wait.log").read_text(encoding="utf-8")
+    wait_log = (runner.paths.vintage_build_dir / "vintage-wait.log").read_text(encoding="utf-8")
     assert "inspect_failed rc=1" in wait_log
 
 
@@ -976,15 +985,15 @@ def test_wait_for_console_times_out_when_telnet_never_connects(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
-    runner = VaxStageRunner(
-        config=VaxStageConfig(
+    runner = VintageStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
         ),
         repo_root=tmp_path,
     )
-    runner.paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+    runner.paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
 
     class _FailingTelnetSession:
         def __init__(self, **kwargs: Any) -> None:
@@ -992,14 +1001,14 @@ def test_wait_for_console_times_out_when_telnet_never_connects(
             raise ConnectionError("not ready")
 
     ticks = iter([0.0, 1.0, 2.0, 3.0])
-    monkeypatch.setattr("resume_generator.vax_stage.time.monotonic", lambda: next(ticks))
-    monkeypatch.setattr("resume_generator.vax_stage.TelnetSession", _FailingTelnetSession)
-    monkeypatch.setattr("resume_generator.vax_stage._pause", lambda _seconds: None)
+    monkeypatch.setattr("resume_generator.vintage_stage.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("resume_generator.vintage_stage.TelnetSession", _FailingTelnetSession)
+    monkeypatch.setattr("resume_generator.vintage_stage._pause", lambda _seconds: None)
 
-    with pytest.raises(TimeoutError, match="Timed out waiting for VAX login prompt"):
+    with pytest.raises(TimeoutError, match="Timed out waiting for vintage login prompt"):
         runner._wait_for_console(
             ctx=DockerContext(docker_bin="/usr/bin/docker", container_name="c3", host_port=2323),
-            log=VaxBuildLog(),
+            log=VintageBuildLog(),
             timeout=2,
         )
 
@@ -1036,7 +1045,7 @@ def test_pause_skips_select_for_non_positive(monkeypatch: MonkeyPatch) -> None:
         calls.append(timeout)
         return ([], [], [])
 
-    monkeypatch.setattr("resume_generator.vax_stage.select.select", _fake_select)
+    monkeypatch.setattr("resume_generator.vintage_stage.select.select", _fake_select)
 
     _pause(0)
     _pause(-0.5)
@@ -1091,7 +1100,7 @@ def test_telnet_read_until_any_timeout(monkeypatch: MonkeyPatch) -> None:
     session._poll_incoming = _poll_incoming
 
     ticks = iter([100.0, 100.2, 100.4, 100.6])
-    monkeypatch.setattr("resume_generator.vax_stage.time.time", lambda: next(ticks))
+    monkeypatch.setattr("resume_generator.vintage_stage.time.time", lambda: next(ticks))
 
     with pytest.raises(TimeoutError, match="Timed out waiting for one of"):
         session._read_until_any([b"login:", b"#"], timeout=0)
@@ -1109,7 +1118,7 @@ def test_telnet_wait_for_xon_raises_after_send_timeout(monkeypatch: MonkeyPatch)
     session._poll_incoming = _poll_incoming
 
     ticks = iter([10.0, 10.1, 10.2, 11.5])
-    monkeypatch.setattr("resume_generator.vax_stage.time.monotonic", lambda: next(ticks))
+    monkeypatch.setattr("resume_generator.vintage_stage.time.monotonic", lambda: next(ticks))
 
     with pytest.raises(TimeoutError, match="Timed out waiting for XON"):
         session._wait_for_xon()

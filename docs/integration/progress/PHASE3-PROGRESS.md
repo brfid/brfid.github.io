@@ -1,7 +1,7 @@
 # Phase 3 Implementation Progress
 
 > Historical implementation log retained for evidence.
-> For current architecture and active workflow behavior, use `STATUS.md`, `README.md`, and `WORKFLOWS.md`.
+> For current architecture and active workflow behavior, use `CHANGELOG.md`, `README.md`, and `WORKFLOWS.md`.
 
 **Status**: Incremental approach - building on Phase 2.5 logging foundation
 **Date**: 2026-02-09
@@ -2134,7 +2134,7 @@ This document consolidates the current diagnosis:
 Updated files:
 
 - `docs/COLD-START.md`
-- `STATUS.md`
+- `CHANGELOG.md`
 - `docs/arpanet/progress/NEXT-STEPS.md`
 
 Key policy change:

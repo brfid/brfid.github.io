@@ -227,7 +227,7 @@ If we decide to pursue full TOPS-20 later:
 - `arpanet/configs/phase2/pdp10-minimal.ini` - IMP-only config
 - `arpanet/PHASE3-VALIDATION.md` - Success report
 - `arpanet/PHASE3-COMPLETION.md` - Summary with TOPS-20 as future work
-- Update `STATUS.md` - Phase 3 complete, Phase 4 ready
+- Update `CHANGELOG.md` - Phase 3 complete, Phase 4 ready
 
 ---
 

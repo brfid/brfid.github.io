@@ -1,0 +1,100 @@
+{% extends "_base.html.j2" %}
+
+{% block title %}Writing Samples — {{ author }}{% endblock %}
+
+{% block head_styles %}
+<style>
+  .genre-intro {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin: 0 0 0.75rem;
+    line-height: 1.5;
+  }
+  .item-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .item {
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .item:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+  .item-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.2rem;
+  }
+  .item-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .item-date {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    white-space: nowrap;
+  }
+  .item-desc {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.55;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<section class="card">
+  <header>
+    <h1>Writing Samples</h1>
+    {% if description %}
+    <p class="subtitle">{{ description }}</p>
+    {% endif %}
+    <nav>
+      <a class="pill" href="/">Home</a>
+      <a class="pill" href="/resume/">Resume</a>
+    </nav>
+  </header>
+
+  {% for genre in genres %}
+  <div class="section">
+    <h2>{{ genre.name }}</h2>
+    {% if genre.description %}
+    <p class="genre-intro">{{ genre.description }}</p>
+    {% endif %}
+    <ul class="item-list">
+      {% for item in genre['items'] %}
+      <li class="item">
+        <div class="item-meta">
+          {% if item.url %}
+          <a class="item-title" href="{{ item.url }}">{{ item.title }}</a>
+          {% else %}
+          <span class="item-title">{{ item.title }}</span>
+          {% endif %}
+          {% if item.date %}
+          <span class="item-date">{{ item.date }}</span>
+          {% endif %}
+        </div>
+        {% if item.description %}
+        <p class="item-desc">{{ item.description }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+
+  <footer>
+    <a href="/">brfid.github.io</a>
+  </footer>
+</section>
+{% endblock %}

@@ -8,7 +8,7 @@ Integration records for cross-system transfer experiments and validation.
 - This section is primarily retained integration evidence from earlier multi-machine phases.
 - Source of truth for current behavior:
   - `../README.md`
-  - `../STATUS.md`
+  - `../CHANGELOG.md` (`[Unreleased]`)
   - `../WORKFLOWS.md`
 
 ## Active path (in progress)
@@ -27,8 +27,9 @@ Uuencode console transfer (Option B) on single-host edcloud is the current targe
 
 ### One remaining gap before a live end-to-end run
 - The revised `Dockerfile.pdp11` (xq/ts removed, Bookworm rebuild) has not been built
-  and boot-verified on edcloud. See `../STATUS.md` "Next work" item 4 for the exact
-  verification steps.
+  and boot-verified on edcloud. Verification steps:
+  `docker compose -f docker-compose.production.yml up -d --build pdp11`
+  then validate `telnet localhost 2327`.
 
 ## Key records
 

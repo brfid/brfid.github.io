@@ -1,7 +1,7 @@
 # ARPANET Next Steps
 
 > Historical planning log retained for evidence.
-> Current production truth is in `STATUS.md`, `README.md`, and `WORKFLOWS.md`.
+> Current production truth is in `CHANGELOG.md`, `README.md`, and `WORKFLOWS.md`.
 > Legacy two-host/EFS/CDK details below are not the active deployment model.
 
 **Last updated:** 2026-02-14
@@ -274,7 +274,7 @@ If all networking paths fail, the TS11 tape drive is already configured:
 - ✅ Containers running (VAX + PDP-11)
 - ✅ IMPs archived with documentation
 - ✅ Management scripts created (`aws-*.sh`)
-- ✅ Documentation updated (STATUS.md, COLD-START.md)
+- ✅ Documentation updated (CHANGELOG.md, COLD-START.md)
 - ✅ VAX network and FTP fully operational
 
 **What's Next** (after PDP-11 fix):
@@ -489,7 +489,7 @@ EOF
 ```
 
 #### 5.2 Update Documentation
-- [ ] Mark FTP setup complete in STATUS.md
+- [ ] Mark FTP setup complete in CHANGELOG.md
 - [ ] Update PRODUCTION-STATUS with validation results
 - [ ] Archive NEXT-STEPS to dated file
 - [ ] Create new NEXT-STEPS for pipeline integration
@@ -599,13 +599,13 @@ du -sh /mnt/arpanet-logs/*
 **Primary**:
 - `docs/arpanet/VAX-PDP11-FTP-SETUP.md` - **Complete FTP setup guide** ⭐
 - `docs/COLD-START.md` - Cold start orientation
-- `STATUS.md` - Overall project status
+- `CHANGELOG.md` - Overall project status
 - `PRODUCTION-DEPLOYMENT.md` - Full deployment guide
 
 **Infrastructure**:
 - `docker-compose.production.yml` - Container orchestration
 - `README.md` - Current single-host `edcloud` lifecycle model
-- `STATUS.md` - Current platform boundary and operations status
+- `CHANGELOG.md` - Current platform boundary and operations status
 - `https://github.com/brfid/edcloud/blob/main/SETUP.md` - Active platform setup guide
 
 **Historical**:

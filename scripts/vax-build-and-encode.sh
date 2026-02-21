@@ -64,11 +64,11 @@ if [ -n "$COMPILE_OUTPUT" ]; then
 fi
 
 # Generate manpage
-echo "Generating manpage from resume.vax.yaml..." | /tmp/arpanet-log.sh VAX "$BUILD_ID"
-echo "  Input: resume.vax.yaml ($(wc -l < resume.vax.yaml) lines)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+echo "Generating manpage from resume.vintage.yaml..." | /tmp/arpanet-log.sh VAX "$BUILD_ID"
+echo "  Input: resume.vintage.yaml ($(wc -l < resume.vintage.yaml) lines)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 echo "  Parser: bradman (VAX C YAML parser)" | /tmp/arpanet-log.sh VAX "$BUILD_ID"
 
-MANPAGE_OUTPUT=$(./bradman -i resume.vax.yaml -o brad.1 2>&1)
+MANPAGE_OUTPUT=$(./bradman -i resume.vintage.yaml -o brad.1 2>&1)
 MANPAGE_STATUS=$?
 
 if [ $MANPAGE_STATUS -ne 0 ]; then

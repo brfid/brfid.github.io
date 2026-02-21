@@ -1,12 +1,12 @@
-"""Generate the VAX/SIMH "quiet signal" artifacts.
+"""Generate the vintage/SIMH "quiet signal" artifacts.
 
 This module is responsible for producing:
-- `build/vax/brad.1` (internal intermediate roff)
+- `build/vintage/brad.1` (internal intermediate roff)
 - `site/brad.man.txt` (rendered excerpt embedded on the landing page)
-- `site/vax-build.log` (muted transcript / provenance log)
+- `site/vintage-build.log` (muted transcript / provenance log)
 
-It supports a local mode (compile/run `vax/bradman.c` on the host) for quick iteration,
-and a future docker/SIMH mode for CI parity.
+It supports a local mode (compile/run `vintage/machines/vax/bradman.c` on
+the host) for quick iteration, and a future docker/SIMH mode for CI parity.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ from .manpage import parse_brad_roff_summary, render_brad_man_txt
 from .render import load_resume
 from .types import Resume
 from .uudecode import decode_marked_uuencode
-from .vax_yaml import build_vax_resume_v1, emit_vax_yaml
+from .vintage_yaml import build_vintage_resume_v1, emit_vintage_yaml
 
 DOCKER_IMAGE_DEFAULT = (
     "jguillaumes/simh-vaxbsd@sha256:"
@@ -40,32 +40,32 @@ DOCKER_IMAGE_DEFAULT = (
 
 
 @dataclass(frozen=True)
-class VaxStagePaths:
-    """Commonly used paths for the VAX stage."""
+class VintageStagePaths:
+    """Commonly used paths for the vintage stage."""
 
     repo_root: Path
     site_dir: Path
     build_dir: Path
 
     @property
-    def vax_build_dir(self) -> Path:
-        """Return the VAX-specific build directory."""
-        return self.build_dir / "vax"
+    def vintage_build_dir(self) -> Path:
+        """Return the vintage-stage build directory."""
+        return self.build_dir / "vintage"
 
     @property
-    def resume_vax_yaml_path(self) -> Path:
-        """Return the generated ``resume.vax.yaml`` path."""
-        return self.vax_build_dir / "resume.vax.yaml"
+    def resume_vintage_yaml_path(self) -> Path:
+        """Return the generated ``resume.vintage.yaml`` path."""
+        return self.vintage_build_dir / "resume.vintage.yaml"
 
     @property
     def brad_1_path(self) -> Path:
         """Return the generated ``brad.1`` path."""
-        return self.vax_build_dir / "brad.1"
+        return self.vintage_build_dir / "brad.1"
 
     @property
     def bradman_exe_path(self) -> Path:
         """Return the host-built ``bradman`` executable path."""
-        return self.vax_build_dir / "bradman"
+        return self.vintage_build_dir / "bradman"
 
     @property
     def brad_man_txt_path(self) -> Path:
@@ -73,14 +73,14 @@ class VaxStagePaths:
         return self.site_dir / "brad.man.txt"
 
     @property
-    def vax_build_log_path(self) -> Path:
-        """Return the published ``vax-build.log`` path."""
-        return self.site_dir / "vax-build.log"
+    def vintage_build_log_path(self) -> Path:
+        """Return the published ``vintage-build.log`` path."""
+        return self.site_dir / "vintage-build.log"
 
     @property
     def contact_json_path(self) -> Path:
         """Return the intermediate ``contact.json`` path."""
-        return self.vax_build_dir / "contact.json"
+        return self.vintage_build_dir / "contact.json"
 
     @property
     def contact_html_path(self) -> Path:
@@ -88,7 +88,7 @@ class VaxStagePaths:
         return self.site_dir / "contact.html"
 
 
-class VaxBuildLog:
+class VintageBuildLog:
     """Small timestamped log for publication as "build evidence"."""
 
     def __init__(self) -> None:
@@ -108,8 +108,8 @@ class VaxBuildLog:
 
 # pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
-class VaxStageConfig:
-    """Configuration for running the VAX stage."""
+class VintageStageConfig:
+    """Configuration for running the vintage stage."""
 
     resume_path: Path
     site_dir: Path
@@ -131,31 +131,31 @@ class DockerContext:
     host_port: int
 
 
-class VaxStageRunner:
-    """Runs the VAX stage in local or docker mode."""
+class VintageStageRunner:
+    """Runs the vintage stage in local or docker mode."""
 
-    def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
-        """Initialize a VAX stage runner.
+    def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
+        """Initialize a vintage stage runner.
 
         Args:
             config: Stage configuration.
             repo_root: Repository root path.
         """
         self._config = config
-        self._paths = VaxStagePaths(
+        self._paths = VintageStagePaths(
             repo_root=repo_root,
             site_dir=config.site_dir,
             build_dir=config.build_dir,
         )
 
     @property
-    def paths(self) -> VaxStagePaths:
+    def paths(self) -> VintageStagePaths:
         """Paths used by the runner (useful for callers/tests)."""
         return self._paths
 
     def run(self) -> None:
-        """Run the configured VAX stage."""
-        self._paths.vax_build_dir.mkdir(parents=True, exist_ok=True)
+        """Run the configured vintage stage."""
+        self._paths.vintage_build_dir.mkdir(parents=True, exist_ok=True)
         self._paths.site_dir.mkdir(parents=True, exist_ok=True)
 
         if self._config.mode == "local":
@@ -166,17 +166,17 @@ class VaxStageRunner:
             return
         raise ValueError(f"Unsupported mode: {self._config.mode!r}")
 
-    def _emit_resume_vax_yaml(self, *, build_date: date, log: VaxBuildLog) -> Resume:
-        log.add(f"[1/7] Generate resume.vax.yaml from {self._config.resume_path}")
+    def _emit_resume_vintage_yaml(self, *, build_date: date, log: VintageBuildLog) -> Resume:
+        log.add(f"[1/7] Generate resume.vintage.yaml from {self._config.resume_path}")
         resume = load_resume(self._config.resume_path)
-        built = build_vax_resume_v1(resume, build_date=build_date)
-        text = emit_vax_yaml(built)
-        self._paths.resume_vax_yaml_path.write_text(text, encoding="utf-8")
-        log.add(f"      Written: {self._paths.resume_vax_yaml_path}")
+        built = build_vintage_resume_v1(resume, build_date=build_date)
+        text = emit_vintage_yaml(built)
+        self._paths.resume_vintage_yaml_path.write_text(text, encoding="utf-8")
+        log.add(f"      Written: {self._paths.resume_vintage_yaml_path}")
         return resume
 
-    def _compile_bradman(self, *, log: VaxBuildLog) -> None:
-        bradman_c = self._paths.repo_root / "vax" / "bradman.c"
+    def _compile_bradman(self, *, log: VintageBuildLog) -> None:
+        bradman_c = self._paths.repo_root / "vintage" / "machines" / "vax" / "bradman.c"
         if not bradman_c.exists():
             raise FileNotFoundError(f"Missing source file: {bradman_c}")
 
@@ -184,7 +184,7 @@ class VaxStageRunner:
         if not compiler:
             raise RuntimeError("No C compiler found (expected one of: cc, clang, gcc)")
 
-        log.add("[2/7] Compile vax/bradman.c (HTML and man page generator)")
+        log.add("[2/7] Compile vintage/machines/vax/bradman.c (HTML and man page generator)")
         log.add(f"      Compiler: {Path(compiler).name}")
         subprocess.run(  # noqa: S603
             [compiler, "-O", "-o", str(self._paths.bradman_exe_path), str(bradman_c)],
@@ -194,14 +194,14 @@ class VaxStageRunner:
         )
         log.add(f"      Binary: {self._paths.bradman_exe_path}")
 
-    def _run_bradman(self, *, log: VaxBuildLog) -> None:
+    def _run_bradman(self, *, log: VintageBuildLog) -> None:
         log.add("[3/7] Generate brad.1 roff man page")
-        log.add(f"      Input: {self._paths.resume_vax_yaml_path.name}")
+        log.add(f"      Input: {self._paths.resume_vintage_yaml_path.name}")
         subprocess.run(  # noqa: S603
             [
                 str(self._paths.bradman_exe_path),
                 "-i",
-                str(self._paths.resume_vax_yaml_path),
+                str(self._paths.resume_vintage_yaml_path),
                 "-o",
                 str(self._paths.brad_1_path),
             ],
@@ -211,13 +211,13 @@ class VaxStageRunner:
         )
         log.add(f"      Output: {self._paths.brad_1_path}")
 
-    def _generate_contact_json(self, *, resume: Resume, log: VaxBuildLog) -> None:
-        log.add("[4/7] Generate contact.json (simplified for VAX HTML rendering)")
+    def _generate_contact_json(self, *, resume: Resume, log: VintageBuildLog) -> None:
+        log.add("[4/7] Generate contact.json (simplified for vintage HTML rendering)")
         generate_contact_json(resume=resume, out_path=self._paths.contact_json_path)
         log.add(f"      Output: {self._paths.contact_json_path}")
 
-    def _run_bradman_html(self, *, log: VaxBuildLog) -> None:
-        log.add("[5/7] Generate contact.html (VAX-rendered HTML fragment)")
+    def _run_bradman_html(self, *, log: VintageBuildLog) -> None:
+        log.add("[5/7] Generate contact.html (vintage-rendered HTML fragment)")
         log.add(f"      Input: {self._paths.contact_json_path.name}")
         subprocess.run(  # noqa: S603
             [
@@ -235,14 +235,14 @@ class VaxStageRunner:
         )
         log.add(f"      Output: {self._paths.contact_html_path}")
 
-    def _run_host_postprocess(self, *, resume: Resume, log: VaxBuildLog) -> None:
+    def _run_host_postprocess(self, *, resume: Resume, log: VintageBuildLog) -> None:
         """Run host-side post-processing: compile bradman, generate HTML fragment and man txt."""
         self._compile_bradman(log=log)
         self._generate_contact_json(resume=resume, log=log)
         self._run_bradman_html(log=log)
         self._render_brad_man_txt(log=log)
 
-    def _render_brad_man_txt(self, *, log: VaxBuildLog) -> None:
+    def _render_brad_man_txt(self, *, log: VintageBuildLog) -> None:
         log.add("[6/7] Render brad.man.txt (man page text for reference)")
         log.add("      Parser: Python roff subset (host-side)")
         roff = self._paths.brad_1_path.read_text(encoding="utf-8")
@@ -251,13 +251,13 @@ class VaxStageRunner:
         self._paths.brad_man_txt_path.write_text(rendered, encoding="utf-8")
         log.add(f"      Output: {self._paths.brad_man_txt_path}")
 
-    def _write_build_log(self, log: VaxBuildLog) -> None:
-        self._paths.vax_build_log_path.write_text(log.render(), encoding="utf-8")
+    def _write_build_log(self, log: VintageBuildLog) -> None:
+        self._paths.vintage_build_log_path.write_text(log.render(), encoding="utf-8")
 
     def _run_local(self) -> None:
-        log = VaxBuildLog()
+        log = VintageBuildLog()
         log.add("=" * 70)
-        log.add("VAX RESUME BUILD PIPELINE")
+        log.add("VINTAGE RESUME BUILD PIPELINE")
         log.add("=" * 70)
         log.add("")
         log.add("Repository: https://github.com/brfid/brfid.github.io")
@@ -266,13 +266,13 @@ class VaxStageRunner:
         log.add("BUILD MODE: Local (Fast Development Mode)")
         log.add("━" * 70)
         log.add("Platform:   Host machine (native C compiler)")
-        log.add("Purpose:    Quick iteration without VAX emulation")
+        log.add("Purpose:    Quick iteration without emulator boot")
         log.add("Compiler:   Modern C compiler (not K&R)")
-        log.add("Authentic:  No - compiled on host, not 4.3BSD VAX")
+        log.add("Authentic:  No - compiled on host")
         log.add("")
         log.add("PIPELINE STAGES")
         log.add("━" * 70)
-        resume = self._emit_resume_vax_yaml(build_date=date.today(), log=log)
+        resume = self._emit_resume_vintage_yaml(build_date=date.today(), log=log)
         self._compile_bradman(log=log)
         self._run_bradman(log=log)
         self._generate_contact_json(resume=resume, log=log)
@@ -292,26 +292,26 @@ class VaxStageRunner:
         )
 
     def _run_docker(self) -> None:
-        log = VaxBuildLog()
+        log = VintageBuildLog()
         log.add("=" * 70)
-        log.add("VAX RESUME BUILD PIPELINE")
+        log.add("VINTAGE RESUME BUILD PIPELINE")
         log.add("=" * 70)
         log.add("")
         log.add("Repository: https://github.com/brfid/brfid.github.io")
         log.add(f"Build Date: {date.today().isoformat()}")
         log.add("")
-        log.add("BUILD MODE: Docker/SIMH (Authentic VAX Emulation)")
+        log.add("BUILD MODE: Docker/SIMH (Authentic Vintage Emulation)")
         log.add("━" * 70)
-        log.add("Platform:   SIMH VAX 11/780 Emulator")
+        log.add("Platform:   SIMH vintage machine emulator")
         log.add("OS:         4.3BSD UNIX (1986)")
         log.add("Compiler:   K&R C (pre-ANSI)")
-        log.add("Authentic:  Yes - running actual 4.3BSD VAX emulation")
+        log.add("Authentic:  Yes - running historical BSD emulation")
         log.add("Transfer:   TS11 tape drive emulation")
         log.add("")
         log.add("PIPELINE STAGES")
         log.add("━" * 70)
 
-        resume = self._emit_resume_vax_yaml(build_date=date.today(), log=log)
+        resume = self._emit_resume_vintage_yaml(build_date=date.today(), log=log)
 
         if self._config.transcript_path:
             log.add(f"[2/7] Replay mode: {self._config.transcript_path}")
@@ -347,13 +347,13 @@ class VaxStageRunner:
         )
         return res.data
 
-    def _run_docker_live(self, *, resume: Resume, log: VaxBuildLog) -> None:
+    def _run_docker_live(self, *, resume: Resume, log: VintageBuildLog) -> None:
         docker_bin = shutil.which("docker")
         if not docker_bin:
             raise RuntimeError("Docker is not available; install Docker or use --transcript")
 
         simh_dir_name = "simh-tape"
-        simh_dir = (self._paths.vax_build_dir / simh_dir_name).resolve()
+        simh_dir = (self._paths.vintage_build_dir / simh_dir_name).resolve()
         simh_dir.mkdir(parents=True, exist_ok=True)
         self._prepare_tape_media(simh_dir)
 
@@ -375,11 +375,11 @@ class VaxStageRunner:
                 log.add("      Quick mode: skipping transfer/compile")
                 transcript = ""
             else:
-                log.add("[3/7] Transfer sources to VAX via tape")
-                log.add("      Files: bradman.c, resume.vax.yaml")
+                log.add("[3/7] Transfer sources to vintage machine via tape")
+                log.add("      Files: bradman.c, resume.vintage.yaml")
                 self._transfer_guest_inputs_tape(session)
-                log.add("[4/7] Compile and run bradman on VAX")
-                log.add("      Compiler: cc (VAX BSD)")
+                log.add("[4/7] Compile and run bradman on vintage machine")
+                log.add("      Compiler: cc (BSD guest)")
                 transcript = self._compile_and_capture(session)
         finally:
             self._stop_docker_container(context)
@@ -412,12 +412,12 @@ class VaxStageRunner:
         *,
         docker_bin: str,
         simh_dir: Path,
-        log: VaxBuildLog,
+        log: VintageBuildLog,
     ) -> DockerContext:
-        container_name = f"vaxbsd-{uuid.uuid4().hex[:8]}"
+        container_name = f"vintagebsd-{uuid.uuid4().hex[:8]}"
         host_port = _find_free_port()
 
-        log.add("[2/5] Start SIMH VAX/BSD container")
+        log.add("[2/5] Start SIMH vintage/BSD container")
         log.add(f"      Image: {self._config.docker_image.split('@')[0]}")
         log.add(f"      Container: {container_name}")
         log.add(f"      Port: {host_port}")
@@ -453,13 +453,13 @@ class VaxStageRunner:
         )
 
     def _init_console_log(self) -> None:
-        (self._paths.vax_build_dir / "vax-console.log").write_text(
+        (self._paths.vintage_build_dir / "vintage-console.log").write_text(
             "[session]\n",
             encoding="utf-8",
         )
 
     def _append_console_log(self, section: str, output: str) -> None:
-        log_path = self._paths.vax_build_dir / "vax-console.log"
+        log_path = self._paths.vintage_build_dir / "vintage-console.log"
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(f"\n[{section}]\n")
             fh.write(output)
@@ -539,21 +539,26 @@ class VaxStageRunner:
             timeout=300,
         )
         self._append_console_log("tape extract", extract_output)
-        ls_output = session.exec_cmd("ls -l bradman.c resume.vax.yaml")
+        ls_output = session.exec_cmd("ls -l bradman.c resume.vintage.yaml")
         self._append_console_log("tape ls", ls_output)
 
     def _prepare_tape_media(self, simh_dir: Path) -> None:
         tap_path = simh_dir / "inputs.tap"
         tar_bytes = _build_tar_bytes(
             [
-                ("bradman.c", (self._paths.repo_root / "vax" / "bradman.c").read_bytes()),
-                ("resume.vax.yaml", self._paths.resume_vax_yaml_path.read_bytes()),
+                (
+                    "bradman.c",
+                    (
+                        self._paths.repo_root / "vintage" / "machines" / "vax" / "bradman.c"
+                    ).read_bytes(),
+                ),
+                ("resume.vintage.yaml", self._paths.resume_vintage_yaml_path.read_bytes()),
             ]
         )
         _write_simh_tap(tap_path, tar_bytes)
         ini_path = simh_dir / "vax780.ini"
         if not ini_path.exists():
-            for candidate in (self._paths.vax_build_dir / "simh" / "vax780.ini",):
+            for candidate in (self._paths.vintage_build_dir / "simh" / "vax780.ini",):
                 if candidate.exists():
                     ini_path.write_text(candidate.read_text(encoding="utf-8"), encoding="utf-8")
                     break
@@ -595,9 +600,9 @@ class VaxStageRunner:
     def _compile_and_capture(self, session: TelnetSession) -> str:
         compile_output = session.exec_cmd("cc -O -o bradman bradman.c", timeout=600)
         self._append_console_log("compile", compile_output)
-        stat_output = session.exec_cmd("ls -l bradman bradman.c resume.vax.yaml")
+        stat_output = session.exec_cmd("ls -l bradman bradman.c resume.vintage.yaml")
         self._append_console_log("ls", stat_output)
-        run_output = session.exec_cmd("./bradman -i resume.vax.yaml -o brad.1")
+        run_output = session.exec_cmd("./bradman -i resume.vintage.yaml -o brad.1")
         self._append_console_log("bradman", run_output)
         output = session.exec_cmd(
             "echo '<<<BRAD_1_UU_BEGIN>>>'; uuencode brad.1 brad.1; echo '<<<BRAD_1_UU_END>>>'"
@@ -609,11 +614,11 @@ class VaxStageRunner:
         self,
         *,
         ctx: DockerContext,
-        log: VaxBuildLog,
+        log: VintageBuildLog,
         timeout: int = 600,
     ) -> TelnetSession:
-        """Wait for the VAX console to reach a login prompt and return a session."""
-        wait_log_path = self._paths.vax_build_dir / "vax-wait.log"
+        """Wait for the vintage console to reach a login prompt and return a session."""
+        wait_log_path = self._paths.vintage_build_dir / "vintage-wait.log"
         wait_log_path.write_text(f"wait_for_console timeout={timeout}\n", encoding="utf-8")
 
         start = time.monotonic()
@@ -661,7 +666,7 @@ class VaxStageRunner:
                 _pause(1.0)
                 continue
 
-        raise TimeoutError("Timed out waiting for VAX login prompt")
+        raise TimeoutError("Timed out waiting for vintage login prompt")
 
 
 class TelnetSession:
@@ -672,7 +677,7 @@ class TelnetSession:
         *,
         host: str,
         port: int,
-        log: VaxBuildLog,
+        log: VintageBuildLog,
         send_timeout: int = 180,
     ) -> None:
         """Initialize a telnet session to the SIMH console.
@@ -910,7 +915,7 @@ def _write_simh_tap(path: Path, payload: bytes, *, record_size: int = 10240) -> 
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="python -m resume_generator.vax_stage")
+    parser = argparse.ArgumentParser(prog="python -m resume_generator.vintage_stage")
     parser.add_argument(
         "--resume",
         default="resume.yaml",
@@ -953,7 +958,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--docker-quick",
         action="store_true",
-        help="Only boot/login and write vax-build.log (skip transfer/compile)",
+        help="Only boot/login and write vintage-build.log (skip transfer/compile)",
     )
     parser.add_argument(
         "--docker-image",
@@ -964,7 +969,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint for the VAX stage.
+    """CLI entrypoint for the vintage stage.
 
     Args:
         argv: Optional argument list (primarily for tests).
@@ -974,7 +979,7 @@ def main(argv: list[str] | None = None) -> int:
     """
     args = _parse_args(argv)
     repo_root = Path.cwd()
-    config = VaxStageConfig(
+    config = VintageStageConfig(
         resume_path=Path(args.resume),
         site_dir=Path(args.site_dir),
         build_dir=Path(args.build_dir),
@@ -985,10 +990,10 @@ def main(argv: list[str] | None = None) -> int:
         docker_quick=bool(args.docker_quick),
         docker_image=str(args.docker_image),
     )
-    runner = VaxStageRunner(config=config, repo_root=repo_root)
+    runner = VintageStageRunner(config=config, repo_root=repo_root)
     runner.run()
     print(f"Wrote: {runner.paths.brad_man_txt_path}")
-    print(f"Wrote: {runner.paths.vax_build_log_path}")
+    print(f"Wrote: {runner.paths.vintage_build_log_path}")
     return 0
 
 

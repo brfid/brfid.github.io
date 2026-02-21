@@ -108,19 +108,11 @@ jobs:
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "📝 Build ID: $BUILD_ID"
 
-      - name: Setup edcloud SSH key
+      - name: Connect to Tailscale
         if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          EDCLOUD_SSH_PRIVATE_KEY: ${{ secrets.EDCLOUD_SSH_PRIVATE_KEY }}
-          AWS_SSH_PRIVATE_KEY: ${{ secrets.AWS_SSH_PRIVATE_KEY }}
-        run: |
-          KEY="${EDCLOUD_SSH_PRIVATE_KEY:-$AWS_SSH_PRIVATE_KEY}"
-          if [[ -z "$KEY" ]]; then
-            echo "Missing SSH private key secret (EDCLOUD_SSH_PRIVATE_KEY or AWS_SSH_PRIVATE_KEY)."
-            exit 1
-          fi
-          echo "$KEY" > /tmp/aws-key.pem
-          chmod 600 /tmp/aws-key.pem
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
 
       - name: Activate edcloud infrastructure
         if: steps.mode.outputs.build_mode == 'docker'
@@ -155,58 +147,34 @@ jobs:
           echo "⏳ Waiting for instance to be running..."
           aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
 
-          echo "📡 Getting instance IP..."
-          EDCLOUD_IP=$(aws ec2 describe-instances \
-            --instance-ids "$INSTANCE_ID" \
-            --query 'Reservations[0].Instances[0].PublicIpAddress' \
-            --output text)
-
-          if [[ -z "$EDCLOUD_IP" || "$EDCLOUD_IP" == "None" ]]; then
-            echo "❌ Failed to resolve edcloud public IP"
-            echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_FAILED reason=missing_public_ip" >> /tmp/github.log
-            exit 1
-          fi
-
-          wait_for_ssh() {
-            local name="$1"
-            local ip="$2"
-            local ready=0
-            echo "⏳ Waiting for SSH on $name ($ip)..."
-            for i in {1..30}; do
-              if ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 -i /tmp/aws-key.pem "ubuntu@$ip" echo "ready" >/dev/null 2>&1; then
-                ready=1
-                echo "✅ SSH ready on $name"
-                break
-              fi
-              echo "Attempt $i/30: SSH not ready yet on $name..."
-              sleep 10
-            done
-            if [[ "$ready" -ne 1 ]]; then
-              echo "❌ SSH readiness timeout for $name ($ip)"
-              echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_FAILED reason=ssh_timeout host=$name ip=$ip" >> /tmp/github.log
-              exit 1
-            fi
-          }
-
-          wait_for_ssh "edcloud" "$EDCLOUD_IP"
-
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
-          echo "edcloud_ip=$EDCLOUD_IP" >> $GITHUB_OUTPUT
-          # Keep legacy output names for downstream steps.
-          echo "vax_ip=$EDCLOUD_IP" >> $GITHUB_OUTPUT
-          echo "pdp11_ip=$EDCLOUD_IP" >> $GITHUB_OUTPUT
-          echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_READY instance_id=$INSTANCE_ID ip=$EDCLOUD_IP" >> /tmp/github.log
+          echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_READY instance_id=$INSTANCE_ID host=edcloud" >> /tmp/github.log
           echo "✅ edcloud infrastructure activated"
+
+      - name: Wait for edcloud Tailscale SSH
+        if: steps.mode.outputs.build_mode == 'docker'
+        run: |
+          set -euo pipefail
+          echo "⏳ Waiting for Tailscale SSH on edcloud..."
+          for i in {1..30}; do
+            if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 ubuntu@edcloud "echo ready" >/dev/null 2>&1; then
+              echo "✅ SSH ready on edcloud"
+              exit 0
+            fi
+            echo "Attempt $i/30: SSH not ready yet on edcloud..."
+            sleep 10
+          done
+          echo "❌ SSH readiness timeout for edcloud"
+          exit 1
 
       - name: Prepare edcloud host
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           GIT_SHA: ${{ github.sha }}
         run: |
           echo "🛠️ Preparing edcloud host runtime..."
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
           set -euo pipefail
 
           if [[ ! -d "\$HOME/brfid.github.io/.git" ]]; then
@@ -216,7 +184,7 @@ jobs:
           cd "\$HOME/brfid.github.io"
           git fetch --all --prune
           git checkout "$GIT_SHA"
-          mkdir -p build/vax build/pdp11
+          mkdir -p build/vintage build/pdp11
 
           mkdir -p \$HOME/arpanet-logs/builds
           sudo apt-get install -y screen 2>/dev/null || true
@@ -231,29 +199,28 @@ jobs:
       - name: Stage 1 - VAX Build & Encode
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 1: VAX BUILD & ENCODE ==="
-          echo "edcloud IP: $EDCLOUD_IP"
+          echo "edcloud host: edcloud"
           echo "Build ID: $BUILD_ID"
 
           # Log GitHub Actions activity
           exec > >(tee >(while IFS= read -r line; do echo "[$(date -u '+%Y-%m-%d %H:%M:%S') GITHUB] $line"; done >> /tmp/github.log)) 2>&1
 
-          # Generate resume.vax.yaml locally
-          echo "Generating resume.vax.yaml locally..."
-          python -m resume_generator --out site --with-vax --vax-mode local
+          # Generate resume.vintage.yaml locally
+          echo "Generating resume.vintage.yaml locally..."
+          python -m resume_generator --out site --with-vintage --vintage-mode local
 
           # Upload generated input to edcloud
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            build/vax/resume.vax.yaml ubuntu@$EDCLOUD_IP:/tmp/resume.vax.yaml
+          scp -o StrictHostKeyChecking=accept-new \
+            build/vintage/resume.vintage.yaml ubuntu@edcloud:/tmp/resume.vintage.yaml
 
           # All screen/telnet console ops run on edcloud.
           # VAX console (port 2323) and PDP-11 console (port 2327) are bound to
           # localhost on edcloud and are not reachable from the GH Actions runner.
           echo "Running VAX build via edcloud SSH (console ports are localhost-only)..."
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
           set -euo pipefail
           cd \$HOME/brfid.github.io
 
@@ -271,10 +238,10 @@ jobs:
           screen -S vax-chmod -X quit 2>/dev/null || true
 
           echo "Uploading bradman.c to VAX BSD..."
-          bash scripts/vax-console-upload.sh vax/bradman.c /tmp/bradman.c 127.0.0.1
+          bash scripts/vax-console-upload.sh vintage/machines/vax/bradman.c /tmp/bradman.c 127.0.0.1
 
-          echo "Uploading resume.vax.yaml to VAX BSD..."
-          bash scripts/vax-console-upload.sh /tmp/resume.vax.yaml /tmp/resume.vax.yaml 127.0.0.1
+          echo "Uploading resume.vintage.yaml to VAX BSD..."
+          bash scripts/vax-console-upload.sh /tmp/resume.vintage.yaml /tmp/resume.vintage.yaml 127.0.0.1
 
           echo "Uploading vax-build-and-encode.sh to VAX BSD..."
           bash scripts/vax-console-upload.sh scripts/vax-build-and-encode.sh /tmp/vax-build-and-encode.sh 127.0.0.1
@@ -315,11 +282,13 @@ jobs:
                 \$HOME/arpanet-logs/builds/$BUILD_ID/VAX.log
               echo "✓ Logs extracted"
             else
-              echo "⚠️  Build status unclear"
+              echo "❌ Build status unclear"
               tail -50 /tmp/vax-build-console.txt
+              exit 1
             fi
           else
-            echo "⚠️  Console capture not found"
+            echo "❌ Console capture not found"
+            exit 1
           fi
           EOF
 
@@ -328,15 +297,14 @@ jobs:
       - name: Stage 2 - Console Transfer (VAX → PDP-11)
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 2: CONSOLE TRANSFER ==="
-          echo "edcloud IP: $EDCLOUD_IP"
+          echo "edcloud host: edcloud"
           echo "Build ID: $BUILD_ID"
 
           # All console ops run on edcloud (VAX:2323 and PDP-11:2327 are localhost there)
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
           set -euo pipefail
           cd \$HOME/brfid.github.io
 
@@ -402,11 +370,9 @@ jobs:
 
       - name: Verify screen session persists
         if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
         run: |
           echo "📡 Verifying screen session on edcloud..."
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
             'if screen -ls 2>/dev/null | grep -q "pdp11-console"; then
                echo "✅ Screen session pdp11-console is active"
                screen -ls
@@ -419,14 +385,13 @@ jobs:
       - name: Stage 3 - PDP-11 Validation
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 3: PDP-11 VALIDATION ==="
           echo "Build ID: $BUILD_ID"
 
           # Validation runs on edcloud (PDP-11 console is localhost:2327 there)
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP "bash -se" <<EOF
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
           set -euo pipefail
           cd \$HOME/brfid.github.io
 
@@ -455,79 +420,77 @@ jobs:
       - name: Stage 4 - Retrieve Final Output
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "=== STAGE 4: RETRIEVE FINAL OUTPUT ==="
 
           # Retrieve validated output from host log storage
           echo "Retrieving validated output from PDP-11..."
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/pdp-output/brad.txt \
-            build/vax/brad.txt || echo "Warning: brad.txt not found, using original"
+          scp -o StrictHostKeyChecking=accept-new \
+            ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/pdp-output/brad.txt \
+            build/vintage/brad.txt || echo "Warning: brad.txt not found, using original"
 
           # Fallback: if PDP-11 output not available, get from VAX
-          if [[ ! -f build/vax/brad.txt ]]; then
+          if [[ ! -f build/vintage/brad.txt ]]; then
             echo "Using VAX original output..."
-            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-              ubuntu@$EDCLOUD_IP:/tmp/brad.1 \
-              build/vax/brad.1
-            python -m resume_generator.manpage --in build/vax/brad.1 --out build/vax/brad.txt
+            scp -o StrictHostKeyChecking=accept-new \
+              ubuntu@edcloud:/tmp/brad.1 \
+              build/vintage/brad.1
+            python -m resume_generator.manpage --in build/vintage/brad.1 --out build/vintage/brad.txt
           fi
 
           # Copy to site
-          cp build/vax/brad.txt site/brad.man.txt
+          cp build/vintage/brad.txt site/brad.man.txt
 
           echo "✓ Final output retrieved"
 
       - name: Generate site (Local mode fallback)
         if: steps.mode.outputs.build_mode != 'docker'
         run: |
-          python -m resume_generator --out site --with-vax \
-            --vax-mode ${{ steps.mode.outputs.build_mode }}
+          python -m resume_generator --out site --with-vintage \
+            --vintage-mode ${{ steps.mode.outputs.build_mode }}
 
       - name: Merge and retrieve build logs
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📋 Merging build logs from all sources..."
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
             "mkdir -p ~/arpanet-logs/builds/$BUILD_ID"
 
           if [[ -f /tmp/github.log ]]; then
-            scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
+            scp -o StrictHostKeyChecking=accept-new \
               /tmp/github.log \
-              ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/GITHUB.log
+              ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/GITHUB.log
           fi
 
           # COURIER log was written on edcloud by console-transfer.py
           # (already present at ~/arpanet-logs/builds/$BUILD_ID/COURIER.log)
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
             "ls -lh ~/arpanet-logs/builds/$BUILD_ID/*.log 2>/dev/null || true"
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
             "python3 ~/brfid.github.io/scripts/merge-logs.py $BUILD_ID ~/arpanet-logs"
 
           mkdir -p site/build-logs
 
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/merged.log \
+          scp -o StrictHostKeyChecking=accept-new \
+            ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/merged.log \
             site/build-logs/merged.log || true
 
           for component in VAX PDP11 COURIER GITHUB; do
-            if ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+            if ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
               "test -f ~/arpanet-logs/builds/$BUILD_ID/${component}.log"; then
-              scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-                ubuntu@$EDCLOUD_IP:~/arpanet-logs/builds/$BUILD_ID/${component}.log \
+              scp -o StrictHostKeyChecking=accept-new \
+                ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/${component}.log \
                 site/build-logs/${component}.log
             fi
           done
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
             'cd ~/arpanet-logs/builds && ls -t | tail -n +21 | xargs -r rm -rf'
 
           echo "✅ Logs merged and retrieved"
@@ -549,19 +512,18 @@ jobs:
       - name: Generate build info widget
         if: steps.mode.outputs.build_mode == 'docker'
         env:
-          EDCLOUD_IP: ${{ steps.edcloud_activate.outputs.edcloud_ip }}
           BUILD_ID: ${{ steps.build_id.outputs.build_id }}
         run: |
           echo "📊 Generating build info widget..."
 
-          ssh -o StrictHostKeyChecking=no -i /tmp/aws-key.pem ubuntu@$EDCLOUD_IP \
+          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
             "python3 ~/brfid.github.io/scripts/generate-build-info.py $BUILD_ID ~/arpanet-logs /tmp/build-info"
 
           mkdir -p site/build-info
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$EDCLOUD_IP:/tmp/build-info/build-info.json site/build-info/
-          scp -o StrictHostKeyChecking=no -i /tmp/aws-key.pem \
-            ubuntu@$EDCLOUD_IP:/tmp/build-info/build-info.html site/build-info/
+          scp -o StrictHostKeyChecking=accept-new \
+            ubuntu@edcloud:/tmp/build-info/build-info.json site/build-info/
+          scp -o StrictHostKeyChecking=accept-new \
+            ubuntu@edcloud:/tmp/build-info/build-info.html site/build-info/
           cp templates/build-info.css site/build-info/
 
           echo "✅ Build info widget generated"

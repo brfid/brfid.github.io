@@ -206,7 +206,7 @@ To complete boot manually:
 ## Next Steps (Recommended)
 
 1. ✅ **Document findings** (this file)
-2. ✅ **Update STATUS.md** with decision
+2. ✅ **Update CHANGELOG.md** with decision
 3. ✅ **Clean up AWS** (destroy instance)
 4. → **Proceed with VAX path** for resume build pipeline
 5. → **Archive PDP-10/PDP-11** as experimental branches

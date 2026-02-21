@@ -181,7 +181,7 @@ EFS mounted successfully on both instances via NFS4.
 
 4. **Update documentation**
    - Cold start guide
-   - STATUS.md
+   - CHANGELOG.md
    - NEXT-STEPS.md
 
 ### Long-Term (GitHub Pipeline)

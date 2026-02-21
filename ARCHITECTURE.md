@@ -5,15 +5,15 @@ Companion docs:
 - `WORKFLOWS.md`
 - `docs/integration/INDEX.md`
 
-This repo builds a static resume site from `resume.yaml` and optionally runs a vintage VAX stage.
+This repo builds a static resume site from `resume.yaml` and optionally runs a vintage machine stage.
 
 ---
 
 ## Overview
 
 1. Input: `resume.yaml`
-2. Host build (`resume_generator`): HTML, PDF, VAX-stage inputs
-3. Optional VAX stage (`vax/bradman.c`): generates `build/vax/brad.1`
+2. Host build (`resume_generator`): HTML, PDF, vintage-stage inputs
+3. Optional vintage stage (`vintage/machines/vax/bradman.c`): generates `build/vintage/brad.1`
 4. Host render: `brad.1` → `site/brad.man.txt`
 5. Output: deployable site artifacts in `site/`
 
@@ -26,14 +26,14 @@ flowchart LR
   A[resume.yaml] --> B[Host Python: resume-gen]
   B --> C[site/resume/ (HTML)]
   B --> D[site/resume.pdf]
-  B --> E[build/vax/resume.vax.yaml]
+  B --> E[build/vintage/resume.vintage.yaml]
 
-  E --> F[VAX step (bradman.c)]
-  F --> G[build/vax/brad.1]
+  E --> F[Vintage machine step (bradman.c)]
+  F --> G[build/vintage/brad.1]
   G --> H[Host render brad.1 -> brad.man.txt]
 
   H --> I[site/brad.man.txt]
-  B --> J[site/vax-build.log]
+  B --> J[site/vintage-build.log]
   C --> K[site/index.html]
   I --> K
   J --> K
@@ -48,13 +48,13 @@ flowchart LR
 - Reads `resume.yaml`, generates HTML/PDF, and prepares `resume.vax.yaml`.
 - Renders `brad.1` into `site/brad.man.txt` for the landing page.
 
-### 2) VAX generator (C)
-- Source: `vax/bradman.c`
-- Reads `resume.vax.yaml`, produces a roff manpage (`brad.1`).
+### 2) Vintage machine generator (C)
+- Source: `vintage/machines/vax/bradman.c`
+- Reads `resume.vintage.yaml`, produces a roff manpage (`brad.1`).
 - Designed for 4.3BSD/K&R C compatibility.
 
-### 3) VAX stage runner
-- `resume_generator/vax_stage.py`
+### 3) Vintage stage runner
+- `resume_generator/vintage_stage.py`
 - Modes:
   - `local`: compile/run on host
   - `docker`: compile/run in SIMH 4.3BSD guest
@@ -74,10 +74,10 @@ flowchart LR
 - `resume.yaml` (human-edited)
 
 **Derived**
-- `build/vax/resume.vax.yaml` (simple YAML subset for the VAX C parser)
-- `build/vax/brad.1` (roff manpage source)
+- `build/vintage/resume.vintage.yaml` (simple YAML subset for the vintage C parser)
+- `build/vintage/brad.1` (roff manpage source)
 - `site/brad.man.txt` (rendered manpage summary)
-- `site/vax-build.log` (muted transcript)
+- `site/vintage-build.log` (muted transcript)
 
 ### `resume.vax.yaml` contract (v1)
 
@@ -125,7 +125,7 @@ Host decodes, writes `build/vax/brad.1`, then renders `site/brad.man.txt`. Decod
 
 ### Local mode
 ```bash
-.venv/bin/resume-gen --out site --with-vax --vax-mode local
+.venv/bin/resume-gen --out site --with-vintage --vintage-mode local
 ```
 - Compiles `bradman.c` on host
 - No emulator needed
@@ -133,7 +133,7 @@ Host decodes, writes `build/vax/brad.1`, then renders `site/brad.man.txt`. Decod
 
 ### Docker (SIMH) mode
 ```bash
-.venv/bin/resume-gen --out site --with-vax --vax-mode docker
+.venv/bin/resume-gen --out site --with-vintage --vintage-mode docker
 ```
 - Runs VAX 11/780 emulator
 - 4.3BSD UNIX (1986)
@@ -174,13 +174,13 @@ Historical implementation records are intentionally retained under `docs/integra
 - `site/resume/`
 - `site/resume.pdf`
 - `site/brad.man.txt`
-- `site/vax-build.log`
+- `site/vintage-build.log`
 - `site/arpanet-transfer.log` (when `--with-arpanet` is enabled)
 
 **Internal (in `build/`)**
-- `build/vax/resume.vax.yaml`
-- `build/vax/brad.1`
-- `build/vax/arpanet-transfer-exec.log` (execute mode scaffold output)
+- `build/vintage/resume.vintage.yaml`
+- `build/vintage/brad.1`
+- `build/vintage/arpanet-transfer-exec.log` (execute mode scaffold output)
 
 ---
 
@@ -194,5 +194,5 @@ Historical implementation records are intentionally retained under `docs/integra
 ## Next references
 
 - `README.md` for quickstart commands.
-- `STATUS.md` for current architecture and lifecycle boundary.
+- `CHANGELOG.md` (`[Unreleased]`) for current architecture and lifecycle boundary.
 - `resume_generator/` for pipeline implementation.

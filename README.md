@@ -6,7 +6,7 @@ Static resume site generator with an optional vintage build stage (VAX/PDP-11) u
 
 1. Source: `resume.yaml`
 2. Host build (`resume_generator`): HTML, PDF, VAX-stage inputs
-3. Optional VAX stage (`--with-vax`): produces `build/vax/brad.1`
+3. Optional vintage stage (`--with-vintage`): produces `build/vintage/brad.1`
 4. Host render: `brad.1` → `site/brad.man.txt`
 5. Output: deployable static artifacts in `site/`
 
@@ -42,7 +42,8 @@ Instance resolution order:
 
 | Doc | Role |
 |-----|------|
-| `STATUS.md` | Current project state and pending work |
+| `CHANGELOG.md` (`[Unreleased]`) | Current project state, active priorities, blockers, and decisions |
+| `CHANGELOG.md` (dated entries) | Chronological change history and milestone evidence |
 | `WORKFLOWS.md` | CI/test/publish behavior |
 | `ARCHITECTURE.md` | System design |
 | `docs/INDEX.md` | Documentation hub |
@@ -52,7 +53,7 @@ Instance resolution order:
 ## Cold start order
 
 1. This file (`README.md`)
-2. `STATUS.md`
+2. `CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
 3. `docs/INDEX.md`
 4. `docs/integration/INDEX.md` (when working integration/history topics)
 
@@ -60,8 +61,8 @@ Then apply `AGENTS.md` constraints.
 
 ## Build modes
 
-- `--vax-mode local` — host-only fast iteration
-- `--vax-mode docker` — SIMH/VAX 11/780 (4.3BSD/K&R C)
+- `--vintage-mode local` — host-only fast iteration
+- `--vintage-mode docker` — SIMH historical host mode (4.3BSD/K&R C on VAX machine target)
 
 ## Publish tags
 
@@ -80,13 +81,13 @@ python3 -m venv .venv
 Build (local mode):
 
 ```bash
-.venv/bin/resume-gen --out site --with-vax --vax-mode local
+.venv/bin/resume-gen --out site --with-vintage --vintage-mode local
 ```
 
 Build (distributed vintage mode):
 
 ```bash
-.venv/bin/resume-gen --out site --with-vax --vax-mode docker
+.venv/bin/resume-gen --out site --with-vintage --vintage-mode docker
 ```
 
 ## Quality checks
@@ -103,6 +104,7 @@ Workflow behavior: `WORKFLOWS.md`
 
 - `ARCHITECTURE.md`
 - `WORKFLOWS.md`
+- `CHANGELOG.md`
 - `docs/INDEX.md`
 - `docs/integration/INDEX.md`
 - `docs/vax/README.md`

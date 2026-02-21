@@ -295,7 +295,7 @@ git push origin main
 
 1. **Understand the System**:
    - Read this document (you're doing it!)
-   - Review `STATUS.md` for current project state
+   - Review `CHANGELOG.md` for current project state
    - Check `docs/PRE-DEPLOY-CHECKLIST.md` for deployment flow
 
 2. **View Logs Page**:
@@ -403,7 +403,7 @@ git push origin main
 
 ## Related Documentation
 
-- **Project Status**: `STATUS.md`
+- **Project Status**: `CHANGELOG.md`
 - **Deployment Guide**: `docs/PRE-DEPLOY-CHECKLIST.md`
 - **Build Info Widget**: `templates/build-info-widget.html`
 - **Log Collection**: `scripts/merge-logs.py`

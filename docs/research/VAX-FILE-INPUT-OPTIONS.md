@@ -601,7 +601,7 @@ vaxbsd# ls -la /tmp/bradman.c
 ## Related Documentation
 
 - **Current blocker**: `docs/research/VAX-CONTAINER-BSD-FILE-SHARING.md`
-- **Architecture**: `STATUS.md` (layer stack explanation)
+- **Architecture**: `CHANGELOG.md` (layer stack explanation)
 - **PDP-11 solution**: `docs/integration/PDP11-USR-MOUNT-FIX.md` (working example)
 - **Console transfer**: `docs/integration/UUENCODE-CONSOLE-TRANSFER.md`
 - **Workflow**: `.github/workflows/deploy.yml:238` (line to fix)
@@ -613,7 +613,7 @@ vaxbsd# ls -la /tmp/bradman.c
 **If starting fresh on this blocker:**
 
 1. Read this document completely
-2. Read `STATUS.md` for current state
+2. Read `CHANGELOG.md` for current state
 3. Check VAX is running: `./aws-status.sh`
 4. Test FTP: Follow Option 1 test procedure
 5. If FTP works: Implement Option 1

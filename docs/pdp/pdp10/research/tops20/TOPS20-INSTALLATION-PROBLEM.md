@@ -618,7 +618,7 @@ Installation is considered successful when:
 - `arpanet/PHASE3-IMPLEMENTATION-PLAN.md` - Overall Phase 3 plan
 - `arpanet/PHASE3-PROGRESS.md` - Progress tracking
 - `arpanet/PROTOCOL-ANALYSIS.md` - Network analysis
-- `STATUS.md` - Project status
+- `CHANGELOG.md` - Project status
 
 ### Test Scripts
 - `arpanet/scripts/test_phase2.py` - Multi-container routing tests
@@ -649,7 +649,7 @@ Installation is considered successful when:
 
 ## Contact & Handoff
 
-**Project Context**: See `STATUS.md`, `MEMORY.md`, and `PHASE3-IMPLEMENTATION-PLAN.md` for full project context.
+**Project Context**: See `CHANGELOG.md`, `MEMORY.md`, and `PHASE3-IMPLEMENTATION-PLAN.md` for full project context.
 
 **AWS Access**: Instance at 34.227.223.186 (SSH key required)
 

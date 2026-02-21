@@ -3,7 +3,7 @@
 # Sends files to VAX BSD via console using heredoc method
 #
 # Usage: vax-console-upload.sh <file> <destination>
-#   e.g., vax-console-upload.sh vax/bradman.c /tmp/bradman.c
+#   e.g., vax-console-upload.sh vintage/machines/vax/bradman.c /tmp/bradman.c
 
 set -e
 

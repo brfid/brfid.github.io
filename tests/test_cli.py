@@ -34,14 +34,14 @@ def test_cli_html_only_writes_site(tmp_path: Path) -> None:
     assert (out_dir / ".nojekyll").exists()
 
 
-def test_cli_with_arpanet_requires_with_vax() -> None:
+def test_cli_with_arpanet_requires_with_vintage() -> None:
     with pytest.raises(SystemExit):
         main(["--with-arpanet", "--html-only"])
 
 
 def test_cli_arpanet_execute_requires_with_arpanet() -> None:
     with pytest.raises(SystemExit):
-        main(["--with-vax", "--arpanet-execute", "--html-only"])
+        main(["--with-vintage", "--arpanet-execute", "--html-only"])
 
 
 def test_cli_with_arpanet_uses_arpanet_runner(
@@ -72,7 +72,7 @@ def test_cli_with_arpanet_uses_arpanet_runner(
             calls["execute_commands"] = bool(kwargs.get("execute_commands", False))
             self.paths = SimpleNamespace(
                 brad_man_txt_path=out_dir / "brad.man.txt",
-                vax_build_log_path=out_dir / "vax-build.log",
+                vintage_build_log_path=out_dir / "vintage-build.log",
             )
 
         def run(self) -> None:
@@ -88,7 +88,7 @@ def test_cli_with_arpanet_uses_arpanet_runner(
         lambda root, out_path: out_path,
     )
     monkeypatch.setattr(
-        "resume_generator.vax_arpanet_stage.VaxArpanetStageRunner",
+        "resume_generator.vintage_arpanet_stage.VintageArpanetStageRunner",
         _FakeArpanetRunner,
     )
 
@@ -101,7 +101,7 @@ def test_cli_with_arpanet_uses_arpanet_runner(
             "--templates",
             "templates",
             "--html-only",
-            "--with-vax",
+            "--with-vintage",
             "--with-arpanet",
             "--arpanet-execute",
         ]

@@ -1,180 +1,67 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ name }}</title>
-    <meta name="color-scheme" content="dark" />
-    {% if build_info_css_path %}
-    <link rel="stylesheet" href="{{ build_info_css_path }}" />
-    {% endif %}
-    <style>
-      :root {
-        --bg: #0f1115;
-        --card: #151a23;
-        --text: #e8eefc;
-        --muted: #a8b3cf;
-        --border: rgba(232, 238, 252, 0.12);
-        --link: #e8eefc;
-        --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-      }
-      html, body {
-        height: 100%;
-      }
-      body {
-        margin: 0;
-        background: radial-gradient(1200px 600px at 20% 0%, #131a2b, var(--bg));
-        color: var(--text);
-        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
-          "Apple Color Emoji", "Segoe UI Emoji";
-        line-height: 1.45;
-      }
-      a {
-        color: var(--link);
-        text-decoration: none;
-      }
-      a:hover, a:focus-visible {
-        text-decoration: underline;
-        outline: none;
-      }
-      .wrap {
-        max-width: 980px;
-        margin: 0 auto;
-        padding: 3rem 1.25rem 4rem;
-      }
-      .card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1.25rem 1.25rem;
-        box-shadow: var(--shadow);
-      }
-      header {
-        display: grid;
-        gap: 0.35rem;
-        margin-bottom: 1rem;
-      }
-      h1 {
-        font-size: 1.35rem;
-        font-weight: 650;
-        margin: 0;
-        letter-spacing: 0.2px;
-      }
-      .subtitle {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.98rem;
-      }
-      .contact-email {
-        margin: 0.5rem 0 0;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        font-size: 0.9rem;
-        color: var(--text);
-      }
-      nav {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem 1.25rem;
-        margin: 0.75rem 0 0;
-        padding: 0;
-        list-style: none;
-      }
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.4rem 0.65rem;
-        border-radius: 999px;
-        border: 1px solid rgba(232, 238, 252, 0.08);
-        background: rgba(255, 255, 255, 0.015);
-        font-size: 0.88rem;
-        color: var(--muted);
-      }
-      .pill:hover {
-        border-color: var(--border);
-        background: rgba(255, 255, 255, 0.03);
-        color: var(--text);
-      }
-      .section {
-        margin-top: 1.25rem;
-      }
-      .section h2 {
-        margin: 0 0 0.5rem;
-        font-size: 0.95rem;
-        font-weight: 650;
-        letter-spacing: 0.35px;
-        color: var(--muted);
-        text-transform: uppercase;
-      }
-      .section-content {
-        font-size: 0.95rem;
-        line-height: 1.6;
-        color: var(--text);
-      }
-      .section-content.mono {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-          "Courier New", monospace;
-        font-size: 0.9rem;
-        line-height: 1.5;
-      }
-      footer {
-        margin-top: 1.25rem;
-        color: rgba(168, 179, 207, 0.4);
-        font-size: 0.8rem;
-      }
-      footer a {
-        color: rgba(168, 179, 207, 0.5);
-      }
-      footer a:hover {
-        color: var(--muted);
-      }
-    </style>
-  </head>
-  <body>
-    <main class="wrap">
-      <section class="card">
-        {% if contact_fragment %}
-          {{ contact_fragment }}
-          <script>
-            // Add resume links to VAX-generated nav
-            (function() {
-              var nav = document.querySelector('header nav');
-              if (nav) {
-                var resumeHtml = document.createElement('a');
-                resumeHtml.className = 'pill';
-                resumeHtml.href = '{{ resume_html_path }}';
-                resumeHtml.textContent = 'Resume (HTML)';
-                nav.appendChild(resumeHtml);
+{% extends "_base.html.j2" %}
 
-                var resumePdf = document.createElement('a');
-                resumePdf.className = 'pill';
-                resumePdf.href = '{{ resume_pdf_path }}';
-                resumePdf.textContent = 'Resume (PDF)';
-                nav.appendChild(resumePdf);
-              }
-            })();
-          </script>
-        {% else %}
-          <header>
-            <h1>{{ name }}</h1>
-            <nav>
-              <a class="pill" href="{{ resume_html_path }}">Resume (HTML)</a>
-              <a class="pill" href="{{ resume_pdf_path }}">Resume (PDF)</a>
-            </nav>
-          </header>
-        {% endif %}
+{% block title %}{{ name }}{% endblock %}
 
-        <footer>
-          {% if vax_log_path %}
-            <a href="{{ vax_log_path }}">source</a>
+{% block head_extra %}
+{% if build_info_css_path %}
+<link rel="stylesheet" href="{{ build_info_css_path }}" />
+{% endif %}
+{% endblock %}
+
+{% block body %}
+<section class="card">
+  {% if contact_fragment %}
+    {{ contact_fragment }}
+    <script>
+      // Add nav links to vintage-generated nav
+      (function() {
+        var nav = document.querySelector('header nav');
+        if (nav) {
+          var resumeHtml = document.createElement('a');
+          resumeHtml.className = 'pill';
+          resumeHtml.href = '{{ resume_html_path }}';
+          resumeHtml.textContent = 'Resume (HTML)';
+          nav.appendChild(resumeHtml);
+
+          var resumePdf = document.createElement('a');
+          resumePdf.className = 'pill';
+          resumePdf.href = '{{ resume_pdf_path }}';
+          resumePdf.textContent = 'Resume (PDF)';
+          nav.appendChild(resumePdf);
+
+          {% if portfolio_path %}
+          var portfolio = document.createElement('a');
+          portfolio.className = 'pill';
+          portfolio.href = '{{ portfolio_path }}';
+          portfolio.textContent = 'Writing Samples';
+          nav.appendChild(portfolio);
           {% endif %}
-        </footer>
-      </section>
-    </main>
-    {% if build_info_html %}
-    {{ build_info_html }}
-    {% endif %}
-  </body>
-</html>
+        }
+      })();
+    </script>
+  {% else %}
+    <header>
+      <h1>{{ name }}</h1>
+      <nav>
+        <a class="pill" href="{{ resume_html_path }}">Resume (HTML)</a>
+        <a class="pill" href="{{ resume_pdf_path }}">Resume (PDF)</a>
+        {% if portfolio_path %}
+        <a class="pill" href="{{ portfolio_path }}">Writing Samples</a>
+        {% endif %}
+      </nav>
+    </header>
+  {% endif %}
 
+  <footer>
+    {% if vintage_log_path %}
+      <a href="{{ vintage_log_path }}">source</a>
+    {% endif %}
+  </footer>
+</section>
+{% endblock %}
+
+{% block body_after %}
+{% if build_info_html %}
+{{ build_info_html }}
+{% endif %}
+{% endblock %}

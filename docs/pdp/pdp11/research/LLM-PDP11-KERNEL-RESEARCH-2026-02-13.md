@@ -112,7 +112,7 @@ ftp 172.20.0.50
 
 ## Files to Update If Solved
 
-- `STATUS.md` - Current project status
+- `CHANGELOG.md` - Current project status
 - `docs/arpanet/INDEX.md` - Documentation index
 - Potentially: `docker-compose.production.yml` (if disk image changes)
 

@@ -42,7 +42,7 @@ def test_build_landing_page_includes_html_fragment(tmp_path: Path) -> None:
     out_dir = tmp_path / "site"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create a VAX-generated HTML fragment
+    # Create a vintage-generated HTML fragment
     contact_html = """<header>
   <h1>Test User</h1>
   <p class="subtitle">Engineer</p>
@@ -55,7 +55,7 @@ def test_build_landing_page_includes_html_fragment(tmp_path: Path) -> None:
     (out_dir / "contact.html").write_text(contact_html, encoding="utf-8")
 
     log_text = "\n".join([f"line {i}" for i in range(30)]) + "\n"
-    (out_dir / "vax-build.log").write_text(log_text, encoding="utf-8")
+    (out_dir / "vintage-build.log").write_text(log_text, encoding="utf-8")
 
     index_path = build_landing_page(
         resume=cast(Resume, resume),
@@ -67,7 +67,7 @@ def test_build_landing_page_includes_html_fragment(tmp_path: Path) -> None:
     assert "<h1>Test User</h1>" in html
     assert "Engineer" in html
     assert "test@example.com" in html
-    assert 'href="/vax-build.log"' in html  # link to full log is present
+    assert 'href="/vintage-build.log"' in html  # link to full log is present
     assert "linkedin.com/in/test" in html
     assert "github.com/test" in html
     # Resume links added by JavaScript

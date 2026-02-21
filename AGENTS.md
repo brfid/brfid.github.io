@@ -1,9 +1,13 @@
 # Agent notes (repo workflow)
 
-## Mission (cold start)
+Purpose: this file defines agent workflow constraints only.
+Setup/quickstart belongs in `README.md`; mutable project memory belongs in `CHANGELOG.md`
+under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entries.
 
-- Build and publish a static resume site, with optional VAX/ARPANET stages used as a technical signal.
-- Keep build outputs reproducible and historically grounded where intended (VAX/SIMH + ARPANET tracks).
+## Mission (stable constraints)
+
+- Build and publish a static resume site, with optional vintage/ARPANET stages used as a technical signal.
+- Keep build outputs reproducible and historically grounded where intended (vintage/SIMH + ARPANET tracks).
 - Prefer clear, evidence-backed updates over broad speculative changes.
 - Keep infrastructure orchestration minimal in this repo; lifecycle control belongs to `edcloud` and should be operable from small ARM controller hosts (for example, Pi Zero 2 class devices).
 
@@ -12,18 +16,47 @@
 `README.md` is the cold-start entry point (infrastructure boundary, source-of-truth map, quickstart, publish tags).
 
 1. `README.md`
-2. `STATUS.md`
+2. `CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
 3. `docs/INDEX.md`
 4. `docs/integration/INDEX.md` (if touching integration/ARPANET history)
 
 ## Source-of-truth map
 
-- Current project snapshot: `STATUS.md`
+- Current mutable state / active queue: `CHANGELOG.md` `[Unreleased]`
+- Change history / milestone evidence: dated `CHANGELOG.md` entries
 - Documentation hub: `docs/INDEX.md`
 - Integration active path + known-good evidence: `docs/integration/INDEX.md`
 - Integration history log (retained, not active): `docs/integration/progress/NEXT-STEPS.md`
 - Integration progress timeline (retained): `docs/integration/progress/PHASE3-PROGRESS.md`
 - Historical transport decisions: `docs/deprecated/transport-archive.md`
+
+Do not duplicate mutable status in this file; update `CHANGELOG.md` (`[Unreleased]`) instead.
+
+## Changelog memory model
+
+Use Keep a Changelog structure with one repo convention:
+
+- `## [Unreleased]` is the LLM working-memory section and uses custom subcategories
+  in this exact order:
+  1. `Current State`
+  2. `Active Priorities`
+  3. `In Progress`
+  4. `Blocked`
+  5. `Decisions Needed`
+  6. `Recently Completed`
+- Keep every subcategory present; if empty, use `- None.`.
+- Dated entries (`## [YYYY-MM-DD]`) keep normal Keep a Changelog categories
+  (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`).
+
+Update rules:
+
+1. On start/end of a task, update `In Progress` and `Recently Completed`.
+2. On new queued work, update `Active Priorities`.
+3. On external dependency or waiting condition, update `Blocked`.
+4. On user choice needed, update `Decisions Needed`.
+5. On architecture/runtime truth changes, update `Current State`.
+6. On milestone/date cut, move `Recently Completed` items into a dated entry and
+   classify under standard Keep a Changelog categories.
 
 ## Virtualenv-only
 
@@ -35,15 +68,16 @@
 Commit at significant milestones so the history stays readable and bisectable. Examples:
 
 - Landing page / UX milestone complete
-- VAX stage milestone complete (local mode, then docker/SIMH mode)
+- Vintage stage milestone complete (local mode, then docker/SIMH mode)
 - CI workflow changes
-- Artifact format changes (`resume.vax.yaml`, transcript parsing, manifest format)
+- Artifact format changes (`resume.vintage.yaml`, transcript parsing, manifest format)
 
 Pre-commit checks are optional by default in this repo workflow.
 
-- Run `.venv/bin/python -m pytest -q`, `.venv/bin/python -m ruff check .`, and
-  `.venv/bin/python -m mypy resume_generator tests` when a task or reviewer
+- Run `.venv/bin/python -m pytest -q`, `.venv/bin/python -m ruff check resume_generator`, and
+  `.venv/bin/python -m mypy resume_generator host_logging tests` when a task or reviewer
   explicitly requests validation.
+- When a milestone completes, update `CHANGELOG.md` in the same change set.
 
 ## No accidental publishing
 
@@ -62,10 +96,8 @@ Pre-commit checks are optional by default in this repo workflow.
 - Include validation performed (or explicitly state none performed).
 - If docs paths changed, update central indexes (`docs/INDEX.md`, relevant domain INDEX files).
 
-## Current VAX/SIMH status (handoff notes)
+## Runtime-status boundary
 
-- Tape (TS11 image) is the working transfer path and is now the default for docker mode.
-- Console/FTP transfer code is removed from the active path and archived in `docs/deprecated/transport-archive.md`.
-- `vax/bradman.c` was updated for 4.3BSD/K&R C (varargs/stdlib/size_t/void* fallbacks, `_doprnt` + `sys_errlist` stubs).
-- Host uuencode decoding is tolerant of trailing garbage in console output.
-- Docker image is pinned by digest in code; wait loops avoid fixed sleeps.
+- Keep long-lived constraints here; record changing implementation status in
+  `CHANGELOG.md` `[Unreleased]`.
+- Prefer referencing current paths in code/docs (for example `vintage/machines/vax/bradman.c`).

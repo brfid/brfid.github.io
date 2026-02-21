@@ -35,7 +35,7 @@ Defined in `tests/conftest.py`:
   - tags
     - fast/local: `publish`, `publish-fast`, `publish-fast-*`
     - distributed vintage: `publish-vintage`, `publish-vintage-*`
-    - legacy aliases: `publish-vax*`, `publish-docker*`
+    - legacy aliases: `publish-vax*`, `publish-docker*` (deprecated naming)
   - manual dispatch
 
 Mode resolution:
@@ -51,6 +51,12 @@ Docker mode lifecycle in deploy workflow:
 3. start `docker-compose.production.yml`,
 4. run build pipeline,
 5. stop the same instance in `always()` cleanup.
+
+Access model for docker mode:
+
+- GitHub Actions joins the tailnet via `tailscale/github-action@v3`.
+- Required secret: `TAILSCALE_AUTH_KEY`.
+- All remote operations use `ssh/scp ubuntu@edcloud` (no public-IP SSH key flow).
 
 Lifecycle markers written to `GITHUB.log`:
 

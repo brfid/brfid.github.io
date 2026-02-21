@@ -105,7 +105,7 @@ Likely touchpoints when executing this plan:
 - Test orchestration:
   - `arpanet/scripts/test_*.py` and related shell tests
 - Canonical docs/status:
-  - `STATUS.md`
+  - `CHANGELOG.md`
   - `docs/arpanet/progress/NEXT-STEPS.md`
   - `docs/arpanet/INDEX.md`
   - `docs/INDEX.md`

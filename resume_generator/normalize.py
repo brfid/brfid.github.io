@@ -7,7 +7,7 @@ stable and convenient for templates (sorted lists, computed date ranges, etc.).
 from __future__ import annotations
 
 from datetime import date
-from typing import Any, cast
+from typing import Any, TypeVar, cast
 
 from .types import ProjectItemView, Resume, ResumeView, WorkItemView
 
@@ -71,17 +71,19 @@ def format_date_range(start: str | None, end: str | None) -> str | None:
     return None
 
 
-def _add_date_ranges(items: list[dict[str, Any]]) -> None:
+DateRangeItem = TypeVar("DateRangeItem", WorkItemView, ProjectItemView)
+
+
+def _add_date_ranges(items: list[DateRangeItem]) -> None:
     """Mutate resume items in place, adding a computed ``dateRange`` display field.
 
     Args:
         items: List of work or project items.
     """
     for item in items:
-        if isinstance(item, dict):
-            date_range = format_date_range(item.get("startDate"), item.get("endDate"))
-            if date_range is not None:
-                item["dateRange"] = date_range
+        date_range = format_date_range(item.get("startDate"), item.get("endDate"))
+        if date_range is not None:
+            item["dateRange"] = date_range
 
 
 def normalize_resume(resume: Resume) -> ResumeView:

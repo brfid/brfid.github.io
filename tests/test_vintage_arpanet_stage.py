@@ -7,8 +7,8 @@ from typing import Any
 
 import pytest
 
-from resume_generator.vax_arpanet_stage import VaxArpanetStageRunner
-from resume_generator.vax_stage import VaxStageConfig
+from resume_generator.vintage_arpanet_stage import VintageArpanetStageRunner
+from resume_generator.vintage_stage import VintageStageConfig
 
 
 def test_arpanet_stage_paths_passthrough(
@@ -16,7 +16,7 @@ def test_arpanet_stage_paths_passthrough(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -27,10 +27,10 @@ def test_arpanet_stage_paths_passthrough(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -53,7 +53,7 @@ def test_arpanet_stage_run_writes_scaffold_log(
     }
 
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             site_dir = tmp_path / "site"
             site_dir.mkdir(parents=True, exist_ok=True)
@@ -66,40 +66,40 @@ def test_arpanet_stage_run_writes_scaffold_log(
         def run(self) -> None:
             calls["delegate_run"] += 1
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
-    def _start(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _start(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         calls["start"] += 1
         steps.append("network: started (phase2 stack)")
 
-    def _transfer(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _transfer(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         calls["transfer"] += 1
         steps.append("transfer: executed via docker exec (SIMH automation)")
 
-    def _validate(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _validate(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         steps.append("phase2_link_smoke: passed")
 
-    def _collect(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _collect(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         calls["collect"] += 1
         steps.append("logs: collected via host_logging CLI (scaffold)")
 
-    def _stop(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _stop(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         calls["stop"] += 1
         steps.append("network: stopped")
 
-    monkeypatch.setattr(VaxArpanetStageRunner, "_start_arpanet_network", _start)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_validate_phase2_links", _validate)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_run_transfer_script", _transfer)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_collect_arpanet_logs", _collect)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_stop_arpanet_network", _stop)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_start_arpanet_network", _start)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_validate_phase2_links", _validate)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_run_transfer_script", _transfer)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_collect_arpanet_logs", _collect)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_stop_arpanet_network", _stop)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -129,7 +129,7 @@ def test_arpanet_stage_run_writes_failure_status_and_stops(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             site_dir = tmp_path / "site"
             site_dir.mkdir(parents=True, exist_ok=True)
@@ -144,36 +144,36 @@ def test_arpanet_stage_run_writes_failure_status_and_stops(
 
     stopped = {"value": False}
 
-    def _start(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _start(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         steps.append("network: started")
 
-    def _transfer(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _transfer(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self, steps
         raise RuntimeError("transfer boom")
 
-    def _validate(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _validate(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         steps.append("phase2_link_smoke: passed")
 
-    def _collect(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _collect(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self, steps
         raise AssertionError("collect should not run after transfer failure")
 
-    def _stop(self: VaxArpanetStageRunner, steps: list[str]) -> None:
+    def _stop(self: VintageArpanetStageRunner, steps: list[str]) -> None:
         del self
         stopped["value"] = True
         steps.append("network: stopped")
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_start_arpanet_network", _start)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_validate_phase2_links", _validate)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_run_transfer_script", _transfer)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_collect_arpanet_logs", _collect)
-    monkeypatch.setattr(VaxArpanetStageRunner, "_stop_arpanet_network", _stop)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_start_arpanet_network", _start)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_validate_phase2_links", _validate)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_run_transfer_script", _transfer)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_collect_arpanet_logs", _collect)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_stop_arpanet_network", _stop)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -198,7 +198,7 @@ def test_run_command_uses_subprocess_run(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -209,7 +209,7 @@ def test_run_command_uses_subprocess_run(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
     captured: dict[str, Any] = {}
 
     class _CP:
@@ -222,10 +222,10 @@ def test_run_command_uses_subprocess_run(
         captured["kwargs"] = kwargs
         return _CP()
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.subprocess.run", _fake_run)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.subprocess.run", _fake_run)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -246,13 +246,13 @@ def test_run_transfer_script_executes_docker_commands_and_writes_log(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
                 repo_root=tmp_path,
                 build_dir=tmp_path / "build",
-                vax_build_dir=tmp_path / "build" / "vax",
+                vintage_build_dir=tmp_path / "build" / "vintage",
             )
 
         def run(self) -> None:
@@ -268,7 +268,7 @@ def test_run_transfer_script_executes_docker_commands_and_writes_log(
     script_path.parent.mkdir(parents=True, exist_ok=True)
     script_path.write_text("; test script\n", encoding="utf-8")
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
     commands: list[list[str]] = []
 
@@ -276,7 +276,7 @@ def test_run_transfer_script_executes_docker_commands_and_writes_log(
         def __init__(self, stdout: str = "") -> None:
             self.stdout = stdout
 
-    def _fake_run_command(self: VaxArpanetStageRunner, command: list[str]) -> _CP:
+    def _fake_run_command(self: VintageArpanetStageRunner, command: list[str]) -> _CP:
         del self
         commands.append(command)
         if command[1] == "exec":
@@ -284,14 +284,14 @@ def test_run_transfer_script_executes_docker_commands_and_writes_log(
         return _CP("")
 
     monkeypatch.setattr(
-        VaxArpanetStageRunner,
+        VintageArpanetStageRunner,
         "_resolve_executable",
         lambda _s, _p: "/usr/bin/docker",
     )
-    monkeypatch.setattr(VaxArpanetStageRunner, "_run_command", _fake_run_command)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_run_command", _fake_run_command)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -316,7 +316,7 @@ def test_run_transfer_script_executes_docker_commands_and_writes_log(
         "/machines/data/arpanet-transfer.ini",
     ]
 
-    exec_log = tmp_path / "build" / "vax" / "arpanet-transfer-exec.log"
+    exec_log = tmp_path / "build" / "vintage" / "arpanet-transfer-exec.log"
     assert exec_log.read_text(encoding="utf-8") == "SIMH EXEC OUTPUT\n"
     assert any(s.startswith("transfer_output:") for s in steps)
 
@@ -326,7 +326,7 @@ def test_arpanet_stage_defaults_to_dry_run(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             site_dir = tmp_path / "site"
             site_dir.mkdir(parents=True, exist_ok=True)
@@ -339,15 +339,15 @@ def test_arpanet_stage_defaults_to_dry_run(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
     monkeypatch.setattr(
-        VaxArpanetStageRunner,
+        VintageArpanetStageRunner,
         "_start_arpanet_network",
         lambda self, steps: (_ for _ in ()).throw(AssertionError("should not execute")),
     )
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -366,7 +366,7 @@ def test_run_transfer_exec_with_retry_succeeds_on_second_attempt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -377,12 +377,12 @@ def test_run_transfer_exec_with_retry_succeeds_on_second_attempt(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
     attempts = {"count": 0}
 
     def _fake_run_command(
-        self: VaxArpanetStageRunner,
+        self: VintageArpanetStageRunner,
         command: list[str],
     ) -> subprocess.CompletedProcess[str]:
         del self, command
@@ -396,10 +396,10 @@ def test_run_transfer_exec_with_retry_succeeds_on_second_attempt(
             )
         return subprocess.CompletedProcess(args=["docker", "exec"], returncode=0, stdout="ok")
 
-    monkeypatch.setattr(VaxArpanetStageRunner, "_run_command", _fake_run_command)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_run_command", _fake_run_command)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -423,7 +423,7 @@ def test_run_transfer_exec_with_retry_raises_after_second_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -434,10 +434,10 @@ def test_run_transfer_exec_with_retry_raises_after_second_failure(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
     def _always_fail(
-        self: VaxArpanetStageRunner,
+        self: VintageArpanetStageRunner,
         command: list[str],
     ) -> subprocess.CompletedProcess[str]:
         del self, command
@@ -448,10 +448,10 @@ def test_run_transfer_exec_with_retry_raises_after_second_failure(
             stderr="no such container: arpanet-vax",
         )
 
-    monkeypatch.setattr(VaxArpanetStageRunner, "_run_command", _always_fail)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_run_command", _always_fail)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -473,7 +473,7 @@ def test_classify_transfer_output_detects_fatal_markers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -484,10 +484,10 @@ def test_classify_transfer_output_detects_fatal_markers(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -508,7 +508,7 @@ def test_transfer_script_path_prefers_build_artifact_script(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -526,10 +526,10 @@ def test_transfer_script_path_prefers_build_artifact_script(
     build_script.write_text("; build artifact\n", encoding="utf-8")
     fallback_script.write_text("; fallback\n", encoding="utf-8")
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -545,7 +545,7 @@ def test_transfer_script_path_falls_back_to_authentic_script(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -561,10 +561,10 @@ def test_transfer_script_path_falls_back_to_authentic_script(
     fallback_script = simh_dir / "authentic-ftp-transfer.ini"
     fallback_script.write_text("; fallback\n", encoding="utf-8")
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -580,7 +580,7 @@ def test_transfer_script_path_raises_when_no_script_exists(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -591,10 +591,10 @@ def test_transfer_script_path_raises_when_no_script_exists(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -611,7 +611,7 @@ def test_collect_arpanet_logs_includes_pdp10_component(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -622,12 +622,12 @@ def test_collect_arpanet_logs_includes_pdp10_component(
         def run(self) -> None:
             return
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
     commands: list[list[str]] = []
 
     def _fake_run_command(
-        self: VaxArpanetStageRunner,
+        self: VintageArpanetStageRunner,
         command: list[str],
     ) -> subprocess.CompletedProcess[str]:
         del self
@@ -635,14 +635,14 @@ def test_collect_arpanet_logs_includes_pdp10_component(
         return subprocess.CompletedProcess(args=command, returncode=0, stdout="")
 
     monkeypatch.setattr(
-        VaxArpanetStageRunner,
+        VintageArpanetStageRunner,
         "_resolve_executable",
         lambda _s, _p: "/usr/bin/python",
     )
-    monkeypatch.setattr(VaxArpanetStageRunner, "_run_command", _fake_run_command)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_run_command", _fake_run_command)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",
@@ -673,7 +673,7 @@ def test_validate_phase2_links_runs_script(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _FakeDelegate:
-        def __init__(self, *, config: VaxStageConfig, repo_root: Path) -> None:
+        def __init__(self, *, config: VintageStageConfig, repo_root: Path) -> None:
             del config, repo_root
             self.paths = SimpleNamespace(
                 site_dir=tmp_path / "site",
@@ -688,12 +688,12 @@ def test_validate_phase2_links_runs_script(
     script_path.parent.mkdir(parents=True, exist_ok=True)
     script_path.write_text("#!/bin/bash\n", encoding="utf-8")
 
-    monkeypatch.setattr("resume_generator.vax_arpanet_stage.VaxStageRunner", _FakeDelegate)
+    monkeypatch.setattr("resume_generator.vintage_arpanet_stage.VintageStageRunner", _FakeDelegate)
 
     commands: list[list[str]] = []
 
     def _fake_run_command(
-        self: VaxArpanetStageRunner,
+        self: VintageArpanetStageRunner,
         command: list[str],
     ) -> subprocess.CompletedProcess[str]:
         del self
@@ -701,14 +701,14 @@ def test_validate_phase2_links_runs_script(
         return subprocess.CompletedProcess(args=command, returncode=0, stdout="")
 
     monkeypatch.setattr(
-        VaxArpanetStageRunner,
+        VintageArpanetStageRunner,
         "_resolve_executable",
         lambda _s, _p: "/bin/bash",
     )
-    monkeypatch.setattr(VaxArpanetStageRunner, "_run_command", _fake_run_command)
+    monkeypatch.setattr(VintageArpanetStageRunner, "_run_command", _fake_run_command)
 
-    runner = VaxArpanetStageRunner(
-        config=VaxStageConfig(
+    runner = VintageArpanetStageRunner(
+        config=VintageStageConfig(
             resume_path=tmp_path / "resume.yaml",
             site_dir=tmp_path / "site",
             build_dir=tmp_path / "build",

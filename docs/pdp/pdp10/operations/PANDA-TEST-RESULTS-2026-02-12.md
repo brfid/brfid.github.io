@@ -1,6 +1,6 @@
 # Panda TOPS-20 Testing Results - 2026-02-12
 
-> **Status note (newer evidence)**: This document captures the initial Panda test session. Later strict validation runs found that BOOT handoff remains unproven under automation (`boot_seen=False`, `sent_commands=[]`, no proven `@` prompt). Use `docs/arpanet/progress/NEXT-STEPS.md` and `STATUS.md` as canonical current state.
+> **Status note (newer evidence)**: This document captures the initial Panda test session. Later strict validation runs found that BOOT handoff remains unproven under automation (`boot_seen=False`, `sent_commands=[]`, no proven `@` prompt). Use `docs/arpanet/progress/NEXT-STEPS.md` and `CHANGELOG.md` as canonical current state.
 
 **Session duration**: ~2 hours
 **Status**: ✅ **MAJOR PROGRESS** - PDP-10 boots to BOOT prompt

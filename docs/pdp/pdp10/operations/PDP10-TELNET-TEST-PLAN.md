@@ -330,7 +330,7 @@ interact
 
 **If successful**, create:
 - `docs/arpanet/PDP10-BOOT-SUCCESS-2026-02-12.md`
-- Update `STATUS.md` with success
+- Update `CHANGELOG.md` with success
 - Update `TELNET-CONSOLE-METHOD.md` with PDP-10 confirmation
 - Commit automation script
 
@@ -367,7 +367,7 @@ docker volume prune
 
 1. ✅ Document findings
 2. ✅ Create final automation script
-3. ✅ Update STATUS.md
+3. ✅ Update CHANGELOG.md
 4. ✅ Commit all files
 5. → Try on other SIMH systems (VAX, PDP-8, etc.)
 6. → Create automation library

@@ -1,8 +1,8 @@
-"""ARPANET-aware VAX stage scaffolding.
+"""ARPANET-aware vintage stage scaffolding.
 
-This module provides a thin wrapper around :mod:`resume_generator.vax_stage`
+This module provides a thin wrapper around :mod:`resume_generator.vintage_stage`
 so we can incrementally add ARPANET transport behavior behind a dedicated
-feature flag without disrupting the existing VAX pipeline.
+feature flag without disrupting the existing vintage pipeline.
 """
 
 from __future__ import annotations
@@ -13,36 +13,36 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .vax_stage import VaxStageConfig, VaxStagePaths, VaxStageRunner
+from .vintage_stage import VintageStageConfig, VintageStagePaths, VintageStageRunner
 
 
-class VaxArpanetStageRunner:
-    """Runs the existing VAX stage and emits ARPANET transfer scaffold output."""
+class VintageArpanetStageRunner:
+    """Runs the existing vintage stage and emits ARPANET transfer scaffold output."""
 
     def __init__(
         self,
         *,
-        config: VaxStageConfig,
+        config: VintageStageConfig,
         repo_root: Path,
         execute_commands: bool = False,
     ) -> None:
         """Initialize the ARPANET-aware stage wrapper.
 
         Args:
-            config: VAX stage configuration.
+            config: Vintage stage configuration.
             repo_root: Repository root path.
             execute_commands: Whether scaffold commands should execute.
         """
-        self._delegate = VaxStageRunner(config=config, repo_root=repo_root)
+        self._delegate = VintageStageRunner(config=config, repo_root=repo_root)
         self._execute_commands = execute_commands
 
     @property
-    def paths(self) -> VaxStagePaths:
+    def paths(self) -> VintageStagePaths:
         """Expose underlying stage paths for callers/tests."""
         return self._delegate.paths
 
     def run(self) -> None:
-        """Run the wrapped VAX stage and execute ARPANET scaffold steps."""
+        """Run the wrapped vintage stage and execute ARPANET scaffold steps."""
         self._delegate.run()
         steps: list[str] = ["ARPANET transfer stage scaffold"]
         if not self._execute_commands:
@@ -72,7 +72,7 @@ class VaxArpanetStageRunner:
         return self.paths.repo_root / "docker-compose.arpanet.phase2.yml"
 
     def _transfer_exec_log_path(self) -> Path:
-        return self.paths.vax_build_dir / "arpanet-transfer-exec.log"
+        return self.paths.vintage_build_dir / "arpanet-transfer-exec.log"
 
     def _phase2_link_test_script_path(self) -> Path:
         return self.paths.repo_root / "arpanet" / "scripts" / "test-phase2-imp-link.sh"

@@ -196,7 +196,7 @@ aws ec2 describe-instances --instance-ids i-013daaa4a0c3a9bfa
 3. `docs/arpanet/progress/NEXT-STEPS.md` (next actions)
 
 **Background**:
-- `STATUS.md` - Project status
+- `CHANGELOG.md` - Project status
 - `docs/arpanet/PANDA-APPROACH.md` - Why this approach
 - `docs/arpanet/PANDA-BUILD-STATUS-2026-02-12.md` - Build log
 
