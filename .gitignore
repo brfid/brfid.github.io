@@ -12,6 +12,7 @@ __pycache__/
 # Generated files — Hugo builds site/ fresh in CI; do not commit
 site/
 build/
+hugo/public/
 
 # IDE
 *.code-workspace

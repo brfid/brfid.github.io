@@ -26,8 +26,9 @@ User-facing documentation for DomainTools security intelligence products and wor
 
 ## LLM and AI Documentation
 
+**[DomainTools LLM Context Files](https://docs.domaintools.com/llm/)** (2025)
 Auto-generated structured context files covering DomainTools API products and data schemas,
-produced by CI/CD pipeline for use in LLM tooling and retrieval workflows. (Internal; not publicly linked.)
+produced by CI/CD pipeline for use in LLM tooling and retrieval workflows.
 
 ---
 

@@ -10,8 +10,10 @@ semantic version tags.
 
 ### Current State
 - Hugo site at `hugo/`. PaperMod, dark mode, canonical URL `www.jockeyholler.net`.
-  Content: `about.md`, `portfolio.md` (Work page), first post
-  (`posts/changelog-as-llm-memory.md`). Builds clean locally.
+  Content: `about.md`, `portfolio.md` (Work page), `resume.md` (Resume page),
+  first post (`posts/changelog-as-llm-memory.md`). Builds clean locally.
+- `hugo/data/resume.yaml` is a copy of `resume.yaml` (symlink not followed by Hugo
+  data loader in this version). Keep in sync manually when `resume.yaml` changes.
 - `site/` is gitignored — Hugo (and vintage pipeline mkdir calls) generate it
   fresh in CI. Do not commit anything to `site/`.
 - `deploy.yml` restructured: mode detected first; Python/quality checks/Playwright
@@ -27,7 +29,13 @@ semantic version tags.
 ### Active Priorities
 - Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings
   (requires GitHub UI action — set custom domain to `www.jockeyholler.net`).
-- Portfolio page: add DomainTools LLM context files URL when available.
+- Resolve `resume.yaml` sync: `hugo/data/resume.yaml` is a manual copy; symlink not
+  followed by Hugo data loader. Options: (a) CI step `cp resume.yaml hugo/data/resume.yaml`
+  before Hugo build in `deploy.yml`, (b) Makefile target, (c) Hugo module mounts
+  (risky: mounting `..` to `data` would also pull `.github/workflows/*.yml`).
+  Preferred: CI step + Makefile target covering both local and production paths.
+- Generate and commit `hugo/static/resume.pdf` (or wire into publish workflow):
+  `.venv/bin/python -m resume_generator --out hugo/static`. Currently 404s on `/resume/`.
 
 ### In Progress
 - None.
@@ -45,6 +53,14 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Resume page (`hugo/content/resume.md`): Hugo-native resume from `resume.yaml` data.
+  PaperMod chrome (dark mode, nav, fonts). Sections: Summary, Experience, Skills,
+  Projects, Education, Publications. PDF download link at `/resume.pdf`.
+  Layout: `hugo/layouts/_default/resume.html`. CSS: `hugo/assets/css/extended/resume.css`.
+  Data: `hugo/data/resume.yaml` (copy of `resume.yaml`). Nav: Blog · Work · Resume · About.
+  Builds clean; all sections verified in generated HTML.
+- Portfolio page: added `docs.domaintools.com/llm/` link to LLM and AI Documentation section.
+- Nav: renamed "Writing" → "Blog" in `hugo.toml`.
 - README, WORKFLOWS, ARCHITECTURE updated for Hugo-first model.
 - deploy.yml restructured: mode detected before Python setup; Python/quality
   checks/Playwright gated on `docker` mode only. Local publish skips all Python.

@@ -36,7 +36,7 @@ buildFuture = false
 [menu]
   [[menu.main]]
     identifier = "posts"
-    name = "Writing"
+    name = "Blog"
     url = "/posts/"
     weight = 10
   [[menu.main]]
@@ -44,6 +44,11 @@ buildFuture = false
     name = "Work"
     url = "/work/"
     weight = 15
+  [[menu.main]]
+    identifier = "resume"
+    name = "Resume"
+    url = "/resume/"
+    weight = 17
   [[menu.main]]
     identifier = "about"
     name = "About"
