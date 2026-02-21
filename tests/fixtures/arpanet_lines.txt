@@ -1,0 +1,5 @@
+HI1: packet send type 002000 host 1 imp 2 link 3 route to imp2 connection established attach -u hi1 2000:172.20.0.10:2000 UDP port 2000 Good Registers 1822
+MI1: packet recv type=005000 host 3 imp 7 link 2 forward to imp1 connection closed attach -u mi1 3001:10.0.0.5:4001 UDP port 3001
+completely unrelated simulator noise
+warning timeout while waiting for packet recv
+fatal error bad registers after send

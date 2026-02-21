@@ -1,0 +1,52 @@
+# PDP-11/73 with 2.11BSD
+# Headless console-only image for Option B (uuencode console transfer).
+# Networking (xq/DEUNA) is intentionally disabled: the netnix kernel crashes
+# on xq init, and the plain unix kernel is sufficient for uudecode + nroff.
+# Console is exposed on port 2327 via SIMH telnet.
+
+FROM debian:bookworm-slim
+
+# Install SIMH build dependencies.
+# No pcap/SDL2/vdeplug: networking devices are disabled in pdp11.ini.
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libedit-dev \
+    libpcre3-dev \
+    wget \
+    ca-certificates \
+    git \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and build SIMH (PDP-11 simulator) from GitHub
+WORKDIR /tmp
+RUN git clone --depth 1 https://github.com/simh/simh.git && \
+    cd simh && \
+    printf 'n\n' | make pdp11 && \
+    cp BIN/pdp11 /usr/local/bin/ && \
+    cd .. && \
+    rm -rf simh
+
+# Download pre-built 2.11BSD disk image (rpethset contains both unix and
+# netnix kernels; we boot unix via Enter at the "Boot:" prompt)
+# Source: https://wfjm.github.io/home/w11/inst/systems.html
+WORKDIR /opt/pdp11
+RUN wget -q https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
+    tar xzf 211bsd_rpethset.tgz && \
+    chmod 644 211bsd_rpeth.dsk && \
+    rm -f 211bsd_rpethset.tgz *.txt *.pdf
+
+# Create data directory for file transfers
+RUN mkdir -p /machines/data
+
+# Copy boot wrapper script that auto-mounts /usr
+COPY pdp11-boot.sh /opt/pdp11/pdp11-boot.sh
+RUN chmod +x /opt/pdp11/pdp11-boot.sh
+
+WORKDIR /opt/pdp11
+
+# Expose ports: 2327 (console), 21 (FTP), 23 (telnet)
+EXPOSE 2327 21 23
+
+# Use boot wrapper to start SIMH and auto-mount /usr
+CMD ["/opt/pdp11/pdp11-boot.sh"]

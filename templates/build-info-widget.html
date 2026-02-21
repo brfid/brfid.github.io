@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vintage Build Info Widget</title>
+    <style>
+        :root {
+            --vax-color: #00aaff;
+            --pdp11-color: #ff8800;
+            --github-color: #24292e;
+            --bg-dark: #1e1e1e;
+            --bg-light: #f9f9f9;
+            --border-color: #ddd;
+            --success-color: #28a745;
+            --mono-font: 'Courier New', Consolas, Monaco, monospace;
+        }
+
+        .build-info-widget {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 2em auto;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-light);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .build-header {
+            background: var(--bg-dark);
+            color: white;
+            padding: 1.5em;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .build-header h3 {
+            margin: 0 0 0.5em 0;
+            font-size: 1.5em;
+        }
+
+        .build-header h3::before {
+            content: "🏛️ ";
+        }
+
+        .build-meta {
+            display: flex;
+            gap: 1.5em;
+            flex-wrap: wrap;
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .build-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.5em;
+        }
+
+        .build-meta code {
+            background: rgba(255,255,255,0.1);
+            padding: 0.2em 0.5em;
+            border-radius: 3px;
+            font-family: var(--mono-font);
+        }
+
+        .status-success::before {
+            content: "✓";
+            color: var(--success-color);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .build-evidence {
+            padding: 1.5em;
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .build-evidence h4 {
+            margin: 0 0 1em 0;
+            color: var(--github-color);
+            font-size: 1.1em;
+        }
+
+        .evidence-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .evidence-list li {
+            padding: 0.5em 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .evidence-list li:last-child {
+            border-bottom: none;
+        }
+
+        .evidence-list strong {
+            color: #555;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 140px;
+        }
+
+        .evidence-list code {
+            background: #f5f5f5;
+            padding: 0.2em 0.5em;
+            border-radius: 3px;
+            font-family: var(--mono-font);
+            font-size: 0.9em;
+            color: #c7254e;
+        }
+
+        .vintage-badge {
+            display: inline-block;
+            background: var(--success-color);
+            color: white;
+            padding: 0.2em 0.5em;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-left: 0.5em;
+        }
+
+        .build-logs {
+            padding: 1.5em;
+            background: white;
+        }
+
+        .build-logs h4 {
+            margin: 0 0 1em 0;
+            color: var(--github-color);
+            font-size: 1.1em;
+        }
+
+        .log-links {
+            display: flex;
+            gap: 1em;
+            flex-wrap: wrap;
+        }
+
+        .log-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5em;
+            padding: 0.75em 1.25em;
+            background: var(--bg-dark);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-family: var(--mono-font);
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+        }
+
+        .log-link:hover {
+            background: #2d2d2d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .log-link.vax {
+            background: var(--vax-color);
+        }
+
+        .log-link.vax:hover {
+            background: #0088cc;
+        }
+
+        .log-link.pdp11 {
+            background: var(--pdp11-color);
+        }
+
+        .log-link.pdp11:hover {
+            background: #cc6600;
+        }
+
+        .log-link::before {
+            content: "📄";
+        }
+
+        .log-link .log-desc {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+
+        /* Expandable log preview */
+        .log-preview {
+            margin-top: 1.5em;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .log-preview-header {
+            background: var(--bg-dark);
+            color: white;
+            padding: 0.75em 1em;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-preview-header:hover {
+            background: #2d2d2d;
+        }
+
+        .log-preview-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .log-preview.expanded .log-preview-content {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .log-preview-header .toggle::after {
+            content: "▶";
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .log-preview.expanded .log-preview-header .toggle::after {
+            transform: rotate(90deg);
+        }
+
+        .log-excerpt {
+            background: var(--bg-dark);
+            color: #d4d4d4;
+            padding: 1em;
+            font-family: var(--mono-font);
+            font-size: 0.85em;
+            line-height: 1.6;
+            overflow-x: auto;
+        }
+
+        .log-line {
+            white-space: pre-wrap;
+        }
+
+        .log-timestamp {
+            color: #888;
+        }
+
+        .log-machine {
+            font-weight: bold;
+        }
+
+        .log-machine.vax {
+            color: var(--vax-color);
+        }
+
+        .log-machine.pdp11 {
+            color: var(--pdp11-color);
+        }
+
+        .highlight {
+            background: rgba(255, 255, 0, 0.2);
+            border-left: 3px solid yellow;
+            padding-left: 0.5em;
+        }
+
+        @media (max-width: 600px) {
+            .build-meta {
+                flex-direction: column;
+                gap: 0.5em;
+            }
+
+            .log-links {
+                flex-direction: column;
+            }
+
+            .log-link {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="build-info-widget">
+    <div class="build-header">
+        <h3>Vintage Build Info</h3>
+        <div class="build-meta">
+            <span>Build ID: <code>build-20260214-183000</code></span>
+            <span>Date: <code>2026-02-14 18:30 UTC</code></span>
+            <span class="status-success">Success</span>
+        </div>
+    </div>
+
+    <div class="build-evidence">
+        <h4>Vintage Tool Evidence</h4>
+        <ul class="evidence-list">
+            <li>
+                <strong>VAX Compiler:</strong>
+                <code>cc (4.3 BSD, June 7 1986)</code>
+                <span class="vintage-badge">AUTHENTIC</span>
+            </li>
+            <li>
+                <strong>VAX OS:</strong>
+                <code>4.3 BSD UNIX #1 (June 6 1986)</code>
+            </li>
+            <li>
+                <strong>PDP-11 OS:</strong>
+                <code>2.11 BSD UNIX (Nov 7 1999)</code>
+                <span class="vintage-badge">AUTHENTIC</span>
+            </li>
+            <li>
+                <strong>Transfer Method:</strong>
+                <code>uuencode console I/O</code>
+            </li>
+            <li>
+                <strong>Validation:</strong>
+                <code>nroff -man (2.11BSD)</code>
+            </li>
+        </ul>
+    </div>
+
+    <div class="build-logs">
+        <h4>Build Logs</h4>
+        <div class="log-links">
+            <a href="/build-logs/VAX.log" class="log-link vax">
+                <span>VAX.log</span>
+                <span class="log-desc">(compilation)</span>
+            </a>
+            <a href="/build-logs/PDP11.log" class="log-link pdp11">
+                <span>PDP11.log</span>
+                <span class="log-desc">(validation)</span>
+            </a>
+            <a href="/build-logs/merged.log" class="log-link">
+                <span>merged.log</span>
+                <span class="log-desc">(timeline)</span>
+            </a>
+        </div>
+
+        <!-- Expandable log preview -->
+        <div class="log-preview" id="vax-preview">
+            <div class="log-preview-header" onclick="togglePreview('vax-preview')">
+                <span>Preview: VAX Compilation</span>
+                <span class="toggle"></span>
+            </div>
+            <div class="log-preview-content">
+                <pre class="log-excerpt"><span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:01</span> <span class="log-machine vax">VAX</span>] Compiling bradman.c...</span>
+<span class="log-line highlight"><span class="log-timestamp">[2026-02-14 18:30:01</span> <span class="log-machine vax">VAX</span>]   Compiler: cc: Berkeley C compiler, version 4.3 BSD, 7 June 1986</span>
+<span class="log-line highlight"><span class="log-timestamp">[2026-02-14 18:30:02</span> <span class="log-machine vax">VAX</span>]   Compiler binary: /bin/cc (45056 bytes, dated Jun  7  1986)</span>
+<span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:02</span> <span class="log-machine vax">VAX</span>]   Source: bradman.c (1037 lines)</span>
+<span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:05</span> <span class="log-machine vax">VAX</span>] Compilation successful</span>
+<span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:05</span> <span class="log-machine vax">VAX</span>]   Binary size: 45056 bytes</span></pre>
+            </div>
+        </div>
+
+        <div class="log-preview" id="pdp11-preview">
+            <div class="log-preview-header" onclick="togglePreview('pdp11-preview')">
+                <span>Preview: PDP-11 Validation</span>
+                <span class="toggle"></span>
+            </div>
+            <div class="log-preview-content">
+                <pre class="log-excerpt"><span class="log-line highlight"><span class="log-timestamp">[2026-02-14 18:30:21</span> <span class="log-machine pdp11">PDP11</span>]   OS: 2.11 BSD UNIX #1: Sun Nov  7 22:40:28 PST 1999</span>
+<span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:22</span> <span class="log-machine pdp11">PDP11</span>]   Tool: uudecode (16716 bytes, dated Nov  7  1999)</span>
+<span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:25</span> <span class="log-machine pdp11">PDP11</span>]   ✓ Decode successful</span>
+<span class="log-line highlight"><span class="log-timestamp">[2026-02-14 18:30:27</span> <span class="log-machine pdp11">PDP11</span>]   Tool: nroff -man (44940 bytes, dated Nov  7  1999)</span>
+<span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:30</span> <span class="log-machine pdp11">PDP11</span>]   ✓ Rendering successful</span>
+<span class="log-line"><span class="log-timestamp">[2026-02-14 18:30:32</span> <span class="log-machine pdp11">PDP11</span>] Status: PASS</span></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePreview(id) {
+    const preview = document.getElementById(id);
+    preview.classList.toggle('expanded');
+}
+</script>
+
+</body>
+</html>

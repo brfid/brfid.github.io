@@ -1,0 +1,179 @@
+#!/usr/bin/expect -f
+# PDP-11 2.11BSD Automated Boot and Network Configuration
+# Usage: expect pdp11_autoboot.exp [ip_address] [gateway]
+#
+# This script automates the boot sequence for a PDP-11 running 2.11BSD
+# using SIMH's telnet console interface.
+#
+# Prerequisites:
+# - PDP-11 container running with telnet console on port 2327
+# - SIMH configured with: set console telnet=2327
+# - Pre-built 2.11BSD disk image attached
+#
+# Exit codes:
+#   0 = Success (boot complete, commands executed)
+#   1 = Failure (connection, boot, or command error)
+
+set timeout 120
+log_user 1
+
+# Parse arguments
+set ip_addr "172.20.0.50"
+set gateway "172.20.0.1"
+if {$argc > 0} { set ip_addr [lindex $argv 0] }
+if {$argc > 1} { set gateway [lindex $argv 1] }
+
+puts "\n=========================================="
+puts "PDP-11 2.11BSD Automated Boot"
+puts "Target IP: $ip_addr"
+puts "Gateway:   $gateway"
+puts "Timestamp: [clock format [clock seconds]]"
+puts "==========================================\n"
+
+# Connect to SIMH telnet console
+puts "→ Connecting to console (localhost:2327)..."
+spawn telnet localhost 2327
+expect {
+    "Escape character" {
+        puts "✓ Connected to SIMH console\n"
+    }
+    timeout {
+        puts "✗ ERROR: Failed to connect to telnet console"
+        puts "  Check: docker ps | grep pdp11"
+        puts "  Check: docker logs pdp11-host"
+        exit 1
+    }
+}
+
+# Wait for boot prompt ':'
+puts "→ Waiting for boot prompt..."
+expect {
+    ":" {
+        puts "✓ Boot prompt found\n"
+        puts "→ Sending Enter (boot default kernel)..."
+        send "\r"
+    }
+    timeout {
+        puts "✗ ERROR: No boot prompt found"
+        puts "  System may have already booted or failed to start"
+        exit 1
+    }
+}
+
+# Wait for BSD banner
+puts "\n→ Waiting for BSD to boot (15-20 seconds)..."
+expect {
+    "BSD UNIX" {
+        puts "✓ BSD UNIX kernel loaded\n"
+    }
+    timeout {
+        puts "⚠ WARNING: Didn't see BSD banner"
+        puts "  Continuing anyway..."
+    }
+}
+
+# Wait for root shell prompt #
+puts "→ Waiting for root shell prompt..."
+expect {
+    "#" {
+        puts "✓ Root shell ready\n"
+    }
+    timeout {
+        puts "✗ ERROR: No shell prompt received"
+        puts "  Boot may have failed or stalled"
+        exit 1
+    }
+}
+
+puts "=========================================="
+puts "✅ BOOT COMPLETE (took ~[expr [clock seconds] - [clock seconds]] seconds)"
+puts "==========================================\n"
+
+# Configure network (if kernel supports it)
+puts "→ Configuring network interface xq0..."
+send "ifconfig xq0 inet $ip_addr netmask 255.255.0.0 up\r"
+expect {
+    "#" {
+        puts "✓ ifconfig command sent"
+    }
+    "no such interface" {
+        puts "⚠ WARNING: xq0 interface not found"
+        puts "  Kernel may lack Ethernet drivers"
+        puts "  Boot automation still successful"
+        expect "#"
+    }
+    timeout {
+        puts "✗ ERROR: ifconfig command failed"
+        exit 1
+    }
+}
+
+# Add default route
+puts "\n→ Adding default route..."
+send "route add default $gateway\r"
+expect {
+    "#" {
+        puts "✓ Route command sent"
+    }
+    "File exists" {
+        puts "✓ Route already exists"
+        expect "#"
+    }
+    "usage:" {
+        puts "⚠ Route command syntax issue"
+        expect "#"
+    }
+    timeout {
+        puts "✗ ERROR: route command failed"
+        exit 1
+    }
+}
+
+# Verify configuration
+puts "\n→ Verifying network configuration..."
+send "ifconfig xq0\r"
+expect "#"
+
+send "netstat -rn\r"
+expect "#"
+
+# Test connectivity
+puts "\n→ Testing network (ping gateway)..."
+send "ping -c 2 $gateway\r"
+expect {
+    "packets transmitted" {
+        puts "✓ Ping completed (check output above)"
+    }
+    "#" {
+        puts "✓ Ping command executed"
+    }
+    timeout {
+        puts "⚠ Ping timed out"
+    }
+}
+expect "#"
+
+# Show final status
+puts "\n→ Final system status..."
+send "hostname\r"
+expect "#"
+
+send "uptime\r"
+expect "#"
+
+puts "\n=========================================="
+puts "✅ AUTOMATION COMPLETE"
+puts "Timestamp: [clock format [clock seconds]]"
+puts "=========================================="
+
+puts "\nSystem is ready for use."
+puts "Console session remains open."
+puts ""
+puts "Controls:"
+puts "  - Press Ctrl-] then type 'quit' to exit telnet"
+puts "  - Press Ctrl-C to exit this script"
+puts "  - Or continue interactive session below"
+puts ""
+
+# Keep session open for interactive use
+interact

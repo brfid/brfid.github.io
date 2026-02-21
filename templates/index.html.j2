@@ -1,0 +1,67 @@
+{% extends "_base.html.j2" %}
+
+{% block title %}{{ name }}{% endblock %}
+
+{% block head_extra %}
+{% if build_info_css_path %}
+<link rel="stylesheet" href="{{ build_info_css_path }}" />
+{% endif %}
+{% endblock %}
+
+{% block body %}
+<section class="card">
+  {% if contact_fragment %}
+    {{ contact_fragment }}
+    <script>
+      // Add nav links to vintage-generated nav
+      (function() {
+        var nav = document.querySelector('header nav');
+        if (nav) {
+          var resumeHtml = document.createElement('a');
+          resumeHtml.className = 'pill';
+          resumeHtml.href = '{{ resume_html_path }}';
+          resumeHtml.textContent = 'Resume (HTML)';
+          nav.appendChild(resumeHtml);
+
+          var resumePdf = document.createElement('a');
+          resumePdf.className = 'pill';
+          resumePdf.href = '{{ resume_pdf_path }}';
+          resumePdf.textContent = 'Resume (PDF)';
+          nav.appendChild(resumePdf);
+
+          {% if portfolio_path %}
+          var portfolio = document.createElement('a');
+          portfolio.className = 'pill';
+          portfolio.href = '{{ portfolio_path }}';
+          portfolio.textContent = 'Writing Samples';
+          nav.appendChild(portfolio);
+          {% endif %}
+        }
+      })();
+    </script>
+  {% else %}
+    <header>
+      <h1>{{ name }}</h1>
+      <nav>
+        <a class="pill" href="{{ resume_html_path }}">Resume (HTML)</a>
+        <a class="pill" href="{{ resume_pdf_path }}">Resume (PDF)</a>
+        {% if portfolio_path %}
+        <a class="pill" href="{{ portfolio_path }}">Writing Samples</a>
+        {% endif %}
+      </nav>
+    </header>
+  {% endif %}
+
+  <footer>
+    {% if vintage_log_path %}
+      <a href="{{ vintage_log_path }}">source</a>
+    {% endif %}
+  </footer>
+</section>
+{% endblock %}
+
+{% block body_after %}
+{% if build_info_html %}
+{{ build_info_html }}
+{% endif %}
+{% endblock %}

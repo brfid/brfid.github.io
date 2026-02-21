@@ -1,0 +1,212 @@
+================================================================================
+YAML PARSING COMPARISON: Current VAX Parser vs Original resume.yaml
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 1: String Quoting Styles                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Original resume.yaml:
+  name: Bradley Fidler                    ← Bare string (no quotes)
+  email: brfid@icloud.com                 ← Bare string
+  label: "Technical Writer: docs..."      ← Double quotes (has colon)
+  startDate: '2023-10-01'                 ← Single quotes
+
+Current VAX parser requires:
+  name: "Bradley Fidler"                  ← MUST be double-quoted
+  email: "brfid@icloud.com"               ← MUST be double-quoted
+  label: "Technical Writer: docs..."      ← ✅ Works
+  startDate: "2023-10-01"                 ← Must convert to double-quotes
+
+WHAT TO ADD: Bare string + single-quote parsing (~35 lines)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 2: Multi-line Strings (Folded)                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Original resume.yaml:
+  summary: Senior Technical Writer specializing in API documentation and docs-as-code.
+    I lead documentation strategy, content development, and docs platform.
+    I build OpenAPI and prose workflows that accelerate releases, enable SME contributions,
+    and prepare documentation for AI applications.
+
+  ^ Lines 6-10: Summary continues across multiple lines (indented)
+  ^ Lines 30-31: Work summary spans two lines
+  ^ Lines 33-41: Highlights span multiple lines
+
+Current VAX parser requires:
+  summary: "Senior Technical Writer specializing in API documentation and docs-as-code. I lead documentation strategy, content development, and docs platform. I build OpenAPI and prose workflows that accelerate releases, enable SME contributions, and prepare documentation for AI applications."
+
+  ^ Everything collapsed to single line with manual flattening in Python
+
+WHAT TO ADD: Multi-line accumulation (~40 lines)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 3: List Item Syntax                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Original resume.yaml:
+  work:
+  - name: DomainTools                     ← Dash + key/value on same line
+    position: Senior Technical Writer
+    startDate: '2023-10-01'
+    highlights:
+    - Migrated 120+ documents...          ← Dash + value on same line
+    - Built Python/Jinja2/LaTeX...
+
+Current VAX parser requires:
+  work:
+    -                                     ← Dash alone on line
+      company: "DomainTools"              ← Key on next line, indented
+      position: "Senior Technical Writer"
+      highlights:
+        - "Migrated 120+ documents..."    ← Actually works for simple values!
+
+WHAT TO ADD: Inline list item parsing (partially works, ~10 lines to improve)
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FEATURE 4: Nested Structures                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Original resume.yaml:
+  basics:
+    location:
+      city: Warwick
+      countryCode: US
+      region: New York
+    profiles:
+    - network: Personal
+      url: https://brfid.github.io
+    - network: LinkedIn
+      username: brfid
+      url: https://www.linkedin.com/in/brfid/
+
+Current VAX parser handles:
+  contact:                                ← Flat structure
+    email: "brfid@icloud.com"
+    url: "https://brfid.github.io"
+    linkedin: "https://www.linkedin.com/in/brfid/"
+
+  ^ Python pre-processes to flatten the structure
+  ^ Python extracts specific profiles by name
+
+WHAT TO ADD: Either (a) keep Python preprocessing, or (b) add ~50 lines for generic nesting
+
+
+================================================================================
+COMPLEXITY ANALYSIS
+================================================================================
+
+Current Parser (bradman.c):
+  ✅ Fixed indentation (0, 2, 4, 6 spaces)
+  ✅ Double-quoted strings only
+  ✅ Three escape sequences: \n \" \\
+  ✅ Comments (#)
+  ✅ Hardcoded structure (knows about work, skills, contact)
+  ✅ List detection (-)
+  Total: ~200 lines
+
+Enhanced Parser (to handle original resume.yaml):
+  ✅ All current features
+  + Bare strings (stop at end of line or #)
+  + Single-quoted strings ('' escape for literal ')
+  + Multi-line strings (continuation when next line is more indented)
+  + Flexible list syntax (- key: value)
+  Total: ~285 lines (+85 lines)
+
+Full YAML 1.2 Parser (not needed):
+  + Block scalars (| and >)
+  + Flow collections ({key: value} and [item, item])
+  + Anchors and aliases (&anchor *alias)
+  + Tags (!str, !int, etc.)
+  + Multiple documents (---)
+  + Complex key/value forms
+  + Unicode
+  Total: 5000+ lines
+
+
+================================================================================
+JSON vs YAML for VAX
+================================================================================
+
+JSON Approach:
+  Source:    resume.yaml (190 lines)
+               ↓ convert to JSON
+             resume.json (~250 lines, more verbose)
+  Parser:    Write JSON parser (~500 lines for nested objects/arrays)
+  Benefit:   JSON is simpler to parse (no ambiguity)
+  Drawback:  Still need Python to do conversion
+             JSON syntax is more rigid (all keys must be quoted)
+             No multi-line strings (must use \n escapes)
+             No comments
+
+Enhanced YAML Approach:
+  Source:    resume.yaml (190 lines, already exists)
+  Parser:    Extend existing parser (+85 lines)
+  Benefit:   No conversion needed
+             Build on working parser
+             More human-readable
+             Multi-line strings are natural
+  Drawback:  YAML has more ambiguity (bare vs quoted strings)
+             Need to handle 3 string styles
+
+
+WINNER: Enhanced YAML parser
+  - Less total work (~285 lines vs ~500 lines)
+  - No conversion step needed
+  - Builds on existing code
+  - More readable for humans
+
+
+================================================================================
+RECOMMENDED IMPLEMENTATION ORDER
+================================================================================
+
+Step 1: Add bare string support (20 lines)
+  → Immediately handles: name, email, location fields
+  → Test with: name: Bradley Fidler
+
+Step 2: Add single-quote support (15 lines)
+  → Handles: dates like '2023-10-01'
+  → Test with: startDate: '2023-10-01'
+
+Step 3: Add multi-line string handling (40 lines)
+  → Handles: summary, highlights that span multiple lines
+  → Test with: summary paragraph
+
+Step 4: Improve list syntax (10 lines)
+  → Handles: - name: DomainTools pattern
+  → Test with: work items
+
+Step 5: Test with original resume.yaml
+  → May need to skip location, profiles (keep Python preprocessing for complex nested structures)
+
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Q: Can you write a YAML parser in C for VAX that handles resume.yaml?
+A: YES! Add 85 lines to existing 200-line parser.
+
+Q: Would JSON be easier?
+A: NO. JSON parser would be 500 lines, plus you'd need conversion.
+
+Q: Is this a good learning project?
+A: YES! Great way to learn:
+   - Parsing techniques
+   - State machines
+   - String handling in C
+   - Memory management
+   - Legacy system compatibility (pre-ANSI C)
+
+Q: What's the hardest part?
+A: Multi-line string handling (need to track indent levels)
+
+Q: What's the easiest part?
+A: Bare string parsing (just read until end of line)
+
+Next steps: Want me to implement one of these features to show you how it works?

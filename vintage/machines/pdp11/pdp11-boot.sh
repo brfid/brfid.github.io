@@ -1,0 +1,48 @@
+#!/bin/bash
+# PDP-11 boot wrapper - handles 2.11BSD boot sequence via console
+#
+# Boot sequence:
+#   1. SIMH starts and opens telnet console on 2327 immediately
+#   2. Disk boot ROM runs and waits at 2.11BSD "Boot:" prompt (shown as ":")
+#   3. Operator/automation connects via telnet and presses Enter to boot default
+#      kernel (unix, not netnix)
+#
+# IMPORTANT:
+# Avoid one-shot nc/telnet injections in this wrapper. Disconnecting the console
+# during early boot has caused SIMH TTI disconnect errors and reboot loops.
+# Console orchestration is handled by pipeline scripts using persistent screen
+# sessions.
+
+set -e
+
+echo "[PDP-11] Starting SIMH PDP-11 emulator..."
+
+# Start SIMH in background with config
+pdp11 pdp11.ini &
+PDP_PID=$!
+
+echo "[PDP-11] SIMH started with PID $PDP_PID"
+echo "[PDP-11] Allowing SIMH to initialize console listener..."
+
+# IMPORTANT: do not probe localhost:2327 from this wrapper.
+# A one-shot connect/disconnect during early boot can trigger SIMH TTI
+# disconnect handling and reboot loops.
+sleep 2
+
+if ! kill -0 "$PDP_PID" 2>/dev/null; then
+    echo "[PDP-11] ERROR: SIMH exited before console initialization completed"
+    exit 1
+fi
+
+echo "[PDP-11] SIMH should now be listening on console port 2327"
+
+echo "[PDP-11] Boot ROM should now be waiting for console input."
+echo "[PDP-11] Next step: connect and press Enter at Boot: prompt"
+echo "[PDP-11]   telnet localhost 2327"
+echo "[PDP-11] After boot/login, verify:"
+echo "[PDP-11]   mount /usr"
+echo "[PDP-11]   ls /usr/bin/uudecode /usr/bin/nroff"
+
+# Keep container alive
+wait $PDP_PID
+
