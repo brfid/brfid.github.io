@@ -9,11 +9,20 @@ semantic version tags.
 ## [Unreleased]
 
 ### Current State
-- `CHANGELOG.md` `[Unreleased]` is the primary mutable LLM memory section.
-- Hugo scaffold complete at `hugo/`. PaperMod theme, dark mode default,
-  canonical URL `www.jockeyholler.net`. Builds clean to `site/` in 78ms.
-- DNS updated: jockeyholler.net now points to GitHub Pages (Route 53 change
-  C037890339C8W3JAICBDC, submitted 2026-02-21). CloudFront aliases removed.
+- Hugo site at `hugo/`. PaperMod, dark mode, canonical URL `www.jockeyholler.net`.
+  Content: `about.md`, `portfolio.md` (Work page), first post
+  (`posts/changelog-as-llm-memory.md`). Builds clean locally.
+- `site/` is gitignored — Hugo (and vintage pipeline mkdir calls) generate it
+  fresh in CI. Do not commit anything to `site/`.
+- `deploy.yml` restructured: mode detected first; Python/quality checks/Playwright
+  run only in `docker` (vintage) mode. Local publish path is Hugo-only.
+- Vintage pipeline: Stage 4 now copies `brad.man.txt` to `hugo/static/brad.man.txt`
+  (not `site/`), so Hugo owns that path in the build.
+- DNS: jockeyholler.net apex A/AAAA → GitHub Pages IPs; www CNAME → brfid.github.io.
+  Route 53 change C037890339C8W3JAICBDC (2026-02-21). CloudFront aliases removed.
+- GitHub Pages custom domain (`www.jockeyholler.net`) not yet set in repo UI settings.
+  This is the last manual step before the site resolves at the custom domain.
+- No `publish` tag has been pushed since Hugo migration. First live deploy pending.
 
 ### Active Priorities
 - Configure GitHub Pages custom domain (`www.jockeyholler.net`) in repo settings
@@ -27,7 +36,7 @@ semantic version tags.
 - None.
 
 ### Decisions Needed
-- None. Key decisions made this session:
+- None. Key decisions already made:
   - Hugo + PaperMod, dark mode, `hugo/` subdir in repo root.
   - `www.jockeyholler.net` as canonical URL; apex redirects to www.
   - GitHub Actions + GitHub Pages for deployment (unchanged pattern).
