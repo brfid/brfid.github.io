@@ -1,0 +1,236 @@
+basics:
+  name: Bradley Fidler
+  label: "Principal Technical Writer — API documentation, platform engineering, AI workflows"
+  email: brfid@icloud.com
+  phone: +1-310-488-1980
+  summary: I own documentation platforms and build the tooling that powers them —
+    CI/CD pipelines, OpenAPI workflows, and production LLM integrations including
+    MCP servers for deterministic quality control. Currently at DomainTools, where
+    I run docs.domaintools.com end to end for a B2B security intelligence company
+    with 800+ customers, bringing documentation into the SDLC so it ships with products
+    at launch. Published researcher with credits at USENIX Security and IEEE; authored
+    a commissioned history of the internet co-foreworded by Vint Cerf for Google and ICANN.
+  location:
+    city: Warwick
+    countryCode: US
+    region: New York
+  profiles:
+  - network: Personal
+    url: https://brfid.github.io
+  - network: LinkedIn
+    username: brfid
+    url: https://www.linkedin.com/in/brfid/
+  - network: GitHub
+    username: brfid
+    url: https://github.com/brfid
+work:
+- name: DomainTools
+  position: Senior Technical Writer
+  url: https://docs.domaintools.com
+  location: Seattle (Remote), WA, US
+  startDate: '2023-10-01'
+  summary: Own docs.domaintools.com and all supporting tooling for a 150-person B2B
+    security intelligence company serving 800+ customers. Moved documentation into
+    the SDLC — critical updates ship same-day, and products launch with docs at tech preview.
+  highlights:
+  - Migrated 120+ documents into a unified MkDocs-Material platform with CI/CD,
+    Swagger UI, and SME contribution workflows spanning 4 engineering teams.
+  - Authored OpenAPI specifications across 4 API product lines; specs drive production
+    code generation, Swagger UI rendering, and contract validation.
+  - Reduced documentation cycle time from weeks (ticket-driven, manual) to same-day
+    for critical updates; docs now ship with products at tech preview through SDLC integration.
+  - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded
+    customer-facing documentation.
+  - Built production MCP server with anti-hallucination controls integrating Vale,
+    markdownlint, spaCy, and custom linters to guide LLMs through deterministic documentation
+    quality fixes.
+- name: JPMorgan Chase & Co.
+  position: Contract Technical Writer
+  startDate: '2023-04-01'
+  endDate: '2023-09-01'
+  summary: Owned the Hybrid Cloud Migration Hub — an enterprise Confluence portal
+    supporting ~50,000 engineers in JPMC's central IT division through a hyperscale
+    hybrid cloud datacenter modernization.
+  highlights:
+  - Owned and maintained the enterprise-wide migration portal covering AWS hybrid cloud
+    policy, architecture guidance, and configuration management documentation for the
+    JPMC IT organization.
+  - Drafted cloud migration and configuration management policy reviewed and approved
+    by VPs and Managing Directors; documentation passed external audit.
+  - Coordinated documentation deliverables with CM tooling development teams, including
+    running cross-functional working sessions.
+  location: Jersey City (Hybrid), NJ, US
+- name: Romeo Power, Inc.
+  position: Technical Writer
+  startDate: '2022-06-01'
+  endDate: '2023-03-01'
+  summary: Brought SDLC and configuration management documentation to ASPICE certification
+    readiness for an EV battery manufacturer in the automotive supply chain.
+  highlights:
+  - Interviewed engineering SMEs to document SDLC practices including git workflows,
+    branching strategies, and release processes for ASPICE process compliance.
+  - Produced B2B technical documentation and document control artifacts meeting ISO
+    9001 and ASPICE requirements; documentation passed compliance assessment.
+  - Earned intacs Automotive SPICE Provisional Assessor certification; validated
+    competency in ISO/IEC 330xx process assessment, evidence collection, SME interviewing,
+    and NPLF-rated capability evaluation.
+  location: Los Angeles (Remote), CA, US
+- name: Stevens Institute of Technology
+  position: Faculty (Assistant Professor), Science and Technology Studies
+  url: https://www.stevens.edu
+  startDate: '2017-08-01'
+  endDate: '2021-05-01'
+  summary: Led funded research and consulting engagements for Google, ICANN, NSF,
+    and Lockheed Martin alongside a faculty appointment in Science and Technology Studies.
+  highlights:
+  - Co-PI on NSF EAGER grant to develop new performance metrics frameworks for Security
+    Operations Centers (SOCs).
+  - Co-authored the first comprehensive history of unique identifier creation and
+    administration from ARPANET origins through 2017; jointly commissioned by ICANN
+    and Google; foreword by Vint Cerf and Steve Crocker; used in policy deliberations
+    on IP governance and ownership.
+  - Wrote historical lessons-learned analysis of distributed simulation for a Lockheed
+    Martin defense program (under NDA).
+  - Institutionally recognized lecturer; career teaching evaluation of 3.9/4.0.
+  location: Hoboken (Hybrid), NJ, US
+- name: UCLA Computer Science
+  position: Researcher (Assistant)
+  url: https://www.cs.ucla.edu
+  startDate: '2013-09-01'
+  endDate: '2017-01-01'
+  summary: Research assistant on a DARPA-funded study of ARPANET protocol strategy;
+    conducted structured SME interviews with senior technical and government officials
+    up to Assistant Secretary of Defense level, and performed archival research on
+    early internet history.
+  highlights:
+  - Located and preserved primary source materials documenting early ARPANET and internet
+    history, contributing to institutional archival collections.
+  location: Los Angeles (Hybrid), CA, US
+volunteer:
+- organization: IEEE Academic Journals
+  startDate: '2015-01-01'
+  endDate: '2021-01-01'
+  summary: Sustained involvement as contributor, reviewer, and editorial board member,
+    mainly for the IEEE Annals of the History of Computing.
+education:
+- institution: UCLA
+  area: History (information systems)
+  studyType: PhD
+publications:
+- name: 'The Creation and Administration of Unique Identifiers, 1967–2017'
+  publisher: ICANN / Google (Commissioned Document)
+  releaseDate: '2020-11-01'
+  url: https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf
+  summary: Co-authored the first comprehensive history and analysis of unique identifier
+    creation and administration from ARPANET origins through 2017; jointly commissioned
+    by ICANN and Google for policy deliberations on IP governance. Foreword by Vint
+    Cerf (TCP/IP co-inventor) and Steve Crocker (RFC 1 author). Co-author Russ Mundy.
+- name: 'Work-From-Home and COVID-19: Trajectories of Endpoint Security Management
+    in a Security Operations Center'
+  publisher: USENIX Security '23
+  releaseDate: '2023-08-01'
+  url: https://www.usenix.org/conference/usenixsecurity23/presentation/jones
+  summary: Co-author (Jones, Brucker-Hahn, Fidler, Bardas). Contributed historical
+    analysis tracing endpoint security management from the 1970s through the COVID-19
+    WFH transition; complemented an ethnographic SOC study spanning 1,000+ hours
+    and quantitative interviews across 7 SOCs.
+- name: Edge Cryptography and the Codevelopment of Computer Networks and Cybersecurity
+  publisher: IEEE Annals of the History of Computing
+  releaseDate: '2016-10-01'
+  url: https://doi.org/10.1109/MAHC.2016.49
+- name: DomainTools Technical Documentation
+  publisher: DomainTools
+  releaseDate: '2025-01-01'
+  url: https://docs.domaintools.com
+  summary: Primary author and editor of technical documentation for DomainTools APIs
+    and data products.
+- name: Threat Feeds OpenAPI 3.1 Specification
+  description: 'Designed and authored an OpenAPI 3.0.3 spec for DomainTools Feeds:
+    real-time and batch endpoints, download workflow, reusable components, examples,
+    and error contracts; built for code-gen, Swagger UI, and API validation.'
+  publisher: DomainTools
+  url: https://docs.domaintools.com/feeds/openapi/
+  releaseDate: '2025-05-01'
+skills:
+- name: Docs platform and automation
+  keywords:
+  - Markdown
+  - git
+  - OpenAPI
+  - MkDocs/Docusaurus/SSG
+  - GitHub Actions
+  - CI/CD
+  - Python 3.11+
+  - pytest
+  - Ruff
+  - CLI tooling
+  - venv/pipx
+  - YAML/JSON pipelines
+  - Vale
+- name: API and Developer Tooling
+  keywords:
+  - OpenAPI
+  - Swagger
+  - Postman
+  - cURL
+  - Bruno
+  - schemathesis
+- name: Content Architecture and Generative AI
+  keywords:
+  - MCP (Model Context Protocol)
+  - Chunking
+  - Embeddings
+  - RAG metadata
+  - LLM CLI/IDE tooling
+  - Prompt design
+  - Prompt evaluation
+  - Hugging Face inference
+- name: Security and Networking
+  keywords:
+  - BGP
+  - DNS
+  - SIEMs
+  - SOARs
+  - IPv4
+  - IPv6
+  - Wireshark
+languages:
+- language: English
+  fluency: Native
+projects:
+- name: Documentation Diagnostic Tools (DDT)
+  description: MCP server integrating Vale, markdownlint, spaCy, and custom linters
+    to guide LLMs through deterministic documentation fixes. Provides context-aware
+    suggestions for style, structure, and technical accuracy.
+  keywords:
+  - Python
+  - MCP
+  - Vale
+  - pytest
+- name: PDF Documentation Generator
+  description: Python tooling using Jinja2 templates and LaTeX rendering to produce
+    branded PDF documentation with theming, dynamic table of contents, and automated
+    builds.
+  keywords:
+  - Python
+  - Jinja2
+  - LaTeX
+  - CI/CD
+- name: Event Log
+  description: Prototype for structured data extraction from natural language input
+    using the OpenAI API; built to evaluate LLM reliability for capturing typed,
+    validated records from unstructured text.
+  url: https://github.com/brfid/event-log
+  keywords:
+  - Python
+  - OpenAI API
+  - LLM workflows
+- name: Promptfoo-evals
+  description: Evaluated promptfoo as a harness for comparing LLM-generated documentation
+    outputs; findings informed the shift to an MCP-based approach for measuring LLM
+    behavior in production documentation workflows.
+  url: https://github.com/brfid/promptfoo-evals
+  keywords:
+  - Python
+  - promptfoo
+  - LLM evaluation
