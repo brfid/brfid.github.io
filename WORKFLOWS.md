@@ -44,6 +44,15 @@ Mode resolution:
 - manual dispatch → selected input mode
 - other publish tags → `local` mode
 
+Local mode (fast Hugo publish):
+
+1. Checkout with submodules (PaperMod theme)
+2. Setup Hugo 0.156.0 extended
+3. `hugo --source hugo --destination ../site`
+4. Upload and deploy to GitHub Pages
+
+Python setup, quality checks, and Playwright are skipped entirely for local mode.
+
 Docker mode lifecycle in deploy workflow:
 
 1. resolve + start one edcloud instance,

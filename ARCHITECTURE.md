@@ -5,17 +5,26 @@ Companion docs:
 - `WORKFLOWS.md`
 - `docs/integration/INDEX.md`
 
-This repo builds a static resume site from `resume.yaml` and optionally runs a vintage machine stage.
+This repo is a Hugo-based personal site and technical writing portfolio. An optional vintage
+build stage (VAX/PDP-11 via SIMH) generates a man-page resume as a technical artifact.
 
 ---
 
 ## Overview
 
-1. Input: `resume.yaml`
-2. Host build (`resume_generator`): HTML, PDF, vintage-stage inputs
-3. Optional vintage stage (`vintage/machines/vax/bradman.c`): generates `build/vintage/brad.1`
-4. Host render: `brad.1` → `site/brad.man.txt`
-5. Output: deployable site artifacts in `site/`
+Hugo owns the full site. The vintage pipeline is an on-demand artifact generator.
+
+**Local publish pipeline:**
+1. Author content in `hugo/content/`
+2. `hugo --source hugo --destination site` → `site/`
+3. GitHub Pages deployment via `publish` tag
+
+**Vintage publish pipeline (on-demand):**
+1. `resume_generator` → `build/vintage/resume.vintage.yaml`
+2. VAX/PDP-11 pipeline (SIMH on edcloud): `bradman.c` → `build/vintage/brad.1`
+3. Host render: `brad.1` → `hugo/static/brad.man.txt`
+4. Hugo build includes artifact at `/brad.man.txt`
+5. GitHub Pages deployment via `publish-vintage` tag
 
 ---
 
@@ -23,20 +32,22 @@ This repo builds a static resume site from `resume.yaml` and optionally runs a v
 
 ```mermaid
 flowchart LR
-  A[resume.yaml] --> B[Host Python: resume-gen]
-  B --> C[site/resume/ (HTML)]
-  B --> D[site/resume.pdf]
-  B --> E[build/vintage/resume.vintage.yaml]
+  subgraph Hugo["Hugo Site (always)"]
+    HC[hugo/content/] --> HB[hugo build]
+    HS[hugo/static/] --> HB
+    HB --> SITE[site/]
+  end
 
-  E --> F[Vintage machine step (bradman.c)]
-  F --> G[build/vintage/brad.1]
-  G --> H[Host render brad.1 -> brad.man.txt]
+  subgraph Vintage["Vintage Pipeline (on-demand)"]
+    RY[resume.yaml] --> RG[resume_generator]
+    RG --> VY[build/vintage/resume.vintage.yaml]
+    VY --> VAX[VAX BSD / bradman.c]
+    VAX --> PDP[PDP-11 validation]
+    PDP --> MAN[hugo/static/brad.man.txt]
+  end
 
-  H --> I[site/brad.man.txt]
-  B --> J[site/vintage-build.log]
-  C --> K[site/index.html]
-  I --> K
-  J --> K
+  MAN --> HS
+  SITE --> GHP[GitHub Pages]
 ```
 
 ---
