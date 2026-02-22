@@ -30,7 +30,7 @@ Successfully validated end-to-end file transfer between VAX and PDP-11 using SIM
 ### AWS Infrastructure
 - **VAX Instance**: i-090040c544bb866e8 @ 3.88.163.10 (t3.micro)
 - **PDP-11 Instance**: i-071ab53e735109c59 @ 52.90.232.38 (t3.micro)
-- **Shared Storage**: EFS fs-03cd0abbb728b4ad8 mounted at `/mnt/arpanet-logs/`
+- **Shared Storage**: EFS <efs-id> mounted at `/mnt/arpanet-logs/`
 - **Network**: Docker bridge 172.20.0.0/16
 
 ### Systems

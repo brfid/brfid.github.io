@@ -140,7 +140,7 @@ See full technical analysis including:
 ### EFS Shared Storage
 
 **Mount Point**: `/mnt/arpanet-logs/`  
-**Filesystem**: fs-03cd0abbb728b4ad8  
+**Filesystem**: <efs-id>
 **Directories**:
 - `/mnt/arpanet-logs/vax/` - VAX logs
 - `/mnt/arpanet-logs/pdp11/` - PDP-11 logs
