@@ -37,7 +37,6 @@ produced by CI/CD pipeline for use in LLM tooling and retrieval workflows.
 **[The Creation and Administration of Unique Identifiers, 1967–2017](https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf)** (2020)
 Comprehensive history of internet unique identifier creation and administration from ARPANET
 origins through 2017. Co-authored with Russ Mundy; jointly commissioned by ICANN and Google.
-Foreword by Vint Cerf and Steve Crocker.
 
 **[Work-From-Home and COVID-19: Trajectories of Endpoint Security Management in a Security Operations Center](https://www.usenix.org/conference/usenixsecurity23/presentation/jones)** (2023)
 Peer-reviewed paper at USENIX Security '23. Co-authored historical analysis tracing endpoint

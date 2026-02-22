@@ -17,7 +17,7 @@
         <p><a href="mailto:{{ . }}">{{ . }}</a></p>
         {{- end }}
         {{- with $basics.phone }}
-        <p>{{ . }}</p>
+        <p><a href="tel:{{ . }}">{{ . }}</a></p>
         {{- end }}
         {{- range $basics.profiles }}
         <p><a href="{{ .url }}">{{ .network }}</a></p>
@@ -108,13 +108,32 @@
       <div class="resume-item">
         <div class="resume-item-head">
           <strong>{{ .institution }}</strong>
-          {{- if and .startDate .endDate }}
+          {{- if .endDate }}
           <span class="resume-dates">
-            {{ dateFormat "Jan 2006" (time .startDate) }} – {{ dateFormat "Jan 2006" (time .endDate) }}
+            {{- if .startDate }}{{ dateFormat "2006" (time .startDate) }} – {{ end -}}
+            {{ dateFormat "2006" (time .endDate) }}
           </span>
           {{- end }}
         </div>
         <div class="resume-item-sub">{{ .studyType }}{{ with .area }}, {{ . }}{{ end }}</div>
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.certifications }}
+    <section class="resume-section">
+      <h2>Certifications</h2>
+      {{- range . }}
+      <div class="resume-item">
+        <div class="resume-item-head">
+          <strong>{{ .name }}</strong>
+          {{- with .date }}
+          <span class="resume-dates">{{ dateFormat "2006" (time .) }}</span>
+          {{- end }}
+        </div>
+        <div class="resume-item-sub">{{ .issuer }}</div>
+        {{- with .description }}<p>{{ . }}</p>{{ end }}
       </div>
       {{- end }}
     </section>
