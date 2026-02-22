@@ -17,14 +17,14 @@ Hugo owns the full site. The vintage pipeline is an on-demand artifact generator
 **Local publish pipeline:**
 1. Author content in `hugo/content/`
 2. `hugo --source hugo --destination site` → `site/`
-3. GitHub Pages deployment via `publish` tag
+3. GitHub Pages deployment via `publish-fast-*` tags
 
 **Vintage publish pipeline (on-demand):**
 1. `resume_generator` → `build/vintage/resume.vintage.yaml`
 2. VAX/PDP-11 pipeline (SIMH on edcloud): `bradman.c` → `build/vintage/brad.1`
 3. Host render: `brad.1` → `hugo/static/brad.man.txt`
 4. Hugo build includes artifact at `/brad.man.txt`
-5. GitHub Pages deployment via `publish-vintage` tag
+5. GitHub Pages deployment via `publish-vintage-*` tags
 
 ---
 
@@ -160,8 +160,8 @@ Host decodes, writes `build/vax/brad.1`, then renders `site/brad.man.txt`. Decod
 
 
 ### Tag behavior
-- `publish` or `publish-*`: Local mode (fast)
-- `publish-vintage` or `publish-vintage-*`: edcloud backend (authentic 4.3BSD + 2.11BSD pipeline)
+- `publish-fast-*`: Local mode (fast)
+- `publish-vintage-*`: edcloud backend (authentic 4.3BSD + 2.11BSD pipeline)
 
 
 ### Notes
@@ -198,7 +198,7 @@ Historical implementation records are intentionally retained under `docs/integra
 ## CI/publish behavior
 
 - `main` branch: runs checks only (no deploy).
-- `publish` / `publish-*` tags: run full build + deploy to GitHub Pages.
+- `publish-fast-*` / `publish-vintage-*` tags (and legacy alias wildcard tags): run full build + deploy to GitHub Pages.
 
 ---
 

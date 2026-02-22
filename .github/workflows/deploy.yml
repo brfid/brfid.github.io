@@ -6,14 +6,9 @@ name: Publish Site
 on:
   push:
     tags:
-      - "publish-vintage"     # Mode 2: Distributed vintage pipeline
       - "publish-vintage-*"   # Mode 2: Distributed vintage variants
-      - "publish-vax"         # Mode 2 legacy alias
       - "publish-vax-*"       # Mode 2 legacy alias
-      - "publish-docker"      # Mode 2 legacy alias
       - "publish-docker-*"    # Mode 2 legacy alias
-      - "publish"           # Mode 1: Fast (local)
-      - "publish-fast"      # Mode 1: Fast (explicit)
       - "publish-fast-*"    # Mode 1: Fast variants
   workflow_dispatch:
     inputs:
