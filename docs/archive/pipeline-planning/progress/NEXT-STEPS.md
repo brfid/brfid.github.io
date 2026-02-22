@@ -652,7 +652,7 @@ du -sh /mnt/arpanet-logs/*
 
 **VAX**: i-090040c544bb866e8 @ 3.80.32.255
 **PDP-11**: i-071ab53e735109c59 @ 3.87.125.203
-**EFS**: fs-03cd0abbb728b4ad8
+**EFS**: <efs-id>
 **SSH Key**: ~/.ssh/arpanet-temp.pem
 **Region**: us-east-1
 **Account**: <REDACTED>
