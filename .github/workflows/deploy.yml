@@ -30,6 +30,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  deployments: write
 
 concurrency:
   group: "pages"
@@ -596,6 +597,23 @@ jobs:
 
           echo "[$(ts) GITHUB] EDCLOUD_DEACTIVATE_COMPLETE instance_id=$INSTANCE_ID" >> /tmp/github.log
           echo "✅ edcloud infrastructure deactivated"
+
+      - name: Clean up old deployments
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          KEEP=3
+          ALL=$(gh api "repos/${{ github.repository }}/deployments?environment=github-pages&per_page=100" \
+            --paginate --jq '.[].id' | sort -n)
+          TOTAL=$(echo "$ALL" | wc -l)
+          SKIP=$((TOTAL > KEEP ? TOTAL - KEEP : 0))
+          echo "$ALL" | head -n "$SKIP" | while read -r id; do
+            gh api "repos/${{ github.repository }}/deployments/$id/statuses" \
+              -X POST -f state=inactive 2>/dev/null || true
+            gh api "repos/${{ github.repository }}/deployments/$id" \
+              -X DELETE 2>/dev/null && echo "Removed deployment $id" || true
+          done
 
       - name: Summary
         run: |
