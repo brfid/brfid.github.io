@@ -15,7 +15,7 @@ Successfully deployed permanent two-machine ARPANET infrastructure to AWS with s
 **AWS Stack**: `ArpanetProductionStack`
 - **VAX Host**: t3.micro @ 3.80.32.255 (i-090040c544bb866e8)
 - **PDP-11 Host**: t3.micro @ 3.87.125.203 (i-071ab53e735109c59)
-- **Storage**: EFS fs-03cd0abbb728b4ad8 mounted at `/mnt/arpanet-logs/`
+- **Storage**: EFS <efs-id> mounted at `/mnt/arpanet-logs/`
 - **Network**: Docker bridge 172.20.0.0/16
 - **Cost**: ~$17.90/month
 
