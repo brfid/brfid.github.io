@@ -33,8 +33,8 @@ Defined in `tests/conftest.py`:
 
 - Trigger:
   - tags
-    - fast/local: `publish`, `publish-fast`, `publish-fast-*`
-    - distributed vintage: `publish-vintage`, `publish-vintage-*`
+    - fast/local: `publish-fast-*`
+    - distributed vintage: `publish-vintage-*`
     - legacy aliases: `publish-vax*`, `publish-docker*` (deprecated naming)
   - manual dispatch
 

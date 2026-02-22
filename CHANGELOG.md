@@ -19,6 +19,9 @@ semantic version tags.
   fresh in CI. Do not commit anything to `site/`.
 - `deploy.yml` restructured: mode detected first; Python/quality checks/Playwright
   run only in `docker` (vintage) mode. Local publish path is Hugo-only.
+- Deploy triggers are hardened to unique publish tag patterns only (`publish-fast-*`,
+  `publish-vintage-*`, plus legacy wildcard aliases) so stale fixed tags cannot
+  accidentally republish old commits.
 - Vintage pipeline: Stage 4 now copies `brad.man.txt` to `hugo/static/brad.man.txt`
   (not `site/`), so Hugo owns that path in the build.
 - edcloud lifecycle entrypoints (`aws-start.sh`, `aws-stop.sh`, `aws-status.sh`)
@@ -61,6 +64,11 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Hardened publish trigger safety by removing bare fixed tags from
+  `.github/workflows/deploy.yml` (`publish`, `publish-fast`, `publish-vintage`,
+  `publish-vax`, `publish-docker`) and keeping wildcard-only publish patterns.
+- Updated publish docs in `README.md`, `WORKFLOWS.md`, and `ARCHITECTURE.md` to
+  use unique tag patterns (`publish-fast-*`, `publish-vintage-*`) only.
 - Fixed PDP-11 container boot wrapper readiness behavior (`vintage/machines/pdp11/pdp11-boot.sh`)
   to avoid localhost console probe connections that caused SIMH TTI disconnect/reboot loops.
 - Updated distributed deploy Stage 2 readiness in `.github/workflows/deploy.yml` to avoid
