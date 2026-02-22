@@ -90,6 +90,18 @@ Pre-commit checks are optional by default in this repo workflow.
   explicitly requests validation.
 - When a milestone completes, update `CHANGELOG.md` in the same change set.
 
+## Git discipline (public-repo baseline)
+
+- Keep `main` linear and readable: small, intention-revealing commits; no WIP commits.
+- Prefer additive fixes over history rewrites; rewrite shared `main` history only when
+  explicitly requested by the operator.
+- Keep local and remote synchronized after each milestone (`git push origin main`,
+  then verify `main...origin/main` is clean).
+- Treat deploy tags as operational triggers, not release history; maintain a short rolling
+  set of timestamp tags and keep milestone/version tags intentionally.
+- Before pushing, check for accidental secret material in changed files and avoid committing
+  generated artifacts (`site/`, `build/`, `hugo/public/`, `.venv/`).
+
 ## No accidental publishing
 
 - GitHub Pages deploy is tag-triggered (`publish` / `publish-*`). Avoid creating/pushing those tags unless you intend to deploy.
