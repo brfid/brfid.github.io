@@ -10,9 +10,8 @@ basics:
     end to end for a B2B security intelligence company with 800+ customers, bringing
     documentation into the SDLC so products launch with docs at tech preview. Published
     researcher with USENIX Security and IEEE credits; co-authored a commissioned history
-    of the internet foreworded by Vint Cerf for Google and ICANN — a research background
-    that means I document complex systems at depth and interview senior technical
-    stakeholders with authority.
+    of the internet for Google and ICANN — a research background in complex technical
+    systems and senior stakeholder interviewing.
   location:
     city: Warwick
     countryCode: US
@@ -48,10 +47,10 @@ work:
     for critical updates; docs now ship with products at tech preview through SDLC integration.
   - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded
     customer-facing documentation.
-  - Built a production MCP server that addresses the core reliability problem in
-    LLM-assisted documentation — non-deterministic quality outputs — by integrating
-    Vale, markdownlint, spaCy, and custom linters as callable tools, giving LLMs
-    an auditable, repeatable path through documentation quality fixes.
+  - Built a production MCP server that addresses non-deterministic quality outputs
+    in LLM-assisted documentation by integrating Vale, markdownlint, spaCy, and
+    custom linters as callable tools, giving LLMs an auditable, repeatable path
+    through documentation quality fixes.
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
@@ -91,23 +90,21 @@ work:
   highlights:
   - Co-PI on NSF EAGER grant to develop new performance metrics frameworks for Security
     Operations Centers (SOCs).
-  - Co-authored the first comprehensive history of unique identifier creation and
+  - Co-authored a comprehensive history of unique identifier creation and
     administration from ARPANET origins through 2017; jointly commissioned by ICANN
-    and Google; foreword by Vint Cerf and Steve Crocker; used in policy deliberations
-    on IP governance and ownership.
+    and Google; used in policy deliberations on IP governance and ownership.
   - Wrote historical lessons-learned analysis of distributed simulation for a Lockheed
     Martin defense program (under NDA).
-  - Institutionally recognized lecturer; career teaching evaluation of 3.9/4.0.
+  - Career teaching evaluation of 3.9/4.0.
   location: Hoboken (Hybrid), NJ, US
 - name: UCLA Computer Science
   position: Researcher (Assistant)
   url: https://www.cs.ucla.edu
   startDate: '2013-09-01'
   endDate: '2017-01-01'
-  summary: Research assistant on a DARPA-funded study of ARPANET protocol strategy;
-    conducted structured SME interviews with senior technical and government officials
-    up to Assistant Secretary of Defense level, and performed archival research on
-    early internet history.
+  summary: Research assistant on a DARPA-funded oral history of ARPANET protocol
+    strategy; conducted structured interviews with senior technical and government
+    officials and performed archival research on early internet history.
   highlights:
   - Conducted structured SME interviews with senior technical and government officials,
     including at the Assistant Secretary of Defense level, as part of a DARPA-funded
@@ -131,10 +128,9 @@ publications:
   publisher: ICANN / Google (Commissioned Document)
   releaseDate: '2020-11-01'
   url: https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf
-  summary: Co-authored the first comprehensive history and analysis of unique identifier
+  summary: Co-authored a comprehensive history and analysis of unique identifier
     creation and administration from ARPANET origins through 2017; jointly commissioned
-    by ICANN and Google for policy deliberations on IP governance. Foreword by Vint
-    Cerf (TCP/IP co-inventor) and Steve Crocker (RFC 1 author). Co-author Russ Mundy.
+    by ICANN and Google for policy deliberations on IP governance. Co-author Russ Mundy.
 - name: 'Work-From-Home and COVID-19: Trajectories of Endpoint Security Management
     in a Security Operations Center'
   publisher: USENIX Security '23
@@ -215,11 +211,10 @@ languages:
   fluency: Native
 projects:
 - name: Documentation Diagnostic Tools (DDT)
-  description: Production MCP server addressing the core reliability problem in
-    LLM-assisted documentation — non-deterministic quality outputs. Integrates Vale,
-    markdownlint, spaCy, and custom linters as callable MCP tools, giving LLMs a
-    structured, auditable path through documentation quality fixes rather than
-    probabilistic suggestions. Built and deployed at DomainTools.
+  description: Production MCP server addressing non-deterministic quality outputs
+    in LLM-assisted documentation. Integrates Vale, markdownlint, spaCy, and custom
+    linters as callable MCP tools, giving LLMs a structured, auditable path through
+    documentation quality fixes. Built and deployed at DomainTools.
   keywords:
   - Python
   - MCP
