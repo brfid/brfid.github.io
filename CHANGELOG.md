@@ -39,6 +39,9 @@ semantic version tags.
   `docs/integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md` to standardize
   serialized console handling, log-based PDP-11 readiness gating, and minimum evidence
   bundle capture for Stage 1→3 rehearsals.
+- Git history for `hugo/content/posts/why-do-we-call-them-packets/index.md` was rewritten
+  so the current wording is now embedded in the original post-introducing commit on `main`
+  (no compatibility chain retained).
 
 ### Active Priorities
 - Commit `hugo/static/resume.pdf` (generated locally) so `/resume.pdf` is present on
@@ -64,6 +67,11 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Added concise repository contribution/hygiene guidance for public-readiness:
+  `CONTRIBUTING.md`.
+- Added automated secret scanning workflow `.github/workflows/secret-scan.yml`
+  using `gitleaks/gitleaks-action@v2` with full history checkout.
+- Updated `WORKFLOWS.md` to document the new secret-scan lane and its purpose.
 - Restored Hugo PaperMod theme tracking as a git submodule (`hugo/themes/PaperMod`)
   after it was present locally but missing from the index, which caused CI local-mode
   publish runs to fail at `hugo --source hugo --destination ../site` with

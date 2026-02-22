@@ -21,6 +21,17 @@ Current workflow map for `.github/workflows/`.
 
 Legacy ARPANET docker jobs were removed from this workflow.
 
+## `secret-scan.yml`
+
+- Trigger: push to `main`, pull requests, manual dispatch
+- Runs:
+  - `gitleaks/gitleaks-action@v2` with full history checkout (`fetch-depth: 0`)
+
+Purpose:
+
+- Detect committed credentials/secrets before and after history rewrites.
+- Provide a baseline secret-hygiene signal prior to making the repo public.
+
 ## Marker taxonomy
 
 Defined in `tests/conftest.py`:
