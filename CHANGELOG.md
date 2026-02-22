@@ -64,6 +64,10 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Restored Hugo PaperMod theme tracking as a git submodule (`hugo/themes/PaperMod`)
+  after it was present locally but missing from the index, which caused CI local-mode
+  publish runs to fail at `hugo --source hugo --destination ../site` with
+  `module "PaperMod" not found`.
 - Hardened publish trigger safety by removing bare fixed tags from
   `.github/workflows/deploy.yml` (`publish`, `publish-fast`, `publish-vintage`,
   `publish-vax`, `publish-docker`) and keeping wildcard-only publish patterns.
