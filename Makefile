@@ -46,13 +46,13 @@ check_env:
 	@echo "Environment OK"
 
 aws-status:
-	@./aws-status.sh
+	@.venv/bin/python scripts/edcloud_lifecycle.py status
 
 aws-start:
-	@./aws-start.sh
+	@.venv/bin/python scripts/edcloud_lifecycle.py start
 
 aws-stop:
-	@./aws-stop.sh
+	@.venv/bin/python scripts/edcloud_lifecycle.py stop
 
 clean:
 	@echo "Stopping production compose stack (if running)..."

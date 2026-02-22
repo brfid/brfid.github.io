@@ -21,9 +21,8 @@ semantic version tags.
   run only in `docker` (vintage) mode. Local publish path is Hugo-only.
 - Vintage pipeline: Stage 4 now copies `brad.man.txt` to `hugo/static/brad.man.txt`
   (not `site/`), so Hugo owns that path in the build.
-- edcloud lifecycle entrypoints (`aws-start.sh`, `aws-stop.sh`, `aws-status.sh`)
-  now delegate to a shared Python CLI (`scripts/edcloud_lifecycle.py`) to reduce
-  duplicated AWS instance-resolution logic while keeping shell wrappers for operators.
+- edcloud lifecycle now runs directly through `scripts/edcloud_lifecycle.py`; legacy
+  root-level wrapper scripts (`aws-start.sh`, `aws-stop.sh`, `aws-status.sh`) removed.
 - DNS: jockeyholler.net apex A/AAAA → GitHub Pages IPs; www CNAME → brfid.github.io.
   Route 53 change C037890339C8W3JAICBDC (2026-02-21). CloudFront aliases removed.
 - GitHub Pages custom domain (`www.jockeyholler.net`) is now set in repo UI settings.
@@ -50,9 +49,10 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
-- Consolidated duplicated AWS lifecycle logic into `scripts/edcloud_lifecycle.py`
-  and converted `aws-start.sh`, `aws-stop.sh`, and `aws-status.sh` into thin
-  wrappers that call the shared Python implementation.
+- Removed legacy root-level lifecycle wrappers (`aws-start.sh`, `aws-stop.sh`,
+  `aws-status.sh`) and switched active entrypoints to
+  `.venv/bin/python scripts/edcloud_lifecycle.py <start|stop|status>`
+  (including `Makefile` and active AWS docs).
 - Updated `scripts/publish-local.sh` tag format to `publish-fast-<timestamp>` so
   local helper-generated tags match `.github/workflows/deploy.yml` trigger patterns.
 - Added automated resume data sync before Hugo build in CI:

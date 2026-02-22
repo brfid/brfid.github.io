@@ -5,12 +5,12 @@
 This document tracks costs for the **current** deployment model:
 
 - Single EC2 host managed by `edcloud`
-- `brfid.github.io` drives lifecycle with `aws-start.sh`, `aws-stop.sh`, `aws-status.sh`
+- `brfid.github.io` drives lifecycle with `scripts/edcloud_lifecycle.py`
 - VAX + PDP-11 containers run together on that one host
 
 ## Current Baseline
 
-From the current `aws-status.sh` estimate (4 hours/day runtime):
+From the current `edcloud_lifecycle.py status` estimate (4 hours/day runtime):
 
 - Compute: `$4.51/month`
 - Storage: `$6.40/month`
@@ -25,19 +25,19 @@ When stopped:
 1. Stop when idle:
 
 ```bash
-./aws-stop.sh
+.venv/bin/python scripts/edcloud_lifecycle.py stop
 ```
 
 2. Start only for active work/publish:
 
 ```bash
-./aws-start.sh
+.venv/bin/python scripts/edcloud_lifecycle.py start
 ```
 
 3. Check status + estimate anytime:
 
 ```bash
-./aws-status.sh
+.venv/bin/python scripts/edcloud_lifecycle.py status
 ```
 
 4. Keep infra policy centralized in `edcloud`:

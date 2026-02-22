@@ -1,6 +1,6 @@
 # AWS Documentation Index
 
-AWS-facing docs in this repo are limited to wrappers and cost guidance for the current `edcloud` single-host model.
+AWS-facing docs in this repo are limited to lifecycle command and cost guidance for the current `edcloud` single-host model.
 
 ## Source of truth
 

@@ -20,19 +20,24 @@ Architecture detail: `ARCHITECTURE.md`.
 
 ## Infrastructure boundary
 
-This repo owns build/publish logic and minimal lifecycle hooks.
+This repo owns build/publish logic and minimal lifecycle commands.
 Infrastructure lifecycle is owned by `edcloud`: `https://github.com/brfid/edcloud`
 
 - Do not add multi-host orchestration back into this repo.
-- Keep local lifecycle hooks minimal (`aws-*.sh`).
+- Keep local lifecycle commands minimal (`scripts/edcloud_lifecycle.py`).
 - Put platform/lifecycle changes in `edcloud`.
 
-Local helper scripts call into that lifecycle model:
+Local helper commands call into that lifecycle model:
 
 ```bash
-./aws-status.sh
-./aws-start.sh
-./aws-stop.sh
+.venv/bin/python scripts/edcloud_lifecycle.py status
+.venv/bin/python scripts/edcloud_lifecycle.py start
+.venv/bin/python scripts/edcloud_lifecycle.py stop
+
+# or via make targets
+make aws-status
+make aws-start
+make aws-stop
 ```
 
 Instance resolution order:
