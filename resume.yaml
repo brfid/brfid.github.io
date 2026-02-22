@@ -1,15 +1,18 @@
 basics:
   name: Bradley Fidler
-  label: "Principal Technical Writer — API documentation, platform engineering, AI workflows"
+  label: "Technical Writer — API documentation, platform engineering, AI workflows"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: I own documentation platforms and build the tooling that powers them —
+  summary: I set documentation strategy, own the platforms, and build the tooling —
     CI/CD pipelines, OpenAPI workflows, and production LLM integrations including
-    MCP servers for deterministic quality control. Currently at DomainTools, where
-    I run docs.domaintools.com end to end for a B2B security intelligence company
-    with 800+ customers, bringing documentation into the SDLC so it ships with products
-    at launch. Published researcher with credits at USENIX Security and IEEE; authored
-    a commissioned history of the internet co-foreworded by Vint Cerf for Google and ICANN.
+    MCP servers for deterministic quality control. At DomainTools I authored the
+    company's documentation strategy and roadmap and built docs.domaintools.com
+    end to end for a B2B security intelligence company with 800+ customers, bringing
+    documentation into the SDLC so products launch with docs at tech preview. Published
+    researcher with USENIX Security and IEEE credits; co-authored a commissioned history
+    of the internet foreworded by Vint Cerf for Google and ICANN — a research background
+    that means I document complex systems at depth and interview senior technical
+    stakeholders with authority.
   location:
     city: Warwick
     countryCode: US
@@ -33,6 +36,10 @@ work:
     security intelligence company serving 800+ customers. Moved documentation into
     the SDLC — critical updates ship same-day, and products launch with docs at tech preview.
   highlights:
+  - Authored the company's documentation strategy and roadmap from scratch —
+    no coordinated documentation system existed before this role — defining platform
+    architecture, tooling selection, SDLC integration model, SME contribution
+    workflows, and quality standards.
   - Migrated 120+ documents into a unified MkDocs-Material platform with CI/CD,
     Swagger UI, and SME contribution workflows spanning 4 engineering teams.
   - Authored OpenAPI specifications across 4 API product lines; specs drive production
@@ -41,9 +48,10 @@ work:
     for critical updates; docs now ship with products at tech preview through SDLC integration.
   - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded
     customer-facing documentation.
-  - Built production MCP server with anti-hallucination controls integrating Vale,
-    markdownlint, spaCy, and custom linters to guide LLMs through deterministic documentation
-    quality fixes.
+  - Built a production MCP server that addresses the core reliability problem in
+    LLM-assisted documentation — non-deterministic quality outputs — by integrating
+    Vale, markdownlint, spaCy, and custom linters as callable tools, giving LLMs
+    an auditable, repeatable path through documentation quality fixes.
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
@@ -71,9 +79,7 @@ work:
     branching strategies, and release processes for ASPICE process compliance.
   - Produced B2B technical documentation and document control artifacts meeting ISO
     9001 and ASPICE requirements; documentation passed compliance assessment.
-  - Earned intacs Automotive SPICE Provisional Assessor certification; validated
-    competency in ISO/IEC 330xx process assessment, evidence collection, SME interviewing,
-    and NPLF-rated capability evaluation.
+  - Earned intacs Automotive SPICE Provisional Assessor certification (see Certifications).
   location: Los Angeles (Remote), CA, US
 - name: Stevens Institute of Technology
   position: Faculty (Assistant Professor), Science and Technology Studies
@@ -103,6 +109,9 @@ work:
     up to Assistant Secretary of Defense level, and performed archival research on
     early internet history.
   highlights:
+  - Conducted structured SME interviews with senior technical and government officials,
+    including at the Assistant Secretary of Defense level, as part of a DARPA-funded
+    oral history of ARPANET protocol strategy.
   - Located and preserved primary source materials documenting early ARPANET and internet
     history, contributing to institutional archival collections.
   location: Los Angeles (Hybrid), CA, US
@@ -116,6 +125,7 @@ education:
 - institution: UCLA
   area: History (information systems)
   studyType: PhD
+  endDate: '2011-01-01'
 publications:
 - name: 'The Creation and Administration of Unique Identifiers, 1967–2017'
   publisher: ICANN / Google (Commissioned Document)
@@ -194,14 +204,22 @@ skills:
   - IPv4
   - IPv6
   - Wireshark
+certifications:
+- name: intacs Automotive SPICE Provisional Assessor
+  issuer: intacs (International Assessor Certification Scheme)
+  date: '2023-01-01'
+  description: ISO/IEC 330xx process assessment, evidence collection, SME interviewing,
+    and NPLF-rated capability evaluation.
 languages:
 - language: English
   fluency: Native
 projects:
 - name: Documentation Diagnostic Tools (DDT)
-  description: MCP server integrating Vale, markdownlint, spaCy, and custom linters
-    to guide LLMs through deterministic documentation fixes. Provides context-aware
-    suggestions for style, structure, and technical accuracy.
+  description: Production MCP server addressing the core reliability problem in
+    LLM-assisted documentation — non-deterministic quality outputs. Integrates Vale,
+    markdownlint, spaCy, and custom linters as callable MCP tools, giving LLMs a
+    structured, auditable path through documentation quality fixes rather than
+    probabilistic suggestions. Built and deployed at DomainTools.
   keywords:
   - Python
   - MCP

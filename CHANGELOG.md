@@ -49,6 +49,8 @@ semantic version tags.
 - Run first intentional Hugo-era deploy after custom-domain UI step is complete.
 - Rehearse full distributed vintage Stage 1-3 flow on edcloud with updated non-probing
   PDP-11 readiness checks to confirm end-to-end stability.
+- Migrate blog posts: author and publish additional posts to build out the blog
+  as a portfolio and thought-leadership signal for senior IC technical writing roles.
 
 ### In Progress
 - Vintage pipeline stabilization follow-through: validating that Stage 2/3 console
@@ -67,6 +69,12 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Resume and site positioning pass: removed "Principal" level claim from label and
+  about page; rewrote summary to lead with strategy ownership; added greenfield/from-scratch
+  framing to DomainTools strategy bullet; added SME interviewing highlight to UCLA role;
+  strengthened MCP bullet and DDT project description; added `certifications` section
+  to `resume.yaml` and `resume.html`; added UCLA PhD graduation year (2011); wrapped
+  phone in `tel:` link; strengthened hugo.toml meta description.
 - Added concise repository contribution/hygiene guidance for public-readiness:
   `CONTRIBUTING.md`.
 - Added automated secret scanning workflow `.github/workflows/secret-scan.yml`
