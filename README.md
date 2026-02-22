@@ -24,7 +24,7 @@ Open `http://localhost:1313/`.
 hugo --source hugo --destination site
 ```
 
-**Publish:** push a `publish` or `publish-fast-*` tag → GitHub Actions builds Hugo and deploys to GitHub Pages.
+**Publish:** push a `publish-fast-*` tag → GitHub Actions builds Hugo and deploys to GitHub Pages.
 
 ---
 
