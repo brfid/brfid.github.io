@@ -36,12 +36,12 @@ fi
 
 echo "[PDP-11] SIMH should now be listening on console port 2327"
 
-echo "[PDP-11] Boot ROM should now be waiting for console input."
-echo "[PDP-11] Next step: connect and press Enter at Boot: prompt"
-echo "[PDP-11]   telnet localhost 2327"
-echo "[PDP-11] After boot/login, verify:"
-echo "[PDP-11]   mount /usr"
-echo "[PDP-11]   ls /usr/bin/uudecode /usr/bin/nroff"
+# Start auto-boot handler: connects to the console, sends Enter at Boot:,
+# waits for multi-user login: prompt, then disconnects cleanly.
+# This prevents SIMH from timing out when no external client connects.
+/opt/pdp11/auto-boot.exp 2>&1 &
+echo "[PDP-11] Auto-boot handler started (PID $!)"
+echo "[PDP-11] Port 2327 will be free for external clients once login: appears"
 
 # Keep container alive
 wait $PDP_PID

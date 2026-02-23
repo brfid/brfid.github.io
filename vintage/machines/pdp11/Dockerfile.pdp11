@@ -16,6 +16,8 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     git \
     netcat-openbsd \
+    telnet \
+    expect \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and build SIMH (PDP-11 simulator) from GitHub
@@ -39,9 +41,10 @@ RUN wget -q https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
 # Create data directory for file transfers
 RUN mkdir -p /machines/data
 
-# Copy boot wrapper script that auto-mounts /usr
+# Copy boot wrapper and auto-boot handler
 COPY pdp11-boot.sh /opt/pdp11/pdp11-boot.sh
-RUN chmod +x /opt/pdp11/pdp11-boot.sh
+COPY auto-boot.exp /opt/pdp11/auto-boot.exp
+RUN chmod +x /opt/pdp11/pdp11-boot.sh /opt/pdp11/auto-boot.exp
 
 WORKDIR /opt/pdp11
 
