@@ -49,11 +49,6 @@ buildFuture = false
     name = "Resume"
     url = "/resume/"
     weight = 17
-  [[menu.main]]
-    identifier = "about"
-    name = "About"
-    url = "/about/"
-    weight = 20
 
 [outputs]
   home = ["HTML", "RSS", "JSON"]
