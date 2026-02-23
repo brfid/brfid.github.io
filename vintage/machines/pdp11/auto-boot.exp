@@ -12,7 +12,7 @@
 # and can handle a console hangup gracefully.
 
 log_user 1
-set timeout 180
+set timeout 600
 
 spawn telnet 127.0.0.1 2327
 
@@ -55,14 +55,11 @@ expect {
 
 # --- Phase 3: after sending exit, wait for multi-user login: ---
 # /etc/rc runs (fsck, mounts, daemons), then getty starts on console.
+# fsck on emulated PDP-11 can take 15+ minutes; set timeout to -1 (unlimited).
+set timeout -1
 expect {
     "login:" {
         puts "\[auto-boot\] 2.11BSD multi-user ready — disconnecting"
-        close
-        exit 0
-    }
-    timeout {
-        puts "\[auto-boot\] timeout after exit — disconnecting anyway"
         close
         exit 0
     }

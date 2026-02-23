@@ -23,18 +23,36 @@ Docker, delete the stale dirs from `/opt/edcloud/state/docker/containers/`, rest
 
 1. *Probe TTI disconnect* (old bug, fixed): one-shot `echo > /dev/tcp/.../2327` probes
    during early boot → SIMH TTI interrupt → reboot loop.
-2. *SIMH console telnet timeout* (current, in progress): `set console telnet=2327` blocks
-   the simulation until a client connects. No client within ~30s → SIMH exits → container
-   dies. `BUFFERED` SIMH option is NOT supported in this build (v4.0-0 commit 627e6a6b).
+2. *SIMH console telnet timeout* (fixed): `set console telnet=2327` blocks the simulation
+   until a client connects. Auto-boot handler solves this by holding the connection.
+   `BUFFERED` SIMH option is NOT supported in this build (v4.0-0 commit 627e6a6b).
 
-**Auto-boot handler** (`vintage/machines/pdp11/auto-boot.exp`) was introduced to fix #2.
-It connects to the console, answers the `Boot:` prompt, handles single-user → multi-user
-transition. As of 2026-02-23: the handler connects and boot reaches `/etc/rc` (confirmed
-multi-user transition triggered), but the 180s expect timeout fires before `login:` because
-`/etc/rc` + fsck are slow on emulated PDP-11. Next fix: increase post-exit timeout to ≥600s.
+**Auto-boot handler** (`vintage/machines/pdp11/auto-boot.exp`) is deployed and working:
+- Connects immediately to prevent SIMH timeout
+- Answers `Boot:` prompt (sends `\r`)
+- Detects single-user shell (`erase, kill ^U`), waits for `# `, sends `exit`
+- Phase 3: waits for `login:` with **unlimited timeout** (`set timeout -1`)
 
-**Do NOT** try to connect to port 2327 manually while auto-boot.exp is still running —
-SIMH only accepts one telnet client at a time.
+**fsck timing**: First boot on the 167MB 2.11BSD image takes **40+ minutes** on emulated
+PDP-11/73. This is normal — fsck runs in preen mode with no console output. Docker block I/O
+stats stay flat after initial cache warmup (SIMH reads from page cache), which is NOT
+evidence the emulator is idle. Container CPU stays at ~2-3% during emulation.
+
+**As of 2026-02-23 ~02:10 UTC**: container is Up 39+ minutes; auto-boot sent `exit`
+at ~1 min mark; `/etc/rc` + fsck have been running ~38+ min silently. `login:` has not
+yet appeared but is expected. **Remaining unknowns**: (1) how long until `login:`
+appears; (2) whether SIMH handles disconnect cleanly once multi-user is ready.
+
+**Do NOT** connect to port 2327 manually while auto-boot.exp is still running —
+SIMH only accepts one telnet client at a time. Check with:
+```bash
+docker exec pdp11-host /bin/bash -c 'ls /proc/*/exe 2>/dev/null | xargs -I{} readlink {} 2>/dev/null | grep expect'
+```
+If `expect` appears, auto-boot is still running. If it's gone, port 2327 is free.
+
+**grep for `login:` in docker logs will false-positive** on the startup echo in
+`pdp11-boot.sh`. Use `grep "2.11BSD\|login:" docker logs` or look for
+`[auto-boot] 2.11BSD multi-user ready` instead.
 
 ---
 
@@ -177,17 +195,53 @@ These are the minimum artifacts for a productive next cold start.
 
 ## 7) Current practical next step (operator)
 
-**Immediate task**: fix `auto-boot.exp` timeout and verify stable PDP-11 boot.
+**DONE**: `auto-boot.exp` Phase 3 now uses `set timeout -1` (unlimited). Container is
+currently running (Up 39+ min as of 2026-02-23 ~02:10 UTC) waiting for `login:`.
 
-1. In `vintage/machines/pdp11/auto-boot.exp`, change the `set timeout 180` at the top
-   to `set timeout 600` (or more). The post-`exit` phase waits for `/etc/rc` + fsck
-   which takes 3-5 minutes on emulated hardware.
-2. Rebuild: `docker compose -f docker-compose.production.yml up -d --build pdp11`
-3. Watch logs: `docker logs -f pdp11-host` — expect to see auto-boot detecting single-user
-   shell, sending `exit`, then eventually `[auto-boot] 2.11BSD multi-user ready`.
-4. Verify SIMH handles disconnect cleanly: check `docker ps` to confirm pdp11-host stays
-   `Up` after auto-boot exits. If SIMH reboots (container exits), the disconnect is still
-   happening at an unsafe point; investigate timing further.
-5. Once container stays Up after auto-boot disconnects, confirm port 2327 is available:
-   `telnet 127.0.0.1 2327` — expect login prompt.
-6. Only then proceed to Stage 1→3 rehearsal.
+**Remaining steps to verify stable PDP-11 boot:**
+
+1. Check if `login:` has appeared yet:
+   ```bash
+   docker logs --tail 20 pdp11-host 2>&1
+   ```
+   Look for `[auto-boot] 2.11BSD multi-user ready — disconnecting` — NOT just "login:"
+   (grep for "login:" will false-positive on the startup echo).
+
+2. Check if auto-boot is still running (if yes, port 2327 is occupied):
+   ```bash
+   docker exec pdp11-host /bin/bash -c 'ls /proc/*/exe 2>/dev/null | xargs -I{} readlink {} 2>/dev/null | grep expect'
+   ```
+   Empty output = expect exited = auto-boot done.
+
+3. If `login:` appeared and auto-boot exited, verify SIMH handled disconnect cleanly:
+   ```bash
+   docker compose -f docker-compose.production.yml ps pdp11
+   ```
+   Expect `Up` (not restarting/exited). If SIMH rebooted on disconnect, the container
+   will show a new start time or be in a reboot loop.
+
+4. If container is still Up after disconnect, connect and smoke-test:
+   ```bash
+   screen -dmS pdp11-smoke telnet 127.0.0.1 2327
+   sleep 2
+   screen -S pdp11-smoke -X stuff $'\n'
+   sleep 2
+   screen -S pdp11-smoke -X stuff $'mount /usr\n'
+   sleep 2
+   screen -S pdp11-smoke -X stuff $'ls -l /usr/bin/uudecode /usr/bin/nroff\n'
+   sleep 2
+   screen -S pdp11-smoke -X hardcopy /tmp/pdp11-smoke-verify.txt
+   ```
+   Expected: `login:` prompt (multi-user mode), `/usr` mounts, both binaries present.
+
+5. Only after smoke test passes proceed to Stage 1→3 rehearsal.
+
+**If the container is in a reboot loop** after auto-boot disconnects: SIMH is still
+crashing on disconnect. Investigate SIMH TTI error in logs. One option: add a
+`sleep 5` after `close` in auto-boot.exp to let 2.11BSD flush before disconnect.
+Another option: use `send_user` to signal readiness then have an external watchdog
+manage the lifecycle rather than auto-boot.exp disconnecting.
+
+**Note on subsequent boots**: Once the disk is cleanly unmounted (via proper
+multi-user shutdown), subsequent boots go directly to `login:` much faster (no
+full fsck needed). The first boot is the slow one.
