@@ -1,0 +1,129 @@
+sections:
+  - title: "API Reference and Developer Docs"
+    items:
+      - name: "Threat Feeds OpenAPI Specification"
+        url: "https://docs.domaintools.com/feeds/openapi/"
+        year: 2025
+        role: "Author"
+        publisher: "DomainTools"
+        summary: "OpenAPI 3.0.3 specification for DomainTools Feeds — real-time and batch
+          endpoints, download workflow, reusable components, examples, and error contracts.
+          Built for code generation, Swagger UI rendering, and contract validation."
+        status: live
+        tags: [OpenAPI, "API documentation", "docs-as-code"]
+
+      - name: "DomainTools API Reference"
+        url: "https://docs.domaintools.com/api/"
+        year: 2025
+        role: "Author"
+        publisher: "DomainTools"
+        summary: "API reference documentation for DomainTools data products and endpoints,
+          including the Threat Intelligence Feeds API."
+        status: live
+        tags: ["API documentation", "developer docs", security]
+
+      - name: "DomainTools Python SDK"
+        url: "https://docs.domaintools.com/python-sdk/"
+        year: 2025
+        role: "Author"
+        publisher: "DomainTools"
+        summary: "Developer guide and API reference: installation, authentication, usage
+          patterns, method reference."
+        status: live
+        tags: ["SDK documentation", Python, "developer docs"]
+
+      - name: "DomainTools Product Documentation"
+        url: "https://docs.domaintools.com"
+        year: 2025
+        role: "Author"
+        publisher: "DomainTools"
+        summary: "User-facing documentation for DomainTools security intelligence products
+          and workflows."
+        status: live
+        tags: ["product documentation", security, MkDocs]
+
+  - title: "LLM and AI Documentation"
+    items:
+      - name: "DomainTools LLM Context Files"
+        url: "https://docs.domaintools.com/llm/"
+        year: 2025
+        role: "Author"
+        publisher: "DomainTools"
+        summary: "Auto-generated structured context files covering DomainTools API products
+          and data schemas, produced by CI/CD pipeline for use in LLM tooling and
+          retrieval workflows."
+        status: live
+        tags: [LLM, RAG, CI/CD, "structured data"]
+
+  - title: "Research and Commissioned History"
+    items:
+      - name: "The Creation and Administration of Unique Identifiers, 1967–2017"
+        url: "https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf"
+        year: 2020
+        role: "Co-author"
+        publisher: "ICANN / Google"
+        summary: "Comprehensive history of internet unique identifier creation and
+          administration from ARPANET origins through 2017. Jointly commissioned by ICANN
+          and Google for policy deliberations on IP governance. Co-authored with Russ Mundy."
+        status: live
+        tags: [research, "internet history", ARPANET, "policy"]
+
+      - name: "Work-From-Home and COVID-19: Trajectories of Endpoint Security Management in a Security Operations Center"
+        url: "https://www.usenix.org/conference/usenixsecurity23/presentation/jones"
+        year: 2023
+        role: "Co-author"
+        publisher: "USENIX Security '23"
+        summary: "Peer-reviewed paper. Co-authored historical analysis tracing endpoint
+          security management from the 1970s through the COVID-19 WFH transition,
+          complementing a 1,000-hour SOC ethnography study."
+        status: live
+        tags: ["peer-reviewed", security, "historical research"]
+
+      - name: "Edge Cryptography and the Codevelopment of Computer Networks and Cybersecurity"
+        url: "https://doi.org/10.1109/MAHC.2016.49"
+        year: 2016
+        role: "Author"
+        publisher: "IEEE Annals of the History of Computing"
+        summary: "Peer-reviewed article on the co-development of cryptography and
+          networking, tracing the relationship between edge devices and the evolution
+          of network security."
+        status: live
+        tags: ["peer-reviewed", cryptography, "internet history"]
+
+  - title: "Projects"
+    items:
+      - name: "jockeyholler.net"
+        url: "https://github.com/brfid/brfid.github.io"
+        year: 2026
+        summary: "This site — Hugo static site with a custom docs-as-code pipeline.
+          Includes a Python resume generator producing PDF and plain-text outputs,
+          CI/CD deploy via GitHub Actions, and an in-progress vintage pipeline generating
+          a man-page resume on an emulated PDP-11 via SIMH."
+        status: in-progress
+        tags: [Hugo, Python, "GitHub Actions", SIMH, CI/CD]
+
+      - name: "Documentation Diagnostic Tools"
+        year: 2025
+        summary: "Production MCP server addressing non-deterministic quality outputs in
+          LLM-assisted documentation. Integrates Vale, markdownlint, spaCy, and custom
+          linters as callable MCP tools, giving LLMs a structured, auditable path through
+          documentation quality fixes. Built and deployed at DomainTools."
+        status: live
+        tags: [Python, MCP, Vale, pytest]
+
+      - name: "PDF Documentation Generator"
+        year: 2024
+        summary: "Python tooling using Jinja2 templates and LaTeX rendering to produce
+          branded PDF documentation with theming, dynamic table of contents, and automated
+          builds."
+        status: live
+        tags: [Python, Jinja2, LaTeX, CI/CD]
+
+      - name: "Event Log"
+        url: "https://github.com/brfid/event-log"
+        year: 2024
+        summary: "Prototype for structured data extraction from natural language input
+          using the OpenAI API; built to evaluate LLM reliability for capturing typed,
+          validated records from unstructured text."
+        status: live
+        tags: [Python, "OpenAI API", "LLM workflows"]

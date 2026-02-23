@@ -142,19 +142,6 @@ publications:
   publisher: IEEE Annals of the History of Computing
   releaseDate: '2016-10-01'
   url: https://doi.org/10.1109/MAHC.2016.49
-- name: DomainTools Technical Documentation
-  publisher: DomainTools
-  releaseDate: '2025-01-01'
-  url: https://docs.domaintools.com
-  summary: Primary author and editor of technical documentation for DomainTools APIs
-    and data products.
-- name: Threat Feeds OpenAPI 3.1 Specification
-  publisher: DomainTools
-  url: https://docs.domaintools.com/feeds/openapi/
-  releaseDate: '2025-05-01'
-  summary: 'Designed and authored an OpenAPI 3.0.3 spec for DomainTools Feeds:
-    real-time and batch endpoints, download workflow, reusable components, examples,
-    and error contracts; built for code-gen, Swagger UI, and API validation.'
 skills:
 - name: Docs platform and automation
   keywords:
@@ -229,12 +216,3 @@ projects:
   - Jinja2
   - LaTeX
   - CI/CD
-- name: Event Log
-  description: Prototype for structured data extraction from natural language input
-    using the OpenAI API; built to evaluate LLM reliability for capturing typed,
-    validated records from unstructured text.
-  url: https://github.com/brfid/event-log
-  keywords:
-  - Python
-  - OpenAI API
-  - LLM workflows
