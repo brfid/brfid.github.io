@@ -57,7 +57,7 @@ flowchart LR
 ### 1) Host generator (Python)
 - Entry point: `resume-gen` (see `resume_generator/cli.py`)
 - Reads `resume.yaml`, generates HTML/PDF, and prepares `resume.vax.yaml`.
-- Renders `brad.1` into `site/brad.man.txt` for the landing page.
+- Renders `brad.1` into `hugo/static/brad.man.txt` for the landing page.
 
 ### 2) Vintage machine generator (C)
 - Source: `vintage/machines/vax/bradman.c`
@@ -87,7 +87,7 @@ flowchart LR
 **Derived**
 - `build/vintage/resume.vintage.yaml` (simple YAML subset for the vintage C parser)
 - `build/vintage/brad.1` (roff manpage source)
-- `site/brad.man.txt` (rendered manpage summary)
+- `hugo/static/brad.man.txt` (rendered manpage summary; Hugo serves it at `/brad.man.txt`)
 - `site/vintage-build.log` (muted transcript)
 
 ### `resume.vax.yaml` contract (v1)
@@ -107,7 +107,7 @@ Host-produced; not committed. Rules exist so the guest C parser stays trivial.
 
 ### `brad.1` transformation rules (v1)
 
-Guest (`bradman.c`) produces roff `man(7)` source; host renders to `site/brad.man.txt`.
+Guest (`bradman.c`) produces roff `man(7)` source; host renders to `hugo/static/brad.man.txt`.
 
 - `name` + `label` → `.TH` header + `NAME` section line (`brad \- <label>`), plus optional `AUTHOR`
 - `summary` → `DESCRIPTION` section
@@ -128,7 +128,7 @@ uuencode brad.1 brad.1
 <<<BRAD_1_UU_END>>>
 ```
 
-Host decodes, writes `build/vax/brad.1`, then renders `site/brad.man.txt`. Decoder is tolerant of trailing garbage on lines (SIMH console occasionally appends noise).
+Host decodes, writes `build/vax/brad.1`, then renders `hugo/static/brad.man.txt`. Decoder is tolerant of trailing garbage on lines (SIMH console occasionally appends noise).
 
 ---
 
@@ -184,7 +184,7 @@ Historical implementation records are intentionally retained under `docs/integra
 - `site/index.html`
 - `site/resume/`
 - `site/resume.pdf`
-- `site/brad.man.txt`
+- `site/brad.man.txt` (sourced from `hugo/static/brad.man.txt`)
 - `site/vintage-build.log`
 - `site/arpanet-transfer.log` (when `--with-arpanet` is enabled)
 
