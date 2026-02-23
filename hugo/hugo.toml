@@ -20,6 +20,8 @@ buildFuture = false
   ShowCodeCopyButtons = true
   ShowShareButtons = false
   ShowFullTextinRSS = true
+  ShowToc = true
+  TocOpen = false
 
   [params.homeInfoParams]
     Title = "Bradley Fidler"
@@ -59,3 +61,7 @@ buildFuture = false
   [markup.highlight]
     noClasses = false
     style = "monokai"
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = false
