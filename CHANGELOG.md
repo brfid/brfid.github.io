@@ -41,12 +41,15 @@ semantic version tags.
   `pdp11-boot.sh` updated to start the handler in background. Handler connects to
   the console, answers the `Boot:` prompt, detects single-user shell (`erase, kill
   ^U`), sends `exit` to proceed to multi-user mode. Boot reaches multi-user `/etc/rc`
-  phase successfully. **Remaining issue**: the 180-second expect timeout fires while
-  `/etc/rc` + fsck complete (slow on emulated PDP-11), causing auto-boot to
-  disconnect mid-boot, triggering the SIMH TTI error and container exit. Fix is to
-  increase post-exit timeout to ≥600s and verify SIMH handles disconnect gracefully
-  once 2.11BSD is fully in multi-user mode. Changes are committed; container is
-  on `main` but PDP-11 does not yet reach a stable running state.
+  phase successfully.
+- Phase 3 timeout fixed: `auto-boot.exp` Phase 3 (post-`exit` wait for `login:`)
+  changed from `set timeout 600` to `set timeout -1` (unlimited). 600s was
+  insufficient — fsck on the 167MB 2.11BSD disk image on emulated PDP-11/73 takes
+  **40+ minutes** (page-cached host I/O; Docker block I/O stats stay flat after
+  initial read, which is not evidence the emulator is idle — SIMH reads from
+  page cache). Container with unlimited timeout is **currently running** and healthy
+  at 39+ minutes; `login:` has not yet appeared but is expected. Once `login:`
+  appears, next step is verifying SIMH handles disconnect cleanly (container stays Up).
 - Cold-start diagnostics runbook added at
   `docs/integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md` to standardize
   serialized console handling, log-based PDP-11 readiness gating, and minimum evidence
@@ -62,11 +65,19 @@ semantic version tags.
   as a portfolio and thought-leadership signal for senior IC technical writing roles.
 
 ### In Progress
-- PDP-11 auto-boot: fix `auto-boot.exp` post-exit timeout (increase from 180s to
-  ≥600s), then verify container reaches stable multi-user login: and SIMH handles
-  disconnect cleanly. Once verified, confirm Stage 2/3 CI flow can connect.
+- PDP-11 auto-boot: Phase 3 timeout is now unlimited (`set timeout -1`). Container
+  is running (Up 39+ min as of 2026-02-23 ~02:10 UTC); `exit` was sent at ~1 min,
+  `/etc/rc` + fsck have been running ~38+ min silently. **Next immediate step**:
+  wait for `login:` to appear in `docker logs pdp11-host`, then verify container
+  stays Up after auto-boot disconnects, then do smoke test on port 2327.
+  Key facts:
+  - Docker root: `/opt/edcloud/state/docker` (not `/var/lib/docker/`)
+  - Ghost containers: stop Docker, rm dirs from containers/, restart
+  - BUFFERED console option: not supported in SIMH v4.0-0 (627e6a6b)
+  - Block I/O stats stay flat after cache warmup — not evidence emulator is idle
+  - grep for "login:" in logs will false-positive on pdp11-boot.sh startup echo
   Key files: `vintage/machines/pdp11/auto-boot.exp`, `pdp11-boot.sh`,
-  `Dockerfile.pdp11`. Docker root on edcloud is `/opt/edcloud/state/docker`.
+  `Dockerfile.pdp11`.
 
 ### Blocked
 - None.
