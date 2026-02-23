@@ -30,11 +30,23 @@ semantic version tags.
 - DNS: jockeyholler.net apex A/AAAA → GitHub Pages IPs; www CNAME → brfid.github.io.
   Route 53 change C037890339C8W3JAICBDC (2026-02-21). CloudFront aliases removed.
 - GitHub Pages custom domain (`www.jockeyholler.net`) is now set in repo UI settings.
-- First Hugo-era publish is still pending to replace pre-Hugo content currently served.
-- PDP-11 console instability root cause identified in current single-host edcloud runtime:
-  one-shot readiness probes (`echo > /dev/tcp/...:2327`) can trigger SIMH TTI
-  disconnect/reboot behavior during early boot. Console handling now avoids probe-driven
-  connect/disconnect for PDP-11 startup checks.
+- Hugo site is live at `www.jockeyholler.net`; multiple `publish-fast-*` tags have been pushed (latest: `publish-fast-20260222-2309`). Pre-Hugo content replaced.
+- PDP-11 container has a **second root cause** beyond the probe issue: SIMH's
+  `set console telnet=2327` blocks the simulation until a client connects. Without
+  a client within ~30 seconds, SIMH times out (`Console Telnet connection timed out`)
+  and the container exits. This was happening on every cold start. The `BUFFERED`
+  SIMH option is not supported in the build used (v4.0-0 commit 627e6a6b).
+- Auto-boot handler introduced: `vintage/machines/pdp11/auto-boot.exp` (expect
+  script), `expect` and `telnet` packages added to `Dockerfile.pdp11`, and
+  `pdp11-boot.sh` updated to start the handler in background. Handler connects to
+  the console, answers the `Boot:` prompt, detects single-user shell (`erase, kill
+  ^U`), sends `exit` to proceed to multi-user mode. Boot reaches multi-user `/etc/rc`
+  phase successfully. **Remaining issue**: the 180-second expect timeout fires while
+  `/etc/rc` + fsck complete (slow on emulated PDP-11), causing auto-boot to
+  disconnect mid-boot, triggering the SIMH TTI error and container exit. Fix is to
+  increase post-exit timeout to ≥600s and verify SIMH handles disconnect gracefully
+  once 2.11BSD is fully in multi-user mode. Changes are committed; container is
+  on `main` but PDP-11 does not yet reach a stable running state.
 - Cold-start diagnostics runbook added at
   `docs/integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md` to standardize
   serialized console handling, log-based PDP-11 readiness gating, and minimum evidence
@@ -44,17 +56,17 @@ semantic version tags.
   (no compatibility chain retained).
 
 ### Active Priorities
-- Commit `hugo/static/resume.pdf` (generated locally) so `/resume.pdf` is present on
-  next deploy.
-- Run first intentional Hugo-era deploy after custom-domain UI step is complete.
 - Rehearse full distributed vintage Stage 1-3 flow on edcloud with updated non-probing
   PDP-11 readiness checks to confirm end-to-end stability.
 - Migrate blog posts: author and publish additional posts to build out the blog
   as a portfolio and thought-leadership signal for senior IC technical writing roles.
 
 ### In Progress
-- Vintage pipeline stabilization follow-through: validating that Stage 2/3 console
-  transfer and PDP-11 validation remain stable after readiness/probe fixes.
+- PDP-11 auto-boot: fix `auto-boot.exp` post-exit timeout (increase from 180s to
+  ≥600s), then verify container reaches stable multi-user login: and SIMH handles
+  disconnect cleanly. Once verified, confirm Stage 2/3 CI flow can connect.
+  Key files: `vintage/machines/pdp11/auto-boot.exp`, `pdp11-boot.sh`,
+  `Dockerfile.pdp11`. Docker root on edcloud is `/opt/edcloud/state/docker`.
 
 ### Blocked
 - None.
@@ -69,6 +81,9 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- First Hugo-era deploy: `publish-fast-20260221-1950` through `publish-fast-20260222-2309`
+  pushed; Hugo site now live at `www.jockeyholler.net` replacing pre-Hugo content.
+  `hugo/static/resume.pdf` committed and served at `/resume.pdf`.
 - Resume and site positioning pass: removed "Principal" level claim from label and
   about page; rewrote summary to lead with strategy ownership; added greenfield/from-scratch
   framing to DomainTools strategy bullet; added SME interviewing highlight to UCLA role;

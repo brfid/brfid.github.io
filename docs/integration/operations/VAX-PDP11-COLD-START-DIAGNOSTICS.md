@@ -13,6 +13,31 @@ This runbook is focused on the active architecture:
 
 ---
 
+## Status (2026-02-23)
+
+**Docker root on edcloud is `/opt/edcloud/state/docker`** (not `/var/lib/docker/`).
+If ghost containers appear in `docker ps -a` but can't be inspected or removed, stop
+Docker, delete the stale dirs from `/opt/edcloud/state/docker/containers/`, restart.
+
+**PDP-11 boot has two known failure modes:**
+
+1. *Probe TTI disconnect* (old bug, fixed): one-shot `echo > /dev/tcp/.../2327` probes
+   during early boot → SIMH TTI interrupt → reboot loop.
+2. *SIMH console telnet timeout* (current, in progress): `set console telnet=2327` blocks
+   the simulation until a client connects. No client within ~30s → SIMH exits → container
+   dies. `BUFFERED` SIMH option is NOT supported in this build (v4.0-0 commit 627e6a6b).
+
+**Auto-boot handler** (`vintage/machines/pdp11/auto-boot.exp`) was introduced to fix #2.
+It connects to the console, answers the `Boot:` prompt, handles single-user → multi-user
+transition. As of 2026-02-23: the handler connects and boot reaches `/etc/rc` (confirmed
+multi-user transition triggered), but the 180s expect timeout fires before `login:` because
+`/etc/rc` + fsck are slow on emulated PDP-11. Next fix: increase post-exit timeout to ≥600s.
+
+**Do NOT** try to connect to port 2327 manually while auto-boot.exp is still running —
+SIMH only accepts one telnet client at a time.
+
+---
+
 ## 0) Baseline checks (first 2 minutes)
 
 ```bash
@@ -152,6 +177,17 @@ These are the minimum artifacts for a productive next cold start.
 
 ## 7) Current practical next step (operator)
 
-Run a **strictly serialized** Stage 1→3 rehearsal (single session per console,
-no parallel screen/telnet clients) on edcloud/GitHub path, since that execution
-model is closest to production workflow timing.
+**Immediate task**: fix `auto-boot.exp` timeout and verify stable PDP-11 boot.
+
+1. In `vintage/machines/pdp11/auto-boot.exp`, change the `set timeout 180` at the top
+   to `set timeout 600` (or more). The post-`exit` phase waits for `/etc/rc` + fsck
+   which takes 3-5 minutes on emulated hardware.
+2. Rebuild: `docker compose -f docker-compose.production.yml up -d --build pdp11`
+3. Watch logs: `docker logs -f pdp11-host` — expect to see auto-boot detecting single-user
+   shell, sending `exit`, then eventually `[auto-boot] 2.11BSD multi-user ready`.
+4. Verify SIMH handles disconnect cleanly: check `docker ps` to confirm pdp11-host stays
+   `Up` after auto-boot exits. If SIMH reboots (container exits), the disconnect is still
+   happening at an unsafe point; investigate timing further.
+5. Once container stays Up after auto-boot disconnects, confirm port 2327 is available:
+   `telnet 127.0.0.1 2327` — expect login prompt.
+6. Only then proceed to Stage 1→3 rehearsal.

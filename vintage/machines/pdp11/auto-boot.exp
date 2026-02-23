@@ -1,0 +1,69 @@
+#!/usr/bin/expect -f
+# auto-boot.exp: boots 2.11BSD on the SIMH PDP-11 console and disconnects
+# cleanly once multi-user login: is ready.
+#
+# Handles two boot paths:
+#   1. Auto-reboot (subsequent boots): goes directly to multi-user → login:
+#   2. First/clean boot (single-user): shows "erase, kill ^U" + "# " prompt
+#      → sends "exit" → /etc/rc runs → multi-user → login:
+#
+# Keeps the connection alive through the entire boot to prevent SIMH TTI
+# disconnect errors.  Disconnects only once the system is in multi-user mode
+# and can handle a console hangup gracefully.
+
+log_user 1
+set timeout 180
+
+spawn telnet 127.0.0.1 2327
+
+# --- Phase 1: answer the Boot: prompt ---
+expect {
+    ":" { send "\r" }
+    timeout {
+        puts "\[auto-boot\] ERROR: timeout waiting for Boot: prompt"
+        exit 1
+    }
+}
+
+# --- Phase 2: wait for login: (multi-user) or # (single-user shell) ---
+expect {
+    "login:" {
+        puts "\[auto-boot\] 2.11BSD multi-user ready — disconnecting"
+        close
+        exit 0
+    }
+    "# " {
+        # Single-user shell — send exit to trigger multi-user startup
+        puts "\[auto-boot\] single-user shell — sending exit"
+        send "exit\r"
+    }
+    -re {erase,\s*kill} {
+        # "erase, kill ^U, intr ^C" printed by init before single-user shell.
+        # Wait briefly for the # prompt, then send exit.
+        puts "\[auto-boot\] single-user init — waiting for # prompt"
+        expect {
+            "# " { send "exit\r" }
+            timeout { send "exit\r" }
+        }
+    }
+    timeout {
+        puts "\[auto-boot\] timeout waiting for login: or # prompt"
+        close
+        exit 0
+    }
+}
+
+# --- Phase 3: after sending exit, wait for multi-user login: ---
+# /etc/rc runs (fsck, mounts, daemons), then getty starts on console.
+expect {
+    "login:" {
+        puts "\[auto-boot\] 2.11BSD multi-user ready — disconnecting"
+        close
+        exit 0
+    }
+    timeout {
+        puts "\[auto-boot\] timeout after exit — disconnecting anyway"
+        close
+        exit 0
+    }
+}
