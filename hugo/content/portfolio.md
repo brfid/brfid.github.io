@@ -1,7 +1,7 @@
 ---
 title: "Work"
 layout: "page"
-url: "/work/"
+url: "/portfolio/"
 summary: "Writing samples and documentation portfolio"
 ---
 

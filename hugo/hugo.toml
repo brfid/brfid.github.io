@@ -46,9 +46,9 @@ buildFuture = false
     url = "/posts/"
     weight = 10
   [[menu.main]]
-    identifier = "work"
-    name = "Work"
-    url = "/work/"
+    identifier = "portfolio"
+    name = "Portfolio"
+    url = "/portfolio/"
     weight = 15
   [[menu.main]]
     identifier = "resume"
