@@ -1,25 +1,20 @@
 name: Publish Site
 
-# Mode 1: Fast local publish tags
-# Mode 2: Distributed vintage publish tags (VAX build host + PDP-11 validation)
-
 on:
   push:
     tags:
-      - "publish-vintage-*"   # Mode 2: Distributed vintage variants
-      - "publish-vax-*"       # Mode 2 legacy alias
-      - "publish-docker-*"    # Mode 2 legacy alias
-      - "publish-fast-*"    # Mode 1: Fast variants
+      - "publish-vintage-*"
+      - "publish-fast-*"
   workflow_dispatch:
     inputs:
       build_mode:
-        description: 'Build mode (local or distributed vintage backend)'
+        description: "Build mode"
         required: true
-        default: 'local'
+        default: "local"
         type: choice
         options:
           - local
-          - docker
+          - vintage
 
 permissions:
   contents: read
@@ -37,7 +32,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -54,84 +49,41 @@ jobs:
       - name: Determine build mode
         id: mode
         run: |
-          # Determine mode based on tag name
           TAG_NAME="${{ github.ref_name }}"
 
-          if [[ "$TAG_NAME" == *"vax"* ]] || [[ "$TAG_NAME" == *"docker"* ]] || [[ "$TAG_NAME" == *"vintage"* ]] || [[ "$TAG_NAME" == *"distributed"* ]]; then
-            echo "build_mode=docker" >> $GITHUB_OUTPUT
-            echo "mode_name=Distributed vintage (authentic build)" >> $GITHUB_OUTPUT
-            echo "🚀 Building with distributed vintage mode (authentic BSD pipeline)"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "build_mode=${{ inputs.build_mode }}" >> $GITHUB_OUTPUT
-            echo "mode_name=Manual (${{ inputs.build_mode }})" >> $GITHUB_OUTPUT
-            echo "🎮 Building with manual mode: ${{ inputs.build_mode }}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            REQUESTED="${{ inputs.build_mode }}"
+            if [[ "$REQUESTED" == "vintage" ]]; then
+              echo "build_mode=vintage" >> "$GITHUB_OUTPUT"
+              echo "mode_name=Vintage (edcloud/SSM)" >> "$GITHUB_OUTPUT"
+            else
+              echo "build_mode=local" >> "$GITHUB_OUTPUT"
+              echo "mode_name=Local (Hugo-only)" >> "$GITHUB_OUTPUT"
+            fi
+          elif [[ "$TAG_NAME" == publish-vintage-* ]]; then
+            echo "build_mode=vintage" >> "$GITHUB_OUTPUT"
+            echo "mode_name=Vintage (edcloud/SSM)" >> "$GITHUB_OUTPUT"
           else
-            echo "build_mode=local" >> $GITHUB_OUTPUT
-            echo "mode_name=Local (fast)" >> $GITHUB_OUTPUT
-            echo "⚡ Building with local mode (fast)"
+            echo "build_mode=local" >> "$GITHUB_OUTPUT"
+            echo "mode_name=Local (Hugo-only)" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Setup Python
-        if: steps.mode.outputs.build_mode == 'docker'
-        uses: actions/setup-python@v5
+      - name: Configure AWS credentials (OIDC)
+        if: steps.mode.outputs.build_mode == 'vintage'
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: "pyproject.toml"
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: gh-pages-vintage
 
-      - name: Install dependencies
-        if: steps.mode.outputs.build_mode == 'docker'
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e '.[dev]'
-
-      - name: Quality checks
-        if: steps.mode.outputs.build_mode == 'docker'
-        run: |
-          # Quality gates for vintage pipeline artifacts
-          python -m ruff check resume_generator
-          python -m mypy resume_generator host_logging tests
-          python -m pytest -q -m "unit and not docker and not slow"
-          python -m pylint resume_generator -sn
-          python -m vulture --config pyproject.toml resume_generator
-
-      - name: Cache Playwright browsers
-        if: steps.mode.outputs.build_mode == 'docker'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers
-        if: steps.mode.outputs.build_mode == 'docker'
-        run: python -m playwright install --with-deps chromium
-
-      - name: Generate build ID
-        if: steps.mode.outputs.build_mode == 'docker'
-        id: build_id
-        run: |
-          BUILD_ID="build-$(date -u '+%Y%m%d-%H%M%S')"
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "📝 Build ID: $BUILD_ID"
-
-      - name: Connect to Tailscale
-        if: steps.mode.outputs.build_mode == 'docker'
-        uses: tailscale/github-action@v3
-        with:
-          authkey: ${{ secrets.TAILSCALE_AUTH_KEY }}
-
-      - name: Activate edcloud infrastructure
-        if: steps.mode.outputs.build_mode == 'docker'
-        id: edcloud_activate
+      - name: Start edcloud instance
+        if: steps.mode.outputs.build_mode == 'vintage'
+        id: edcloud_start
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
           EDCLOUD_INSTANCE_ID: ${{ secrets.EDCLOUD_INSTANCE_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          ts() { date -u '+%Y-%m-%d %H:%M:%S'; }
+          set -euo pipefail
 
           INSTANCE_ID="${EDCLOUD_INSTANCE_ID}"
           if [[ -z "$INSTANCE_ID" ]]; then
@@ -143,410 +95,176 @@ jobs:
               --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[-1].InstanceId" \
               --output text)"
           fi
+
           if [[ -z "$INSTANCE_ID" || "$INSTANCE_ID" == "None" ]]; then
-            echo "❌ No edcloud instance found (set EDCLOUD_INSTANCE_ID or tag instance)."
+            echo "No edcloud instance found. Set EDCLOUD_INSTANCE_ID or tag instance." >&2
             exit 1
           fi
 
-          echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_BEGIN instance_id=$INSTANCE_ID" >> /tmp/github.log
-          echo "🚀 Starting edcloud instance..."
-          aws ec2 start-instances --instance-ids "$INSTANCE_ID" >/dev/null
+          echo "instance_id=$INSTANCE_ID" >> "$GITHUB_OUTPUT"
 
-          echo "⏳ Waiting for instance to be running..."
-          aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+          CURRENT_STATE="$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query 'Reservations[0].Instances[0].State.Name' \
+            --output text)"
 
-          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
-          echo "[$(ts) GITHUB] EDCLOUD_ACTIVATE_READY instance_id=$INSTANCE_ID host=edcloud" >> /tmp/github.log
-          echo "✅ edcloud infrastructure activated"
+          case "$CURRENT_STATE" in
+            running)
+              echo "edcloud already running"
+              aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+              echo "was_running=true" >> "$GITHUB_OUTPUT"
+              ;;
+            pending)
+              echo "edcloud is pending; waiting until ready"
+              aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+              aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+              echo "was_running=true" >> "$GITHUB_OUTPUT"
+              ;;
+            stopping)
+              echo "edcloud is stopping; waiting to stop before restart"
+              aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+              aws ec2 start-instances --instance-ids "$INSTANCE_ID" >/dev/null
+              aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+              aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+              echo "was_running=false" >> "$GITHUB_OUTPUT"
+              ;;
+            stopped)
+              echo "Starting edcloud instance $INSTANCE_ID"
+              aws ec2 start-instances --instance-ids "$INSTANCE_ID" >/dev/null
+              aws ec2 wait instance-running --instance-ids "$INSTANCE_ID"
+              aws ec2 wait instance-status-ok --instance-ids "$INSTANCE_ID"
+              echo "was_running=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported instance state: $CURRENT_STATE" >&2
+              exit 1
+              ;;
+          esac
 
-      - name: Wait for edcloud Tailscale SSH
-        if: steps.mode.outputs.build_mode == 'docker'
-        run: |
-          set -euo pipefail
-          echo "⏳ Waiting for Tailscale SSH on edcloud..."
-          for i in {1..30}; do
-            if ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 ubuntu@edcloud "echo ready" >/dev/null 2>&1; then
-              echo "✅ SSH ready on edcloud"
-              exit 0
-            fi
-            echo "Attempt $i/30: SSH not ready yet on edcloud..."
-            sleep 10
-          done
-          echo "❌ SSH readiness timeout for edcloud"
-          exit 1
-
-      - name: Prepare edcloud host
-        if: steps.mode.outputs.build_mode == 'docker'
+      - name: Run vintage pipeline on edcloud via SSM
+        if: steps.mode.outputs.build_mode == 'vintage'
         env:
+          INSTANCE_ID: ${{ steps.edcloud_start.outputs.instance_id }}
           GIT_SHA: ${{ github.sha }}
         run: |
-          echo "🛠️ Preparing edcloud host runtime..."
-
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
           set -euo pipefail
 
-          if [[ ! -d "\$HOME/brfid.github.io/.git" ]]; then
-            git clone https://github.com/brfid/brfid.github.io.git "\$HOME/brfid.github.io"
-          fi
+          BUILD_ID="build-$(date -u '+%Y%m%d-%H%M%S')"
+          export BUILD_ID
+          COMMAND_FILE="/tmp/ssm-commands.json"
 
-          cd "\$HOME/brfid.github.io"
-          git fetch --all --prune
-          git checkout "$GIT_SHA"
-          mkdir -p build/vintage build/pdp11
-
-          mkdir -p \$HOME/arpanet-logs/builds
-          sudo apt-get install -y screen 2>/dev/null || true
-          chmod +x scripts/*.sh scripts/*.py
-
-          docker compose -f docker-compose.production.yml up -d --build
-          docker compose -f docker-compose.production.yml ps
-          EOF
-
-          echo "✅ edcloud host prepared"
-
-      - name: Stage 1 - VAX Build & Encode
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-        run: |
-          echo "=== STAGE 1: VAX BUILD & ENCODE ==="
-          echo "edcloud host: edcloud"
-          echo "Build ID: $BUILD_ID"
-
-          # Log GitHub Actions activity
-          exec > >(tee >(while IFS= read -r line; do echo "[$(date -u '+%Y-%m-%d %H:%M:%S') GITHUB] $line"; done >> /tmp/github.log)) 2>&1
-
-          # Generate resume.vintage.yaml locally
-          echo "Generating resume.vintage.yaml locally..."
-          python -m resume_generator --out site --with-vintage --vintage-mode local
-
-          # Upload generated input to edcloud
-          scp -o StrictHostKeyChecking=accept-new \
-            build/vintage/resume.vintage.yaml ubuntu@edcloud:/tmp/resume.vintage.yaml
-
-          # All screen/telnet console ops run on edcloud.
-          # VAX console (port 2323) and PDP-11 console (port 2327) are bound to
-          # localhost on edcloud and are not reachable from the GH Actions runner.
-          echo "Running VAX build via edcloud SSH (console ports are localhost-only)..."
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
-          set -euo pipefail
-          cd \$HOME/brfid.github.io
-
-          echo "Uploading arpanet-log.sh to VAX BSD via console..."
-          bash scripts/vax-console-upload.sh scripts/arpanet-log.sh /tmp/arpanet-log.sh 127.0.0.1
-
-          screen -dmS vax-chmod telnet 127.0.0.1 2323
-          sleep 3
-          screen -S vax-chmod -X stuff "\n"
-          sleep 0.5
-          screen -S vax-chmod -X stuff "root\n"
-          sleep 2
-          screen -S vax-chmod -X stuff "chmod +x /tmp/arpanet-log.sh\n"
-          sleep 1
-          screen -S vax-chmod -X quit 2>/dev/null || true
-
-          echo "Uploading bradman.c to VAX BSD..."
-          bash scripts/vax-console-upload.sh vintage/machines/vax/bradman.c /tmp/bradman.c 127.0.0.1
-
-          echo "Uploading resume.vintage.yaml to VAX BSD..."
-          bash scripts/vax-console-upload.sh /tmp/resume.vintage.yaml /tmp/resume.vintage.yaml 127.0.0.1
-
-          echo "Uploading vax-build-and-encode.sh to VAX BSD..."
-          bash scripts/vax-console-upload.sh scripts/vax-build-and-encode.sh /tmp/vax-build-and-encode.sh 127.0.0.1
-
-          screen -dmS vax-chmod2 telnet 127.0.0.1 2323
-          sleep 3
-          screen -S vax-chmod2 -X stuff "\n"
-          sleep 0.5
-          screen -S vax-chmod2 -X stuff "root\n"
-          sleep 2
-          screen -S vax-chmod2 -X stuff "chmod +x /tmp/vax-build-and-encode.sh\n"
-          sleep 1
-          screen -S vax-chmod2 -X quit 2>/dev/null || true
-
-          echo "Executing build inside VAX BSD (vintage K&R C)..."
-          screen -dmS vax-build telnet 127.0.0.1 2323
-          sleep 3
-          screen -S vax-build -X stuff "\n"
-          sleep 0.5
-          screen -S vax-build -X stuff "root\n"
-          sleep 2
-          screen -S vax-build -X stuff "cd /tmp\n"
-          sleep 1
-          screen -S vax-build -X stuff "/tmp/vax-build-and-encode.sh $BUILD_ID\n"
-
-          echo "Waiting for build to complete..."
-          sleep 30
-
-          screen -S vax-build -X hardcopy "/tmp/vax-build-console.txt"
-          screen -S vax-build -X quit 2>/dev/null || true
-
-          if [ -f /tmp/vax-build-console.txt ]; then
-            if grep -q "VAX build complete" /tmp/vax-build-console.txt; then
-              echo "✓ Build succeeded"
-              mkdir -p \$HOME/arpanet-logs/builds/$BUILD_ID
-              python3 scripts/extract-vax-logs.py \
-                /tmp/vax-build-console.txt \
-                \$HOME/arpanet-logs/builds/$BUILD_ID/VAX.log
-              echo "✓ Logs extracted"
-            else
-              echo "❌ Build status unclear"
-              tail -50 /tmp/vax-build-console.txt
-              exit 1
-            fi
-          else
-            echo "❌ Console capture not found"
-            exit 1
-          fi
-          EOF
-
-          echo "✓ Stage 1 complete"
-
-      - name: Stage 2 - Console Transfer (VAX → PDP-11)
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-        run: |
-          echo "=== STAGE 2: CONSOLE TRANSFER ==="
-          echo "edcloud host: edcloud"
-          echo "Build ID: $BUILD_ID"
-
-          # All console ops run on edcloud (VAX:2323 and PDP-11:2327 are localhost there)
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
-          set -euo pipefail
-          cd \$HOME/brfid.github.io
-
-          echo "Waiting for PDP-11 console (port 2327)..."
-          RETRY=0
-          # IMPORTANT: avoid one-shot TCP probes against SIMH console.
-          # A connect/disconnect during early boot can trigger TTI disconnect
-          # handling and force a reboot loop. Use logs + container health signals
-          # instead of probing the telnet port directly.
-          while true; do
-            if ! docker compose -f docker-compose.production.yml ps pdp11 | grep -q "Up"; then
-              RETRY=\$((RETRY + 1))
-            elif docker logs --tail 60 pdp11-host 2>&1 | grep -q "%SIM-INFO: Listening on port 2327"; then
+          for _ in $(seq 1 60); do
+            PING_STATUS="$(aws ssm describe-instance-information \
+              --filters "Key=InstanceIds,Values=${INSTANCE_ID}" \
+              --query 'InstanceInformationList[0].PingStatus' \
+              --output text 2>/dev/null || true)"
+            if [[ "$PING_STATUS" == "Online" ]]; then
               break
-            else
-              RETRY=\$((RETRY + 1))
             fi
-            if [ \$RETRY -ge 60 ]; then
-              echo "❌ PDP-11 console listener not ready after 60s"
-              docker compose -f docker-compose.production.yml ps
-              docker logs --tail 120 pdp11-host 2>&1 || true
-              exit 1
-            fi
-            sleep 1
+            sleep 5
           done
-          echo "✓ PDP-11 console listener ready"
 
-          echo "Retrieving encoded file from VAX BSD via console..."
-          screen -dmS vax-retrieve telnet 127.0.0.1 2323
-          sleep 3
-          screen -S vax-retrieve -X stuff "\n"
-          sleep 0.5
-          screen -S vax-retrieve -X stuff "root\n"
-          sleep 2
-          screen -S vax-retrieve -X stuff "cat /tmp/brad.1.uu\n"
-          sleep 5
-          screen -S vax-retrieve -X hardcopy "/tmp/vax-cat-output.txt"
-          screen -S vax-retrieve -X quit 2>/dev/null || true
-
-          grep -E '^(begin|M|end)' /tmp/vax-cat-output.txt > /tmp/brad.1.uu || echo "Warning: Could not extract uuencoded file"
-
-          if [ -f /tmp/brad.1.uu ] && [ -s /tmp/brad.1.uu ]; then
-            echo "✓ Retrieved brad.1.uu (\$(wc -l < /tmp/brad.1.uu) lines)"
-          else
-            echo "❌ Failed to retrieve brad.1.uu from VAX BSD"
+          FINAL_PING_STATUS="$(aws ssm describe-instance-information \
+            --filters "Key=InstanceIds,Values=${INSTANCE_ID}" \
+            --query 'InstanceInformationList[0].PingStatus' \
+            --output text 2>/dev/null || true)"
+          if [[ "$FINAL_PING_STATUS" != "Online" ]]; then
+            echo "Instance is not registered as Online in SSM." >&2
             exit 1
           fi
 
-          echo "Uploading arpanet-log.sh to PDP-11 BSD via console..."
-          screen -dmS pdp11-upload telnet 127.0.0.1 2327
-          sleep 3
-          screen -S pdp11-upload -X stuff "\n"
-          sleep 0.5
-          screen -S pdp11-upload -X stuff "root\n"
-          sleep 2
-          screen -S pdp11-upload -X stuff "cat > /tmp/arpanet-log.sh << 'UPLOAD_EOF'\n"
-          sleep 0.5
-          while IFS= read -r line; do
-            screen -S pdp11-upload -X stuff "\$line\r"
-            sleep 0.02
-          done < scripts/arpanet-log.sh
-          screen -S pdp11-upload -X stuff "UPLOAD_EOF\n"
-          sleep 1
-          screen -S pdp11-upload -X stuff "chmod +x /tmp/arpanet-log.sh\n"
-          sleep 1
-          screen -S pdp11-upload -X quit 2>/dev/null || true
-          echo "✓ arpanet-log.sh uploaded to PDP-11 BSD"
+          python3 - <<'PY'
+          import json
+          import os
 
-          echo "Starting console transfer to PDP-11..."
-          python3 scripts/console-transfer.py "$BUILD_ID" 127.0.0.1 127.0.0.1
-          echo "✓ Console transfer complete"
-          EOF
+          commands = [
+              "set -euo pipefail",
+              "export DEBIAN_FRONTEND=noninteractive",
+              f"export GIT_SHA='{os.environ['GIT_SHA']}'",
+              f"export BUILD_ID='{os.environ['BUILD_ID']}'",
+              "cd /home/ubuntu || cd ~",
+              "if [ ! -d brfid.github.io/.git ]; then git clone --quiet https://github.com/brfid/brfid.github.io.git brfid.github.io; fi",
+              "cd brfid.github.io",
+              "git fetch --all --prune --quiet",
+              "git checkout -q ${GIT_SHA}",
+              "ROOT_DIR=/home/ubuntu/brfid.github.io bash scripts/edcloud-vintage-runner.sh ${BUILD_ID}",
+          ]
 
-          echo "✓ Stage 2 complete"
+          with open("/tmp/ssm-commands.json", "w", encoding="utf-8") as handle:
+              json.dump({"commands": commands}, handle)
+          PY
 
-      - name: Verify screen session persists
-        if: steps.mode.outputs.build_mode == 'docker'
-        run: |
-          echo "📡 Verifying screen session on edcloud..."
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
-            'if screen -ls 2>/dev/null | grep -q "pdp11-console"; then
-               echo "✅ Screen session pdp11-console is active"
-               screen -ls
-             else
-               echo "❌ Screen session pdp11-console not found"
-               screen -ls 2>/dev/null || echo "No screen sessions"
-               exit 1
-             fi'
+          COMMAND_ID="$(aws ssm send-command \
+            --document-name 'AWS-RunShellScript' \
+            --instance-ids "$INSTANCE_ID" \
+            --comment "Run vintage pipeline for ${GIT_SHA}" \
+            --parameters "file://${COMMAND_FILE}" \
+            --query 'Command.CommandId' \
+            --output text)"
 
-      - name: Stage 3 - PDP-11 Validation
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-        run: |
-          echo "=== STAGE 3: PDP-11 VALIDATION ==="
-          echo "Build ID: $BUILD_ID"
+          echo "SSM command: $COMMAND_ID"
 
-          # Validation runs on edcloud (PDP-11 console is localhost:2327 there)
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud "bash -se" <<EOF
-          set -euo pipefail
-          cd \$HOME/brfid.github.io
+          for _ in $(seq 1 180); do
+            STATUS="$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query 'Status' \
+              --output text 2>/dev/null || true)"
 
-          echo "Sending validation commands to PDP-11..."
-          PDP11_IP=127.0.0.1 bash scripts/pdp11-validate.sh "$BUILD_ID"
+            case "$STATUS" in
+              Success)
+                break
+                ;;
+              Cancelled|TimedOut|Failed|Cancelling)
+                echo "SSM command failed with status: $STATUS" >&2
+                aws ssm get-command-invocation \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "$INSTANCE_ID" \
+                  --query '{Status:Status,StdOut:StandardOutputContent,StdErr:StandardErrorContent}'
+                exit 1
+                ;;
+            esac
 
-          if [ -f /tmp/pdp11-validation-$BUILD_ID.txt ]; then
-            if grep -q "Status: PASS" /tmp/pdp11-validation-$BUILD_ID.txt; then
-              echo "✓ Validation succeeded"
-              mkdir -p \$HOME/arpanet-logs/builds/$BUILD_ID
-              python3 scripts/extract-pdp11-logs.py \
-                /tmp/pdp11-validation-$BUILD_ID.txt \
-                \$HOME/arpanet-logs/builds/$BUILD_ID/PDP11.log
-              echo "✓ PDP-11 logs extracted"
-            else
-              echo "⚠️  Validation status unclear"
-              tail -50 /tmp/pdp11-validation-$BUILD_ID.txt
-            fi
-          else
-            echo "⚠️  PDP-11 console capture not found"
-          fi
-          EOF
-
-          echo "✓ Stage 3 complete"
-
-      - name: Stage 4 - Retrieve Final Output
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-        run: |
-          echo "=== STAGE 4: RETRIEVE FINAL OUTPUT ==="
-
-          # Retrieve validated output from host log storage
-          echo "Retrieving validated output from PDP-11..."
-          scp -o StrictHostKeyChecking=accept-new \
-            ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/pdp-output/brad.txt \
-            build/vintage/brad.txt || echo "Warning: brad.txt not found, using original"
-
-          # Fallback: if PDP-11 output not available, get from VAX
-          if [[ ! -f build/vintage/brad.txt ]]; then
-            echo "Using VAX original output..."
-            scp -o StrictHostKeyChecking=accept-new \
-              ubuntu@edcloud:/tmp/brad.1 \
-              build/vintage/brad.1
-            python -m resume_generator.manpage --in build/vintage/brad.1 --out build/vintage/brad.txt
-          fi
-
-          # Drop into hugo/static/ so Hugo includes it at /brad.man.txt
-          cp build/vintage/brad.txt hugo/static/brad.man.txt
-
-          echo "✓ Final output retrieved"
-
-      - name: Merge and retrieve build logs
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-        run: |
-          echo "📋 Merging build logs from all sources..."
-
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
-            "mkdir -p ~/arpanet-logs/builds/$BUILD_ID"
-
-          if [[ -f /tmp/github.log ]]; then
-            scp -o StrictHostKeyChecking=accept-new \
-              /tmp/github.log \
-              ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/GITHUB.log
-          fi
-
-          # COURIER log was written on edcloud by console-transfer.py
-          # (already present at ~/arpanet-logs/builds/$BUILD_ID/COURIER.log)
-
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
-            "ls -lh ~/arpanet-logs/builds/$BUILD_ID/*.log 2>/dev/null || true"
-
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
-            "python3 ~/brfid.github.io/scripts/merge-logs.py $BUILD_ID ~/arpanet-logs"
-
-          mkdir -p site/build-logs
-
-          scp -o StrictHostKeyChecking=accept-new \
-            ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/merged.log \
-            site/build-logs/merged.log || true
-
-          for component in VAX PDP11 COURIER GITHUB; do
-            if ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
-              "test -f ~/arpanet-logs/builds/$BUILD_ID/${component}.log"; then
-              scp -o StrictHostKeyChecking=accept-new \
-                ubuntu@edcloud:~/arpanet-logs/builds/$BUILD_ID/${component}.log \
-                site/build-logs/${component}.log
-            fi
+            sleep 10
           done
 
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
-            'cd ~/arpanet-logs/builds && ls -t | tail -n +21 | xargs -r rm -rf'
+          FINAL_STATUS="$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query 'Status' \
+            --output text)"
+          if [[ "$FINAL_STATUS" != "Success" ]]; then
+            echo "SSM command did not complete successfully: $FINAL_STATUS" >&2
+            aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query '{Status:Status,StdOut:StandardOutputContent,StdErr:StandardErrorContent}'
+            exit 1
+          fi
 
-          echo "✅ Logs merged and retrieved"
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query 'StandardOutputContent' \
+            --output text > /tmp/edcloud-stdout.txt
 
-      - name: Generate enterprise logs page
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-        run: |
-          echo "📄 Generating enterprise logs page..."
+          awk '/^<<<BRAD_MAN_TXT_BASE64_BEGIN>>>/{flag=1;next}/^<<<BRAD_MAN_TXT_BASE64_END>>>/{flag=0}flag' /tmp/edcloud-stdout.txt \
+            | tr -d '\n' > /tmp/brad.man.txt.b64
 
-          python3 scripts/generate-logs-page.py \
-            --build-id "$BUILD_ID" \
-            --merged site/build-logs/merged.log \
-            --output site/logs/index.html
+          if [[ ! -s /tmp/brad.man.txt.b64 ]]; then
+            echo "Vintage artifact not found in SSM output" >&2
+            cat /tmp/edcloud-stdout.txt >&2
+            exit 1
+          fi
 
-          echo "✅ Logs page generated at site/logs/index.html"
-
-      - name: Generate build info widget
-        if: steps.mode.outputs.build_mode == 'docker'
-        env:
-          BUILD_ID: ${{ steps.build_id.outputs.build_id }}
-        run: |
-          echo "📊 Generating build info widget..."
-
-          ssh -o StrictHostKeyChecking=accept-new ubuntu@edcloud \
-            "python3 ~/brfid.github.io/scripts/generate-build-info.py $BUILD_ID ~/arpanet-logs /tmp/build-info"
-
-          mkdir -p site/build-info
-          scp -o StrictHostKeyChecking=accept-new \
-            ubuntu@edcloud:/tmp/build-info/build-info.json site/build-info/
-          scp -o StrictHostKeyChecking=accept-new \
-            ubuntu@edcloud:/tmp/build-info/build-info.html site/build-info/
-          cp templates/build-info.css site/build-info/
-
-          echo "✅ Build info widget generated"
+          mkdir -p hugo/static
+          base64 -d /tmp/brad.man.txt.b64 > hugo/static/brad.man.txt
 
       - name: Sync resume data for Hugo
         run: cp resume.yaml hugo/data/resume.yaml
 
       - name: Build Hugo site
-        run: hugo --source hugo --destination ../site
+        run: hugo --source hugo --destination site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -557,63 +275,39 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Deactivate edcloud infrastructure
-        if: always() && steps.mode.outputs.build_mode == 'docker'
+      - name: Stop edcloud instance
+        if: always() && steps.mode.outputs.build_mode == 'vintage'
+        continue-on-error: true
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
-          EDCLOUD_INSTANCE_ID: ${{ secrets.EDCLOUD_INSTANCE_ID }}
-          ACTIVATED_INSTANCE_ID: ${{ steps.edcloud_activate.outputs.instance_id }}
+          INSTANCE_ID: ${{ steps.edcloud_start.outputs.instance_id }}
+          WAS_RUNNING: ${{ steps.edcloud_start.outputs.was_running }}
         run: |
-          ts() { date -u '+%Y-%m-%d %H:%M:%S'; }
+          set -uo pipefail
 
-          INSTANCE_ID="${ACTIVATED_INSTANCE_ID:-$EDCLOUD_INSTANCE_ID}"
           if [[ -z "$INSTANCE_ID" ]]; then
-            INSTANCE_ID="$(aws ec2 describe-instances \
-              --filters \
-                Name=tag:edcloud:managed,Values=true \
-                Name=tag:Name,Values=edcloud \
-                Name=instance-state-name,Values=pending,running,stopping,stopped \
-              --query "Reservations[].Instances[] | sort_by(@, &LaunchTime)[-1].InstanceId" \
-              --output text)"
-          fi
-          if [[ -z "$INSTANCE_ID" || "$INSTANCE_ID" == "None" ]]; then
-            echo "No edcloud instance found to deactivate."
+            echo "No instance id captured; skipping stop"
             exit 0
           fi
 
-          echo "[$(ts) GITHUB] EDCLOUD_DEACTIVATE_BEGIN instance_id=$INSTANCE_ID" >> /tmp/github.log
-          echo "🛑 Stopping edcloud instance..."
-          aws ec2 stop-instances --instance-ids "$INSTANCE_ID" >/dev/null
+          if [[ "$WAS_RUNNING" == "true" ]]; then
+            echo "edcloud was already running before this workflow; leaving it running"
+            exit 0
+          fi
 
-          echo "⏳ Waiting for instance to stop..."
-          aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"
+          echo "Stopping edcloud instance $INSTANCE_ID"
+          if ! aws ec2 stop-instances --instance-ids "$INSTANCE_ID" >/dev/null; then
+            echo "::warning::Failed to request stop for $INSTANCE_ID"
+            exit 0
+          fi
 
-          echo "[$(ts) GITHUB] EDCLOUD_DEACTIVATE_COMPLETE instance_id=$INSTANCE_ID" >> /tmp/github.log
-          echo "✅ edcloud infrastructure deactivated"
-
-      - name: Clean up old deployments
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          KEEP=3
-          ALL=$(gh api "repos/${{ github.repository }}/deployments?environment=github-pages&per_page=100" \
-            --paginate --jq '.[].id' | sort -n)
-          TOTAL=$(echo "$ALL" | wc -l)
-          SKIP=$((TOTAL > KEEP ? TOTAL - KEEP : 0))
-          echo "$ALL" | head -n "$SKIP" | while read -r id; do
-            gh api "repos/${{ github.repository }}/deployments/$id/statuses" \
-              -X POST -f state=inactive 2>/dev/null || true
-            gh api "repos/${{ github.repository }}/deployments/$id" \
-              -X DELETE 2>/dev/null && echo "Removed deployment $id" || true
-          done
+          if ! aws ec2 wait instance-stopped --instance-ids "$INSTANCE_ID"; then
+            echo "::warning::Timed out waiting for $INSTANCE_ID to stop"
+          fi
 
       - name: Summary
         run: |
-          echo "## ✅ Deployment Complete" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Mode**: ${{ steps.mode.outputs.mode_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**URL**: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Mode: ${{ steps.mode.outputs.mode_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "URL: ${{ steps.deployment.outputs.page_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Tag: ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"

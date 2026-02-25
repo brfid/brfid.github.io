@@ -17,13 +17,19 @@ semantic version tags.
   available locally via `make sync-resume-data` / `make hugo-build`.
 - `site/` is gitignored — Hugo (and vintage pipeline mkdir calls) generate it
   fresh in CI. Do not commit anything to `site/`.
-- `deploy.yml` restructured: mode detected first; Python/quality checks/Playwright
-  run only in `docker` (vintage) mode. Local publish path is Hugo-only.
-- Deploy triggers are hardened to unique publish tag patterns only (`publish-fast-*`,
-  `publish-vintage-*`, plus legacy wildcard aliases) so stale fixed tags cannot
-  accidentally republish old commits.
+- `deploy.yml` now uses a minimal control-plane model:
+  - local mode builds Hugo only,
+  - vintage mode uses AWS OIDC + EC2 start/stop + single SSM invocation.
+- Deploy triggers are now limited to `publish-fast-*` and `publish-vintage-*`.
 - Vintage pipeline: Stage 4 now copies `brad.man.txt` to `hugo/static/brad.man.txt`
   (not `site/`), so Hugo owns that path in the build.
+- Vintage orchestration is centralized in `scripts/edcloud-vintage-runner.sh`;
+  GitHub Actions no longer embeds multi-stage console choreography.
+- `scripts/edcloud-vintage-runner.sh` now applies standard runtime cleanup on exit
+  (screen session cleanup, `docker compose down --remove-orphans --volumes`,
+  run-scoped temp file removal) with `KEEP_RUNTIME=1` debug override.
+- Vintage post-deploy EC2 stop is now best-effort/non-blocking so publish result is
+  not coupled to teardown transient failures.
 - edcloud lifecycle entrypoints (`aws-start.sh`, `aws-stop.sh`, `aws-status.sh`)
   now delegate to a shared Python CLI (`scripts/edcloud_lifecycle.py`) to reduce
   duplicated AWS instance-resolution logic while keeping shell wrappers for operators.
@@ -47,12 +53,10 @@ semantic version tags.
 - Commit `hugo/static/resume.pdf` (generated locally) so `/resume.pdf` is present on
   next deploy.
 - Run first intentional Hugo-era deploy after custom-domain UI step is complete.
-- Rehearse full distributed vintage Stage 1-3 flow on edcloud with updated non-probing
-  PDP-11 readiness checks to confirm end-to-end stability.
+- Validate end-to-end `publish-vintage-*` run under the new OIDC + SSM bootstrap path.
 
 ### In Progress
-- Vintage pipeline stabilization follow-through: validating that Stage 2/3 console
-  transfer and PDP-11 validation remain stable after readiness/probe fixes.
+- None.
 
 ### Blocked
 - None.
@@ -67,6 +71,18 @@ semantic version tags.
   - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
 
 ### Recently Completed
+- Added standard/simple teardown behavior for vintage runs:
+  - runner-level exit trap cleanup in `scripts/edcloud-vintage-runner.sh`,
+  - post-deploy best-effort EC2 stop semantics in `.github/workflows/deploy.yml`.
+- Refactored vintage deploy architecture to a clean control-plane/execution-plane split:
+  GitHub Actions now performs AWS bootstrap only (OIDC + start/stop + SSM), and
+  edcloud-side orchestration is centralized in `scripts/edcloud-vintage-runner.sh`.
+- Replaced SSH/Tailscale-driven deploy choreography in `.github/workflows/deploy.yml`
+  with single-command SSM invocation and marker-based artifact extraction into
+  `hugo/static/brad.man.txt`.
+- Updated active docs (`README.md`, `WORKFLOWS.md`, `ARCHITECTURE.md`,
+  `docs/integration/INDEX.md`, `docs/vax/README.md`) to match the new boundary and
+  remove stale `resume.vax.yaml`/`site/brad.man.txt` terminology.
 - Added concise repository contribution/hygiene guidance for public-readiness:
   `CONTRIBUTING.md`.
 - Added automated secret scanning workflow `.github/workflows/secret-scan.yml`

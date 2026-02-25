@@ -7,9 +7,11 @@ Active pipeline integration reference for the VAX/PDP-11 vintage computing artif
 Single-host `edcloud` instance running VAX and PDP-11 containers via `docker-compose.production.yml`.
 
 - VAX (VMS/BSD) compiles the resume artifact and encodes it via uuencode
-- GitHub Actions SSHes into edcloud, injects encoded data into PDP-11 console via screen/telnet
+- GitHub Actions invokes one SSM command on edcloud; all console choreography runs there
 - PDP-11 (2.11BSD) decodes with `uudecode` and typesets with `nroff`
 - Output: `brad.man.txt` → committed to `hugo/static/` → served by Hugo
+- Single orchestration entrypoint: `scripts/edcloud-vintage-runner.sh`
+- Runner performs standard cleanup on exit; use `KEEP_RUNTIME=1` only for debug sessions
 
 Source of truth for current behavior: `../../README.md`, `../../CHANGELOG.md` (`[Unreleased]`), `../../WORKFLOWS.md`.
 

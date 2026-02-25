@@ -9,9 +9,8 @@ genres:
       Documentation built for machine consumption — structured context files and
       content optimized for LLM retrieval and generation workflows.
     items:
-      # TODO: add URL for LLM context files (ask: what is the docs.domaintools.com path?)
       - title: DomainTools LLM Context Files
-        url: ""
+        url: https://docs.domaintools.com/llm/
         description: >-
           Auto-generated structured context files covering DomainTools API products
           and data schemas; produced by CI/CD pipeline for use in LLM tooling and
@@ -51,7 +50,6 @@ genres:
 
   - name: User Guides
     items:
-      # TODO: add specific user guide links (ask: which user guide pages best show range?)
       - title: DomainTools Product Documentation
         url: https://docs.domaintools.com
         description: >-

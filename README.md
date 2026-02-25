@@ -30,7 +30,7 @@ hugo --source hugo --destination site
 
 ## Vintage pipeline (optional)
 
-Generates `brad.man.txt` — a resume rendered on VAX hardware via SIMH — which drops into `hugo/static/` before the Hugo build.
+Generates `brad.man.txt` — a resume rendered on VAX/PDP-11 via SIMH — and drops it into `hugo/static/` before the Hugo build.
 
 **Setup:**
 
@@ -47,9 +47,28 @@ python3 -m venv .venv
 .venv/bin/python -m ruff check resume_generator
 ```
 
-**Publish:** push a `publish-vintage-*` tag → full pipeline runs in CI (Python quality gates + VAX/PDP-11 build + Hugo).
+**Publish:** push a `publish-vintage-*` tag → CI does a minimal bootstrap:
 
-Infrastructure lifecycle (starting/stopping the edcloud instance) is managed separately: [brfid/edcloud](https://github.com/brfid/edcloud).
+1. assumes an AWS role via OIDC,
+2. starts the edcloud instance (if needed),
+3. invokes a single SSM command that runs `scripts/edcloud-vintage-runner.sh` on edcloud,
+4. extracts `brad.man.txt` from runner output into `hugo/static/brad.man.txt`,
+5. builds Hugo and deploys Pages,
+6. best-effort stops edcloud if the workflow started it.
+
+The vintage orchestration itself now lives in one place: `scripts/edcloud-vintage-runner.sh`.
+By default the runner performs runtime cleanup on exit (screen sessions, compose teardown, temp files);
+set `KEEP_RUNTIME=1` when debugging to keep containers running.
+
+Infrastructure lifecycle policy and provisioning remain managed separately: [brfid/edcloud](https://github.com/brfid/edcloud).
+
+**Vintage CI prerequisites:**
+
+- edcloud EC2 instance must be SSM-managed (SSM Agent + IAM permissions).
+- GitHub repo secrets:
+  - `AWS_ROLE_TO_ASSUME`
+  - `AWS_REGION`
+  - optional `EDCLOUD_INSTANCE_ID` (otherwise instance resolves by `edcloud` tags).
 
 ```bash
 .venv/bin/python scripts/edcloud_lifecycle.py start
