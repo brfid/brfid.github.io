@@ -1,8 +1,8 @@
 # Archived: KS10 Emulator Boot Failures
 
 **Date Archived**: 2026-02-11
-**Reason**: KS10 emulator incompatible with both ITS and TOPS-20, superseded by KL10
-**Superseded By**: KL10 emulator approach (see `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`)
+**Reason**: KS10 emulator incompatible with both ITS and TOPS-20
+**Status**: dead end for this repository's current objectives
 
 ## What's Here
 
@@ -40,15 +40,11 @@ Documentation of KS10 boot failures for both ITS and TOPS-20. Both OSes failed w
 3. ❌ Runtime boot failed with "PC: 000100"
 4. ❌ Container restart loop
 
-**See**: `LLM-RUNTIME-BOOT-LOOP-2026-02-09.md`
-
 ### TOPS-20 Path
 1. ✅ TOPS-20 V4.1 tape obtained
 2. ✅ Tape attached successfully to TUA0
 3. ✅ Console configuration fixed (stdio mode)
 4. ❌ `boot tua0` failed with "Stop code 7, PC: 000100"
-
-**See**: `TOPS20-TAPE-BOOT-FAILURE.md`
 
 ## Time Investment
 
@@ -78,14 +74,7 @@ Only if:
 
 **Not recommended**: KL10 is proven solution, KS10 is dead end
 
-## Files
-
-- `LLM-RUNTIME-BOOT-LOOP-2026-02-09.md` - ITS boot failure analysis
-- `TOPS20-TAPE-BOOT-FAILURE.md` - TOPS-20 tape boot failure analysis
-
 ## Current Path
 
-**KL10 + Serial + FTP** (VAX → PDP-10 file transfer)
-- See: `docs/arpanet/KL10-SERIAL-FTP-PLAN.md`
-- See: `docs/arpanet/progress/NEXT-STEPS.md`
-- Uses: KL10 emulator (not KS10)
+No current path in this repo depends on PDP-10 runtime.
+See `../../DEAD-ENDS.md` for canonical retirement status.

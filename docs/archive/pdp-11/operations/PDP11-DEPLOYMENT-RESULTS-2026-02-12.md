@@ -219,7 +219,7 @@ To complete boot manually:
 - **2.11BSD Documentation**: [211bsd_rpethset README](https://www.retro11.de/data/oc_w11/oskits/)
 - **SIMH GitHub**: [github.com/simh/simh](https://github.com/simh/simh)
 - **PDP-11 Host Plan**: docs/arpanet/PDP11-HOST-REPLACEMENT-PLAN.md
-- **PDP-10 Test Results**: docs/arpanet/PANDA-TEST-RESULTS-2026-02-12.md
+- **PDP-10 Dead-End Summary**: docs/archive/pdp-10/ks10/README.md
 
 ---
 

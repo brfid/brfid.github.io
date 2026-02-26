@@ -200,8 +200,8 @@ Once VAX build runs inside BSD:
 
 - ✅ `ARCHITECTURE-STACK.md` - Already explains layers
 - ✅ `PDP11-DEBUG-FINDINGS.md` - Documents investigation
-- ⏳ Update `UUENCODE-IMPLEMENTATION-STATUS.md` - Reflect /usr mount fix
-- ⏳ Update `BUILD-PIPELINE-EXPLAINED.md` - Clarify where tools run
+- ⏳ Update retained archive summaries to reflect /usr mount fix
+- ⏳ Keep active transfer docs focused on current runbook and verified execution boundaries
 - ⏳ Create `VAX-BUILD-FIX.md` - Document VAX layer fix
 
 ---

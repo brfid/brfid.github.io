@@ -3,7 +3,11 @@
 This document records **removed** transfer approaches so they can be restored later
 without digging through old commits.
 
-Current active transport is **TS11 tape** (see `resume_generator/vax_stage.py`).
+This file was written for a prior pipeline implementation and is retained as
+historical context only.
+
+Current active VAX↔PDP-11 transfer path is console-based Stage 2 orchestration in
+`scripts/edcloud-vintage-runner.sh` (see `docs/integration/INDEX.md`).
 
 ---
 

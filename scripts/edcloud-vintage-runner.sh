@@ -139,7 +139,8 @@ start_stack() {
   cd "$ROOT_DIR"
   docker compose -f docker-compose.production.yml up -d --build
 
-  wait_for_log_signal "vax-host" "%SIM-INFO: Listening on port 2323" 120
+  # VAX SIMH emits "Listening on port 2323" without the %SIM-INFO prefix.
+  wait_for_log_signal "vax-host" "Listening on port 2323" 120
   wait_for_log_signal "pdp11-host" "%SIM-INFO: Listening on port 2327" 120
 }
 
@@ -200,16 +201,29 @@ stage1_vax_build() {
   session="vax-build-${BUILD_ID}"
   cleanup_screen "$session"
   screen -dmS "$session" telnet 127.0.0.1 2323
-  sleep 3
+  sleep 8
   send_screen "$session" "\n"
-  sleep 1
+  sleep 2
   send_screen "$session" "root\n"
   sleep 2
+  send_screen "$session" "\n"
+  sleep 2
+  send_screen "$session" "root\n"
+  sleep 2
+  send_screen "$session" "echo __VAX_BUILD_READY__\n"
+  sleep 2
+  screen -S "$session" -X hardcopy "/tmp/vax-build-console-$BUILD_ID.txt"
+  if ! grep -q "__VAX_BUILD_READY__" "/tmp/vax-build-console-$BUILD_ID.txt"; then
+    echo "VAX build session did not reach a shell prompt"
+    tail -80 "/tmp/vax-build-console-$BUILD_ID.txt" || true
+    cleanup_screen "$session"
+    return 1
+  fi
   send_screen "$session" "cd /tmp\n"
   sleep 1
   send_screen "$session" "/tmp/vax-build-and-encode.sh $BUILD_ID\n"
 
-  sleep 35
+  sleep 45
   screen -S "$session" -X hardcopy "/tmp/vax-build-console-$BUILD_ID.txt"
   cleanup_screen "$session"
 

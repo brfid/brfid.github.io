@@ -28,16 +28,6 @@ See `../../vintage/machines/vax/resume.vax.example.yaml` for an example.
 ## Future Enhancement: Direct YAML Parsing
 
 The current design uses Python to preprocess `resume.yaml` into a simplified subset
-(`resume.vintage.yaml`) before the VAX-side parser processes it. An alternative approach
-would be to enhance the C parser to handle more of the original YAML directly.
-
-See `../archive/pipeline-planning/vax-yaml-parser-enhancement.md` for a detailed proposal on:
-- Eliminating the Python preprocessing step
-- Adding bare string, multi-line, and single-quote support (~85 lines)
-- Comparison with JSON parser alternatives
-- Implementation strategy and code examples
-
-Reference materials in `../archive/vax/examples/`:
-- `yaml_parser_analysis.md` - Feature-by-feature analysis
-- `parsing_examples.txt` - Side-by-side format comparisons
-- `minimal_json_parser.c` - JSON parser complexity demonstration
+(`resume.vintage.yaml`) before the VAX-side parser processes it. Historical parser
+enhancement experiments were intentionally removed during archive tightening because
+they were low-value for the active pipeline.

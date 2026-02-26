@@ -18,8 +18,11 @@ Source of truth for current behavior: `../../README.md`, `../../CHANGELOG.md` (`
 ## Active runbooks
 
 - [`operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md`](operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md) — serialized cold-start diagnostic path for Stage 1→3 rehearsal on edcloud
+- [`CONTEXT-SOURCES.md`](CONTEXT-SOURCES.md) — curated historical context that still informs current transfer debugging
 
 ## Related
 
 - [`../vax/INDEX.md`](../vax/INDEX.md) — VAX operational reference
-- [`../archive/pipeline-planning/`](../archive/pipeline-planning/) — historical build records and validation logs
+- [`../archive/DEAD-ENDS.md`](../archive/DEAD-ENDS.md) — retired/blocked paths explicitly marked
+- [`../archive/pipeline-planning/VAX-PDP11-VALIDATION-2026-02-14.md`](../archive/pipeline-planning/VAX-PDP11-VALIDATION-2026-02-14.md) — high-signal historical validation checkpoints
+- [`../archive/pipeline-planning/DEBUGGING-SUMMARY-2026-02-14.md`](../archive/pipeline-planning/DEBUGGING-SUMMARY-2026-02-14.md) — guest-vs-host execution lessons still relevant

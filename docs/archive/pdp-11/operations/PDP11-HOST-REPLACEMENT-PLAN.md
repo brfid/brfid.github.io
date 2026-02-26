@@ -98,7 +98,7 @@ Likely touchpoints when executing this plan:
 - Topology model and generation:
   - `arpanet/topology/definitions.py`
   - `arpanet/topology/generators.py`
-  - `docs/arpanet/operations/TOPOLOGY-README.md`
+  - retained archive summaries in `docs/archive/arpanet/README.md`
 - Compose/runtime:
   - `docker-compose.*.yml` (new or updated target file)
   - `arpanet/configs/` (new host config)
@@ -106,8 +106,8 @@ Likely touchpoints when executing this plan:
   - `arpanet/scripts/test_*.py` and related shell tests
 - Canonical docs/status:
   - `CHANGELOG.md`
-  - `docs/arpanet/progress/NEXT-STEPS.md`
-  - `docs/arpanet/INDEX.md`
+  - `docs/archive/DEAD-ENDS.md`
+  - `docs/archive/README.md`
   - `docs/INDEX.md`
 
 ---

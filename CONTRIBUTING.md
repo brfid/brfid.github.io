@@ -12,10 +12,9 @@ Thanks for your interest in improving this repository.
 ## Tag hygiene
 
 - Deploy tags are operational, not release history.
-- Keep only a short rolling window of timestamp deploy tags (`publish-fast-*`, dated
-  `publish-vax-*`, dated `publish-vax-logs-*`).
-- Keep milestone/version tags (`publish-v*`, `publish-vax-v*`, named pipeline milestones)
-  unless explicitly retired.
+- Keep only a short rolling window of timestamp deploy tags (`publish-fast-*`,
+  `publish-vintage-*`).
+- Keep milestone/version tags intentionally and document their meaning when added.
 
 ## Local validation
 

@@ -24,6 +24,8 @@ Then apply `../AGENTS.md` constraints.
 - `vax/INDEX.md` — VAX operational reference
 - `integration/INDEX.md` — VAX ↔ PDP-11 pipeline integration
 - `integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md` — active cold-start runbook
+- `integration/CONTEXT-SOURCES.md` — curated historical context for current transfer debugging
+- `archive/DEAD-ENDS.md` — explicit retired/blocked experiment paths
 
 ### Site
 

@@ -1,8 +1,14 @@
 # Telnet Console Method - Universal SIMH Boot Automation
 
 **Date**: 2026-02-12
-**Status**: ✅ Proven working on PDP-11, ready to apply to other systems
-**Impact**: Solves "unsolvable" console automation problem
+**Status**: Historical reference; partially applicable
+**Scope**:
+- VAX↔PDP-11 console-session discipline remains relevant
+- PDP-10/ARPANET sections in this document are retained history, not active pipeline guidance
+**Use for current work**:
+- Primary runbook: `../integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md`
+- Active integration index: `../integration/INDEX.md`
+- Retired/blocked paths: `../archive/DEAD-ENDS.md`
 
 ---
 

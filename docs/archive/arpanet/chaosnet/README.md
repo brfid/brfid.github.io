@@ -1,7 +1,7 @@
 # Archived: Path A (Chaosnet-First Approach)
 
 **Date Archived**: 2026-02-11
-**Reason**: Blocked on PDP-10 ITS disk build, superseded by Serial Tunnel approach
+**Reason**: Blocked on PDP-10 ITS disk build
 
 ## What's here
 
@@ -31,14 +31,9 @@ Yes, if:
 - Alternative PDP-10 emulator with Chaosnet support found
 - Someone wants the historically-authentic ITS/Chaosnet experience
 
-## Files
+## Retention note
 
-- `PATH-A-CHAOSNET-PLAN.md` - Implementation plan
-- `PATH-A-CHAOSNET-RESULTS.md` - Protocol verification results
-- `LLM-PATH-A-CHAOSNET-ITS-BLOCKER-2026-02-11.md` - Blocker analysis
+Detailed Path A artifacts were removed during archive cleanup because they were
+low-value dead-end records. This summary is retained as the canonical marker.
 
-## Current Path
-
-**Serial Tunnel** (VAX ↔ PDP-10 direct connection)
-- See: `docs/arpanet/SERIAL-TUNNEL.md`
-- See: `docs/arpanet/progress/NEXT-STEPS.md`
+See `../../DEAD-ENDS.md` for active retirement status.

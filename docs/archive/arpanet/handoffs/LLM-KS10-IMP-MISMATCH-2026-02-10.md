@@ -79,7 +79,5 @@ For next cold starts:
 
 ## References
 
-- `docs/arpanet/handoffs/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
-- `docs/arpanet/handoffs/LLM-PDP10-FTP-BLOCKER-2026-02-10.md`
-- `docs/arpanet/progress/PHASE3-PROGRESS.md`
-- `docs/arpanet/progress/NEXT-STEPS.md`
+- `docs/archive/arpanet/handoffs/LLM-HOST-LINK-BLOCKER-2026-02-09.md`
+- `docs/archive/DEAD-ENDS.md`
