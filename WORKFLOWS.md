@@ -24,6 +24,8 @@ Current workflow map for `.github/workflows/`.
 - Trigger: push to `main`, pull requests, manual dispatch
 - Runs:
   - `gitleaks/gitleaks-action@v2` with full history checkout (`fetch-depth: 0`)
+  - `GITLEAKS_LOG_OPTS: --all --no-merges` — scans full history rather than a
+    push-delta range; avoids git error when force-push orphans the before SHA
 
 ## Marker taxonomy
 
