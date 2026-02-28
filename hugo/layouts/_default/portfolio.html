@@ -1,0 +1,38 @@
+{{- define "main" }}
+{{- $p := .Site.Data.portfolio }}
+
+<article class="post-single">
+  <header class="post-header">
+    <h1 class="post-title entry-hint-parent">Portfolio</h1>
+  </header>
+
+  <div class="post-content">
+    {{- range $p.sections }}
+    <section class="resume-section">
+      <h2>{{ .title }}</h2>
+      {{- range .items }}
+      <div class="resume-item">
+        <div class="resume-item-head">
+          <strong>
+            {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
+            {{- if eq .status "in-progress" }} <span class="portfolio-badge">In progress</span>{{ end }}
+          </strong>
+          {{- with .year }}<span class="resume-dates">{{ . }}</span>{{ end }}
+        </div>
+        {{- if or .publisher .role }}
+        <div class="resume-item-sub">
+          {{- .publisher }}{{ if and .publisher .role }} · {{ end }}{{ .role }}
+        </div>
+        {{- end }}
+        {{- with .summary }}<p>{{ . }}</p>{{ end }}
+        {{- with .tags }}
+        <span class="resume-keywords">{{ delimit . " · " }}</span>
+        {{- end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+  </div>
+</article>
+
+{{- end }}

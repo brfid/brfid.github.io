@@ -11,7 +11,7 @@ buildFuture = false
 [params]
   env = "production"
   author = "Bradley Fidler"
-  description = "Technical writer. Docs platforms, AI workflows, delivery."
+  description = "Technical writer specializing in API documentation, docs-as-code platforms, and AI-assisted authoring workflows for B2B developer tools and security products."
   defaultTheme = "dark"
   disableThemeToggle = false
   ShowReadingTime = true
@@ -20,10 +20,12 @@ buildFuture = false
   ShowCodeCopyButtons = true
   ShowShareButtons = false
   ShowFullTextinRSS = true
+  ShowToc = true
+  TocOpen = false
 
   [params.homeInfoParams]
     Title = "Bradley Fidler"
-    Content = "Technical writer — docs platforms, AI workflows, delivery."
+    Content = "Technical writer — API documentation, docs-as-code platforms, AI workflows."
 
   [[params.socialIcons]]
     name = "linkedin"
@@ -33,6 +35,10 @@ buildFuture = false
     name = "github"
     url = "https://github.com/brfid"
 
+  [[params.socialIcons]]
+    name = "rss"
+    url = "/index.xml"
+
 [menu]
   [[menu.main]]
     identifier = "posts"
@@ -40,20 +46,15 @@ buildFuture = false
     url = "/posts/"
     weight = 10
   [[menu.main]]
-    identifier = "work"
-    name = "Work"
-    url = "/work/"
+    identifier = "portfolio"
+    name = "Portfolio"
+    url = "/portfolio/"
     weight = 15
   [[menu.main]]
     identifier = "resume"
     name = "Resume"
     url = "/resume/"
     weight = 17
-  [[menu.main]]
-    identifier = "about"
-    name = "About"
-    url = "/about/"
-    weight = 20
 
 [outputs]
   home = ["HTML", "RSS", "JSON"]
@@ -64,3 +65,7 @@ buildFuture = false
   [markup.highlight]
     noClasses = false
     style = "monokai"
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = false
