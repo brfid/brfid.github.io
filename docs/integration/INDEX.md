@@ -4,7 +4,8 @@ Active pipeline integration reference.
 
 ## Architecture
 
-Single-host edcloud instance running VAX and PDP-11 containers via `docker-compose.production.yml`.
+Single-host edcloud instance. The runner builds and runs VAX and PDP-11 Docker images
+directly (`docker build` / `docker run`); no Compose orchestration is used in the pexpect pipeline.
 
 Orchestration uses **pexpect** driving SIMH emulators via stdin/stdout.
 No telnet console ports, no screen sessions, no sleep-based timing.

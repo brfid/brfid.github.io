@@ -14,7 +14,8 @@ Current active path:
 
 | Path | Status | Why retired |
 |------|--------|-------------|
-| screen + telnet + sleep orchestration | Retired | Timing-based heredoc injection with no handshake; inherently fragile. VAX login prompt unreliable after multiple rapid connections. Replaced by pexpect. |
+| screen + telnet + sleep orchestration | Retired | Timing-based heredoc injection with no handshake; inherently fragile. VAX login prompt unreliable after multiple rapid connections. Replaced by pexpect. Scripts deleted from `scripts/`. |
+| docker-compose.production.yml | Retired | Pre-pexpect compose file exposing telnet console ports. Replaced by `docker build`/`docker run` in `edcloud-vintage-runner.sh`. File removed from repo root. |
 | FTP (VAX guest → external FTP server) | Retired | VAX guest could not reliably reach the FTP server/container. Networking and routing inside the SIMH container were the issue. |
 | FTP (VAX → PDP-11 directly) | Not viable | PDP-11 2.11BSD `unix` kernel has no working Ethernet. `netnix` kernel crashes on `xq` init. Console-based (uuencode or pexpect heredoc) is the only viable file transfer path to PDP-11. |
 | uuencode/uudecode console transfer | Retired for now | Valid concept (authentic to era — simulates serial transfer), but the screen/telnet implementation was unreliable. May be revisited with pexpect. Not needed if host-mediated injection works. |

@@ -55,8 +55,8 @@ aws-stop:
 	@./aws-stop.sh
 
 clean:
-	@echo "Stopping production compose stack (if running)..."
-	@docker compose -f docker-compose.production.yml down 2>/dev/null || true
+	@echo "Removing generated build artifacts..."
+	@rm -rf build/ site/
 	@echo "Cleanup complete"
 
 sync-resume-data:
@@ -64,7 +64,7 @@ sync-resume-data:
 	@echo "Synced resume.yaml -> hugo/data/resume.yaml"
 
 hugo-build: sync-resume-data
-	@hugo --source hugo --destination site
+	@hugo --source hugo --destination ../site
 
 resume-pdf:
 	@.venv/bin/python -c "from pathlib import Path; import shutil; from resume_generator.cli import build_html; from resume_generator.pdf import build_pdf; out=Path('build/resume-pdf'); build_html(src=Path('resume.yaml'), out_dir=out, templates_dir=Path('templates')); pdf=build_pdf(out_dir=out, resume_url_path='/resume/', pdf_name='resume.pdf'); Path('hugo/static').mkdir(parents=True, exist_ok=True); shutil.copy2(pdf, Path('hugo/static/resume.pdf'))"
