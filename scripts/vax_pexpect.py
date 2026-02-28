@@ -169,12 +169,14 @@ def _boot(child: pexpect.spawn) -> None:
     _log("Got login: prompt")
 
     child.sendline("root")
-    # 4.3BSD may or may not prompt for a password (diagnostic run: no password).
-    idx = child.expect(["Password:", "#", "\\$"], timeout=_LOGIN_TIMEOUT)
+    # Use "# " (hash space) not "#" — the 4.3BSD kernel version string
+    # (e.g. "BSD UNIX #10") contains "#" without a following space; the
+    # actual root shell prompt is "# " or "hostname# ".
+    idx = child.expect(["Password:", "# ", "\\$ "], timeout=_LOGIN_TIMEOUT)
     if idx == 0:
         _log("Password prompt received — sending empty password")
         child.sendline("")
-        child.expect(["#", "\\$"], timeout=_LOGIN_TIMEOUT)
+        child.expect(["# ", "\\$ "], timeout=_LOGIN_TIMEOUT)
 
     _log("Logged in as root")
 
