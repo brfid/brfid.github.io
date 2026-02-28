@@ -363,7 +363,13 @@ def main(argv=None) -> int:
         _compile_and_run(child)
         brad1_text = _capture_brad1(child)
         child.sendline("exit")
-        child.expect(pexpect.EOF, timeout=30)
+        # 4.3BSD may restart getty/login after the shell exits rather than
+        # handing EOF back to SIMH immediately.  The finally block will
+        # force-terminate SIMH regardless, so a timeout here is non-fatal.
+        try:
+            child.expect(pexpect.EOF, timeout=30)
+        except pexpect.TIMEOUT:
+            _log("Note: SIMH did not exit cleanly within 30s; will force-terminate")
     except pexpect.TIMEOUT as exc:
         _log(f"TIMEOUT: {exc}")
         _log("Last SIMH output:")
