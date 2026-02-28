@@ -67,6 +67,7 @@ _BOOT_TIMEOUT = 180    # 4.3BSD on VAX boots in ~60-90 s under SIMH
 _LOGIN_TIMEOUT = 60    # after boot, login prompt appears within ~30 s
 _CMD_TIMEOUT = 60
 _COMPILE_TIMEOUT = 180 # cc on 4.3BSD VAX takes ~30-90 s for bradman.c
+_UUE_TIMEOUT = 180     # UUE heredoc + cat can take longer on slow VAX emulation
 _LINE_DELAY = 0.005    # 5 ms between heredoc lines; prevents tty buffer overrun
 
 # Paths written by Dockerfile.vax-pexpect at build time.
@@ -237,11 +238,13 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
         if _LINE_DELAY:
             time.sleep(_LINE_DELAY)
     child.sendline("HEREDOC_EOF")
-    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    # _UUE_TIMEOUT: the emulated VAX echoes all injected lines before closing
+    # the heredoc; on slow SIMH emulation this can take well over 60s.
+    child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
 
     # Decode: uudecode writes <name> into the current directory.
     child.sendline(f"cd {parent} && uudecode {tmp_uu} && rm {tmp_uu}")
-    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
     _log(f"UUE-decoded: {remote_path}")
 
 
