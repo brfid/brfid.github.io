@@ -68,13 +68,13 @@ jobs:
             echo "mode_name=Local (Hugo-only)" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure AWS credentials (OIDC)
+      - name: Configure AWS credentials
         if: steps.mode.outputs.build_mode == 'vintage'
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-          role-session-name: gh-pages-vintage
 
       - name: Start edcloud instance
         if: steps.mode.outputs.build_mode == 'vintage'
