@@ -41,17 +41,24 @@ Both stages are implemented on `feat/pexpect-pipeline`. Validation is in progres
    in `vax_pexpect.py`) — UUE lines are always ≤62 chars. bradman.c lines are short and
    use the plain heredoc path. 4.3BSD ships `uudecode` in `/usr/bin`.
 
-6. **UUE heredoc PTY echo stall**: A single heredoc with 90+ UUE lines causes the PTY
-   echo to stall indefinitely. Root cause: XON/XOFF flow control + tty input buffer
-   interaction. Two fixes applied together:
-   - `stty -ixon -ixoff` after login to disable flow control.
-   - Inject UUE in batches of 10 lines (10 × 62 = 620 chars per heredoc), appending
-     to the .uu file between batches. Each small heredoc completes promptly.
-
 5. **Custom shell prompt prevents false matches**: `PS1='VAXsh> '` is set immediately
    after login. The 4.3BSD kernel version string (`BSD UNIX #10`) contains `#` — using
    `"#"` as a prompt pattern causes early false match. Use `"# "` (hash space) instead,
    which is the actual root shell prompt format.
+
+6. **4.3BSD ERASE/KILL characters corrupt UUE injection**: 4.3BSD's default tty ERASE
+   character is `#` (0x23) and KILL is `@` (0x40). Both fall in the UUE character range
+   (0x20–0x60). Every `#` in a UUE-encoded line silently erases the previous character;
+   every `@` kills the entire input line. This corrupts UUE payloads without any visible
+   error — the heredoc appears to complete, but the decoded file is wrong or empty.
+   `bradman.c` injection was unaffected because it uses the plain heredoc path (not UUE).
+   Fix: immediately after login, run `stty erase DEL kill Ctrl-U` (send the actual bytes
+   `\x7f` and `\x15`, not caret notation) to move both special chars outside the UUE range.
+   This must happen before any UUE heredoc injection.
+
+7. **UUE heredoc PTY echo stall**: A single heredoc with 90+ UUE lines can cause the PTY
+   echo to stall. Fix: inject UUE in batches of 10 lines (10 × 62 = 620 chars per heredoc),
+   appending to the `.uu` file between batches. Each small heredoc completes promptly.
 
 ---
 

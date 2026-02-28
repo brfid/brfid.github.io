@@ -35,8 +35,10 @@ semantic version tags.
   - `vintage/machines/vax/Dockerfile.vax-pexpect` — pexpect Docker image
   - `scripts/edcloud-vintage-runner.sh` — rewritten; no screen/telnet
   - `.github/workflows/deploy.yml` — timeout bumped (job 70 min, SSM 50 min)
-  - **Validation in progress** — multiple debug runs. Current fix on edcloud:
-  chunked UUE injection (10 lines/batch) + stty -ixon -ixoff.
+  - **Validation in progress** — multiple debug runs. Current fix pending:
+  chunked UUE injection (10 lines/batch) + `stty erase DEL kill Ctrl-U` after
+  login to move 4.3BSD ERASE (`#`, 0x23) and KILL (`@`, 0x40) out of the UUE
+  character range (0x20–0x60).
 
 ### Active Priorities
 1. **Confirm edcloud validation**: Second pipeline run in progress
@@ -65,7 +67,11 @@ semantic version tags.
   4. YAML tty overflow — lines up to 571 chars exceed 256-byte tty CANBSIZ;
      switched to uuencode injection.
   5. UUE stall — single 94-line heredoc stalls PTY echo after ~180s; fixed with
-     10-line chunks + stty -ixon -ixoff to disable flow control.
+     10-line batches per heredoc (chunked injection).
+  6. ERASE/KILL corruption — 4.3BSD default ERASE is `#` (0x23) and KILL is `@`
+     (0x40), both in UUE character range. Every `#` in a UUE line erased the
+     previous char; every `@` killed the line. Fix: `stty erase \x7f kill \x15`
+     immediately after login (DEL and Ctrl-U are outside UUE range).
 - **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and
   `vax-pexpect` images built successfully. Images cached with `KEEP_IMAGES=1`.
 - **Pexpect pipeline implementation (2026-02-28):** Stage A (PDP-11), Stage B

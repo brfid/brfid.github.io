@@ -183,6 +183,19 @@ def _boot(child: pexpect.spawn) -> None:
 
     _log("Logged in as root")
 
+    # 4.3BSD's default ERASE character is '#' (0x23) and KILL is '@' (0x40).
+    # Both fall in the UUE character range (0x20-0x60): each '#' in a UUE
+    # heredoc erases the previous input character; each '@' kills the entire
+    # input line. This silently corrupts UUE injection while bradman.c (which
+    # contains no '#' or '@') works fine.
+    #
+    # Change ERASE to DEL (0x7F) and KILL to Ctrl-U (0x15) — both are outside
+    # the UUE range. Send the actual bytes, not caret-notation strings, so the
+    # 4.3BSD shell receives the single-character argument stty expects.
+    child.sendline("stty erase \x7f kill \x15")
+    child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
+    _log("stty: ERASE → DEL, KILL → Ctrl-U (safe for UUE injection)")
+
     # Set a distinctive prompt before injecting any file content.
     child.sendline("PS1='" + _PROMPT + "'")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
