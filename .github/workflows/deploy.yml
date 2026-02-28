@@ -180,6 +180,8 @@ jobs:
           commands = [
               "set -eu",  # pipefail not available in /bin/sh (dash); use sh-compatible options
               "export DEBIAN_FRONTEND=noninteractive",
+              # SSM runs as root; repo is owned by ubuntu — allow git to operate in it.
+              "git config --global --add safe.directory /home/ubuntu/brfid.github.io",
               f"export GIT_SHA='{os.environ['GIT_SHA']}'",
               f"export BUILD_ID='{os.environ['BUILD_ID']}'",
               "cd /home/ubuntu || cd ~",
