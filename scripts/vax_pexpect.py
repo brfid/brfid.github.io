@@ -25,9 +25,11 @@ Exit codes:
 """
 
 import argparse
+import io
 import sys
 import time
 import unicodedata
+import uu
 from pathlib import Path
 
 import pexpect
@@ -191,6 +193,10 @@ def _inject_file(child: pexpect.spawn, remote_path: str, content: str) -> None:
 
     Quoted delimiter suppresses all shell substitution, so '#include', '$',
     and backslashes in C source are passed through literally.
+
+    Use only for content where all lines are ≤200 chars. The 4.3BSD tty
+    canonical input buffer is 256 bytes; longer lines trigger BEL and get
+    truncated. For long-line content use _inject_file_uue() instead.
     """
     lines = content.splitlines()
     _log(f"Injecting {len(lines)} lines → {remote_path}")
@@ -202,6 +208,41 @@ def _inject_file(child: pexpect.spawn, remote_path: str, content: str) -> None:
     child.sendline("HEREDOC_EOF")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
     _log(f"Injected {remote_path}")
+
+
+def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> None:
+    """Inject content via uuencode to bypass the 4.3BSD 256-byte tty line limit.
+
+    UUE-encoded lines are always ≤62 characters. The encoded payload is
+    injected into a temp .uu file via heredoc, then uudecode recreates
+    the original file at remote_path. 4.3BSD ships uudecode in /usr/bin.
+    """
+    name = Path(remote_path).name
+    parent = str(Path(remote_path).parent)
+
+    in_buf = io.BytesIO(content)
+    out_buf = io.BytesIO()
+    uu.encode(in_buf, out_buf, name, 0o644)
+    uue_lines = out_buf.getvalue().decode("ascii").splitlines()
+
+    tmp_uu = f"/tmp/{name}.uu"
+    _log(
+        f"UUE-injecting {len(uue_lines)} encoded lines "
+        f"({len(content)} bytes) → {remote_path}"
+    )
+
+    child.sendline(f"cat > {tmp_uu} << 'HEREDOC_EOF'")
+    for line in uue_lines:
+        child.sendline(line)
+        if _LINE_DELAY:
+            time.sleep(_LINE_DELAY)
+    child.sendline("HEREDOC_EOF")
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+
+    # Decode: uudecode writes <name> into the current directory.
+    child.sendline(f"cd {parent} && uudecode {tmp_uu} && rm {tmp_uu}")
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    _log(f"UUE-decoded: {remote_path}")
 
 
 def _compile_and_run(child: pexpect.spawn) -> None:
@@ -276,7 +317,9 @@ def main(argv=None) -> int:
     try:
         _boot(child)
         _inject_file(child, "/tmp/bradman.c", bradman_c)
-        _inject_file(child, "/tmp/resume.vintage.yaml", resume_yaml)
+        # Use UUE injection for YAML: resume.vintage.yaml has lines up to 500+
+        # chars which overflow the 4.3BSD 256-byte tty canonical input buffer.
+        _inject_file_uue(child, "/tmp/resume.vintage.yaml", resume_yaml.encode("ascii"))
         _compile_and_run(child)
         brad1_text = _capture_brad1(child)
         child.sendline("exit")
