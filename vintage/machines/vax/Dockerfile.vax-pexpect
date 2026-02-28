@@ -1,12 +1,13 @@
 # VAX 11/780 with 4.3BSD — pexpect mode
 #
 # Extends jguillaumes/simh-vaxbsd:latest with Python pexpect support.
-# At build time, discovers the vax780.ini path inside the base image and
-# creates a pexpect-friendly variant (no 'set console telnet' directive).
-# The cached paths are written to /opt/vax-*.txt for use by vax_pexpect.py.
-#
-# Assumes Debian-based base image (apt-get available). If the base image uses
-# a different package manager, install python3-pexpect accordingly.
+# At build time:
+#   1. Discovers the vax780.ini and vax780 binary inside the base image;
+#      writes their paths to /opt/vax-*.txt for use by vax_pexpect.py.
+#   2. Decompresses the RA81 disk images (shipped gzipped in the base image)
+#      so SIMH can attach them without error.
+#   3. Copies a clean pexpect-mode ini (stdin/stdout console, no network,
+#      no DZ terminal multiplexer) to /image/vax780-pexpect.ini.
 #
 # Build (repo root as context):
 #   docker build -f vintage/machines/vax/Dockerfile.vax-pexpect -t vax-pexpect .
@@ -18,9 +19,6 @@
 #     --bradman /build/bradman.c \
 #     --resume-yaml /build/resume.vintage.yaml \
 #     --output /build/brad.1
-#
-# Note on ini discovery: the base image's vax780.ini is found via 'find' at
-# build time. If the image layout changes, rebuild to refresh the cache.
 
 FROM jguillaumes/simh-vaxbsd:latest
 
@@ -28,28 +26,34 @@ FROM jguillaumes/simh-vaxbsd:latest
 RUN apt-get update && apt-get install -y python3 python3-pexpect \
     && rm -rf /var/lib/apt/lists/*
 
-# Discover vax780.ini location and create a pexpect-mode version.
-# The pexpect-mode ini is identical to the original except the
-# 'set console telnet=NNNN' line is removed so SIMH uses stdin/stdout.
+# Discover vax780.ini and binary; write path cache; decompress disk images.
+# The disk images in the base image are gzipped (RA81.000.gz, RA81VHD.001.gz).
+# SIMH cannot attach .gz files — decompress them at build time.
 RUN set -e; \
     ini=$(find / -name 'vax780.ini' -not -path '*/proc/*' 2>/dev/null | head -1); \
     if [ -z "$ini" ]; then \
-        echo "ERROR: vax780.ini not found in base image — cannot create pexpect ini" >&2; \
+        echo "ERROR: vax780.ini not found in base image" >&2; \
         exit 1; \
     fi; \
-    echo "Found ini: $ini"; \
-    pexpect_ini="${ini%.ini}-pexpect.ini"; \
-    grep -v 'set console telnet' "$ini" > "$pexpect_ini"; \
-    echo "Created pexpect ini: $pexpect_ini"; \
-    cat "$pexpect_ini"; \
-    echo "$ini"          > /opt/vax-ini-path.txt; \
-    echo "$pexpect_ini"  > /opt/vax-pexpect-ini-path.txt; \
-    which vax780         > /opt/vax-bin-path.txt || true; \
+    dir=$(dirname "$ini"); \
+    echo "Found ini: $ini  (dir: $dir)"; \
+    echo "$ini"                         > /opt/vax-ini-path.txt; \
+    echo "${dir}/vax780-pexpect.ini"    > /opt/vax-pexpect-ini-path.txt; \
+    which vax780                        > /opt/vax-bin-path.txt 2>/dev/null || echo "vax780" > /opt/vax-bin-path.txt; \
+    echo "Decompressing disk images in $dir …"; \
+    for gz in "$dir"/*.gz; do \
+        [ -f "$gz" ] && gunzip "$gz" && echo "  decompressed: $gz"; \
+    done; \
     echo "Cached paths:"; \
-    cat /opt/vax-ini-path.txt /opt/vax-pexpect-ini-path.txt /opt/vax-bin-path.txt
+    cat /opt/vax-ini-path.txt /opt/vax-pexpect-ini-path.txt /opt/vax-bin-path.txt; \
+    echo "Disk images:"; \
+    ls -lh "$dir"/RA81* 2>/dev/null || true
+
+# Copy clean pexpect-mode ini (no telnet console, no network, no DZ terminals).
+# Build context must be repo root for this path to resolve.
+COPY vintage/machines/vax/configs/vax780-pexpect.ini /image/vax780-pexpect.ini
 
 # Copy vax pexpect script.
-# Build context must be repo root for this path to resolve.
 COPY scripts/vax_pexpect.py /opt/vax_pexpect.py
 
 # No telnet ports — console is stdin/stdout via pexpect pty.
