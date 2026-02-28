@@ -178,7 +178,7 @@ jobs:
           import os
 
           commands = [
-              "set -euo pipefail",
+              "set -eu",  # pipefail not available in /bin/sh (dash); use sh-compatible options
               "export DEBIAN_FRONTEND=noninteractive",
               f"export GIT_SHA='{os.environ['GIT_SHA']}'",
               f"export BUILD_ID='{os.environ['BUILD_ID']}'",
