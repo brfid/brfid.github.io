@@ -179,6 +179,7 @@ jobs:
 
           commands = [
               "set -eu",  # pipefail not available in /bin/sh (dash); use sh-compatible options
+              "export HOME=/root",  # SSM may not set $HOME; git config --global requires it
               "export DEBIAN_FRONTEND=noninteractive",
               # SSM runs as root; repo is owned by ubuntu — allow git to operate in it.
               "git config --global --add safe.directory /home/ubuntu/brfid.github.io",
