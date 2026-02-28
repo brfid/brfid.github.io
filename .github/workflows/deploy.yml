@@ -267,7 +267,7 @@ jobs:
         run: cp resume.yaml hugo/data/resume.yaml
 
       - name: Build Hugo site
-        run: hugo --source hugo --destination site
+        run: hugo --source hugo --destination ../site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
