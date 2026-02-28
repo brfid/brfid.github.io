@@ -72,18 +72,29 @@ def _parse_args(argv=None):
 
 def _boot(child: pexpect.spawn) -> None:
     """Boot 2.11BSD to a root shell with /usr mounted, then set a custom prompt."""
-    _log("Waiting for Boot: prompt…")
-    child.expect("Boot:", timeout=_BOOT_TIMEOUT)
-    _log("Got Boot: — pressing Enter to boot unix kernel")
+    # 2.11BSD's 2-stage boot shows: "73Boot from xp(0,0,0) at 0176700\n\r: "
+    # The actual prompt is "\r: " (CR + colon + space), not "Boot:".
+    # Accept both patterns to handle variation across SIMH/disk-image versions.
+    _log("Waiting for 2.11BSD boot prompt (\\r: or Boot:)…")
+    child.expect(["\r: ", "Boot:"], timeout=_BOOT_TIMEOUT)
+    _log("Got boot prompt — pressing Enter to boot unix kernel")
     child.sendline("")
 
     # 2.11BSD on PDP-11 under SIMH takes ~60-120 s to reach root shell.
     _log("Waiting for root # prompt (this takes up to 2 minutes)…")
-    child.expect("#", timeout=_BOOT_TIMEOUT)
+    child.expect(["# ", "\\$ "], timeout=_BOOT_TIMEOUT)
     _log("Reached root shell")
 
+    # 2.11BSD root's login shell may be /bin/csh.  csh has the same two
+    # incompatibilities as 4.3BSD VAX: PS1= is ignored and heredoc
+    # `<< 'DELIM'` treats the quoted string as the terminator (not DELIM).
+    # Switch to /bin/sh before any prompt or heredoc work.
+    child.sendline("exec /bin/sh")
+    child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
+    _log("Switched to /bin/sh")
+
     child.sendline("mount /usr")
-    child.expect("#", timeout=_CMD_TIMEOUT)
+    child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
     _log("/usr mounted — nroff and uudecode now available")
 
     # Switch to a distinctive prompt to avoid false matches on '#' in file content.
@@ -124,8 +135,15 @@ def _run_nroff(child: pexpect.spawn) -> str:
     child.sendline("ls -l /tmp/brad.man.txt")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
 
+    # Disable echo before sending the marker command to prevent pexpect
+    # from matching markers in the command echo rather than actual output.
     _log("Capturing /tmp/brad.man.txt via markers…")
-    child.sendline("echo '__BRAD_MAN_TXT_BEGIN__'; cat /tmp/brad.man.txt; echo '__BRAD_MAN_TXT_END__'")
+    child.sendline("stty -echo")
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    child.sendline(
+        "echo '__BRAD_MAN_TXT_BEGIN__'; cat /tmp/brad.man.txt; "
+        "echo '__BRAD_MAN_TXT_END__'; stty echo"
+    )
     child.expect("__BRAD_MAN_TXT_BEGIN__", timeout=_CMD_TIMEOUT)
     child.expect("__BRAD_MAN_TXT_END__", timeout=_CMD_TIMEOUT)
     raw_bytes: bytes = child.before  # type: ignore[assignment]

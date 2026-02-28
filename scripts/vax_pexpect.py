@@ -308,10 +308,24 @@ def _compile_and_run(child: pexpect.spawn) -> None:
 
 
 def _capture_brad1(child: pexpect.spawn) -> str:
-    """Cat /tmp/brad.1 to the terminal and capture it between markers."""
+    """Cat /tmp/brad.1 to the terminal and capture it between markers.
+
+    The tty echoes every character we send back to pexpect before the shell
+    executes the command.  If the marker strings appear literally in the
+    sendline() call, pexpect matches them in the echo rather than in the
+    real output.  To avoid this:
+      1. Disable tty echo with stty -echo (a separate command, which IS
+         echoed — but contains no marker).
+      2. Send the capture command; with echo off, pexpect sees only the
+         actual shell output.  Re-enable echo at the end of the command.
+      3. Wait for the prompt (prompt is shell output, unaffected by echo).
+    """
     _log("Capturing /tmp/brad.1 via markers…")
+    # Disable echo so the capture command is not echoed to pexpect.
+    child.sendline("stty -echo")
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
     child.sendline(
-        "echo '__BRAD1_BEGIN__'; cat /tmp/brad.1; echo '__BRAD1_END__'"
+        "echo '__BRAD1_BEGIN__'; cat /tmp/brad.1; echo '__BRAD1_END__'; stty echo"
     )
     child.expect("__BRAD1_BEGIN__", timeout=_CMD_TIMEOUT)
     child.expect("__BRAD1_END__", timeout=_CMD_TIMEOUT)

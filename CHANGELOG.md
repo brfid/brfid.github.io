@@ -77,7 +77,17 @@ semantic version tags.
      HEREDOC_EOF), so the heredoc hangs indefinitely. Also, `PS1=...` is not
      valid csh syntax, causing pexpect to match `VAXsh> ` in the csh error
      message rather than a real prompt. Fix: `exec /bin/sh` immediately after
-     login, before any stty, prompt, or heredoc work.
+     login, before any stty, prompt, or heredoc work. Applied to BOTH VAX and
+     PDP-11 pexpect scripts.
+  8. Marker capture matches command echo — `child.sendline("echo '__BEGIN__'; cat ...")`
+     causes the tty to echo the command text before the shell executes it; pexpect
+     matches `__BEGIN__` in the echo rather than in actual output. Fix: `stty -echo`
+     as a separate command first, then send the capture command (not echoed),
+     then `stty echo` at end of the capture command. Applied to both scripts.
+  9. PDP-11 boot prompt is `\r: ` not `Boot:` — the 2.11BSD 2-stage boot shows
+     `73Boot from xp(0,0,0) at 0176700\n\r: `. Fixed pdp11_pexpect.py to match
+     `["\r: ", "Boot:"]` and also removed `set cpu idle` from pdp11-pexpect.ini
+     (SIMH idle detection calls `ps` which is absent in Debian bookworm-slim).
 - **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and
   `vax-pexpect` images built successfully. Images cached with `KEEP_IMAGES=1`.
 - **Pexpect pipeline implementation (2026-02-28):** Stage A (PDP-11), Stage B
