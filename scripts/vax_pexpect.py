@@ -183,11 +183,6 @@ def _boot(child: pexpect.spawn) -> None:
 
     _log("Logged in as root")
 
-    # Disable XON/XOFF flow control — stty ixon/ixoff can cause the PTY echo
-    # to stall mid-stream during large heredoc injections.
-    child.sendline("stty -ixon -ixoff")
-    child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
-
     # Set a distinctive prompt before injecting any file content.
     child.sendline("PS1='" + _PROMPT + "'")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
@@ -239,17 +234,17 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
 
     # Inject in small batches to avoid the 4.3BSD tty echo stall.
     # A single heredoc with 90+ UUE lines causes the PTY echo to stall
-    # indefinitely, even with XON/XOFF disabled. Batches of _UUE_CHUNK_SIZE
-    # lines keep each heredoc small enough to complete promptly.
+    # indefinitely. Batches of _UUE_CHUNK_SIZE lines keep each heredoc
+    # small enough to complete promptly.
     _UUE_CHUNK_SIZE = 10
 
-    # Create (or truncate) the .uu file, then append chunks.
-    child.sendline(f"> {tmp_uu}")
-    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
-
-    for batch_start in range(0, len(uue_lines), _UUE_CHUNK_SIZE):
+    # First batch uses '>' (create/truncate); subsequent batches use '>>'.
+    for batch_idx, batch_start in enumerate(
+        range(0, len(uue_lines), _UUE_CHUNK_SIZE)
+    ):
         batch = uue_lines[batch_start : batch_start + _UUE_CHUNK_SIZE]
-        child.sendline(f"cat >> {tmp_uu} << 'HEREDOC_EOF'")
+        redirect = ">" if batch_idx == 0 else ">>"
+        child.sendline(f"cat {redirect} {tmp_uu} << 'HEREDOC_EOF'")
         for line in batch:
             child.sendline(line)
             if _LINE_DELAY:

@@ -35,7 +35,8 @@ semantic version tags.
   - `vintage/machines/vax/Dockerfile.vax-pexpect` — pexpect Docker image
   - `scripts/edcloud-vintage-runner.sh` — rewritten; no screen/telnet
   - `.github/workflows/deploy.yml` — timeout bumped (job 70 min, SSM 50 min)
-  - **Validation in progress** — second run launched on edcloud after Unicode fix.
+  - **Validation in progress** — multiple debug runs. Current fix on edcloud:
+  chunked UUE injection (10 lines/batch) + stty -ixon -ixoff.
 
 ### Active Priorities
 1. **Confirm edcloud validation**: Second pipeline run in progress
@@ -54,10 +55,19 @@ semantic version tags.
 - None.
 
 ### Recently Completed
-- **Unicode fix in `vax_pexpect.py` (2026-02-28):** First edcloud run failed
-  with `UnicodeDecodeError` because `resume.vintage.yaml` contains typographic
-  Unicode. Fixed: read as UTF-8, transliterate common chars, NFKD-normalize
-  remainder. Committed on `feat/pexpect-pipeline`.
+- **Iterative VAX injection debugging (2026-02-28):** Five debug runs. Issues
+  found and fixed in sequence:
+  1. UnicodeDecodeError — resume.vintage.yaml not ASCII; fixed with UTF-8 read +
+     NFKD transliteration.
+  2. SIMH instant exit — disk images gzipped (RA81.000.gz); added gunzip in
+     Dockerfile. Created static vax780-pexpect.ini (no network/DZ terminals).
+  3. False prompt match — "# " needed (not "#"); kernel banner contains "#10".
+  4. YAML tty overflow — lines up to 571 chars exceed 256-byte tty CANBSIZ;
+     switched to uuencode injection.
+  5. UUE stall — single 94-line heredoc stalls PTY echo after ~180s; fixed with
+     10-line chunks + stty -ixon -ixoff to disable flow control.
+- **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and
+  `vax-pexpect` images built successfully. Images cached with `KEEP_IMAGES=1`.
 - **Pexpect pipeline implementation (2026-02-28):** Stage A (PDP-11), Stage B
   (VAX), Dockerfiles, and rewritten runner — all on `feat/pexpect-pipeline`.
 - **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and

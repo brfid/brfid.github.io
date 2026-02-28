@@ -32,12 +32,26 @@ Both stages are implemented on `feat/pexpect-pipeline`. Validation is in progres
    The static `vax780-pexpect.ini` disables all of these.
 
 3. **`resume.vintage.yaml` contains non-ASCII characters** (em-dashes, curly quotes
-   from `resume.yaml`). Read as UTF-8 and transliterate to ASCII before heredoc
-   injection — the VAX 4.3BSD guest is ASCII-only.
+   from `resume.yaml`). Read as UTF-8 and transliterate to ASCII before injection —
+   the VAX 4.3BSD guest is ASCII-only.
 
-4. **Custom shell prompt prevents false matches**: Set `PS1='VAXsh> '` immediately after
-   login so pexpect's prompt-wait doesn't match `#include`, `#if`, or similar sequences
-   echoed during heredoc injection of bradman.c.
+4. **4.3BSD tty canonical input buffer is 256 bytes**: resume.vintage.yaml has lines
+   up to 571 characters. Lines exceeding ~255 bytes trigger BEL spam and get silently
+   truncated by the tty driver. Fix: use uuencode injection for the YAML (`_inject_file_uue`
+   in `vax_pexpect.py`) — UUE lines are always ≤62 chars. bradman.c lines are short and
+   use the plain heredoc path. 4.3BSD ships `uudecode` in `/usr/bin`.
+
+6. **UUE heredoc PTY echo stall**: A single heredoc with 90+ UUE lines causes the PTY
+   echo to stall indefinitely. Root cause: XON/XOFF flow control + tty input buffer
+   interaction. Two fixes applied together:
+   - `stty -ixon -ixoff` after login to disable flow control.
+   - Inject UUE in batches of 10 lines (10 × 62 = 620 chars per heredoc), appending
+     to the .uu file between batches. Each small heredoc completes promptly.
+
+5. **Custom shell prompt prevents false matches**: `PS1='VAXsh> '` is set immediately
+   after login. The 4.3BSD kernel version string (`BSD UNIX #10`) contains `#` — using
+   `"#"` as a prompt pattern causes early false match. Use `"# "` (hash space) instead,
+   which is the actual root shell prompt format.
 
 ---
 
