@@ -33,7 +33,7 @@ _PROMPT = "PDPsh> "
 
 _BOOT_TIMEOUT = 180    # 2.11BSD on PDP-11 boots slowly (~90-120s under SIMH)
 _CMD_TIMEOUT = 60
-_NROFF_TIMEOUT = 300   # nroff on PDP-11 takes 2-4min on emulated hardware
+_NROFF_TIMEOUT = 600   # nroff on PDP-11 can take 5+ min on emulated hardware
 _LINE_DELAY = 0.005    # 5 ms between heredoc lines; prevents tty buffer overrun
 
 
@@ -93,6 +93,14 @@ def _boot(child: pexpect.spawn) -> None:
     child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
     _log("Switched to /bin/sh")
 
+    # 2.11BSD default tty ERASE is '#' (0x23) and KILL is '@' (0x40).
+    # Both fall in the UUE character range and corrupt heredoc injection if
+    # brad.1 contains either char (e.g., '@' in email addresses).
+    # Move both out of the UUE range: DEL (0x7F) and Ctrl-U (0x15).
+    child.sendline("stty erase \x7f kill \x15")
+    child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
+    _log("stty: ERASE → DEL, KILL → Ctrl-U (safe for heredoc injection)")
+
     child.sendline("mount /usr")
     child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
     _log("/usr mounted — nroff and uudecode now available")
@@ -126,8 +134,10 @@ def _run_nroff(child: pexpect.spawn) -> str:
 
     Output is captured between unique markers to isolate it from terminal echo.
     """
-    _log("Running: nroff -man /tmp/brad.1 > /tmp/brad.man.txt")
-    child.sendline("nroff -man /tmp/brad.1 > /tmp/brad.man.txt")
+    # -Tlp (line printer) prevents nroff from emitting terminal-specific control
+    # sequences (including BEL) based on TERM detection; plain text output only.
+    _log("Running: nroff -man -Tlp /tmp/brad.1 > /tmp/brad.man.txt")
+    child.sendline("nroff -man -Tlp /tmp/brad.1 > /tmp/brad.man.txt")
     child.expect(_PROMPT, timeout=_NROFF_TIMEOUT)
     _log("nroff complete")
 
