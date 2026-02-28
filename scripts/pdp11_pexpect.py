@@ -20,9 +20,11 @@ Exit codes:
 """
 
 import argparse
+import io
 import re
 import sys
 import time
+import uu
 from pathlib import Path
 
 import pexpect
@@ -34,6 +36,7 @@ _PROMPT = "PDPsh> "
 _BOOT_TIMEOUT = 180    # 2.11BSD on PDP-11 boots slowly (~90-120s under SIMH)
 _CMD_TIMEOUT = 60
 _NROFF_TIMEOUT = 600   # nroff on PDP-11 can take 5+ min on emulated hardware
+_UUE_TIMEOUT = 120     # per-batch UUE heredoc + cat timeout
 _LINE_DELAY = 0.005    # 5 ms between heredoc lines; prevents tty buffer overrun
 
 
@@ -111,22 +114,47 @@ def _boot(child: pexpect.spawn) -> None:
     _log(f"Custom prompt set: {_PROMPT!r}")
 
 
-def _inject_file(child: pexpect.spawn, remote_path: str, content: str) -> None:
-    """Inject text content into a guest file via quoted heredoc.
+def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> None:
+    """Inject content via uuencode to bypass the 2.11BSD 256-byte tty line limit.
 
-    Quoted delimiter ('HEREDOC_EOF') suppresses all shell substitution inside
-    the heredoc, so '$', '`', backslashes, and '#' are all passed literally.
+    UUE-encoded lines are always ≤62 characters. The encoded payload is
+    injected into a temp .uu file via heredoc, then uudecode recreates the
+    original file at remote_path. 2.11BSD ships uudecode in /usr/bin (requires
+    /usr to be mounted before calling this function).
+
+    Inject in batches of 10 lines to avoid PTY echo stall with 90+ line heredocs.
     """
-    lines = content.splitlines()
-    _log(f"Injecting {len(lines)} lines → {remote_path}")
-    child.sendline(f"cat > {remote_path} << 'HEREDOC_EOF'")
-    for line in lines:
-        child.sendline(line)
-        if _LINE_DELAY:
-            time.sleep(_LINE_DELAY)
-    child.sendline("HEREDOC_EOF")
-    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
-    _log(f"Injected {remote_path}")
+    name = Path(remote_path).name
+    parent = str(Path(remote_path).parent)
+
+    in_buf = io.BytesIO(content)
+    out_buf = io.BytesIO()
+    uu.encode(in_buf, out_buf, name, 0o644)
+    uue_lines = out_buf.getvalue().decode("ascii").splitlines()
+
+    tmp_uu = f"/tmp/{name}.uu"
+    _log(
+        f"UUE-injecting {len(uue_lines)} encoded lines "
+        f"({len(content)} bytes) → {remote_path}"
+    )
+
+    _UUE_CHUNK_SIZE = 10
+    for batch_idx, batch_start in enumerate(
+        range(0, len(uue_lines), _UUE_CHUNK_SIZE)
+    ):
+        batch = uue_lines[batch_start : batch_start + _UUE_CHUNK_SIZE]
+        redirect = ">" if batch_idx == 0 else ">>"
+        child.sendline(f"cat {redirect} {tmp_uu} << 'HEREDOC_EOF'")
+        for line in batch:
+            child.sendline(line)
+            if _LINE_DELAY:
+                time.sleep(_LINE_DELAY)
+        child.sendline("HEREDOC_EOF")
+        child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
+
+    child.sendline(f"cd {parent} && uudecode {tmp_uu} && rm {tmp_uu}")
+    child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
+    _log(f"UUE-decoded: {remote_path}")
 
 
 def _run_nroff(child: pexpect.spawn) -> str:
@@ -134,10 +162,11 @@ def _run_nroff(child: pexpect.spawn) -> str:
 
     Output is captured between unique markers to isolate it from terminal echo.
     """
-    # -Tlp (line printer) prevents nroff from emitting terminal-specific control
-    # sequences (including BEL) based on TERM detection; plain text output only.
-    _log("Running: nroff -man -Tlp /tmp/brad.1 > /tmp/brad.man.txt")
-    child.sendline("nroff -man -Tlp /tmp/brad.1 > /tmp/brad.man.txt")
+    # -Tlp: line printer mode — no terminal-specific control sequences.
+    # < /dev/null: prevents nroff from pausing at page breaks waiting for
+    #   keypress on stdin (old nroff behaviour when stderr is a tty).
+    _log("Running: nroff -man -Tlp /tmp/brad.1 < /dev/null > /tmp/brad.man.txt")
+    child.sendline("nroff -man -Tlp /tmp/brad.1 < /dev/null > /tmp/brad.man.txt")
     child.expect(_PROMPT, timeout=_NROFF_TIMEOUT)
     _log("nroff complete")
 
@@ -206,7 +235,7 @@ def main(argv=None) -> int:
         _log(f"ERROR: input file not found: {args.input}")
         return 1
 
-    brad1_content = brad1_path.read_text(encoding="ascii")
+    brad1_content = brad1_path.read_bytes()
     _log(f"Input: {args.input} ({len(brad1_content.splitlines())} lines)")
 
     ini = args.ini
@@ -226,7 +255,7 @@ def main(argv=None) -> int:
 
     try:
         _boot(child)
-        _inject_file(child, "/tmp/brad.1", brad1_content)
+        _inject_file_uue(child, "/tmp/brad.1", brad1_content)
         raw = _run_nroff(child)
         child.sendline("exit")
         child.expect(pexpect.EOF, timeout=30)
