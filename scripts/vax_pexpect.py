@@ -27,9 +27,36 @@ Exit codes:
 import argparse
 import sys
 import time
+import unicodedata
 from pathlib import Path
 
 import pexpect
+
+# Common Unicode → ASCII substitutions for content fed to the ASCII-only VAX guest.
+_UNICODE_SUBS: dict[str, str] = {
+    "\u2014": "--",   # em dash
+    "\u2013": "-",    # en dash
+    "\u2018": "'",    # left single quotation mark
+    "\u2019": "'",    # right single quotation mark
+    "\u201c": '"',    # left double quotation mark
+    "\u201d": '"',    # right double quotation mark
+    "\u2026": "...",  # horizontal ellipsis
+    "\u00a0": " ",    # non-breaking space
+    "\u2022": "*",    # bullet
+}
+
+
+def _to_ascii(text: str) -> str:
+    """Transliterate common Unicode to ASCII for injection into the VAX guest.
+
+    Applies a small substitution table for typographic characters, then uses
+    NFKD normalization to decompose accented letters before stripping anything
+    that still can't be represented in ASCII.
+    """
+    for ch, sub in _UNICODE_SUBS.items():
+        text = text.replace(ch, sub)
+    normalized = unicodedata.normalize("NFKD", text)
+    return normalized.encode("ascii", errors="replace").decode("ascii")
 
 # Shell prompt injected after login — distinctive to avoid false matches.
 _PROMPT = "VAXsh> "
@@ -226,7 +253,7 @@ def main(argv=None) -> int:
             return 1
 
     bradman_c = bradman_path.read_text(encoding="ascii")
-    resume_yaml = resume_yaml_path.read_text(encoding="ascii")
+    resume_yaml = _to_ascii(resume_yaml_path.read_text(encoding="utf-8"))
     _log(f"bradman.c: {len(bradman_c.splitlines())} lines")
     _log(f"resume.vintage.yaml: {len(resume_yaml.splitlines())} lines")
 
