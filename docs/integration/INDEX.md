@@ -1,23 +1,39 @@
 # Integration Documentation (VAX ↔ PDP-11)
 
-Active pipeline integration reference for the VAX/PDP-11 vintage computing artifact pipeline.
+Active pipeline integration reference.
 
-## Current architecture
+## Architecture
 
-Single-host `edcloud` instance running VAX and PDP-11 containers via `docker-compose.production.yml`.
+Single-host edcloud instance running VAX and PDP-11 containers via `docker-compose.production.yml`.
 
-- VAX (VMS/BSD) compiles the resume artifact and encodes it via uuencode
-- GitHub Actions SSHes into edcloud, injects encoded data into PDP-11 console via screen/telnet
-- PDP-11 (2.11BSD) decodes with `uudecode` and typesets with `nroff`
-- Output: `brad.man.txt` → committed to `hugo/static/` → served by Hugo
+Orchestration uses **pexpect** driving SIMH emulators via stdin/stdout.
+No telnet console ports, no screen sessions, no sleep-based timing.
 
-Source of truth for current behavior: `../../README.md`, `../../CHANGELOG.md` (`[Unreleased]`), `../../WORKFLOWS.md`.
+Pipeline stages (built and validated incrementally):
+
+| Stage | Machine | Input | Process | Output |
+|-------|---------|-------|---------|--------|
+| A | PDP-11 (2.11BSD) | `brad.1` (troff source) | `nroff -man` | `brad.man.txt` |
+| B | VAX (4.3BSD) | `resume.vintage.yaml` | compile + run `bradman.c` | `brad.1` |
+| A+B | VAX → host → PDP-11 | `resume.vintage.yaml` | B then A, host as courier | `brad.man.txt` |
+
+## Key constraints
+
+- **PDP-11 networking**: the `unix` kernel (required — `netnix` crashes on `xq` init) has
+  no working Ethernet. FTP from VAX to PDP-11 is not viable. Transfer is host-mediated:
+  pexpect reads VAX output, injects into PDP-11.
+- **PDP-11 pexpect startup**: pexpect spawns SIMH directly (stdin/stdout, no telnet port).
+  The script must process SIMH output from process start with no delays.
+- **PDP-11 `/usr` mount**: `mount /usr` required before `nroff` and `uudecode` are available.
+- **VAX console**: root login, no password on 4.3BSD guest.
+- Both machines confirmed booting and tool-ready (2026-02-28 diagnostic run).
 
 ## Active runbooks
 
-- [`operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md`](operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md) — serialized cold-start diagnostic path for Stage 1→3 rehearsal on edcloud
+- [`operations/PEXPECT-PIPELINE-SPEC.md`](operations/PEXPECT-PIPELINE-SPEC.md) — implementation spec for the pexpect pipeline
 
 ## Related
 
-- [`../vax/INDEX.md`](../vax/INDEX.md) — VAX operational reference
-- [`../archive/pipeline-planning/`](../archive/pipeline-planning/) — historical build records and validation logs
+- [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md) — system design and stage descriptions
+- [`../../scripts/edcloud-vintage-runner.sh`](../../scripts/edcloud-vintage-runner.sh) — pipeline entrypoint
+- [`../archive/DEAD-ENDS.md`](../archive/DEAD-ENDS.md) — retired paths (screen/telnet approach, FTP, ARPANET, PDP-10)

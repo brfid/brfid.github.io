@@ -1,13 +1,12 @@
 # VAX Documentation Index
 
-VAX operational reference for the active vintage pipeline build stage.
+VAX operational reference for Stage B of the vintage pipeline.
 
 ## Active references
 
-- [README.md](README.md) — VAX stage overview
-- [TELNET-CONSOLE-METHOD.md](TELNET-CONSOLE-METHOD.md) — console access method
+- [`README.md`](README.md) — VAX stage overview (bradman.c, input/output, build)
 
 ## Related
 
-- [../integration/INDEX.md](../integration/INDEX.md) — VAX ↔ PDP-11 pipeline integration
-- [../archive/vax/](../archive/vax/) — historical VAX debugging notes and transfer records
+- [`../integration/INDEX.md`](../integration/INDEX.md) — full pipeline integration
+- [`../archive/DEAD-ENDS.md`](../archive/DEAD-ENDS.md) — retired path registry

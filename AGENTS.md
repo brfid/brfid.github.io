@@ -27,10 +27,9 @@ under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entr
 - Current mutable state / active queue: `CHANGELOG.md` `[Unreleased]`
 - Change history / milestone evidence: dated `CHANGELOG.md` entries
 - Documentation hub: `docs/INDEX.md`
-- Integration active path + known-good evidence: `docs/integration/INDEX.md`
-- Integration history log (retained, not active): `docs/integration/progress/NEXT-STEPS.md`
-- Integration progress timeline (retained): `docs/integration/progress/PHASE3-PROGRESS.md`
-- Historical transport decisions: `docs/deprecated/transport-archive.md`
+- Integration active path + spec: `docs/integration/INDEX.md`
+- Implementation spec (pexpect pipeline): `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`
+- Explicit retired/blocked path registry: `docs/archive/DEAD-ENDS.md`
 
 Do not duplicate mutable status in this file; update `CHANGELOG.md` (`[Unreleased]`) instead.
 
@@ -104,14 +103,14 @@ Pre-commit checks are optional by default in this repo workflow.
 
 ## No accidental publishing
 
-- GitHub Pages deploy is tag-triggered (`publish` / `publish-*`). Avoid creating/pushing those tags unless you intend to deploy.
+- GitHub Pages deploy is tag-triggered (`publish-fast-*`, `publish-vintage-*`). Avoid creating/pushing those tags unless you intend to deploy.
 
 ## Do-not-break constraints
 
 - Keep Python execution in `.venv/` only.
 - Avoid global/system package installs.
 - Do not create/push publish tags unless intentionally deploying.
-- Preserve evidence workflow for ARPANET changes (manifests/logs referenced in progress docs).
+- Do not reintroduce screen/telnet/sleep-based console orchestration; the pexpect approach supersedes it.
 
 ## Expected output shape for implementation work
 

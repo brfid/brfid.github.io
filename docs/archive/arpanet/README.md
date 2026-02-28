@@ -1,5 +1,8 @@
 # Archived: IMP Chain (Phase 2)
 
+> Archived historical document. Not active implementation guidance for the current
+> VAX↔PDP-11 pipeline.
+
 ## What's here
 
 The multi-hop IMP routing topology (VAX → IMP1 → IMP2 → PDP-10) is preserved
@@ -17,7 +20,7 @@ interoperate.
 Evidence: `bad magic number` errors on IMP2 HI1 with values like `feffffff`,
 `00000219`, `ffffffff`.
 
-See `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` for full analysis.
+See `handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` for full analysis.
 
 ## Files moved here
 
@@ -29,17 +32,4 @@ See `docs/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` for full analysi
 - `docker-compose.arpanet.chaosnet.yml` — Chaosnet shim topology
 - `docker-compose.arpanet.phase2-chaosnet.yml` — IMP + Chaosnet hybrid
 
-See `docs/arpanet/archive/chaosnet/README.md` for Chaosnet path details.
-
-### KS10 Emulator (Boot failure, 2026-02-11)
-- `Dockerfile.pdp10` — KS10 TOPS-20 (boot failure)
-- `Dockerfile.pdp10-its` — KS10 ITS (boot failure)
-
-Both fail with "Stop code 7, PC: 000100". See `docs/arpanet/archive/ks10/README.md`.
-
-## To reactivate
-
-1. Move compose files back to repo root
-2. Restore Makefile targets (see `Makefile` archived section)
-3. Address the HI1 framing mismatch (see blocker summary above)
-4. Update `COLD-START.md` and `NEXT-STEPS.md`
+Chaosnet detail and KS10/PDP-10 records removed (low-value dead ends).

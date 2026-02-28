@@ -1,43 +1,31 @@
-# VAX manpage generator (proof-of-concept)
+# VAX stage (Stage B)
 
-This folder contains a small, VAX-friendly C program that reads a constrained YAML
-subset (`resume.vax.yaml`) and emits a `man(7)` roff source file (`brad.1`).
+The VAX (4.3BSD on SIMH) is Stage B of the vintage pipeline. It compiles `bradman.c`
+and runs the resulting binary to transform `resume.vintage.yaml` into `brad.1`
+(troff man page source), which Stage A (PDP-11 nroff) then renders.
 
 ## Why a YAML subset?
 
-Full YAML is too complex to parse reliably with a tiny, portable C program on older
-Unix systems. The intended workflow is:
+Full YAML is too complex to parse reliably with a portable C program on older Unix systems.
+The intended workflow is:
 
-1. Host converts `resume.yaml` → `resume.vax.yaml` (flattened, quoted, versioned).
-2. Guest compiles and runs `bradman` to produce `brad.1`.
-3. Guest runs `nroff -man brad.1` (or `man`) to produce the rendered text.
+1. Host converts `resume.yaml` → `build/vintage/resume.vintage.yaml` (flattened, quoted, versioned).
+2. VAX guest compiles and runs `bradman` to produce `brad.1`.
+3. PDP-11 guest runs `nroff -man brad.1` to produce `brad.man.txt`.
 
-## Build (typical BSD)
+## Build (on 4.3BSD VAX)
 
 ```sh
 cc -O -o bradman bradman.c
-./bradman -i resume.vax.example.yaml -o brad.1
-nroff -man brad.1 > brad.txt
+./bradman -i resume.vintage.yaml -o brad.1
 ```
 
-## Input schema (v1)
+Source: `vintage/machines/vax/bradman.c`
 
-See `resume.vax.example.yaml` for an example.
+## Orchestration
 
-## Future Enhancement: Direct YAML Parsing
+Stage B is driven by pexpect connecting to the SIMH VAX via stdin/stdout.
+The pexpect script injects `bradman.c` and `resume.vintage.yaml` via heredoc
+(with prompt detection), compiles, runs, and reads back `brad.1`.
 
-The current design uses Python to preprocess `resume.yaml` into a simplified subset
-(`resume.vax.yaml`) before the VAX-side parser processes it. An alternative approach
-would be to enhance the C parser to handle more of the original YAML directly.
-
-See `../docs/vax-yaml-parser-enhancement.md` for a detailed proposal on:
-- Eliminating the Python preprocessing step
-- Adding bare string, multi-line, and single-quote support (~85 lines)
-- Comparison with JSON parser alternatives
-- Implementation strategy and code examples
-
-Reference materials in `examples/`:
-- `yaml_parser_analysis.md` - Feature-by-feature analysis
-- `parsing_examples.txt` - Side-by-side format comparisons
-- `minimal_json_parser.c` - JSON parser complexity demonstration
-
+See `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md` for the implementation spec.

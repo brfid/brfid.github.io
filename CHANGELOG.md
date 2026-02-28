@@ -9,147 +9,119 @@ semantic version tags.
 ## [Unreleased]
 
 ### Current State
-- Hugo site at `hugo/`. PaperMod, dark mode, canonical URL `www.jockeyholler.net`.
-  Content: `about.md`, `portfolio.md` (Work page), `resume.md` (Resume page),
-  first post (`posts/changelog-as-llm-memory.md`). Builds clean locally.
-- `hugo/data/resume.yaml` remains a copy of `resume.yaml` (symlink not followed by
-  this Hugo data loader), but sync is now automated in CI (`deploy.yml` step) and
-  available locally via `make sync-resume-data` / `make hugo-build`.
-- `site/` is gitignored — Hugo (and vintage pipeline mkdir calls) generate it
-  fresh in CI. Do not commit anything to `site/`.
-- `deploy.yml` restructured: mode detected first; Python/quality checks/Playwright
-  run only in `docker` (vintage) mode. Local publish path is Hugo-only.
-- Deploy triggers are hardened to unique publish tag patterns only (`publish-fast-*`,
-  `publish-vintage-*`, plus legacy wildcard aliases) so stale fixed tags cannot
-  accidentally republish old commits.
-- Vintage pipeline: Stage 4 now copies `brad.man.txt` to `hugo/static/brad.man.txt`
-  (not `site/`), so Hugo owns that path in the build.
-- edcloud lifecycle entrypoints (`aws-start.sh`, `aws-stop.sh`, `aws-status.sh`)
-  now delegate to a shared Python CLI (`scripts/edcloud_lifecycle.py`) to reduce
-  duplicated AWS instance-resolution logic while keeping shell wrappers for operators.
-- DNS: jockeyholler.net apex A/AAAA → GitHub Pages IPs; www CNAME → brfid.github.io.
-  Route 53 change C037890339C8W3JAICBDC (2026-02-21). CloudFront aliases removed.
-- GitHub Pages custom domain (`www.jockeyholler.net`) is now set in repo UI settings.
-- First Hugo-era publish is still pending to replace pre-Hugo content currently served.
-- PDP-11 console instability root cause identified in current single-host edcloud runtime:
-  one-shot readiness probes (`echo > /dev/tcp/...:2327`) can trigger SIMH TTI
-  disconnect/reboot behavior during early boot. Console handling now avoids probe-driven
-  connect/disconnect for PDP-11 startup checks.
-- Cold-start diagnostics runbook added at
-  `docs/integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md` to standardize
-  serialized console handling, log-based PDP-11 readiness gating, and minimum evidence
-  bundle capture for Stage 1→3 rehearsals.
-- Git history for `hugo/content/posts/why-do-we-call-them-packets/index.md` was rewritten
-  so the current wording is now embedded in the original post-introducing commit on `main`
-  (no compatibility chain retained).
+- Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
+  is an on-demand artifact generator only — it feeds `hugo/static/brad.man.txt`.
+- **Pexpect pipeline CI-VALIDATED end-to-end (2026-02-28, tag `publish-vintage-20260228-203550`).**
+  Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` → Hugo build → GitHub Pages deploy.
+  All steps green; site live at www.jockeyholler.net.
+- **Architecture decision (2026-02-28):** screen/telnet/sleep orchestration retired;
+  pexpect is the permanent replacement.
+- **PDP-11 networking constraint (permanent):** The `unix` kernel has no working
+  Ethernet. File transfer between stages is host-mediated.
+- Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`
+  → `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
 
 ### Active Priorities
-- Commit `hugo/static/resume.pdf` (generated locally) so `/resume.pdf` is present on
-  next deploy.
-- Run first intentional Hugo-era deploy after custom-domain UI step is complete.
-- Rehearse full distributed vintage Stage 1-3 flow on edcloud with updated non-probing
-  PDP-11 readiness checks to confirm end-to-end stability.
+- None.
 
 ### In Progress
-- Vintage pipeline stabilization follow-through: validating that Stage 2/3 console
-  transfer and PDP-11 validation remain stable after readiness/probe fixes.
+- None.
 
 ### Blocked
 - None.
 
 ### Decisions Needed
-- None. Key decisions already made:
-  - Hugo + PaperMod, dark mode, `hugo/` subdir in repo root.
-  - `www.jockeyholler.net` as canonical URL; apex redirects to www.
-  - GitHub Actions + GitHub Pages for deployment (unchanged pattern).
-  - Vintage pipeline stays as on-demand job (`publish-vintage` tag), not part
-    of every Hugo content push.
-  - brad@jockeyholler.net email deferred (SES DKIM records already in Route 53).
+- None.
 
 ### Recently Completed
-- Added concise repository contribution/hygiene guidance for public-readiness:
-  `CONTRIBUTING.md`.
-- Added automated secret scanning workflow `.github/workflows/secret-scan.yml`
-  using `gitleaks/gitleaks-action@v2` with full history checkout.
-- Updated `WORKFLOWS.md` to document the new secret-scan lane and its purpose.
-- Restored Hugo PaperMod theme tracking as a git submodule (`hugo/themes/PaperMod`)
-  after it was present locally but missing from the index, which caused CI local-mode
-  publish runs to fail at `hugo --source hugo --destination ../site` with
-  `module "PaperMod" not found`.
-- Hardened publish trigger safety by removing bare fixed tags from
-  `.github/workflows/deploy.yml` (`publish`, `publish-fast`, `publish-vintage`,
-  `publish-vax`, `publish-docker`) and keeping wildcard-only publish patterns.
-- Updated publish docs in `README.md`, `WORKFLOWS.md`, and `ARCHITECTURE.md` to
-  use unique tag patterns (`publish-fast-*`, `publish-vintage-*`) only.
-- Fixed PDP-11 container boot wrapper readiness behavior (`vintage/machines/pdp11/pdp11-boot.sh`)
-  to avoid localhost console probe connections that caused SIMH TTI disconnect/reboot loops.
-- Updated distributed deploy Stage 2 readiness in `.github/workflows/deploy.yml` to avoid
-  one-shot `/dev/tcp/127.0.0.1/2327` probes; readiness now uses container-up + SIMH
-  listener log signal checks.
-- Revalidated PDP-11 smoke boot and console persistence locally after fixes:
-  boot reaches `2.11 BSD UNIX` prompt, interactive session remains attached, `/usr` mounts,
-  and `/usr/bin/uudecode` + `/usr/bin/nroff` are present.
-- Added VAX↔PDP-11 cold-start diagnostics runbook
-  (`docs/integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md`) and wired it into
-  docs indexes for faster, more productive diagnostic resumes.
-- Consolidated duplicated AWS lifecycle logic into `scripts/edcloud_lifecycle.py`
-  and converted `aws-start.sh`, `aws-stop.sh`, and `aws-status.sh` into thin
-  wrappers that call the shared Python implementation.
-- Updated `scripts/publish-local.sh` tag format to `publish-fast-<timestamp>` so
-  local helper-generated tags match `.github/workflows/deploy.yml` trigger patterns.
-- Added automated resume data sync before Hugo build in CI:
-  `cp resume.yaml hugo/data/resume.yaml` in `.github/workflows/deploy.yml`.
-- Added local parity targets in `Makefile`: `sync-resume-data`, `hugo-build`,
-  and `resume-pdf`.
-- Generated `hugo/static/resume.pdf` locally via `make resume-pdf` without
-  introducing extra static artifacts.
-- Resume page (`hugo/content/resume.md`): Hugo-native resume from `resume.yaml` data.
-  PaperMod chrome (dark mode, nav, fonts). Sections: Summary, Experience, Skills,
-  Projects, Education, Publications. PDF download link at `/resume.pdf`.
-  Layout: `hugo/layouts/_default/resume.html`. CSS: `hugo/assets/css/extended/resume.css`.
-  Data: `hugo/data/resume.yaml` (copy of `resume.yaml`). Nav: Blog · Work · Resume · About.
-  Builds clean; all sections verified in generated HTML.
-- Portfolio page: added `docs.domaintools.com/llm/` link to LLM and AI Documentation section.
-- Nav: renamed "Writing" → "Blog" in `hugo.toml`.
-- README, WORKFLOWS, ARCHITECTURE updated for Hugo-first model.
-- deploy.yml restructured: mode detected before Python setup; Python/quality
-  checks/Playwright gated on `docker` mode only. Local publish skips all Python.
-- `site/` gitignored; all tracked files removed from repo. Hugo (and vintage pipeline
-  mkdir calls) generate `site/` fresh in CI. Repo is now clean of build artifacts.
-- Portfolio page (`hugo/content/portfolio.md`) created from `portfolio.yaml` data;
-  added "Work" nav item to `hugo.toml` menu (weight 15, between Writing and About).
-- `deploy.yml` Stage 4: changed `brad.man.txt` destination from `site/` to
-  `hugo/static/` so Hugo owns that path in the build.
-- `deploy.yml`: added Hugo build step (runs for all modes before Pages upload);
-  added submodule checkout and Hugo setup via `peaceiris/actions-hugo@v3 0.156.0`.
-  Removed Python site generator step for local mode (Hugo replaces it).
-- First post published: `hugo/content/posts/changelog-as-llm-memory.md`.
-- Added thin `CLAUDE.md` at repo root (`@AGENTS.md` import).
-- Hugo scaffold: `hugo/` at repo root, PaperMod theme (git submodule), dark
-  mode default, `hugo.toml` configured, `about.md` and `posts/_index.md`
-  created, `static/CNAME` set to `www.jockeyholler.net`. Hugo v0.156.0
-  extended installed at `/usr/local/bin/hugo` (ARM64).
-- Build command: `hugo --source hugo --destination ../site` (outputs into
-  existing `site/` alongside pipeline artifacts).
-- DNS migration: jockeyholler.net apex (A + AAAA) and www (CNAME) switched from
-  CloudFront aliases to GitHub Pages. Orphaned `loopback.api` alias removed.
-- Architectural decision: Hugo absorbs site templating/generation; vintage
-  pipeline shrinks to build-artifact role only.
-- AGENTS.md updated: mission, start-here order, commit cadence reflect Hugo.
-- Initial changelog scaffold and historical backfill from commit history.
+- **Iterative VAX injection debugging (2026-02-28):** Five debug runs. Issues
+  found and fixed in sequence:
+  1. UnicodeDecodeError — resume.vintage.yaml not ASCII; fixed with UTF-8 read +
+     NFKD transliteration.
+  2. SIMH instant exit — disk images gzipped (RA81.000.gz); added gunzip in
+     Dockerfile. Created static vax780-pexpect.ini (no network/DZ terminals).
+  3. False prompt match — "# " needed (not "#"); kernel banner contains "#10".
+  4. YAML tty overflow — lines up to 571 chars exceed 256-byte tty CANBSIZ;
+     switched to uuencode injection.
+  5. UUE stall — single 94-line heredoc stalls PTY echo after ~180s; fixed with
+     10-line batches per heredoc (chunked injection).
+  6. ERASE/KILL corruption — 4.3BSD default ERASE is `#` (0x23) and KILL is `@`
+     (0x40), both in UUE character range. Every `#` in a UUE line erased the
+     previous char; every `@` killed the line. Fix: `stty erase \x7f kill \x15`
+     immediately after login (DEL and Ctrl-U are outside UUE range).
+  7. Root shell is csh, not sh — root logs into /bin/csh by default. csh heredoc
+     `<< 'HEREDOC_EOF'` uses the QUOTED string as the terminator (not unquoted
+     HEREDOC_EOF), so the heredoc hangs indefinitely. Also, `PS1=...` is not
+     valid csh syntax, causing pexpect to match `VAXsh> ` in the csh error
+     message rather than a real prompt. Fix: `exec /bin/sh` immediately after
+     login, before any stty, prompt, or heredoc work. Applied to BOTH VAX and
+     PDP-11 pexpect scripts.
+  8. Marker capture matches command echo — `child.sendline("echo '__BEGIN__'; cat ...")`
+     causes the tty to echo the command text before the shell executes it; pexpect
+     matches `__BEGIN__` in the echo rather than in actual output. Fix: `stty -echo`
+     as a separate command first, then send the capture command (not echoed),
+     then `stty echo` at end of the capture command. Applied to both scripts.
+  9. PDP-11 boot prompt is `\r: ` not `Boot:` — the 2.11BSD 2-stage boot shows
+     `73Boot from xp(0,0,0) at 0176700\n\r: `. Fixed pdp11_pexpect.py to match
+     `["\r: ", "Boot:"]` and also removed `set cpu idle` from pdp11-pexpect.ini
+     (SIMH idle detection calls `ps` which is absent in Debian bookworm-slim).
+- **Stage A PDP-11 debugging (2026-02-28):** Three additional fixes after Stage B was working:
+  10. nroff BEL spam + hang — 2.11BSD nroff rings BEL and waits for keypress at page
+      breaks when stderr is a tty. Fix: `nroff ... < /dev/null` so stdin returns EOF
+      immediately, suppressing page-pause behaviour.
+  11. brad.1 CANBSIZ truncation — `brad.1` has lines >256 bytes (DESCRIPTION ~500 chars).
+      2.11BSD tty driver silently truncates them and sends BEL per overflow char. Fix:
+      `_inject_file_uue()` for brad.1 (same approach as VAX resume.vintage.yaml); UUE
+      lines are ≤62 chars.
+  12. Non-fatal EOF — 2.11BSD restarts getty/login after shell exits; pexpect.EOF never
+      arrives. Fix: wrap EOF wait in non-fatal try/except; finally block force-terminates.
+- **Pipeline VALIDATED end-to-end (2026-02-28, run `manual-20260228-200507`):**
+  Stage B VAX → brad.1 (61 lines troff source) → Stage A PDP-11 → brad.man.txt.
+  Output: correctly formatted `BRAD(1)` UNIX Programmer's Manual man page.
+- **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and
+  `vax-pexpect` images built successfully. Images cached with `KEEP_IMAGES=1`.
+- **CI timeout extended (2026-02-28):** `deploy.yml` job timeout 40→70 min,
+  SSM polling 30→50 min to accommodate first-run docker builds.
+- **Documentation pass (2026-02-28):** Removed 21 dead MD files; rewrote key
+  docs; created `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
+- **Diagnostic run (2026-02-28):** Confirmed both VAX and PDP-11 guest machines
+  boot and reach root shells on edcloud; chose pexpect as replacement.
+- **Architecture decision:** Retired screen/telnet/sleep orchestration entirely.
+  Added to `docs/archive/DEAD-ENDS.md`.
+- **Site content restored to Feb 23 state (2026-02-28):** Two rebases had destroyed
+  the Feb 23 branch. Recovered all 13 affected files via GitHub API using the deployment
+  SHA as an ancestry anchor. Restored: Strachey's Principle post, portfolio YAML + layout
+  + CSS, Inter typography CSS + extend_head.html, hugo.toml (Portfolio nav, RSS icon,
+  ToC, description), resume.md (/about/ alias), resume.html (Certifications section,
+  tel: link), hugo/data/resume.yaml, about.md deletion.
+- **Git history squashed (2026-02-28):** 28 iterative pipeline commits squashed to 3
+  clean milestones: pexpect pipeline implementation, CI infrastructure fixes, Feb 23
+  content restore. Force-pushed with --force-with-lease.
+- **CI smoke test passed (2026-02-28, tag `publish-vintage-20260228-203550`):**
+  Full pipeline green end-to-end in GitHub Actions. Four infrastructure fixes
+  applied during smoke-test iteration:
+  1. OIDC → static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`).
+  2. `AmazonSSMManagedInstanceCore` IAM policy attached to edcloud instance role;
+     SSM agent was installed but not registered without this policy.
+  3. `set -euo pipefail` → `set -eu` (dash in SSM Run Command doesn't support pipefail).
+  4. `export HOME=/root` added as first SSM command (SSM shell has no `$HOME`;
+     `git config --global` fails without it).
+  5. `hugo --destination ../site` (was `site`; destination is source-relative, so
+     `--source hugo --destination site` wrote to `hugo/site/` not `site/`).
 
 ## [2026-02-21]
 
 ### Added
 - Hugo site (`hugo/`) with PaperMod theme, dark mode, `www.jockeyholler.net`
-  canonical URL, and Blog / Work / Resume / About navigation.
-- Hugo-native resume page rendered from `resume.yaml` data source; custom layout
+  canonical URL, and Blog / Portfolio / Resume navigation (`/about/` aliases to Resume).
+- Hugo-native resume page rendered from `hugo/data/resume.yaml` data source; custom layout
   (`hugo/layouts/_default/resume.html`) and CSS; PDF download at `/resume.pdf`.
-- Portfolio page (Work nav) drawn from `portfolio.yaml` structured data.
-- Blog posts: "How I Use Changelogs as LLM Memory" and "Why Do We Call Them
-  Packets?" (with local image assets).
+- Portfolio page drawn from `hugo/data/portfolio.yaml` structured data; custom layout
+  and CSS; Inter typography loaded via `extend_head.html`.
+- Blog posts: "How I Use Changelogs as LLM Memory", "Why Do We Call Them Packets?",
+  and "Strachey's Principle" (with local image assets).
 - CI/deploy: GitHub Actions Hugo build pipeline with tag-triggered publish
-  (`publish`, `publish-vintage`); Python/Playwright gated on vintage mode only.
+  (`publish-fast-*`, `publish-vintage-*`); Python/Playwright gated on vintage mode only.
 - Vintage artifact pipeline integrated as an optional CI stage: VAX compiles and
   encodes resume → PDP-11 typesets with `nroff` → output committed to
   `hugo/static/brad.man.txt` for Hugo to serve.

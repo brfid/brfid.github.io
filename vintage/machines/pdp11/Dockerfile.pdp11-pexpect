@@ -1,0 +1,61 @@
+# PDP-11/73 with 2.11BSD — pexpect mode
+#
+# Differences from Dockerfile.pdp11:
+#   - Installs python3-pexpect for pexpect-driven console automation.
+#   - Copies pdp11-pexpect.ini (no 'set console telnet') and pdp11_pexpect.py.
+#   - Entrypoint runs the pexpect script directly; SIMH is driven via pty.
+#   - No telnet port exposed.
+#
+# Build (repo root as context — required for COPY of scripts/):
+#   docker build -f vintage/machines/pdp11/Dockerfile.pdp11-pexpect -t pdp11-pexpect .
+#
+# Run:
+#   docker run --rm \
+#     -v "$(pwd)/build/vintage:/build" \
+#     pdp11-pexpect \
+#     --input /build/brad.1 --output /build/brad.man.txt
+
+FROM debian:bookworm-slim
+
+# Install SIMH build dependencies + Python pexpect.
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libedit-dev \
+    libpcre3-dev \
+    wget \
+    ca-certificates \
+    git \
+    python3 \
+    python3-pexpect \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build SIMH PDP-11 emulator from source.
+WORKDIR /tmp
+RUN git clone --depth 1 https://github.com/simh/simh.git && \
+    cd simh && \
+    printf 'n\n' | make pdp11 && \
+    cp BIN/pdp11 /usr/local/bin/ && \
+    cd .. && \
+    rm -rf simh
+
+# Download pre-built 2.11BSD disk image.
+# The rpethset archive contains both unix and netnix kernels; we boot unix
+# (the default) by pressing Enter at the 'Boot:' prompt.
+WORKDIR /opt/pdp11
+RUN wget -q https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
+    tar xzf 211bsd_rpethset.tgz && \
+    chmod 644 211bsd_rpeth.dsk && \
+    rm -f 211bsd_rpethset.tgz *.txt *.pdf
+
+# Copy pexpect ini and script.
+# Build context must be repo root (docker build ... .) for these paths to work.
+COPY vintage/machines/pdp11/configs/pdp11-pexpect.ini /opt/pdp11/pdp11-pexpect.ini
+COPY scripts/pdp11_pexpect.py /opt/pdp11/pdp11_pexpect.py
+
+WORKDIR /opt/pdp11
+
+# No telnet ports — console is stdin/stdout via pexpect pty.
+
+ENTRYPOINT ["python3", "/opt/pdp11/pdp11_pexpect.py", \
+            "--ini", "/opt/pdp11/pdp11-pexpect.ini", \
+            "--workdir", "/opt/pdp11"]

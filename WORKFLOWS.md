@@ -9,7 +9,7 @@ Current workflow map for `.github/workflows/`.
   - `ruff check resume_generator`
   - `mypy resume_generator host_logging tests`
   - `pytest -q -m "unit and not docker and not slow"`
-  - `pylint resume_generator tests -sn`
+  - `pylint resume_generator -sn`
   - `vulture --config pyproject.toml resume_generator`
 
 ## `test.yml`
@@ -19,18 +19,11 @@ Current workflow map for `.github/workflows/`.
   - quality lane (same core checks)
   - integration lane: `pytest -q -m "integration and not docker and not slow"`
 
-Legacy ARPANET docker jobs were removed from this workflow.
-
 ## `secret-scan.yml`
 
 - Trigger: push to `main`, pull requests, manual dispatch
 - Runs:
   - `gitleaks/gitleaks-action@v2` with full history checkout (`fetch-depth: 0`)
-
-Purpose:
-
-- Detect committed credentials/secrets before and after history rewrites.
-- Provide a baseline secret-hygiene signal prior to making the repo public.
 
 ## Marker taxonomy
 
@@ -45,43 +38,42 @@ Defined in `tests/conftest.py`:
 - Trigger:
   - tags
     - fast/local: `publish-fast-*`
-    - distributed vintage: `publish-vintage-*`
-    - legacy aliases: `publish-vax*`, `publish-docker*` (deprecated naming)
-  - manual dispatch
+    - vintage: `publish-vintage-*`
+  - manual dispatch (`build_mode`: `local` or `vintage`)
 
 Mode resolution:
 
-- `publish-vintage*` / legacy alias tags → `docker` mode
-- manual dispatch → selected input mode
-- other publish tags → `local` mode
+- `publish-vintage-*` tags → vintage mode
+- manual dispatch `build_mode=vintage` → vintage mode
+- otherwise → local mode
 
-Local mode (fast Hugo publish):
+Local mode:
 
 1. Checkout with submodules (PaperMod theme)
 2. Setup Hugo 0.156.0 extended
-3. `hugo --source hugo --destination ../site`
-4. Upload and deploy to GitHub Pages
+3. Sync `resume.yaml` → `hugo/data/resume.yaml`
+4. `hugo --source hugo --destination ../site`
+5. Upload and deploy to GitHub Pages
 
-Python setup, quality checks, and Playwright are skipped entirely for local mode.
+Vintage mode control plane (GitHub Actions):
 
-Docker mode lifecycle in deploy workflow:
+1. Authenticate to AWS via static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`)
+2. Resolve + start edcloud instance
+3. Invoke a single SSM command on edcloud
+4. Extract `brad.man.txt` from SSM output markers and write `hugo/static/brad.man.txt`
+5. Best-effort stop edcloud if this workflow started it
+6. Build/deploy Hugo as normal
 
-1. resolve + start one edcloud instance,
-2. prepare host checkout,
-3. start `docker-compose.production.yml`,
-4. run build pipeline,
-5. stop the same instance in `always()` cleanup.
+Vintage mode execution plane (edcloud host):
 
-Access model for docker mode:
+- Single entrypoint: `scripts/edcloud-vintage-runner.sh`
+- Script orchestrates the pexpect-based VAX/PDP-11 pipeline (see `ARCHITECTURE.md`)
+- Emits artifact as base64 between hard markers on stdout for CI extraction
+- Debug override: set `KEEP_RUNTIME=1` to keep containers running after a run
 
-- GitHub Actions joins the tailnet via `tailscale/github-action@v3`.
-- Required secret: `TAILSCALE_AUTH_KEY`.
-- All remote operations use `ssh/scp ubuntu@edcloud` (no public-IP SSH key flow).
+Required secrets for vintage mode:
 
-Lifecycle markers written to `GITHUB.log`:
-
-- `EDCLOUD_ACTIVATE_BEGIN`
-- `EDCLOUD_ACTIVATE_READY`
-- `EDCLOUD_ACTIVATE_FAILED`
-- `EDCLOUD_DEACTIVATE_BEGIN`
-- `EDCLOUD_DEACTIVATE_COMPLETE`
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- optional `EDCLOUD_INSTANCE_ID` (if unset, workflow resolves by tags)
