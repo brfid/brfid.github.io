@@ -33,7 +33,7 @@ _PROMPT = "PDPsh> "
 
 _BOOT_TIMEOUT = 180    # 2.11BSD on PDP-11 boots slowly (~90-120s under SIMH)
 _CMD_TIMEOUT = 60
-_NROFF_TIMEOUT = 120   # nroff on PDP-11 can take 30-60s for a resume man page
+_NROFF_TIMEOUT = 300   # nroff on PDP-11 takes 2-4min on emulated hardware
 _LINE_DELAY = 0.005    # 5 ms between heredoc lines; prevents tty buffer overrun
 
 
