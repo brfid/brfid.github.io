@@ -20,11 +20,10 @@ Exit codes:
 """
 
 import argparse
-import io
+import binascii
 import re
 import sys
 import time
-import uu
 from pathlib import Path
 
 import pexpect
@@ -127,10 +126,14 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
     name = Path(remote_path).name
     parent = str(Path(remote_path).parent)
 
-    in_buf = io.BytesIO(content)
-    out_buf = io.BytesIO()
-    uu.encode(in_buf, out_buf, name, 0o644)
-    uue_lines = out_buf.getvalue().decode("ascii").splitlines()
+    # Build UUE lines using binascii (not deprecated, unlike the uu module).
+    # binascii.b2a_uu encodes 45 bytes per line → ≤62-char UUE lines.
+    uue_lines = [f"begin 644 {name}"]
+    for i in range(0, len(content), 45):
+        uue_lines.append(
+            binascii.b2a_uu(content[i : i + 45]).decode("ascii").rstrip("\n")
+        )
+    uue_lines += ["`", "end"]
 
     tmp_uu = f"/tmp/{name}.uu"
     _log(
@@ -258,7 +261,12 @@ def main(argv=None) -> int:
         _inject_file_uue(child, "/tmp/brad.1", brad1_content)
         raw = _run_nroff(child)
         child.sendline("exit")
-        child.expect(pexpect.EOF, timeout=30)
+        # 2.11BSD may restart getty/login after shell exits rather than
+        # handing EOF back to SIMH. finally block force-terminates anyway.
+        try:
+            child.expect(pexpect.EOF, timeout=30)
+        except pexpect.TIMEOUT:
+            _log("Note: SIMH did not exit cleanly within 30s; will force-terminate")
     except pexpect.TIMEOUT as exc:
         _log(f"TIMEOUT: {exc}")
         _log("Last SIMH output:")
