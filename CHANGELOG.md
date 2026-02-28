@@ -20,6 +20,37 @@ semantic version tags.
   Ethernet. File transfer between stages is host-mediated.
 - Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`
   → `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
+- **GitHub Pages source set to GitHub Actions (2026-02-28).** Pages previously
+  reverted to legacy (Jekyll) mode when repo was made private; corrected by
+  switching source to GitHub Actions in repo Settings → Pages UI.
+
+### Active Priorities
+- None.
+
+### In Progress
+- None.
+
+### Blocked
+- None.
+
+### Decisions Needed
+- None.
+
+### Recently Completed
+- None.
+
+### Current State
+- Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
+  is an on-demand artifact generator only — it feeds `hugo/static/brad.man.txt`.
+- **Pexpect pipeline CI-VALIDATED end-to-end (2026-02-28, tag `publish-vintage-20260228-203550`).**
+  Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` → Hugo build → GitHub Pages deploy.
+  All steps green; site live at www.jockeyholler.net.
+- **Architecture decision (2026-02-28):** screen/telnet/sleep orchestration retired;
+  pexpect is the permanent replacement.
+- **PDP-11 networking constraint (permanent):** The `unix` kernel has no working
+  Ethernet. File transfer between stages is host-mediated.
+- Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`
+  → `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
 
 ### Active Priorities
 - None.
