@@ -11,44 +11,22 @@ semantic version tags.
 ### Current State
 - Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
   is an on-demand artifact generator only — it feeds `hugo/static/brad.man.txt`.
-- **Architecture decision (2026-02-28):** The screen/telnet/sleep orchestration
-  approach is retired. The replacement is **pexpect** — Python prompt-detection
-  driving SIMH via stdin/stdout (no telnet port). This eliminates all timing races.
-- **Both machines confirmed working on edcloud (2026-02-28 diagnostic run):**
-  - VAX 4.3BSD: boots to login, root login works, `cc` present.
-  - PDP-11 2.11BSD: boots to `#` prompt after Enter at `Boot:`, `mount /usr`
-    works, `/usr/bin/nroff` and `/usr/bin/uudecode` present.
+- **Pexpect pipeline VALIDATED end-to-end (2026-02-28, run `manual-20260228-200507`).**
+  Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` produced. Output is a correctly
+  formatted `BRAD(1)` UNIX Programmer's Manual man page rendered by 2.11BSD nroff.
+- **Architecture decision (2026-02-28):** screen/telnet/sleep orchestration retired;
+  pexpect is the permanent replacement.
 - **PDP-11 networking constraint (permanent):** The `unix` kernel has no working
-  Ethernet (`netnix` crashes on `xq` init). FTP to PDP-11 is not viable. File
-  transfer between stages must be host-mediated (pexpect captures VAX output,
-  host writes to temp file, pexpect injects into PDP-11 session).
+  Ethernet. File transfer between stages is host-mediated.
 - Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`
   → `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
-- **Pexpect pipeline implemented + first fix (2026-02-28, branch
-  `feat/pexpect-pipeline`):**
-  - `scripts/pdp11_pexpect.py` — Stage A (PDP-11 nroff runner)
-  - `scripts/vax_pexpect.py` — Stage B (VAX bradman.c compile+run); fixed to
-    read `resume.vintage.yaml` as UTF-8 and transliterate typographic Unicode
-    (em-dashes, curly quotes) to ASCII before VAX injection.
-  - `vintage/machines/pdp11/configs/pdp11-pexpect.ini` — pexpect-mode PDP-11 ini
-  - `vintage/machines/pdp11/Dockerfile.pdp11-pexpect` — pexpect Docker image
-  - `vintage/machines/vax/Dockerfile.vax-pexpect` — pexpect Docker image
-  - `scripts/edcloud-vintage-runner.sh` — rewritten; no screen/telnet
-  - `.github/workflows/deploy.yml` — timeout bumped (job 70 min, SSM 50 min)
-  - **Validation in progress** — multiple debug runs. Current fix pending:
-  `exec /bin/sh` after login (root default is csh; csh heredoc `<< 'DELIM'`
-  uses the QUOTED string as terminator so unquoted `DELIM` never matches —
-  heredoc hangs indefinitely). All ERASE/KILL and UUE fixes follow.
 
 ### Active Priorities
-1. **Confirm edcloud validation**: Second pipeline run in progress
-   (`BUILD_ID=manual-20260228-173226`). If it passes, merge
-   `feat/pexpect-pipeline` → `main` and update CHANGELOG.
-2. **CI smoke test** (after merge): Trigger a `publish-vintage-*` tag and
-   confirm the GitHub Actions workflow produces `hugo/static/brad.man.txt`.
+1. **CI smoke test**: Trigger a `publish-vintage-*` tag and confirm the GitHub
+   Actions workflow produces `hugo/static/brad.man.txt` from CI.
 
 ### In Progress
-- Edcloud validation run `manual-20260228-173226` — waiting for exit code.
+- None.
 
 ### Blocked
 - None.
@@ -88,10 +66,19 @@ semantic version tags.
      `73Boot from xp(0,0,0) at 0176700\n\r: `. Fixed pdp11_pexpect.py to match
      `["\r: ", "Boot:"]` and also removed `set cpu idle` from pdp11-pexpect.ini
      (SIMH idle detection calls `ps` which is absent in Debian bookworm-slim).
-- **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and
-  `vax-pexpect` images built successfully. Images cached with `KEEP_IMAGES=1`.
-- **Pexpect pipeline implementation (2026-02-28):** Stage A (PDP-11), Stage B
-  (VAX), Dockerfiles, and rewritten runner — all on `feat/pexpect-pipeline`.
+- **Stage A PDP-11 debugging (2026-02-28):** Three additional fixes after Stage B was working:
+  10. nroff BEL spam + hang — 2.11BSD nroff rings BEL and waits for keypress at page
+      breaks when stderr is a tty. Fix: `nroff ... < /dev/null` so stdin returns EOF
+      immediately, suppressing page-pause behaviour.
+  11. brad.1 CANBSIZ truncation — `brad.1` has lines >256 bytes (DESCRIPTION ~500 chars).
+      2.11BSD tty driver silently truncates them and sends BEL per overflow char. Fix:
+      `_inject_file_uue()` for brad.1 (same approach as VAX resume.vintage.yaml); UUE
+      lines are ≤62 chars.
+  12. Non-fatal EOF — 2.11BSD restarts getty/login after shell exits; pexpect.EOF never
+      arrives. Fix: wrap EOF wait in non-fatal try/except; finally block force-terminates.
+- **Pipeline VALIDATED end-to-end (2026-02-28, run `manual-20260228-200507`):**
+  Stage B VAX → brad.1 (61 lines troff source) → Stage A PDP-11 → brad.man.txt.
+  Output: correctly formatted `BRAD(1)` UNIX Programmer's Manual man page.
 - **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and
   `vax-pexpect` images built successfully. Images cached with `KEEP_IMAGES=1`.
 - **CI timeout extended (2026-02-28):** `deploy.yml` job timeout 40→70 min,

@@ -7,12 +7,12 @@ This is the primary cold-start doc for anyone implementing or debugging the pipe
 
 ## Implementation status (2026-02-28)
 
-Both stages are implemented on `feat/pexpect-pipeline`. Validation is in progress on edcloud.
+Both stages validated end-to-end on edcloud (`manual-20260228-200507`). Merged to `main`.
 
 | File | Role | Status |
 |------|------|--------|
-| `scripts/vax_pexpect.py` | Stage B: VAX compile+run | Implemented; validation in progress |
-| `scripts/pdp11_pexpect.py` | Stage A: PDP-11 nroff | Implemented; validation in progress |
+| `scripts/vax_pexpect.py` | Stage B: VAX compile+run | **Validated** |
+| `scripts/pdp11_pexpect.py` | Stage A: PDP-11 nroff | **Validated** |
 | `vintage/machines/vax/Dockerfile.vax-pexpect` | VAX Docker image | Implemented; disk decompress fixed |
 | `vintage/machines/pdp11/Dockerfile.pdp11-pexpect` | PDP-11 Docker image | Implemented |
 | `vintage/machines/vax/configs/vax780-pexpect.ini` | VAX pexpect ini | Static; no network/telnet |
@@ -70,6 +70,30 @@ Both stages are implemented on `feat/pexpect-pipeline`. Validation is in progres
 8. **UUE heredoc PTY echo stall**: A single heredoc with 90+ UUE lines can cause the PTY
    echo to stall. Fix: inject UUE in batches of 10 lines (10 × 62 = 620 chars per heredoc),
    appending to the `.uu` file between batches. Each small heredoc completes promptly.
+
+9. **nroff interactive page-break hang (Stage A)**: 2.11BSD nroff rings BEL and waits
+   for a keypress on stdin at page breaks when stderr is a tty. Since pexpect never sends
+   a keystroke, nroff waits indefinitely while continuously ringing BEL. The pexpect
+   buffer fills with `\x07` bytes; `expect(PROMPT)` never matches.
+   Fix: `nroff -man -Tlp /tmp/brad.1 < /dev/null > /tmp/brad.man.txt` — redirecting
+   stdin from `/dev/null` causes nroff to receive EOF instead of blocking on keypress,
+   suppressing interactive page-pause behaviour. `-Tlp` (line printer mode) prevents
+   terminal-specific control sequences.
+
+10. **brad.1 CANBSIZ truncation (Stage A)**: `brad.1` contains lines exceeding 256 bytes
+    (the `.SH DESCRIPTION` paragraph is ~500 chars; one `.IP` bullet is ~270 chars).
+    2.11BSD's tty CANBSIZ=256 silently truncates them during plain heredoc injection and
+    sends BEL per overflow character. The injected file is corrupt (truncated content).
+    Fix: `_inject_file_uue()` for `brad.1` — UUE lines are always ≤62 chars. Same
+    pattern as `resume.vintage.yaml` on the VAX. Use `binascii.b2a_uu` (not the
+    deprecated Python `uu` module) for encoding; output is identical and compatible with
+    2.11BSD `uudecode`.
+
+11. **Non-fatal EOF after shell exit**: 2.11BSD restarts getty/login after the root
+    shell exits rather than returning EOF to SIMH. `child.expect(pexpect.EOF)` times out.
+    Fix: wrap EOF wait in non-fatal `try/except pexpect.TIMEOUT`; the `finally` block
+    force-terminates SIMH regardless. Applied to both `vax_pexpect.py` and
+    `pdp11_pexpect.py`.
 
 ---
 
