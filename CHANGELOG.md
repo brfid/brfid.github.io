@@ -24,31 +24,35 @@ semantic version tags.
   host writes to temp file, pexpect injects into PDP-11 session).
 - Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`
   → `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
-- `hugo/static/brad.man.txt` is not present from a verified recent run; treat
-  artifact regeneration as pending until pexpect stages are implemented.
+- **Pexpect pipeline implemented (2026-02-28, branch feat/pexpect-pipeline):**
+  - `scripts/pdp11_pexpect.py` — Stage A (PDP-11 nroff runner)
+  - `scripts/vax_pexpect.py` — Stage B (VAX bradman.c compile+run)
+  - `vintage/machines/pdp11/configs/pdp11-pexpect.ini` — pexpect-mode PDP-11 ini
+  - `vintage/machines/pdp11/Dockerfile.pdp11-pexpect` — pexpect Docker image
+  - `vintage/machines/vax/Dockerfile.vax-pexpect` — pexpect Docker image
+  - `scripts/edcloud-vintage-runner.sh` — rewritten; no screen/telnet
+  - **Not yet validated on edcloud** — requires docker build + test run on EC2.
 
 ### Active Priorities
-1. **Implement Stage A** (PDP-11 standalone): Create `scripts/pdp11_pexpect.py`.
-   - Remove `set console telnet=2327` from `pdp11.ini` (or create `pdp11-pexpect.ini`).
-   - Spawn SIMH via `pexpect.spawn('pdp11 pdp11-pexpect.ini')`, boot to `#`,
-     inject `brad.1` via heredoc, run `nroff -man`, capture `brad.man.txt`.
-   - Validate standalone before connecting to Stage B.
-2. **Implement Stage B** (VAX standalone): Create `scripts/vax_pexpect.py`.
-   - Inject `bradman.c` and `resume.vintage.yaml` via heredoc, compile with `cc`,
-     run to produce `brad.1`, capture output.
-3. **Connect A+B**: Update `scripts/edcloud-vintage-runner.sh` to call both Python
-   scripts with host-mediated file handoff.
+1. **Validate on edcloud**: Run `edcloud-vintage-runner.sh <build-id>` on the
+   EC2 instance to test the full pipeline end-to-end. Debug any boot-sequence
+   or heredoc injection issues.
+2. **CI integration**: Update `.github/workflows/deploy.yml` to invoke the
+   new runner (currently calls the old screen/telnet runner).
 
 ### In Progress
 - None.
 
 ### Blocked
-- None. Both machines confirmed working; implementation is unblocked.
+- None. Implementation is done; next step is a live test on edcloud EC2.
 
 ### Decisions Needed
 - None.
 
 ### Recently Completed
+- **Pexpect pipeline implementation (2026-02-28):** Stage A (PDP-11), Stage B
+  (VAX), Dockerfiles, and rewritten runner — all implemented on
+  `feat/pexpect-pipeline`. Not yet validated on edcloud.
 - **Documentation pass (2026-02-28):** Removed 21 dead MD files (screen/telnet
   runbooks, old archive docs, transport-archive.md, pdp-11 archive files);
   rewrote ARCHITECTURE.md, WORKFLOWS.md, docs/integration/INDEX.md,

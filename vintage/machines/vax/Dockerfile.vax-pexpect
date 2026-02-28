@@ -1,0 +1,57 @@
+# VAX 11/780 with 4.3BSD — pexpect mode
+#
+# Extends jguillaumes/simh-vaxbsd:latest with Python pexpect support.
+# At build time, discovers the vax780.ini path inside the base image and
+# creates a pexpect-friendly variant (no 'set console telnet' directive).
+# The cached paths are written to /opt/vax-*.txt for use by vax_pexpect.py.
+#
+# Assumes Debian-based base image (apt-get available). If the base image uses
+# a different package manager, install python3-pexpect accordingly.
+#
+# Build (repo root as context):
+#   docker build -f vintage/machines/vax/Dockerfile.vax-pexpect -t vax-pexpect .
+#
+# Run:
+#   docker run --rm \
+#     -v "$(pwd)/build/vintage:/build" \
+#     vax-pexpect \
+#     --bradman /build/bradman.c \
+#     --resume-yaml /build/resume.vintage.yaml \
+#     --output /build/brad.1
+#
+# Note on ini discovery: the base image's vax780.ini is found via 'find' at
+# build time. If the image layout changes, rebuild to refresh the cache.
+
+FROM jguillaumes/simh-vaxbsd:latest
+
+# Install Python pexpect.
+RUN apt-get update && apt-get install -y python3 python3-pexpect \
+    && rm -rf /var/lib/apt/lists/*
+
+# Discover vax780.ini location and create a pexpect-mode version.
+# The pexpect-mode ini is identical to the original except the
+# 'set console telnet=NNNN' line is removed so SIMH uses stdin/stdout.
+RUN set -e; \
+    ini=$(find / -name 'vax780.ini' -not -path '*/proc/*' 2>/dev/null | head -1); \
+    if [ -z "$ini" ]; then \
+        echo "ERROR: vax780.ini not found in base image — cannot create pexpect ini" >&2; \
+        exit 1; \
+    fi; \
+    echo "Found ini: $ini"; \
+    pexpect_ini="${ini%.ini}-pexpect.ini"; \
+    grep -v 'set console telnet' "$ini" > "$pexpect_ini"; \
+    echo "Created pexpect ini: $pexpect_ini"; \
+    cat "$pexpect_ini"; \
+    echo "$ini"          > /opt/vax-ini-path.txt; \
+    echo "$pexpect_ini"  > /opt/vax-pexpect-ini-path.txt; \
+    which vax780         > /opt/vax-bin-path.txt || true; \
+    echo "Cached paths:"; \
+    cat /opt/vax-ini-path.txt /opt/vax-pexpect-ini-path.txt /opt/vax-bin-path.txt
+
+# Copy vax pexpect script.
+# Build context must be repo root for this path to resolve.
+COPY scripts/vax_pexpect.py /opt/vax_pexpect.py
+
+# No telnet ports — console is stdin/stdout via pexpect pty.
+
+ENTRYPOINT ["python3", "/opt/vax_pexpect.py"]
