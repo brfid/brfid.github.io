@@ -32,11 +32,13 @@ hugo --source hugo --destination site
 
 Generates `brad.man.txt` — a resume rendered on VAX/PDP-11 via SIMH — and drops it into `hugo/static/` before the Hugo build.
 
-The pipeline uses **pexpect** to drive SIMH emulators via stdin/stdout. It is built and validated in stages:
+The pipeline uses **pexpect** to drive SIMH emulators via stdin/stdout (no telnet ports, no sleep-based timing):
 
-- **Stage A** (in progress): PDP-11 (2.11BSD) runs `nroff -man` to render `brad.1` → `brad.man.txt`
-- **Stage B**: VAX (4.3BSD) compiles and runs `bradman.c` to generate `brad.1` from `resume.vintage.yaml`
+- **Stage A**: PDP-11 (2.11BSD) runs `nroff -man` to render `brad.1` → `brad.man.txt` (`scripts/pdp11_pexpect.py`)
+- **Stage B**: VAX (4.3BSD) compiles and runs `bradman.c` to generate `brad.1` from `resume.vintage.yaml` (`scripts/vax_pexpect.py`)
 - **Stage A+B**: VAX generates, host couriers the file, PDP-11 renders
+
+Both stages are implemented on `feat/pexpect-pipeline`. See `CHANGELOG.md` for validation status.
 
 See `ARCHITECTURE.md` and `docs/integration/INDEX.md` for design details.
 
@@ -65,7 +67,7 @@ python3 -m venv .venv
 6. best-effort stops edcloud if the workflow started it.
 
 Single orchestration entrypoint: `scripts/edcloud-vintage-runner.sh`.
-Set `KEEP_RUNTIME=1` when debugging to keep containers running after a run.
+Set `KEEP_IMAGES=1` to preserve Docker images between runs (avoids rebuild on retry).
 
 Infrastructure lifecycle managed separately: [brfid/edcloud](https://github.com/brfid/edcloud).
 

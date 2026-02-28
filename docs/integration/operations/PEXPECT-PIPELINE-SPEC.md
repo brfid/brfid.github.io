@@ -5,6 +5,42 @@ This is the primary cold-start doc for anyone implementing or debugging the pipe
 
 ---
 
+## Implementation status (2026-02-28)
+
+Both stages are implemented on `feat/pexpect-pipeline`. Validation is in progress on edcloud.
+
+| File | Role | Status |
+|------|------|--------|
+| `scripts/vax_pexpect.py` | Stage B: VAX compile+run | Implemented; validation in progress |
+| `scripts/pdp11_pexpect.py` | Stage A: PDP-11 nroff | Implemented; validation in progress |
+| `vintage/machines/vax/Dockerfile.vax-pexpect` | VAX Docker image | Implemented; disk decompress fixed |
+| `vintage/machines/pdp11/Dockerfile.pdp11-pexpect` | PDP-11 Docker image | Implemented |
+| `vintage/machines/vax/configs/vax780-pexpect.ini` | VAX pexpect ini | Static; no network/telnet |
+| `vintage/machines/pdp11/configs/pdp11-pexpect.ini` | PDP-11 pexpect ini | Static; no telnet |
+| `scripts/edcloud-vintage-runner.sh` | Orchestrator | Rewritten; no screen/telnet |
+
+**Key implementation learnings:**
+
+1. **VAX disk images are gzipped** in `jguillaumes/simh-vaxbsd:latest` (`RA81.000.gz`,
+   `RA81VHD.001.gz`). SIMH cannot attach `.gz` files — decompress at Docker build time.
+   Without decompression, BSD panics immediately (no root disk), `run 2` returns, `quit`
+   fires, and SIMH exits — appearing to pexpect as instant `EOF`.
+
+2. **Network and DZ terminals must be disabled** in the pexpect ini. The original
+   `vax780.ini` opens TCP ports (`attach dz 2323`, `set remote telnet=2324`,
+   `attach xu eth0`) that are unnecessary for the pipeline and may fail in Docker.
+   The static `vax780-pexpect.ini` disables all of these.
+
+3. **`resume.vintage.yaml` contains non-ASCII characters** (em-dashes, curly quotes
+   from `resume.yaml`). Read as UTF-8 and transliterate to ASCII before heredoc
+   injection — the VAX 4.3BSD guest is ASCII-only.
+
+4. **Custom shell prompt prevents false matches**: Set `PS1='VAXsh> '` immediately after
+   login so pexpect's prompt-wait doesn't match `#include`, `#if`, or similar sequences
+   echoed during heredoc injection of bradman.c.
+
+---
+
 ## Why pexpect
 
 The previous approach used GNU `screen` + `telnet` + fixed `sleep` timings to inject
