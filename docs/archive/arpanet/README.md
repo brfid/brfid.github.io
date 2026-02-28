@@ -32,17 +32,4 @@ See `handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` for full analysis.
 - `docker-compose.arpanet.chaosnet.yml` — Chaosnet shim topology
 - `docker-compose.arpanet.phase2-chaosnet.yml` — IMP + Chaosnet hybrid
 
-See `chaosnet/README.md` for Chaosnet path details.
-
-### KS10 Emulator (Boot failure, 2026-02-11)
-- `Dockerfile.pdp10` — KS10 TOPS-20 (boot failure)
-- `Dockerfile.pdp10-its` — KS10 ITS (boot failure)
-
-Both fail with "Stop code 7, PC: 000100". See `../pdp-10/ks10/README.md`.
-
-## To reactivate
-
-1. Move compose files back to repo root
-2. Restore Makefile targets (see `Makefile` archived section)
-3. Address the HI1 framing mismatch (see blocker summary above)
-4. Update `docs/archive/DEAD-ENDS.md` and integration docs before reactivation
+Chaosnet detail and KS10/PDP-10 records removed (low-value dead ends).

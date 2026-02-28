@@ -104,6 +104,7 @@ cleanup_runtime() {
   rm -f \
     "/tmp/vax-build-console-${BUILD_ID}.txt" \
     "/tmp/vax-cat-output-${BUILD_ID}.txt" \
+    "/tmp/pdp11-boot-verify.txt" \
     "/tmp/pdp11-validation-${BUILD_ID}.txt" \
     "/tmp/pdp11-console-${BUILD_ID}.txt" \
     "/tmp/COURIER-${BUILD_ID}.log" \
@@ -142,6 +143,32 @@ start_stack() {
   # VAX SIMH emits "Listening on port 2323" without the %SIM-INFO prefix.
   wait_for_log_signal "vax-host" "Listening on port 2323" 120
   wait_for_log_signal "pdp11-host" "%SIM-INFO: Listening on port 2327" 120
+}
+
+boot_pdp11() {
+  stage "boot-pdp11"
+  cd "$ROOT_DIR"
+
+  # SIMH exits if no telnet console connection is made within ~60 seconds of boot.
+  # Stage 2 runs after Stage 1's multi-minute upload+build, so we must establish
+  # the console session immediately and keep it alive throughout the pipeline.
+  local session="pdp11-console"
+  cleanup_screen "$session"
+  screen -dmS "$session" telnet 127.0.0.1 2327
+  sleep 3
+  # Press Enter at the 2.11BSD Boot: prompt to boot the unix kernel.
+  send_screen "$session" "\n"
+  sleep 12
+  # Mount /usr to make uudecode and nroff available.
+  send_screen "$session" "mount /usr\n"
+  sleep 3
+  screen -S "$session" -X hardcopy "/tmp/pdp11-boot-verify.txt"
+  if ! grep -q '#' "/tmp/pdp11-boot-verify.txt"; then
+    echo "PDP-11 did not reach root shell after boot"
+    cat "/tmp/pdp11-boot-verify.txt" || true
+    return 1
+  fi
+  echo "PDP-11 booted; session $session is live"
 }
 
 generate_vintage_yaml() {
@@ -262,25 +289,19 @@ stage2_transfer() {
     return 1
   fi
 
-  session="pdp11-upload-${BUILD_ID}"
-  cleanup_screen "$session"
-  screen -dmS "$session" telnet 127.0.0.1 2327
-  sleep 3
-  send_screen "$session" "\n"
-  sleep 1
-  send_screen "$session" "root\n"
-  sleep 2
-  send_screen "$session" "cat > /tmp/arpanet-log.sh << 'UPLOAD_EOF'\n"
+  # Reuse the pdp11-console session established in boot_pdp11().
+  # That session is already at root # with /usr mounted; no reconnect needed.
+  local pdp11_session="pdp11-console"
+  send_screen "$pdp11_session" "cat > /tmp/arpanet-log.sh << 'UPLOAD_EOF'\n"
   sleep 1
   while IFS= read -r line; do
-    screen -S "$session" -X stuff "$line\r"
+    screen -S "$pdp11_session" -X stuff "$line\r"
     sleep 0.02
   done < scripts/arpanet-log.sh
-  send_screen "$session" "UPLOAD_EOF\n"
+  send_screen "$pdp11_session" "UPLOAD_EOF\n"
   sleep 1
-  send_screen "$session" "chmod +x /tmp/arpanet-log.sh\n"
+  send_screen "$pdp11_session" "chmod +x /tmp/arpanet-log.sh\n"
   sleep 1
-  cleanup_screen "$session"
 
   python3 scripts/console-transfer.py "$BUILD_ID" 127.0.0.1 127.0.0.1
 }
@@ -328,6 +349,7 @@ emit_artifact_markers() {
 main() {
   prepare_host
   start_stack
+  boot_pdp11
   generate_vintage_yaml
   stage1_vax_build
   stage2_transfer

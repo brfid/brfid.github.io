@@ -19,8 +19,6 @@ Current workflow map for `.github/workflows/`.
   - quality lane (same core checks)
   - integration lane: `pytest -q -m "integration and not docker and not slow"`
 
-Legacy ARPANET docker jobs were removed from this workflow.
-
 ## `secret-scan.yml`
 
 - Trigger: push to `main`, pull requests, manual dispatch
@@ -69,18 +67,9 @@ Vintage mode control plane (GitHub Actions):
 Vintage mode execution plane (edcloud host):
 
 - Single entrypoint: `scripts/edcloud-vintage-runner.sh`
-- Script responsibilities:
-  - host prep (`.venv`, dependencies, compose startup)
-  - VAX build/encode stage
-  - VAX → PDP-11 console transfer stage
-  - PDP-11 validation stage
-  - host-side render of final `brad.man.txt`
-  - emit artifact markers for CI extraction
-  - standard cleanup on exit: screen sessions, compose teardown, and run temp files
-
-Debug override:
-
-- set `KEEP_RUNTIME=1` on edcloud runner invocation to keep runtime state after a run
+- Script orchestrates the pexpect-based VAX/PDP-11 pipeline (see `ARCHITECTURE.md`)
+- Emits artifact as base64 between hard markers on stdout for CI extraction
+- Debug override: set `KEEP_RUNTIME=1` to keep containers running after a run
 
 Required secrets for vintage mode:
 

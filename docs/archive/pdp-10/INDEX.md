@@ -1,12 +1,6 @@
 # PDP-10 Archive Index
 
-This area is intentionally minimal after removing low-value dead-end records.
+PDP-10 (KS10/TOPS-20) emulation was evaluated and retired.
+See `../DEAD-ENDS.md` for the blocker summary.
 
-## Retained file
-
-- `ks10/README.md` — concise summary of KS10 emulator incompatibility and archival status
-
-## Related
-
-- `../DEAD-ENDS.md` — retired-path registry
-- `../README.md` — archive scope
+No active files remain here.

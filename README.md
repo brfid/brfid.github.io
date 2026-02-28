@@ -32,6 +32,14 @@ hugo --source hugo --destination site
 
 Generates `brad.man.txt` — a resume rendered on VAX/PDP-11 via SIMH — and drops it into `hugo/static/` before the Hugo build.
 
+The pipeline uses **pexpect** to drive SIMH emulators via stdin/stdout. It is built and validated in stages:
+
+- **Stage A** (in progress): PDP-11 (2.11BSD) runs `nroff -man` to render `brad.1` → `brad.man.txt`
+- **Stage B**: VAX (4.3BSD) compiles and runs `bradman.c` to generate `brad.1` from `resume.vintage.yaml`
+- **Stage A+B**: VAX generates, host couriers the file, PDP-11 renders
+
+See `ARCHITECTURE.md` and `docs/integration/INDEX.md` for design details.
+
 **Setup:**
 
 ```bash
@@ -56,11 +64,10 @@ python3 -m venv .venv
 5. builds Hugo and deploys Pages,
 6. best-effort stops edcloud if the workflow started it.
 
-The vintage orchestration itself now lives in one place: `scripts/edcloud-vintage-runner.sh`.
-By default the runner performs runtime cleanup on exit (screen sessions, compose teardown, temp files);
-set `KEEP_RUNTIME=1` when debugging to keep containers running.
+Single orchestration entrypoint: `scripts/edcloud-vintage-runner.sh`.
+Set `KEEP_RUNTIME=1` when debugging to keep containers running after a run.
 
-Infrastructure lifecycle policy and provisioning remain managed separately: [brfid/edcloud](https://github.com/brfid/edcloud).
+Infrastructure lifecycle managed separately: [brfid/edcloud](https://github.com/brfid/edcloud).
 
 **Vintage CI prerequisites:**
 

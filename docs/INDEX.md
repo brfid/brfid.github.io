@@ -4,7 +4,7 @@ Primary documentation hub for active project docs.
 
 ## Start here
 
-1. `../README.md` — cold-start entry point (infrastructure boundary, source-of-truth map, quickstart)
+1. `../README.md` — cold-start entry point
 2. `../CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
 3. This index
 
@@ -21,11 +21,10 @@ Then apply `../AGENTS.md` constraints.
 
 ### Vintage pipeline
 
-- `vax/INDEX.md` — VAX operational reference
-- `integration/INDEX.md` — VAX ↔ PDP-11 pipeline integration
-- `integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md` — active cold-start runbook
-- `integration/CONTEXT-SOURCES.md` — curated historical context for current transfer debugging
-- `archive/DEAD-ENDS.md` — explicit retired/blocked experiment paths
+- `vax/INDEX.md` — VAX stage reference (Stage B: bradman.c)
+- `integration/INDEX.md` — pipeline integration (stages, constraints, architecture)
+- `integration/operations/PEXPECT-PIPELINE-SPEC.md` — implementation spec for pexpect pipeline
+- `archive/DEAD-ENDS.md` — retired path registry (screen/telnet, FTP, ARPANET, PDP-10)
 
 ### Site
 
@@ -33,8 +32,7 @@ Then apply `../AGENTS.md` constraints.
 
 ## Historical material
 
-- `archive/` — research notes from exploratory phases, organized by host type
-- See `archive/README.md` for contents and scope
+- `archive/` — research notes from exploratory phases (no active guidance)
 
 ## Maintenance rule
 

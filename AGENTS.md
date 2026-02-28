@@ -27,9 +27,8 @@ under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entr
 - Current mutable state / active queue: `CHANGELOG.md` `[Unreleased]`
 - Change history / milestone evidence: dated `CHANGELOG.md` entries
 - Documentation hub: `docs/INDEX.md`
-- Integration active path + known-good evidence: `docs/integration/INDEX.md`
-- Integration historical evidence core: `docs/archive/pipeline-planning/`
-- Historical transport decisions: `docs/archive/pipeline-planning/transport-archive.md`
+- Integration active path + spec: `docs/integration/INDEX.md`
+- Implementation spec (pexpect pipeline): `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`
 - Explicit retired/blocked path registry: `docs/archive/DEAD-ENDS.md`
 
 Do not duplicate mutable status in this file; update `CHANGELOG.md` (`[Unreleased]`) instead.
@@ -111,7 +110,7 @@ Pre-commit checks are optional by default in this repo workflow.
 - Keep Python execution in `.venv/` only.
 - Avoid global/system package installs.
 - Do not create/push publish tags unless intentionally deploying.
-- Preserve evidence workflow for ARPANET changes (manifests/logs referenced in retained archive summaries).
+- Do not reintroduce screen/telnet/sleep-based console orchestration; the pexpect approach supersedes it.
 
 ## Expected output shape for implementation work
 

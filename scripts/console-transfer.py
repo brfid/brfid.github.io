@@ -56,21 +56,25 @@ def transfer_file_via_console(
 
     log_courier(build_id, f"Initiating console transfer to PDP-11 ({pdp11_ip})")
 
-    # Start screen session connected to PDP-11
-    log_courier(build_id, f"Connecting to PDP-11 console (telnet {pdp11_ip}:2327)")
-    subprocess.run(
-        ['screen', '-dmS', session_name, 'telnet', pdp11_ip, '2327'],
-        check=False
+    # Reuse an existing screen session if boot_pdp11() already established one.
+    # Creating a second telnet connection to SIMH while one is active causes
+    # the console to disconnect, so we must detect and reuse the live session.
+    existing = subprocess.run(
+        ['screen', '-ls'], capture_output=True, text=True
     )
-
-    # Wait for connection
-    time.sleep(3)
-    log_courier(build_id, "Console connection established")
-
-    # Login as root (PDP-11 typically auto-logged in or needs root)
-    # Most PDP-11 setups auto-login, but send a newline to ensure we're at prompt
-    send_to_console(session_name, '')
-    wait_for_prompt(session_name, 2)
+    if session_name in existing.stdout:
+        log_courier(build_id, f"Reusing existing PDP-11 console session: {session_name}")
+    else:
+        log_courier(build_id, f"Connecting to PDP-11 console (telnet {pdp11_ip}:2327)")
+        subprocess.run(
+            ['screen', '-dmS', session_name, 'telnet', pdp11_ip, '2327'],
+            check=False
+        )
+        time.sleep(3)
+        log_courier(build_id, "Console connection established")
+        # PDP-11 auto-boots to root #; send a newline to ensure we are at prompt.
+        send_to_console(session_name, '')
+        wait_for_prompt(session_name, 2)
 
     # Change to /tmp directory
     log_courier(build_id, "Changing to /tmp directory")

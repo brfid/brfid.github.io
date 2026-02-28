@@ -1,33 +1,31 @@
-# VAX manpage generator (proof-of-concept)
+# VAX stage (Stage B)
 
-This folder contains a small, VAX-friendly C program that reads a constrained YAML
-subset (`resume.vintage.yaml`) and emits a `man(7)` roff source file (`brad.1`).
+The VAX (4.3BSD on SIMH) is Stage B of the vintage pipeline. It compiles `bradman.c`
+and runs the resulting binary to transform `resume.vintage.yaml` into `brad.1`
+(troff man page source), which Stage A (PDP-11 nroff) then renders.
 
 ## Why a YAML subset?
 
-Full YAML is too complex to parse reliably with a tiny, portable C program on older
-Unix systems. The intended workflow is:
+Full YAML is too complex to parse reliably with a portable C program on older Unix systems.
+The intended workflow is:
 
-1. Host converts `resume.yaml` → `resume.vintage.yaml` (flattened, quoted, versioned).
-2. Guest compiles and runs `bradman` to produce `brad.1`.
-3. Guest runs `nroff -man brad.1` (or `man`) to produce the rendered text.
+1. Host converts `resume.yaml` → `build/vintage/resume.vintage.yaml` (flattened, quoted, versioned).
+2. VAX guest compiles and runs `bradman` to produce `brad.1`.
+3. PDP-11 guest runs `nroff -man brad.1` to produce `brad.man.txt`.
 
-## Build (typical BSD)
+## Build (on 4.3BSD VAX)
 
 ```sh
 cc -O -o bradman bradman.c
-./bradman -i ../../vintage/machines/vax/resume.vax.example.yaml -o brad.1
-nroff -man brad.1 > brad.txt
+./bradman -i resume.vintage.yaml -o brad.1
 ```
 
-## Input schema (v1)
+Source: `vintage/machines/vax/bradman.c`
 
-See `../../vintage/machines/vax/resume.vax.example.yaml` for an example.
-(The example filename is historical; active pipeline input is `resume.vintage.yaml`.)
+## Orchestration
 
-## Future Enhancement: Direct YAML Parsing
+Stage B is driven by pexpect connecting to the SIMH VAX via stdin/stdout.
+The pexpect script injects `bradman.c` and `resume.vintage.yaml` via heredoc
+(with prompt detection), compiles, runs, and reads back `brad.1`.
 
-The current design uses Python to preprocess `resume.yaml` into a simplified subset
-(`resume.vintage.yaml`) before the VAX-side parser processes it. Historical parser
-enhancement experiments were intentionally removed during archive tightening because
-they were low-value for the active pipeline.
+See `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md` for the implementation spec.

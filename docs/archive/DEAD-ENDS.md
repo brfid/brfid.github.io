@@ -1,38 +1,31 @@
 # Dead Ends and Retired Paths
 
-Purpose: explicitly mark archived approaches that are not part of the current
-VAX↔PDP-11 pipeline so active work stays focused.
+Purpose: explicitly mark archived approaches that are not part of the current pipeline
+so active work stays focused.
 
 Current active path:
 - `docs/integration/INDEX.md`
-- `docs/integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md`
+- `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`
 - `scripts/edcloud-vintage-runner.sh`
 
 ---
 
-## Dead Ends (for this repo's active pipeline)
+## Dead Ends
 
-| Path | Status | Why retired / blocked | Historical evidence |
-|------|--------|------------------------|---------------------|
-| ARPANET IMP chain (VAX→IMP→IMP→PDP-10) | Retired / not shipped | Emulator host-link framing mismatch (`bad magic`) and scope pivot to Hugo + VAX↔PDP-11 artifact path | `docs/archive/arpanet/README.md`, `docs/archive/arpanet/handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` |
-| Chaosnet "Path A" for ITS | Retired / not shipped | Did not clear blocker chain to become a stable pipeline dependency | `docs/archive/arpanet/chaosnet/README.md` |
-| PDP-10 KS10/TOPS-20 transfer path | Retired / not shipped | Runtime and compatibility blockers; does not serve current VAX↔PDP-11 objective | `docs/archive/pdp-10/INDEX.md`, `docs/archive/pdp-10/ks10/README.md` |
-| VAX↔PDP-11 FTP transfer | Retired | Unreliable guest/container networking in this runtime; superseded by console transfer | `docs/archive/pipeline-planning/transport-archive.md`, `docs/archive/pipeline-planning/DEBUGGING-SUMMARY-2026-02-14.md` |
-| TS11 tape as primary transport | Retired for active path | Technically validated, but not selected for current production path; added complexity and host-side extraction constraints | `docs/archive/pipeline-planning/TAPE-TRANSFER-VALIDATION-2026-02-13.md` |
-
----
-
-## Still Useful Historical Context (Not Dead Ends)
-
-These records are old but still high-signal when debugging current console flow:
-- `docs/archive/pipeline-planning/VAX-PDP11-VALIDATION-2026-02-14.md` — practical Stage 1→3 checkpoints and evidence patterns
-- `docs/archive/pipeline-planning/DEBUGGING-SUMMARY-2026-02-14.md` — why commands must execute inside guest OS environments
-- `docs/archive/vax/VAX-CONTAINER-BSD-FILE-SHARING.md` — host/container-vs-guest boundary issues that caused earlier false-positive conclusions
+| Path | Status | Why retired |
+|------|--------|-------------|
+| screen + telnet + sleep orchestration | Retired | Timing-based heredoc injection with no handshake; inherently fragile. VAX login prompt unreliable after multiple rapid connections. Replaced by pexpect. |
+| FTP (VAX guest → external FTP server) | Retired | VAX guest could not reliably reach the FTP server/container. Networking and routing inside the SIMH container were the issue. |
+| FTP (VAX → PDP-11 directly) | Not viable | PDP-11 2.11BSD `unix` kernel has no working Ethernet. `netnix` kernel crashes on `xq` init. Console-based (uuencode or pexpect heredoc) is the only viable file transfer path to PDP-11. |
+| uuencode/uudecode console transfer | Retired for now | Valid concept (authentic to era — simulates serial transfer), but the screen/telnet implementation was unreliable. May be revisited with pexpect. Not needed if host-mediated injection works. |
+| TS11 tape as primary transport | Retired | Technically validated, not selected; adds complexity and host-side extraction constraints. |
+| ARPANET IMP chain (VAX→IMP→IMP→PDP-10) | Retired | Emulator host-link framing mismatch (`bad magic`) and scope pivot to VAX↔PDP-11 artifact path. |
+| Chaosnet / ITS path | Retired | Did not clear blocker chain; not a pipeline dependency. |
+| PDP-10 KS10/TOPS-20 transfer path | Retired | Runtime and compatibility blockers; does not serve VAX↔PDP-11 objective. |
 
 ---
 
-## Archive Navigation Note
+## Archive navigation
 
-Many archived files preserve original path names from earlier repo layouts
-(for historical fidelity). Use this file, `docs/archive/README.md`, and
-`docs/integration/INDEX.md` as the navigation authority.
+Historical experiment notes are in `docs/archive/` organized by host type.
+Use this file and `docs/integration/INDEX.md` as the navigation authority.

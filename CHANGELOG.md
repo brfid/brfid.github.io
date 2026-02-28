@@ -9,48 +9,59 @@ semantic version tags.
 ## [Unreleased]
 
 ### Current State
-- Hugo remains the site generator (`hugo/`); the VAX↔PDP-11 path is an on-demand
-  artifact pipeline only.
-- Canonical active pipeline docs for cold starts are:
-  `README.md` → `CHANGELOG.md` (`[Unreleased]`) → `docs/integration/INDEX.md` →
-  `docs/integration/operations/VAX-PDP11-COLD-START-DIAGNOSTICS.md`.
-- Historical context is now intentionally reduced:
-  `docs/archive/DEAD-ENDS.md` is the retired-path registry and
-  `docs/integration/CONTEXT-SOURCES.md` points to the retained high-signal evidence.
-- Current runtime blocker: on clean edcloud rehearsals, Stage 1 can reach VAX
-  console port `2323` after upload but may fail to reach a usable shell prompt,
-  preventing `/tmp/vax-build-and-encode.sh` and blocking Stage 2/3.
-- `hugo/static/brad.man.txt` is currently not present from a verified recent run;
-  treat artifact regeneration as pending.
+- Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
+  is an on-demand artifact generator only — it feeds `hugo/static/brad.man.txt`.
+- **Architecture decision (2026-02-28):** The screen/telnet/sleep orchestration
+  approach is retired. The replacement is **pexpect** — Python prompt-detection
+  driving SIMH via stdin/stdout (no telnet port). This eliminates all timing races.
+- **Both machines confirmed working on edcloud (2026-02-28 diagnostic run):**
+  - VAX 4.3BSD: boots to login, root login works, `cc` present.
+  - PDP-11 2.11BSD: boots to `#` prompt after Enter at `Boot:`, `mount /usr`
+    works, `/usr/bin/nroff` and `/usr/bin/uudecode` present.
+- **PDP-11 networking constraint (permanent):** The `unix` kernel has no working
+  Ethernet (`netnix` crashes on `xq` init). FTP to PDP-11 is not viable. File
+  transfer between stages must be host-mediated (pexpect captures VAX output,
+  host writes to temp file, pexpect injects into PDP-11 session).
+- Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`
+  → `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
+- `hugo/static/brad.man.txt` is not present from a verified recent run; treat
+  artifact regeneration as pending until pexpect stages are implemented.
 
 ### Active Priorities
-- Run the cold-start diagnostics runbook on edcloud and capture the full evidence
-  bundle for the next Stage 1→3 attempt.
-- Stabilize Stage 1 VAX shell-ready behavior in `scripts/edcloud-vintage-runner.sh`
-  so build execution runs inside the guest consistently.
-- After Stage 1 is stable, execute Stage 2/3 transfer (`uudecode` + `nroff`) and
-  confirm artifact output into `hugo/static/brad.man.txt`.
+1. **Implement Stage A** (PDP-11 standalone): Create `scripts/pdp11_pexpect.py`.
+   - Remove `set console telnet=2327` from `pdp11.ini` (or create `pdp11-pexpect.ini`).
+   - Spawn SIMH via `pexpect.spawn('pdp11 pdp11-pexpect.ini')`, boot to `#`,
+     inject `brad.1` via heredoc, run `nroff -man`, capture `brad.man.txt`.
+   - Validate standalone before connecting to Stage B.
+2. **Implement Stage B** (VAX standalone): Create `scripts/vax_pexpect.py`.
+   - Inject `bradman.c` and `resume.vintage.yaml` via heredoc, compile with `cc`,
+     run to produce `brad.1`, capture output.
+3. **Connect A+B**: Update `scripts/edcloud-vintage-runner.sh` to call both Python
+   scripts with host-mediated file handoff.
 
 ### In Progress
 - None.
 
 ### Blocked
-- End-to-end VAX→PDP-11 transfer remains blocked until Stage 1 consistently reaches
-  a shell prompt after the upload session.
+- None. Both machines confirmed working; implementation is unblocked.
 
 ### Decisions Needed
 - None.
 
 ### Recently Completed
-- Pruned low-value archive markdown from early false-positive/dead-end phases,
-  retaining only a reduced evidence core for current debugging.
-- Added `docs/archive/DEAD-ENDS.md` and `docs/integration/CONTEXT-SOURCES.md`
-  to separate retired paths from still-useful historical context.
-- Updated archive/integration indexes and cross-links so cold-start navigation
-  routes directly to active runbooks first.
-- Tightened `scripts/edcloud-vintage-runner.sh` readiness behavior so Stage 1
-  explicitly fails with evidence when shell login is not established.
-- Streamlined this `[Unreleased]` section to keep fresh-session handoff concise.
+- **Documentation pass (2026-02-28):** Removed 21 dead MD files (screen/telnet
+  runbooks, old archive docs, transport-archive.md, pdp-11 archive files);
+  rewrote ARCHITECTURE.md, WORKFLOWS.md, docs/integration/INDEX.md,
+  docs/vax/INDEX.md, docs/vax/README.md, docs/archive/DEAD-ENDS.md,
+  docs/archive/README.md, docs/archive/arpanet/README.md,
+  docs/archive/pdp-10/INDEX.md, docs/INDEX.md, AGENTS.md, README.md.
+- Created `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md` — primary
+  cold-start implementation reference for the pexpect pipeline.
+- **Diagnostic run (2026-02-28):** Confirmed both VAX and PDP-11 guest machines
+  boot and reach root shells on edcloud; identified screen/telnet/sleep as
+  fundamentally unreliable; chose pexpect as replacement.
+- **Architecture decision:** Retired screen/telnet/sleep orchestration entirely.
+  Added to `docs/archive/DEAD-ENDS.md`.
 
 ## [2026-02-21]
 
