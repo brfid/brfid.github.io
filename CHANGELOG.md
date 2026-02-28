@@ -34,80 +34,46 @@ semantic version tags.
 - None.
 
 ### Recently Completed
-- **Iterative VAX injection debugging (2026-02-28):** Five debug runs. Issues
-  found and fixed in sequence:
-  1. UnicodeDecodeError — resume.vintage.yaml not ASCII; fixed with UTF-8 read +
-     NFKD transliteration.
-  2. SIMH instant exit — disk images gzipped (RA81.000.gz); added gunzip in
-     Dockerfile. Created static vax780-pexpect.ini (no network/DZ terminals).
-  3. False prompt match — "# " needed (not "#"); kernel banner contains "#10".
-  4. YAML tty overflow — lines up to 571 chars exceed 256-byte tty CANBSIZ;
-     switched to uuencode injection.
-  5. UUE stall — single 94-line heredoc stalls PTY echo after ~180s; fixed with
-     10-line batches per heredoc (chunked injection).
-  6. ERASE/KILL corruption — 4.3BSD default ERASE is `#` (0x23) and KILL is `@`
-     (0x40), both in UUE character range. Every `#` in a UUE line erased the
-     previous char; every `@` killed the line. Fix: `stty erase \x7f kill \x15`
-     immediately after login (DEL and Ctrl-U are outside UUE range).
-  7. Root shell is csh, not sh — root logs into /bin/csh by default. csh heredoc
-     `<< 'HEREDOC_EOF'` uses the QUOTED string as the terminator (not unquoted
-     HEREDOC_EOF), so the heredoc hangs indefinitely. Also, `PS1=...` is not
-     valid csh syntax, causing pexpect to match `VAXsh> ` in the csh error
-     message rather than a real prompt. Fix: `exec /bin/sh` immediately after
-     login, before any stty, prompt, or heredoc work. Applied to BOTH VAX and
-     PDP-11 pexpect scripts.
-  8. Marker capture matches command echo — `child.sendline("echo '__BEGIN__'; cat ...")`
-     causes the tty to echo the command text before the shell executes it; pexpect
-     matches `__BEGIN__` in the echo rather than in actual output. Fix: `stty -echo`
-     as a separate command first, then send the capture command (not echoed),
-     then `stty echo` at end of the capture command. Applied to both scripts.
-  9. PDP-11 boot prompt is `\r: ` not `Boot:` — the 2.11BSD 2-stage boot shows
-     `73Boot from xp(0,0,0) at 0176700\n\r: `. Fixed pdp11_pexpect.py to match
-     `["\r: ", "Boot:"]` and also removed `set cpu idle` from pdp11-pexpect.ini
-     (SIMH idle detection calls `ps` which is absent in Debian bookworm-slim).
-- **Stage A PDP-11 debugging (2026-02-28):** Three additional fixes after Stage B was working:
-  10. nroff BEL spam + hang — 2.11BSD nroff rings BEL and waits for keypress at page
-      breaks when stderr is a tty. Fix: `nroff ... < /dev/null` so stdin returns EOF
-      immediately, suppressing page-pause behaviour.
-  11. brad.1 CANBSIZ truncation — `brad.1` has lines >256 bytes (DESCRIPTION ~500 chars).
-      2.11BSD tty driver silently truncates them and sends BEL per overflow char. Fix:
-      `_inject_file_uue()` for brad.1 (same approach as VAX resume.vintage.yaml); UUE
-      lines are ≤62 chars.
-  12. Non-fatal EOF — 2.11BSD restarts getty/login after shell exits; pexpect.EOF never
-      arrives. Fix: wrap EOF wait in non-fatal try/except; finally block force-terminates.
-- **Pipeline VALIDATED end-to-end (2026-02-28, run `manual-20260228-200507`):**
-  Stage B VAX → brad.1 (61 lines troff source) → Stage A PDP-11 → brad.man.txt.
-  Output: correctly formatted `BRAD(1)` UNIX Programmer's Manual man page.
-- **Docker images built on edcloud (2026-02-28):** Both `pdp11-pexpect` and
-  `vax-pexpect` images built successfully. Images cached with `KEEP_IMAGES=1`.
-- **CI timeout extended (2026-02-28):** `deploy.yml` job timeout 40→70 min,
-  SSM polling 30→50 min to accommodate first-run docker builds.
-- **Documentation pass (2026-02-28):** Removed 21 dead MD files; rewrote key
-  docs; created `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
-- **Diagnostic run (2026-02-28):** Confirmed both VAX and PDP-11 guest machines
-  boot and reach root shells on edcloud; chose pexpect as replacement.
-- **Architecture decision:** Retired screen/telnet/sleep orchestration entirely.
-  Added to `docs/archive/DEAD-ENDS.md`.
-- **Site content restored to Feb 23 state (2026-02-28):** Two rebases had destroyed
-  the Feb 23 branch. Recovered all 13 affected files via GitHub API using the deployment
-  SHA as an ancestry anchor. Restored: Strachey's Principle post, portfolio YAML + layout
-  + CSS, Inter typography CSS + extend_head.html, hugo.toml (Portfolio nav, RSS icon,
-  ToC, description), resume.md (/about/ alias), resume.html (Certifications section,
-  tel: link), hugo/data/resume.yaml, about.md deletion.
-- **Git history squashed (2026-02-28):** 28 iterative pipeline commits squashed to 3
-  clean milestones: pexpect pipeline implementation, CI infrastructure fixes, Feb 23
-  content restore. Force-pushed with --force-with-lease.
-- **CI smoke test passed (2026-02-28, tag `publish-vintage-20260228-203550`):**
-  Full pipeline green end-to-end in GitHub Actions. Four infrastructure fixes
-  applied during smoke-test iteration:
-  1. OIDC → static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`).
-  2. `AmazonSSMManagedInstanceCore` IAM policy attached to edcloud instance role;
-     SSM agent was installed but not registered without this policy.
-  3. `set -euo pipefail` → `set -eu` (dash in SSM Run Command doesn't support pipefail).
-  4. `export HOME=/root` added as first SSM command (SSM shell has no `$HOME`;
-     `git config --global` fails without it).
-  5. `hugo --destination ../site` (was `site`; destination is source-relative, so
-     `--source hugo --destination site` wrote to `hugo/site/` not `site/`).
+- None.
+
+## [2026-02-28]
+
+### Added
+- Pexpect pipeline: `scripts/vax_pexpect.py` (Stage B — VAX 4.3BSD compiles
+  `bradman.c` → `brad.1`) and `scripts/pdp11_pexpect.py` (Stage A — PDP-11
+  2.11BSD runs `nroff -man` → `brad.man.txt`). Both drive SIMH via stdin/stdout;
+  no telnet ports, no screen sessions, no sleep-based timing.
+- `scripts/edcloud-vintage-runner.sh` — single orchestration entrypoint for both
+  stages on edcloud; emits artifact as base64 between hard markers for CI extraction.
+- Docker configs: `vintage/machines/vax/Dockerfile.vax-pexpect`,
+  `vintage/machines/pdp11/Dockerfile.pdp11-pexpect`, and matching `.ini` files.
+- `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md` — implementation spec.
+- `docs/archive/DEAD-ENDS.md` — registry of retired approaches (screen/telnet,
+  FTP between stages, ARPANET/PDP-10 pipeline paths).
+- Site: portfolio page (`hugo/data/portfolio.yaml`, custom layout + CSS),
+  Strachey's Principle post, Inter typography (`extend_head.html` + `typography.css`).
+- Resume page: Certifications section, `tel:` link, `/about/` URL alias.
+
+### Changed
+- Screen/telnet/sleep orchestration retired; pexpect is the permanent replacement.
+- AWS auth: OIDC → static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`).
+- Navigation: Portfolio replaces About; `/about/` aliases to `/resume/`.
+- `secret-scan.yml`: switched to `GITLEAKS_LOG_OPTS: --all --no-merges` to scan
+  full history; avoids git range error when force-push orphans the before SHA.
+- 21 stale archive MD files removed; docs rewritten for pexpect model.
+- Git history consolidated: iterative pipeline commits collapsed to 4 clean
+  milestones (initial site, CI hardening, site content, pipeline + CI + docs).
+
+### Fixed
+- `export HOME=/root` in SSM commands — SSM shell has no `$HOME`;
+  `git config --global` fails without it.
+- `set -eu` not `set -euo pipefail` — dash in SSM Run Command doesn't support `pipefail`.
+- `AmazonSSMManagedInstanceCore` IAM policy attached to edcloud instance role.
+- `hugo --destination ../site` — `--destination` is source-relative;
+  `--destination site` wrote to `hugo/site/` not `site/` at repo root.
+- 12 pexpect-specific issues resolved during VAX + PDP-11 debugging (UUE
+  injection, ERASE/KILL chars, csh vs sh, CANBSIZ overflow, nroff BEL hang,
+  stty echo, boot prompt patterns — see `PEXPECT-PIPELINE-SPEC.md`).
 
 ## [2026-02-21]
 
