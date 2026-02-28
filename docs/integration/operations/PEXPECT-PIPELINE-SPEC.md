@@ -56,7 +56,18 @@ Both stages are implemented on `feat/pexpect-pipeline`. Validation is in progres
    `\x7f` and `\x15`, not caret notation) to move both special chars outside the UUE range.
    This must happen before any UUE heredoc injection.
 
-7. **UUE heredoc PTY echo stall**: A single heredoc with 90+ UUE lines can cause the PTY
+7. **Root shell is /bin/csh, not /bin/sh**: 4.3BSD root's default login shell is csh.
+   Two csh behaviors break the pipeline:
+   - `PS1='VAXsh> '` (Bourne sh prompt idiom) fails in csh with `PS1=...: Command not
+     found.`. Pexpect matches `VAXsh> ` in the error text instead of a real prompt —
+     making subsequent expects unreliable.
+   - csh heredoc `<< 'HEREDOC_EOF'` uses the quoted string `'HEREDOC_EOF'` (WITH
+     the single quotes) as the terminator. We send the unquoted `HEREDOC_EOF`, so
+     the heredoc NEVER terminates — causing the pipeline to stall indefinitely.
+   Fix: immediately after login, run `exec /bin/sh` before any stty, prompt, or
+   heredoc work. /bin/sh heredoc uses the unquoted delimiter and PS1 works correctly.
+
+8. **UUE heredoc PTY echo stall**: A single heredoc with 90+ UUE lines can cause the PTY
    echo to stall. Fix: inject UUE in batches of 10 lines (10 × 62 = 620 chars per heredoc),
    appending to the `.uu` file between batches. Each small heredoc completes promptly.
 

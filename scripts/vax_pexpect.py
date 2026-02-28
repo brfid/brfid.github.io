@@ -183,6 +183,20 @@ def _boot(child: pexpect.spawn) -> None:
 
     _log("Logged in as root")
 
+    # 4.3BSD root's default login shell is /bin/csh, not /bin/sh.  csh has
+    # two incompatibilities that break the pipeline:
+    #   1. PS1='...' is a Bourne sh idiom; csh ignores it and prints
+    #      "PS1=...: Command not found." — pexpect appears to match
+    #      VAXsh> in the error text rather than a real prompt.
+    #   2. csh heredoc `<< 'HEREDOC_EOF'` uses the QUOTED string
+    #      'HEREDOC_EOF' (including the single quotes) as the terminator.
+    #      We send the unquoted HEREDOC_EOF — it never matches and the
+    #      heredoc hangs indefinitely.
+    # Switch to /bin/sh before any stty, prompt, or heredoc work.
+    child.sendline("exec /bin/sh")
+    child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
+    _log("Switched to /bin/sh (avoids csh heredoc quoting quirk)")
+
     # 4.3BSD's default ERASE character is '#' (0x23) and KILL is '@' (0x40).
     # Both fall in the UUE character range (0x20-0x60): each '#' in a UUE
     # heredoc erases the previous input character; each '@' kills the entire
