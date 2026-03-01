@@ -36,6 +36,8 @@ from pathlib import Path
 
 import pexpect
 
+from simh_session import inject_batched_heredoc, make_logger, validate_uu_spool
+
 # Shell prompt injected after login — distinctive to avoid false matches.
 _PROMPT = "VAXsh> "
 
@@ -44,16 +46,12 @@ _LOGIN_TIMEOUT = 60    # after boot, login prompt appears within ~30 s
 _CMD_TIMEOUT = 60
 _COMPILE_TIMEOUT = 180 # cc on 4.3BSD VAX takes ~30-90 s for bradman.c
 _UUE_TIMEOUT = 180     # UUE heredoc + cat can take longer on slow VAX emulation
-_LINE_DELAY = 0.005    # 5 ms between heredoc lines; prevents tty buffer overrun
 
 # Paths written by Dockerfile.vax-pexpect at build time.
 _PEXPECT_INI_CACHE = "/opt/vax-pexpect-ini-path.txt"
 _VAX_BIN_CACHE = "/opt/vax-bin-path.txt"
 
-
-def _log(msg: str) -> None:
-    ts = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-    print(f"[vax_pexpect] {ts}  {msg}", file=sys.stderr, flush=True)
+_log = make_logger("vax_pexpect")
 
 
 def _parse_args(argv=None):
@@ -213,8 +211,7 @@ def _inject_file(child: pexpect.spawn, remote_path: str, content: str) -> None:
     child.sendline(f"cat > {remote_path} << 'HEREDOC_EOF'")
     for line in lines:
         child.sendline(line)
-        if _LINE_DELAY:
-            time.sleep(_LINE_DELAY)
+        time.sleep(0.005)
     child.sendline("HEREDOC_EOF")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
     _log(f"Injected {remote_path}")
@@ -224,8 +221,8 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
     """Inject content via uuencode to bypass the 4.3BSD 256-byte tty line limit.
 
     UUE-encoded lines are always ≤62 characters. The encoded payload is
-    injected into a temp .uu file via heredoc, then uudecode recreates
-    the original file at remote_path. 4.3BSD ships uudecode in /usr/bin.
+    injected into a temp .uu file via batched heredoc (via simh_session),
+    then uudecode recreates the original file at remote_path.
     """
     name = Path(remote_path).name
     parent = str(Path(remote_path).parent)
@@ -245,25 +242,7 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
         f"({len(content)} bytes) → {remote_path}"
     )
 
-    # Inject in small batches to avoid the 4.3BSD tty echo stall.
-    # A single heredoc with 90+ UUE lines causes the PTY echo to stall
-    # indefinitely. Batches of _UUE_CHUNK_SIZE lines keep each heredoc
-    # small enough to complete promptly.
-    _UUE_CHUNK_SIZE = 10
-
-    # First batch uses '>' (create/truncate); subsequent batches use '>>'.
-    for batch_idx, batch_start in enumerate(
-        range(0, len(uue_lines), _UUE_CHUNK_SIZE)
-    ):
-        batch = uue_lines[batch_start : batch_start + _UUE_CHUNK_SIZE]
-        redirect = ">" if batch_idx == 0 else ">>"
-        child.sendline(f"cat {redirect} {tmp_uu} << 'HEREDOC_EOF'")
-        for line in batch:
-            child.sendline(line)
-            if _LINE_DELAY:
-                time.sleep(_LINE_DELAY)
-        child.sendline("HEREDOC_EOF")
-        child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
+    inject_batched_heredoc(child, tmp_uu, uue_lines, _PROMPT, _UUE_TIMEOUT)
 
     # Decode: uudecode writes <name> into the current directory.
     child.sendline(f"cd {parent} && uudecode {tmp_uu} && rm {tmp_uu}")
@@ -346,6 +325,7 @@ def _capture_bio(child: pexpect.spawn) -> str:
     return raw.replace("\r\n", "\n").replace("\r", "\n").lstrip("\n")
 
 
+
 def main(argv=None) -> int:
     args = _parse_args(argv)
 
@@ -407,8 +387,13 @@ def main(argv=None) -> int:
         if child.isalive():
             child.terminate(force=True)
 
-    if not brad1_uu.strip():
-        _log("ERROR: brad.1.uu is empty — check bradman.c and resume.vintage.yaml")
+    try:
+        validate_uu_spool(brad1_uu)
+    except ValueError as exc:
+        _log(f"ERROR: UUE validation failed: {exc}")
+        _log("First 20 lines of captured spool:")
+        for ln in brad1_uu.splitlines()[:20]:
+            _log(f"  {ln!r}")
         return 1
 
     out_path = Path(args.output)
