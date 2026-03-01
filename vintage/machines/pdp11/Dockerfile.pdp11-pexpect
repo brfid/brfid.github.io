@@ -30,9 +30,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Build SIMH PDP-11 emulator from source.
+# SHA pinned 2026-03-01 — update when intentionally upgrading SIMH.
 WORKDIR /tmp
-RUN git clone --depth 1 https://github.com/simh/simh.git && \
+RUN git clone https://github.com/simh/simh.git && \
     cd simh && \
+    git checkout 627e6a6b135261f9dcb46dc1a8665c7fe67d3f7c && \
     printf 'n\n' | make pdp11 && \
     cp BIN/pdp11 /usr/local/bin/ && \
     cd .. && \
@@ -47,10 +49,11 @@ RUN wget -q https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
     chmod 644 211bsd_rpeth.dsk && \
     rm -f 211bsd_rpethset.tgz *.txt *.pdf
 
-# Copy pexpect ini and script.
+# Copy pexpect ini, script, and shared session utilities.
 # Build context must be repo root (docker build ... .) for these paths to work.
 COPY vintage/machines/pdp11/configs/pdp11-pexpect.ini /opt/pdp11/pdp11-pexpect.ini
 COPY scripts/pdp11_pexpect.py /opt/pdp11/pdp11_pexpect.py
+COPY scripts/simh_session.py /opt/pdp11/simh_session.py
 
 WORKDIR /opt/pdp11
 

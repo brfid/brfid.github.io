@@ -3,13 +3,11 @@ basics:
   label: "Principal Technical Writer — API documentation, platform engineering, AI workflows"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: I own documentation platforms and build the tooling that powers them —
-    CI/CD pipelines, OpenAPI workflows, and production LLM integrations including
-    MCP servers for deterministic quality control. Currently at DomainTools, where
-    I run docs.domaintools.com end to end for a B2B security intelligence company
-    with 800+ customers, bringing documentation into the SDLC so it ships with products
-    at launch. Published researcher with credits at USENIX Security and IEEE; authored
-    a commissioned history of the internet co-foreworded by Vint Cerf for Google and ICANN.
+  summary: I build documentation platforms and the tooling that powers them — OpenAPI
+    workflows and MCP servers for deterministic quality control — and own them end
+    to end. Unusual range: published researcher in security and internet history, with
+    commissioned policy work, now at the intersection of technical writing and platform
+    engineering.
   location:
     city: Warwick
     countryCode: US
