@@ -3,62 +3,38 @@
 
 Spawns SIMH vax780 in stdin/stdout mode (no telnet port), boots 4.3BSD,
 injects bradman.c and resume.vintage.yaml via heredoc, compiles with cc,
-runs bradman to produce brad.1 (troff source), captures brad.1.
+runs bradman to produce brad.1 (troff source), uuencodes it on the VAX,
+and captures brad.1.uu (the UUCP spool file).
+
+The VAX uuencodes brad.1 itself before the host captures it — the host acts
+as a UUCP store-and-forward node, routing brad.1.uu to the PDP-11.
 
 Usage (inside Docker container built from Dockerfile.vax-pexpect):
     python3 /opt/vax_pexpect.py \
         --bradman   /build/bradman.c \
         --resume-yaml /build/resume.vintage.yaml \
-        --output    /build/brad.1
+        --output    /build/brad.1.uu
 
 Usage (direct, with SIMH vax780 + disk image available):
     python3 scripts/vax_pexpect.py \
         --bradman   vintage/machines/vax/bradman.c \
         --resume-yaml build/vintage/resume.vintage.yaml \
-        --output    build/vintage/brad.1 \
+        --output    build/vintage/brad.1.uu \
         --ini       /path/to/vax780-pexpect.ini \
         --workdir   /path/to/vax/working/dir
 
 Exit codes:
-    0  success — brad.1 written
+    0  success — brad.1.uu written
     1  failure — see stderr for details
 """
 
 import argparse
-import io
+import binascii
 import sys
 import time
-import unicodedata
-import uu
 from pathlib import Path
 
 import pexpect
-
-# Common Unicode → ASCII substitutions for content fed to the ASCII-only VAX guest.
-_UNICODE_SUBS: dict[str, str] = {
-    "\u2014": "--",   # em dash
-    "\u2013": "-",    # en dash
-    "\u2018": "'",    # left single quotation mark
-    "\u2019": "'",    # right single quotation mark
-    "\u201c": '"',    # left double quotation mark
-    "\u201d": '"',    # right double quotation mark
-    "\u2026": "...",  # horizontal ellipsis
-    "\u00a0": " ",    # non-breaking space
-    "\u2022": "*",    # bullet
-}
-
-
-def _to_ascii(text: str) -> str:
-    """Transliterate common Unicode to ASCII for injection into the VAX guest.
-
-    Applies a small substitution table for typographic characters, then uses
-    NFKD normalization to decompose accented letters before stripping anything
-    that still can't be represented in ASCII.
-    """
-    for ch, sub in _UNICODE_SUBS.items():
-        text = text.replace(ch, sub)
-    normalized = unicodedata.normalize("NFKD", text)
-    return normalized.encode("ascii", errors="replace").decode("ascii")
 
 # Shell prompt injected after login — distinctive to avoid false matches.
 _PROMPT = "VAXsh> "
@@ -95,8 +71,8 @@ def _parse_args(argv=None):
     )
     p.add_argument(
         "--output",
-        default="/build/brad.1",
-        help="Path to write brad.1 roff output (default: /build/brad.1)",
+        default="/build/brad.1.uu",
+        help="Path to write brad.1.uu UUCP spool file (default: /build/brad.1.uu)",
     )
     p.add_argument(
         "--ini",
@@ -248,10 +224,14 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
     name = Path(remote_path).name
     parent = str(Path(remote_path).parent)
 
-    in_buf = io.BytesIO(content)
-    out_buf = io.BytesIO()
-    uu.encode(in_buf, out_buf, name, 0o644)
-    uue_lines = out_buf.getvalue().decode("ascii").splitlines()
+    # Build UUE lines using binascii (not deprecated, unlike the uu module).
+    # binascii.b2a_uu encodes 45 bytes per line → ≤62-char UUE lines.
+    uue_lines = [f"begin 644 {name}"]
+    for i in range(0, len(content), 45):
+        uue_lines.append(
+            binascii.b2a_uu(content[i : i + 45]).decode("ascii").rstrip("\n")
+        )
+    uue_lines += ["`", "end"]
 
     tmp_uu = f"/tmp/{name}.uu"
     _log(
@@ -306,36 +286,36 @@ def _compile_and_run(child: pexpect.spawn) -> None:
     child.sendline("ls -l /tmp/brad.1")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
 
+    # Uuencode brad.1 on the VAX — the VAX prepares its own outgoing UUCP spool.
+    _log("Uuencoding: uuencode /tmp/brad.1 brad.1 > /tmp/brad.1.uu")
+    child.sendline("uuencode /tmp/brad.1 brad.1 > /tmp/brad.1.uu")
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    _log("[uucp] brad.1 spooled on VAX as brad.1.uu")
 
-def _capture_brad1(child: pexpect.spawn) -> str:
-    """Cat /tmp/brad.1 to the terminal and capture it between markers.
 
-    The tty echoes every character we send back to pexpect before the shell
-    executes the command.  If the marker strings appear literally in the
-    sendline() call, pexpect matches them in the echo rather than in the
-    real output.  To avoid this:
-      1. Disable tty echo with stty -echo (a separate command, which IS
-         echoed — but contains no marker).
-      2. Send the capture command; with echo off, pexpect sees only the
-         actual shell output.  Re-enable echo at the end of the command.
-      3. Wait for the prompt (prompt is shell output, unaffected by echo).
+def _capture_brad1_uu(child: pexpect.spawn) -> str:
+    """Cat /tmp/brad.1.uu to the terminal and capture it between markers.
+
+    brad.1.uu is the UUCP spool file — uuencoded by the VAX itself.
+    UUE content is guaranteed printable ASCII with lines ≤62 chars, so
+    there is no risk of marker strings appearing in the content.
+
+    Tty echo is disabled before sending the capture command so pexpect
+    sees only actual shell output, not the echoed command line.
     """
-    _log("Capturing /tmp/brad.1 via markers…")
-    # Disable echo so the capture command is not echoed to pexpect.
+    _log("[uucp] Capturing /tmp/brad.1.uu from VAX spool…")
     child.sendline("stty -echo")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
     child.sendline(
-        "echo '__BRAD1_BEGIN__'; cat /tmp/brad.1; echo '__BRAD1_END__'; stty echo"
+        "echo '__BRAD1UU_BEGIN__'; cat /tmp/brad.1.uu; echo '__BRAD1UU_END__'; stty echo"
     )
-    child.expect("__BRAD1_BEGIN__", timeout=_CMD_TIMEOUT)
-    child.expect("__BRAD1_END__", timeout=_CMD_TIMEOUT)
+    child.expect("__BRAD1UU_BEGIN__", timeout=_CMD_TIMEOUT)
+    child.expect("__BRAD1UU_END__", timeout=_CMD_TIMEOUT)
     raw_bytes: bytes = child.before  # type: ignore[assignment]
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
 
     raw = raw_bytes.decode("ascii", errors="replace")
-    # Normalize CRLF → LF, strip leading newline from marker boundary.
-    text = raw.replace("\r\n", "\n").replace("\r", "\n").lstrip("\n")
-    return text
+    return raw.replace("\r\n", "\n").replace("\r", "\n").lstrip("\n")
 
 
 def main(argv=None) -> int:
@@ -350,7 +330,8 @@ def main(argv=None) -> int:
             return 1
 
     bradman_c = bradman_path.read_text(encoding="ascii")
-    resume_yaml = _to_ascii(resume_yaml_path.read_text(encoding="utf-8"))
+    # resume.vintage.yaml is ASCII-only by construction (vintage_yaml.py guarantees it).
+    resume_yaml = resume_yaml_path.read_text(encoding="ascii")
     _log(f"bradman.c: {len(bradman_c.splitlines())} lines")
     _log(f"resume.vintage.yaml: {len(resume_yaml.splitlines())} lines")
 
@@ -375,7 +356,7 @@ def main(argv=None) -> int:
         # chars which overflow the 4.3BSD 256-byte tty canonical input buffer.
         _inject_file_uue(child, "/tmp/resume.vintage.yaml", resume_yaml.encode("ascii"))
         _compile_and_run(child)
-        brad1_text = _capture_brad1(child)
+        brad1_uu = _capture_brad1_uu(child)
         child.sendline("exit")
         # 4.3BSD may restart getty/login after the shell exits rather than
         # handing EOF back to SIMH immediately.  The finally block will
@@ -397,14 +378,14 @@ def main(argv=None) -> int:
         if child.isalive():
             child.terminate(force=True)
 
-    if not brad1_text.strip():
-        _log("ERROR: brad.1 output is empty — check bradman.c and resume.vintage.yaml")
+    if not brad1_uu.strip():
+        _log("ERROR: brad.1.uu is empty — check bradman.c and resume.vintage.yaml")
         return 1
 
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(brad1_text, encoding="utf-8")
-    _log(f"Wrote: {args.output} ({len(brad1_text.splitlines())} lines)")
+    out_path.write_text(brad1_uu, encoding="ascii")
+    _log(f"[uucp] Wrote spool: {args.output} ({len(brad1_uu.splitlines())} lines)")
     return 0
 
 

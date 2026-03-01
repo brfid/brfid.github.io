@@ -8,8 +8,8 @@
 #   1. prepare_host         — install deps, set up Python venv
 #   2. build_pexpect_images — docker build pdp11-pexpect and vax-pexpect images
 #   3. generate_vintage_yaml — Python: resume.yaml → build/vintage/resume.vintage.yaml
-#   4. stage_b_vax          — docker run vax-pexpect → build/vintage/brad.1
-#   5. stage_a_pdp11        — docker run pdp11-pexpect → build/vintage/brad.man.txt
+#   4. stage_b_vax          — docker run vax-pexpect → build/vintage/brad.1.uu  (VAX spools via UUCP)
+#   5. stage_a_pdp11        — docker run pdp11-pexpect → build/vintage/brad.man.txt  (PDP-11 receives spool)
 #   6. emit_artifact        — copy to hugo/static, emit base64 markers on stdout
 #
 # Usage:
@@ -161,25 +161,27 @@ stage_b_vax() {
     "$VAX_IMAGE" \
     --bradman /build/bradman.c \
     --resume-yaml /build/resume.vintage.yaml \
-    --output /build/brad.1
+    --output /build/brad.1.uu
 
-  if [[ ! -s build/vintage/brad.1 ]]; then
-    echo "Stage B (VAX) failed: build/vintage/brad.1 is missing or empty"
+  if [[ ! -s build/vintage/brad.1.uu ]]; then
+    echo "Stage B (VAX) failed: build/vintage/brad.1.uu is missing or empty"
     return 1
   fi
 
-  echo "Stage B complete: build/vintage/brad.1  ($(wc -l < build/vintage/brad.1) lines)"
+  echo "Stage B complete: build/vintage/brad.1.uu  ($(wc -l < build/vintage/brad.1.uu) encoded lines)"
+  echo "[uucp] brad.1.uu spooled on VAX — routing via host to PDP-11"
 }
 
 stage_a_pdp11() {
   stage "stage-a-pdp11"
   cd "$ROOT_DIR"
 
+  echo "[uucp] Delivering brad.1.uu spool to PDP-11…"
   docker run --rm \
     --label "vintage-build-id=${BUILD_ID}" \
     -v "$(pwd)/build/vintage:/build" \
     "$PDP11_IMAGE" \
-    --input /build/brad.1 \
+    --input /build/brad.1.uu \
     --output /build/brad.man.txt
 
   if [[ ! -s build/vintage/brad.man.txt ]]; then
@@ -187,6 +189,7 @@ stage_a_pdp11() {
     return 1
   fi
 
+  echo "[uucp] brad.1.uu delivered and decoded on PDP-11"
   echo "Stage A complete: build/vintage/brad.man.txt  ($(wc -l < build/vintage/brad.man.txt) lines)"
 }
 

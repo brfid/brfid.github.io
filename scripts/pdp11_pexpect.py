@@ -2,14 +2,18 @@
 """Stage A: Render brad.1 via nroff -man on PDP-11 2.11BSD using pexpect.
 
 Spawns SIMH pdp11 in stdin/stdout mode (no telnet port), boots 2.11BSD,
-injects brad.1 troff source via heredoc, runs nroff -man, captures output.
+receives brad.1.uu (the UUCP spool file produced by the VAX), injects it
+via heredoc, uudecodes it to brad.1, runs nroff -man, captures output.
+
+The host acts as a UUCP store-and-forward node: brad.1.uu arrives from the
+VAX spool and is delivered here for decoding and rendering.
 
 Usage (inside Docker container):
-    python3 pdp11_pexpect.py --input /build/brad.1 --output /build/brad.man.txt
+    python3 pdp11_pexpect.py --input /build/brad.1.uu --output /build/brad.man.txt
 
 Usage (direct, if SIMH + disk image are available locally):
     python3 pdp11_pexpect.py \
-        --input build/vintage/brad.1 \
+        --input build/vintage/brad.1.uu \
         --output build/vintage/brad.man.txt \
         --ini vintage/machines/pdp11/configs/pdp11-pexpect.ini \
         --workdir /opt/pdp11
@@ -20,7 +24,6 @@ Exit codes:
 """
 
 import argparse
-import binascii
 import re
 import sys
 import time
@@ -47,7 +50,7 @@ def _parse_args(argv=None):
     p = argparse.ArgumentParser(
         description="Stage A: render brad.1 → brad.man.txt via nroff on 2.11BSD"
     )
-    p.add_argument("--input", required=True, help="Path to brad.1 roff source")
+    p.add_argument("--input", required=True, help="Path to brad.1.uu UUCP spool file (uuencoded by the VAX)")
     p.add_argument("--output", required=True, help="Path to write brad.man.txt")
     p.add_argument(
         "--ini",
@@ -113,32 +116,20 @@ def _boot(child: pexpect.spawn) -> None:
     _log(f"Custom prompt set: {_PROMPT!r}")
 
 
-def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> None:
-    """Inject content via uuencode to bypass the 2.11BSD 256-byte tty line limit.
+def _deliver_uu_spool(child: pexpect.spawn, uu_text: str, remote_uu_path: str) -> None:
+    """Deliver a UUCP spool file (brad.1.uu) to the PDP-11 guest and decode it.
 
-    UUE-encoded lines are always ≤62 characters. The encoded payload is
-    injected into a temp .uu file via heredoc, then uudecode recreates the
-    original file at remote_path. 2.11BSD ships uudecode in /usr/bin (requires
-    /usr to be mounted before calling this function).
-
-    Inject in batches of 10 lines to avoid PTY echo stall with 90+ line heredocs.
+    The spool file was uuencoded by the VAX; the host routed it here.
+    UUE lines are guaranteed ≤62 chars — no CANBSIZ overflow risk.
+    Inject in batches of 10 lines to avoid PTY echo stall.
+    2.11BSD uudecode writes the decoded file into the current directory.
     """
-    name = Path(remote_path).name
-    parent = str(Path(remote_path).parent)
+    uue_lines = uu_text.splitlines()
+    parent = str(Path(remote_uu_path).parent)
 
-    # Build UUE lines using binascii (not deprecated, unlike the uu module).
-    # binascii.b2a_uu encodes 45 bytes per line → ≤62-char UUE lines.
-    uue_lines = [f"begin 644 {name}"]
-    for i in range(0, len(content), 45):
-        uue_lines.append(
-            binascii.b2a_uu(content[i : i + 45]).decode("ascii").rstrip("\n")
-        )
-    uue_lines += ["`", "end"]
-
-    tmp_uu = f"/tmp/{name}.uu"
     _log(
-        f"UUE-injecting {len(uue_lines)} encoded lines "
-        f"({len(content)} bytes) → {remote_path}"
+        f"[uucp] Delivering spool {remote_uu_path} "
+        f"({len(uue_lines)} encoded lines) to PDP-11…"
     )
 
     _UUE_CHUNK_SIZE = 10
@@ -147,7 +138,7 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
     ):
         batch = uue_lines[batch_start : batch_start + _UUE_CHUNK_SIZE]
         redirect = ">" if batch_idx == 0 else ">>"
-        child.sendline(f"cat {redirect} {tmp_uu} << 'HEREDOC_EOF'")
+        child.sendline(f"cat {redirect} {remote_uu_path} << 'HEREDOC_EOF'")
         for line in batch:
             child.sendline(line)
             if _LINE_DELAY:
@@ -155,9 +146,9 @@ def _inject_file_uue(child: pexpect.spawn, remote_path: str, content: bytes) -> 
         child.sendline("HEREDOC_EOF")
         child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
 
-    child.sendline(f"cd {parent} && uudecode {tmp_uu} && rm {tmp_uu}")
+    child.sendline(f"cd {parent} && uudecode {remote_uu_path} && rm {remote_uu_path}")
     child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
-    _log(f"UUE-decoded: {remote_path}")
+    _log(f"[uucp] Spool delivered and decoded: brad.1 at {parent}/brad.1")
 
 
 def _run_nroff(child: pexpect.spawn) -> str:
@@ -233,13 +224,13 @@ def _clean_nroff_output(raw: str) -> str:
 def main(argv=None) -> int:
     args = _parse_args(argv)
 
-    brad1_path = Path(args.input)
-    if not brad1_path.exists():
+    brad1_uu_path = Path(args.input)
+    if not brad1_uu_path.exists():
         _log(f"ERROR: input file not found: {args.input}")
         return 1
 
-    brad1_content = brad1_path.read_bytes()
-    _log(f"Input: {args.input} ({len(brad1_content.splitlines())} lines)")
+    brad1_uu = brad1_uu_path.read_text(encoding="ascii")
+    _log(f"[uucp] Spool received: {args.input} ({len(brad1_uu.splitlines())} encoded lines)")
 
     ini = args.ini
     workdir = args.workdir
@@ -258,7 +249,7 @@ def main(argv=None) -> int:
 
     try:
         _boot(child)
-        _inject_file_uue(child, "/tmp/brad.1", brad1_content)
+        _deliver_uu_spool(child, brad1_uu, "/tmp/brad.1.uu")
         raw = _run_nroff(child)
         child.sendline("exit")
         # 2.11BSD may restart getty/login after shell exits rather than
