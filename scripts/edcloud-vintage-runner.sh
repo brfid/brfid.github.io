@@ -161,7 +161,8 @@ stage_b_vax() {
     "$VAX_IMAGE" \
     --bradman /build/bradman.c \
     --resume-yaml /build/resume.vintage.yaml \
-    --output /build/brad.1.uu
+    --output /build/brad.1.uu \
+    --bio-output /build/brad.bio.txt
 
   if [[ ! -s build/vintage/brad.1.uu ]]; then
     echo "Stage B (VAX) failed: build/vintage/brad.1.uu is missing or empty"
@@ -197,12 +198,81 @@ emit_artifact() {
   stage "emit-artifact"
   cd "$ROOT_DIR"
 
-  cp build/vintage/brad.man.txt hugo/static/brad.man.txt
+  mkdir -p hugo/static
 
+  cp build/vintage/brad.man.txt hugo/static/brad.man.txt
   local b64
   b64="$(base64 -w 0 build/vintage/brad.man.txt)"
   printf '<<<BRAD_MAN_TXT_BASE64_BEGIN>>>\n%s\n<<<BRAD_MAN_TXT_BASE64_END>>>\n' "$b64" >&3
+
+  if [[ -s build/vintage/brad.bio.txt ]]; then
+    cp build/vintage/brad.bio.txt hugo/static/brad.bio.txt
+    local bio_b64
+    bio_b64="$(base64 -w 0 build/vintage/brad.bio.txt)"
+    printf '<<<BRAD_BIO_TXT_BASE64_BEGIN>>>\n%s\n<<<BRAD_BIO_TXT_BASE64_END>>>\n' "$bio_b64" >&3
+  fi
+
   printf 'LOG_FILE=%s\n' "$LOG_FILE" >&3
+}
+
+emit_build_log() {
+  stage "emit-build-log"
+  cd "$ROOT_DIR"
+
+  local build_log
+  build_log="$(.venv/bin/python - "$LOG_FILE" "$BUILD_ID" <<'PY'
+import sys, re
+
+log_path = sys.argv[1]
+build_id = sys.argv[2]
+
+with open(log_path) as f:
+    lines = f.readlines()
+
+TS = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
+
+PATTERNS = [
+    (rf'^\[{TS}\] prepare-host',                                   '[host]      ', 'pipeline started'),
+    (rf'^\[{TS}\] generate-vintage-yaml',                          '[host]      ', 'resume.yaml -> resume.vintage.yaml'),
+    (rf'^\[{TS}\] stage-b-vax',                                    '[host]      ', 'VAX stage started  (4.3BSD / SIMH vax780)'),
+    (rf'^\[vax_pexpect\] {TS}\s+Waiting for 4\.3BSD login',       '[vax]       ', 'waiting for 4.3BSD boot'),
+    (rf'^\[vax_pexpect\] {TS}\s+Logged in as root',               '[vax]       ', 'logged in as root'),
+    (rf'^\[vax_pexpect\] {TS}\s+Compiling:',                      '[vax]       ', 'cc -O -o bradman bradman.c'),
+    (rf'^\[vax_pexpect\] {TS}\s+Compilation complete',            '[vax]       ', 'compilation complete'),
+    (rf'^\[vax_pexpect\] {TS}\s+bradman run complete',            '[vax]       ', 'bradman generated brad.1'),
+    (rf'^\[vax_pexpect\] {TS}\s+Uuencoding:',                     '[vax]       ', 'uuencode brad.1 -> brad.1.uu'),
+    (rf'^\[vax_pexpect\] {TS}\s+\[uucp\] brad\.1 spooled',       '[vax->host] ', 'brad.1.uu in spool'),
+    (rf'^\[{TS}\] stage-a-pdp11',                                  '[host]      ', 'routing brad.1.uu -> PDP-11  (2.11BSD / SIMH pdp11)'),
+    (rf'^\[pdp11_pexpect\] {TS}\s+Got boot prompt',               '[pdp11]     ', 'waiting for 2.11BSD boot'),
+    (rf'^\[pdp11_pexpect\] {TS}\s+/usr mounted',                  '[pdp11]     ', 'logged in, /usr mounted'),
+    (rf'^\[pdp11_pexpect\] {TS}\s+\[uucp\] Spool delivered',     '[pdp11]     ', 'brad.1.uu decoded -> brad.1'),
+    (rf'^\[pdp11_pexpect\] {TS}\s+nroff complete',                '[pdp11]     ', 'nroff -man rendered brad.man.txt'),
+    (rf'^\[{TS}\] emit-artifact',                                  '[host]      ', 'pipeline complete'),
+]
+
+events = []
+for line in lines:
+    line = line.rstrip()
+    for pattern, machine, event in PATTERNS:
+        m = re.match(pattern, line)
+        if m:
+            ts = m.group(1)
+            events.append((ts, machine, event))
+            break
+
+out = [f"build  {build_id}", ""]
+for ts, machine, event in events:
+    out.append(f"{machine} {ts}  {event}")
+out.append("")
+print("\n".join(out))
+PY
+)"
+
+  if [[ -n "$build_log" ]]; then
+    local log_b64
+    log_b64="$(printf '%s' "$build_log" | base64 -w 0)"
+    printf '<<<BUILD_LOG_BASE64_BEGIN>>>\n%s\n<<<BUILD_LOG_BASE64_END>>>\n' "$log_b64" >&3
+  fi
 }
 
 main() {
@@ -212,6 +282,7 @@ main() {
   stage_b_vax
   stage_a_pdp11
   emit_artifact
+  emit_build_log
 }
 
 main "$@"

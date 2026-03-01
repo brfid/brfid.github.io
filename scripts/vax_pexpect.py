@@ -52,7 +52,8 @@ _VAX_BIN_CACHE = "/opt/vax-bin-path.txt"
 
 
 def _log(msg: str) -> None:
-    print(f"[vax_pexpect] {msg}", file=sys.stderr, flush=True)
+    ts = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+    print(f"[vax_pexpect] {ts}  {msg}", file=sys.stderr, flush=True)
 
 
 def _parse_args(argv=None):
@@ -95,6 +96,11 @@ def _parse_args(argv=None):
             f"{_VAX_BIN_CACHE} (written by Dockerfile.vax-pexpect), "
             "then falls back to 'vax780'."
         ),
+    )
+    p.add_argument(
+        "--bio-output",
+        default="/build/brad.bio.txt",
+        help="Path to write brad.bio.txt plain-text bio (default: /build/brad.bio.txt)",
     )
     p.add_argument(
         "--verbose",
@@ -286,6 +292,11 @@ def _compile_and_run(child: pexpect.spawn) -> None:
     child.sendline("ls -l /tmp/brad.1")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
 
+    _log("Running: ./bradman -i resume.vintage.yaml -o brad.bio.txt -mode bio")
+    child.sendline("./bradman -i resume.vintage.yaml -o brad.bio.txt -mode bio")
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    _log("bradman bio run complete")
+
     # Uuencode brad.1 on the VAX — the VAX prepares its own outgoing UUCP spool.
     _log("Uuencoding: uuencode /tmp/brad.1 brad.1 > /tmp/brad.1.uu")
     child.sendline("uuencode /tmp/brad.1 brad.1 > /tmp/brad.1.uu")
@@ -311,6 +322,23 @@ def _capture_brad1_uu(child: pexpect.spawn) -> str:
     )
     child.expect("__BRAD1UU_BEGIN__", timeout=_CMD_TIMEOUT)
     child.expect("__BRAD1UU_END__", timeout=_CMD_TIMEOUT)
+    raw_bytes: bytes = child.before  # type: ignore[assignment]
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+
+    raw = raw_bytes.decode("ascii", errors="replace")
+    return raw.replace("\r\n", "\n").replace("\r", "\n").lstrip("\n")
+
+
+def _capture_bio(child: pexpect.spawn) -> str:
+    """Capture /tmp/brad.bio.txt from the VAX guest via markers."""
+    _log("Capturing /tmp/brad.bio.txt…")
+    child.sendline("stty -echo")
+    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    child.sendline(
+        "echo '__BRADBIO_BEGIN__'; cat /tmp/brad.bio.txt; echo '__BRADBIO_END__'; stty echo"
+    )
+    child.expect("__BRADBIO_BEGIN__", timeout=_CMD_TIMEOUT)
+    child.expect("__BRADBIO_END__", timeout=_CMD_TIMEOUT)
     raw_bytes: bytes = child.before  # type: ignore[assignment]
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
 
@@ -357,6 +385,7 @@ def main(argv=None) -> int:
         _inject_file_uue(child, "/tmp/resume.vintage.yaml", resume_yaml.encode("ascii"))
         _compile_and_run(child)
         brad1_uu = _capture_brad1_uu(child)
+        brad_bio = _capture_bio(child)
         child.sendline("exit")
         # 4.3BSD may restart getty/login after the shell exits rather than
         # handing EOF back to SIMH immediately.  The finally block will
@@ -386,6 +415,12 @@ def main(argv=None) -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(brad1_uu, encoding="ascii")
     _log(f"[uucp] Wrote spool: {args.output} ({len(brad1_uu.splitlines())} lines)")
+
+    bio_path = Path(args.bio_output)
+    bio_path.parent.mkdir(parents=True, exist_ok=True)
+    bio_path.write_text(brad_bio, encoding="ascii")
+    _log(f"Wrote bio: {args.bio_output} ({len(brad_bio.splitlines())} lines)")
+
     return 0
 
 

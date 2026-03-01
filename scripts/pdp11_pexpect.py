@@ -43,7 +43,8 @@ _LINE_DELAY = 0.005    # 5 ms between heredoc lines; prevents tty buffer overrun
 
 
 def _log(msg: str) -> None:
-    print(f"[pdp11_pexpect] {msg}", file=sys.stderr, flush=True)
+    ts = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+    print(f"[pdp11_pexpect] {ts}  {msg}", file=sys.stderr, flush=True)
 
 
 def _parse_args(argv=None):

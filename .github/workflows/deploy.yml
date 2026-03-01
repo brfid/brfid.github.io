@@ -263,6 +263,18 @@ jobs:
           mkdir -p hugo/static
           base64 -d /tmp/brad.man.txt.b64 > hugo/static/brad.man.txt
 
+          awk '/^<<<BRAD_BIO_TXT_BASE64_BEGIN>>>/{flag=1;next}/^<<<BRAD_BIO_TXT_BASE64_END>>>/{flag=0}flag' /tmp/edcloud-stdout.txt \
+            | tr -d '\n' > /tmp/brad.bio.txt.b64
+          if [[ -s /tmp/brad.bio.txt.b64 ]]; then
+            base64 -d /tmp/brad.bio.txt.b64 > hugo/static/brad.bio.txt
+          fi
+
+          awk '/^<<<BUILD_LOG_BASE64_BEGIN>>>/{flag=1;next}/^<<<BUILD_LOG_BASE64_END>>>/{flag=0}flag' /tmp/edcloud-stdout.txt \
+            | tr -d '\n' > /tmp/build.log.b64
+          if [[ -s /tmp/build.log.b64 ]]; then
+            base64 -d /tmp/build.log.b64 > hugo/static/build.log.txt
+          fi
+
       - name: Sync resume data for Hugo
         run: cp resume.yaml hugo/data/resume.yaml
 
