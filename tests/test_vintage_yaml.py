@@ -45,6 +45,35 @@ def test_emit_vintage_yaml_uses_double_quotes_and_two_space_indent() -> None:
     assert "\nwork:\n  -\n    company: " in text
 
 
+def test_emit_vintage_yaml_is_ascii_clean() -> None:
+    """Unicode in source data must be transliterated; output must be ASCII-only."""
+    resume = {
+        "basics": {
+            "name": "Test User",
+            "label": "Senior Technical Writer",
+            # em dash, curly quotes — common in resume copy-paste from Word
+            "summary": "Works on developer docs\u2014loves it. \u201cGreat\u201d results.",
+            "email": "test@example.com",
+        },
+        "work": [
+            {
+                "name": "ExampleCo",
+                "position": "Engineer",
+                "startDate": "2020-01-01",
+                "endDate": "2021-02-01",
+                "highlights": ["Led migration \u2013 success"],
+            }
+        ],
+    }
+    built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 1))
+    text = emit_vintage_yaml(built)
+
+    assert text.isascii()
+    assert "--" in text          # em dash → --
+    assert "Great" in text       # curly quotes → straight (appear escaped in YAML as \"Great\")
+    assert "- success" in text   # en dash in highlight → -
+
+
 def test_build_limits_work_and_skills() -> None:
     resume = {
         "basics": {"name": "Test", "label": "X", "summary": "Y"},

@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, cast
 
-from .normalize import format_date_range
+from .normalize import format_date_range, to_ascii
 from .resume_fields import get_profile_url, safe_str
 from .types import Resume
 
@@ -71,7 +71,7 @@ def _quote_vintage_yaml_string(value: str) -> str:
     Returns:
         A YAML scalar, quoted or unquoted as needed.
     """
-    flattened = _flatten_whitespace(value)
+    flattened = _flatten_whitespace(to_ascii(value))
     if not _needs_quoting(flattened):
         return flattened
     # Quote and escape
@@ -289,4 +289,6 @@ def emit_vintage_yaml(value: Mapping[str, Any]) -> str:
         raise ValueError("VAX-YAML output contains a tab character")
     if "\r" in text:
         raise ValueError("VAX-YAML output contains CR characters (must be LF-only)")
+    if not text.isascii():
+        raise ValueError("VAX-YAML output contains non-ASCII characters")
     return text
