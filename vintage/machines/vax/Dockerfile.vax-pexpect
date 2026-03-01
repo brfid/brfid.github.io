@@ -53,8 +53,9 @@ RUN set -e; \
 # Build context must be repo root for this path to resolve.
 COPY vintage/machines/vax/configs/vax780-pexpect.ini /image/vax780-pexpect.ini
 
-# Copy vax pexpect script.
+# Copy vax pexpect script and shared session utilities.
 COPY scripts/vax_pexpect.py /opt/vax_pexpect.py
+COPY scripts/simh_session.py /opt/simh_session.py
 
 # No telnet ports — console is stdin/stdout via pexpect pty.
 
