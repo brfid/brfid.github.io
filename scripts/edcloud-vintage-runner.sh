@@ -36,6 +36,11 @@ KEEP_IMAGES="${KEEP_IMAGES:-0}"
 PDP11_IMAGE="pdp11-pexpect"
 VAX_IMAGE="vax-pexpect"
 
+# ghcr.io coordinates for pre-built cached images (set to Public in GitHub
+# package settings so edcloud can pull without credentials).
+GHCR_VAX="ghcr.io/brfid/vax-pexpect:latest"
+GHCR_PDP11="ghcr.io/brfid/pdp11-pexpect:latest"
+
 mkdir -p "$LOG_DIR"
 
 # Keep stdout clean for marker-based artifact extraction.
@@ -108,23 +113,38 @@ prepare_host() {
   .venv/bin/python -m pip install --quiet -e .
 }
 
+_pull_or_build() {
+  # Pull a pre-built image from ghcr.io; fall back to local docker build.
+  # Args: <local-tag> <ghcr-ref> <dockerfile> [docker-build-args...]
+  local local_tag="$1"; shift
+  local ghcr_ref="$1"; shift
+  local dockerfile="$1"; shift
+
+  if docker pull "$ghcr_ref" 2>/dev/null; then
+    docker tag "$ghcr_ref" "$local_tag"
+    echo "Pulled ${local_tag} from ${ghcr_ref}"
+  else
+    echo "Pull failed for ${ghcr_ref}; building locally…"
+    docker build -f "$dockerfile" -t "$local_tag" "$@" .
+    echo "Built ${local_tag} locally"
+  fi
+}
+
 build_pexpect_images() {
   stage "build-pexpect-images"
   cd "$ROOT_DIR"
 
-  echo "Building ${PDP11_IMAGE} image…"
-  docker build \
-    -f vintage/machines/pdp11/Dockerfile.pdp11-pexpect \
-    -t "$PDP11_IMAGE" \
-    .
+  _pull_or_build \
+    "$PDP11_IMAGE" \
+    "$GHCR_PDP11" \
+    vintage/machines/pdp11/Dockerfile.pdp11-pexpect
 
-  echo "Building ${VAX_IMAGE} image…"
-  docker build \
-    -f vintage/machines/vax/Dockerfile.vax-pexpect \
-    -t "$VAX_IMAGE" \
-    .
+  _pull_or_build \
+    "$VAX_IMAGE" \
+    "$GHCR_VAX" \
+    vintage/machines/vax/Dockerfile.vax-pexpect
 
-  echo "Images built: ${PDP11_IMAGE}  ${VAX_IMAGE}"
+  echo "Images ready: ${PDP11_IMAGE}  ${VAX_IMAGE}"
 }
 
 generate_vintage_yaml() {

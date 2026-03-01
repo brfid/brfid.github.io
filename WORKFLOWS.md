@@ -35,6 +35,15 @@ Defined in `tests/conftest.py`:
 - `tests/system/**` → `docker`, `slow`
 - all other tests under `tests/` → `unit`
 
+## `build-images.yml`
+
+- Trigger: push to `main` when `vintage/machines/**/Dockerfile*` or `scripts/*.py` change;
+  manual dispatch
+- Builds Docker images for both pexpect stages (VAX and PDP-11)
+- Pushes to `ghcr.io/brfid/brfid.github.io/` with `latest` tag
+- Uses GitHub Actions cache (`type=gha`) for layer caching to speed incremental rebuilds
+- Images consumed by `deploy.yml` vintage mode (pull from ghcr.io rather than rebuilding)
+
 ## `deploy.yml`
 
 - Trigger:
@@ -62,16 +71,20 @@ Vintage mode control plane (GitHub Actions):
 1. Authenticate to AWS via static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`)
 2. Resolve + start edcloud instance
 3. Invoke a single SSM command on edcloud
-4. Extract `brad.man.txt` from SSM output markers and write `hugo/static/brad.man.txt`
-5. Best-effort stop edcloud if this workflow started it
-6. Build/deploy Hugo as normal
+4. Extract artifacts from SSM output markers:
+   - `brad.man.txt` → `hugo/static/brad.man.txt`
+   - `brad.bio.txt` → `hugo/static/brad.bio.txt` (best-effort)
+   - `build.log.txt` → `hugo/static/build.log.txt` (best-effort)
+5. Generate bio data for Hugo: parse `brad.bio.txt` + build log header → `hugo/data/bio.yaml`
+6. Best-effort stop edcloud if this workflow started it
+7. Build/deploy Hugo as normal
 
 Vintage mode execution plane (edcloud host):
 
 - Single entrypoint: `scripts/edcloud-vintage-runner.sh`
 - Script orchestrates the pexpect-based VAX/PDP-11 pipeline (see `ARCHITECTURE.md`)
 - Emits artifact as base64 between hard markers on stdout for CI extraction
-- Debug override: set `KEEP_RUNTIME=1` to keep containers running after a run
+- Debug override: set `KEEP_IMAGES=1` to keep containers running after a run
 
 Required secrets for vintage mode:
 
