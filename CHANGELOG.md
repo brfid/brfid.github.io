@@ -10,7 +10,8 @@ semantic version tags.
 
 ### Current State
 - Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
-  is an on-demand artifact generator only — it feeds `hugo/static/brad.man.txt`.
+  is an on-demand artifact generator — it feeds `hugo/static/brad.man.txt`,
+  `hugo/static/brad.bio.txt`, `hugo/static/build.log.txt`, and `hugo/data/bio.yaml`.
 - **Pexpect pipeline CI-VALIDATED end-to-end (2026-02-28, tag `publish-vintage-20260228-203550`).**
   Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` → Hugo build → GitHub Pages deploy.
   All steps green; site live at www.jockeyholler.net.
@@ -37,7 +38,18 @@ semantic version tags.
 - None.
 
 ### Recently Completed
-- None.
+- **2026-03-01:** UUCP framing (VAX uuencodes `brad.1` itself; host routes spool;
+  PDP-11 decodes), ASCII conversion moved to `resume_generator/normalize.py`,
+  deprecated `uu` module replaced with `binascii.b2a_uu`. CI-validated
+  (`publish-vintage-20260301-192822`).
+- **2026-03-01:** Bio mode (`-mode bio` in `bradman.c`), UTC timestamps on all
+  pexpect `_log()` calls, machine-boundary build log, bio/log artifact extraction
+  in `deploy.yml`. CI-validated (`publish-vintage-20260301-194153`).
+- **2026-03-01:** Bio wired into Hugo landing page via `hugo/data/bio.yaml`.
+  Pipeline parses `brad.bio.txt` → `bio.yaml` in "Generate bio data for Hugo" step
+  (deploy.yml, vintage mode only). Static fallback in repo for local dev / fast
+  builds. `hugo/layouts/partials/home_info.html` override renders name, label,
+  summary, and optional build log link from `site.Data.bio`.
 
 ## [2026-02-28]
 

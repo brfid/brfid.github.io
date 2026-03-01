@@ -278,6 +278,39 @@ jobs:
       - name: Sync resume data for Hugo
         run: cp resume.yaml hugo/data/resume.yaml
 
+      - name: Generate bio data for Hugo
+        if: steps.mode.outputs.build_mode == 'vintage'
+        run: |
+          if [[ -s hugo/static/brad.bio.txt ]]; then
+            python3 - hugo/static/brad.bio.txt hugo/data/bio.yaml <<'PY'
+          import json, pathlib, sys
+          src = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          lines = src.strip().splitlines()
+          name = lines[0] if len(lines) > 0 else ""
+          label = lines[1] if len(lines) > 1 else ""
+          try:
+              blank1 = next(i for i, l in enumerate(lines) if i >= 2 and not l.strip())
+          except StopIteration:
+              blank1 = len(lines)
+          summary = " ".join(l for l in lines[2:blank1] if l.strip())
+          contact = [l for l in lines[blank1 + 1:] if l.strip()]
+          email = contact[0] if contact else ""
+          url = contact[1] if len(contact) > 1 else ""
+          linkedin = contact[2] if len(contact) > 2 else ""
+          pathlib.Path(sys.argv[2]).write_text(
+              f"name: {json.dumps(name)}\n"
+              f"label: {json.dumps(label)}\n"
+              f"summary: {json.dumps(summary)}\n"
+              f"email: {json.dumps(email)}\n"
+              f"url: {json.dumps(url)}\n"
+              f"linkedin: {json.dumps(linkedin)}\n"
+              f"build_log: true\n",
+              encoding="utf-8",
+          )
+          print("Wrote hugo/data/bio.yaml")
+          PY
+          fi
+
       - name: Build Hugo site
         run: hugo --source hugo --destination ../site
 

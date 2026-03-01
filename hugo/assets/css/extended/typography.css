@@ -17,3 +17,19 @@ h5,
 h6 {
   font-weight: 500;
 }
+
+/* Bio: landing page bio panel */
+.bio-label {
+  color: var(--secondary);
+  font-size: 0.95rem;
+  margin: 0.2rem 0 1rem;
+}
+
+.bio-provenance {
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+}
+
+.bio-provenance a {
+  color: var(--secondary);
+}

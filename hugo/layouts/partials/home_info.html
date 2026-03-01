@@ -1,0 +1,16 @@
+{{- $bio := site.Data.bio -}}
+<article class="first-entry home-info">
+    <header class="entry-header">
+        <h1>{{ $bio.name }}</h1>
+        {{- with $bio.label }}<p class="bio-label">{{ . }}</p>{{ end }}
+    </header>
+    <div class="entry-content">
+        {{- with $bio.summary }}<p>{{ . }}</p>{{ end }}
+    </div>
+    <footer class="entry-footer">
+        {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}
+        {{- if $bio.build_log }}
+        <p class="bio-provenance"><a href="/build.log.txt">build log</a></p>
+        {{- end }}
+    </footer>
+</article>
