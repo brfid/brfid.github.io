@@ -10,7 +10,8 @@ semantic version tags.
 
 ### Current State
 - Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
-  is an on-demand artifact generator only — it feeds `hugo/static/brad.man.txt`.
+  is an on-demand artifact generator — it feeds `hugo/static/brad.man.txt`,
+  `hugo/static/brad.bio.txt`, `hugo/static/build.log.txt`, and `hugo/data/bio.yaml`.
 - **Pexpect pipeline CI-VALIDATED end-to-end (2026-02-28, tag `publish-vintage-20260228-203550`).**
   Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` → Hugo build → GitHub Pages deploy.
   All steps green; site live at www.jockeyholler.net.
@@ -37,7 +38,29 @@ semantic version tags.
 - None.
 
 ### Recently Completed
-- None.
+- **2026-03-01:** UUCP framing (VAX uuencodes `brad.1` itself; host routes spool;
+  PDP-11 decodes), ASCII conversion moved to `resume_generator/normalize.py`,
+  deprecated `uu` module replaced with `binascii.b2a_uu`. CI-validated
+  (`publish-vintage-20260301-192822`).
+- **2026-03-01:** Bio mode (`-mode bio` in `bradman.c`), UTC timestamps on all
+  pexpect `_log()` calls, machine-boundary build log, bio/log artifact extraction
+  in `deploy.yml`. CI-validated (`publish-vintage-20260301-194153`).
+- **2026-03-01:** Bio wired into Hugo landing page via `hugo/data/bio.yaml`.
+  Pipeline parses `brad.bio.txt` → `bio.yaml` with `build_id` (from build.log.txt
+  header) in "Generate bio data for Hugo" step (deploy.yml, vintage mode only).
+  Static fallback in repo for local dev / fast builds. `home_info.html` override
+  renders name, label, summary, and provenance line (VAX/PDP-11 attribution +
+  build_id + "pipeline log" link) from `site.Data.bio`.
+- **2026-03-02:** Architectural improvements CI-validated (`publish-vintage-20260302-014603`,
+  all steps green): `scripts/simh_session.py` (shared `make_logger`, `validate_uu_spool`,
+  `inject_batched_heredoc`); `resume_generator/bio_yaml.py` (bio parser extracted from
+  deploy.yml inline Python); both pexpect scripts import `simh_session`; UUE validation
+  before PDP-11 injection; SIMH SHA pin in both Dockerfiles;
+  `.github/workflows/build-images.yml` (separate image build workflow with GHA cache).
+  150 tests pass. Docs updated (ARCHITECTURE.md, WORKFLOWS.md, PEXPECT-PIPELINE-SPEC.md,
+  DEAD-ENDS.md, docs/vax/README.md, docs/INDEX.md). Archive pruned: ~40 stale files
+  removed (docker-compose, PDP-10 Dockerfiles, test/expect scripts, pycache,
+  docs/legacy/); IMP/Chaosnet restart kit retained.
 
 ## [2026-02-28]
 

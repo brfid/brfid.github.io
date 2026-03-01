@@ -31,10 +31,16 @@ fi
 ROOT_DIR="${ROOT_DIR:-$(pwd)}"
 LOG_DIR="${LOG_DIR:-/tmp/edcloud-vintage}"
 LOG_FILE="${LOG_DIR}/${BUILD_ID}.log"
+SECTIONS_LOG="${LOG_DIR}/${BUILD_ID}.sections.jsonl"
 KEEP_IMAGES="${KEEP_IMAGES:-0}"
 
 PDP11_IMAGE="pdp11-pexpect"
 VAX_IMAGE="vax-pexpect"
+
+# ghcr.io coordinates for pre-built cached images (set to Public in GitHub
+# package settings so edcloud can pull without credentials).
+GHCR_VAX="ghcr.io/brfid/vax-pexpect:latest"
+GHCR_PDP11="ghcr.io/brfid/pdp11-pexpect:latest"
 
 mkdir -p "$LOG_DIR"
 
@@ -108,23 +114,38 @@ prepare_host() {
   .venv/bin/python -m pip install --quiet -e .
 }
 
+_pull_or_build() {
+  # Pull a pre-built image from ghcr.io; fall back to local docker build.
+  # Args: <local-tag> <ghcr-ref> <dockerfile> [docker-build-args...]
+  local local_tag="$1"; shift
+  local ghcr_ref="$1"; shift
+  local dockerfile="$1"; shift
+
+  if docker pull "$ghcr_ref" 2>/dev/null; then
+    docker tag "$ghcr_ref" "$local_tag"
+    echo "Pulled ${local_tag} from ${ghcr_ref}"
+  else
+    echo "Pull failed for ${ghcr_ref}; building locally…"
+    docker build -f "$dockerfile" -t "$local_tag" "$@" .
+    echo "Built ${local_tag} locally"
+  fi
+}
+
 build_pexpect_images() {
   stage "build-pexpect-images"
   cd "$ROOT_DIR"
 
-  echo "Building ${PDP11_IMAGE} image…"
-  docker build \
-    -f vintage/machines/pdp11/Dockerfile.pdp11-pexpect \
-    -t "$PDP11_IMAGE" \
-    .
+  _pull_or_build \
+    "$PDP11_IMAGE" \
+    "$GHCR_PDP11" \
+    vintage/machines/pdp11/Dockerfile.pdp11-pexpect
 
-  echo "Building ${VAX_IMAGE} image…"
-  docker build \
-    -f vintage/machines/vax/Dockerfile.vax-pexpect \
-    -t "$VAX_IMAGE" \
-    .
+  _pull_or_build \
+    "$VAX_IMAGE" \
+    "$GHCR_VAX" \
+    vintage/machines/vax/Dockerfile.vax-pexpect
 
-  echo "Images built: ${PDP11_IMAGE}  ${VAX_IMAGE}"
+  echo "Images ready: ${PDP11_IMAGE}  ${VAX_IMAGE}"
 }
 
 generate_vintage_yaml() {
@@ -158,6 +179,7 @@ stage_b_vax() {
   docker run --rm \
     --label "vintage-build-id=${BUILD_ID}" \
     -v "$(pwd)/build/vintage:/build" \
+    -e "SECTIONS_LOG=/build/sections.jsonl" \
     "$VAX_IMAGE" \
     --bradman /build/bradman.c \
     --resume-yaml /build/resume.vintage.yaml \
@@ -181,6 +203,7 @@ stage_a_pdp11() {
   docker run --rm \
     --label "vintage-build-id=${BUILD_ID}" \
     -v "$(pwd)/build/vintage:/build" \
+    -e "SECTIONS_LOG=/build/sections.jsonl" \
     "$PDP11_IMAGE" \
     --input /build/brad.1.uu \
     --output /build/brad.man.txt
@@ -219,52 +242,152 @@ emit_build_log() {
   stage "emit-build-log"
   cd "$ROOT_DIR"
 
-  local build_log
-  build_log="$(.venv/bin/python - "$LOG_FILE" "$BUILD_ID" <<'PY'
-import sys, re
+  # Copy sections.jsonl from build volume into LOG_DIR for the Python script.
+  if [[ -s build/vintage/sections.jsonl ]]; then
+    cp build/vintage/sections.jsonl "$SECTIONS_LOG"
+  fi
 
-log_path = sys.argv[1]
-build_id = sys.argv[2]
+  local build_log
+  build_log="$(.venv/bin/python - "$LOG_FILE" "$BUILD_ID" "$SECTIONS_LOG" <<'PY'
+import sys, re, json, os, html as html_mod
+
+log_path   = sys.argv[1]
+build_id   = sys.argv[2]
+sections_f = sys.argv[3] if len(sys.argv) > 3 else ""
 
 with open(log_path) as f:
-    lines = f.readlines()
+    log_lines = f.readlines()
+
+# Load console sections from JSONLines file written by pexpect scripts.
+sections = {}
+if sections_f and os.path.exists(sections_f):
+    with open(sections_f) as f:
+        for line in f:
+            try:
+                e = json.loads(line)
+                sections[e["section"]] = e
+            except (json.JSONDecodeError, KeyError):
+                pass
 
 TS = r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'
 
-PATTERNS = [
-    (rf'^\[{TS}\] prepare-host',                                   '[host]      ', 'pipeline started'),
-    (rf'^\[{TS}\] generate-vintage-yaml',                          '[host]      ', 'resume.yaml -> resume.vintage.yaml'),
-    (rf'^\[{TS}\] stage-b-vax',                                    '[host]      ', 'VAX stage started  (4.3BSD / SIMH vax780)'),
-    (rf'^\[vax_pexpect\] {TS}\s+Waiting for 4\.3BSD login',       '[vax]       ', 'waiting for 4.3BSD boot'),
-    (rf'^\[vax_pexpect\] {TS}\s+Logged in as root',               '[vax]       ', 'logged in as root'),
-    (rf'^\[vax_pexpect\] {TS}\s+Compiling:',                      '[vax]       ', 'cc -O -o bradman bradman.c'),
-    (rf'^\[vax_pexpect\] {TS}\s+Compilation complete',            '[vax]       ', 'compilation complete'),
-    (rf'^\[vax_pexpect\] {TS}\s+bradman run complete',            '[vax]       ', 'bradman generated brad.1'),
-    (rf'^\[vax_pexpect\] {TS}\s+Uuencoding:',                     '[vax]       ', 'uuencode brad.1 -> brad.1.uu'),
-    (rf'^\[vax_pexpect\] {TS}\s+\[uucp\] brad\.1 spooled',       '[vax->host] ', 'brad.1.uu in spool'),
-    (rf'^\[{TS}\] stage-a-pdp11',                                  '[host]      ', 'routing brad.1.uu -> PDP-11  (2.11BSD / SIMH pdp11)'),
-    (rf'^\[pdp11_pexpect\] {TS}\s+Got boot prompt',               '[pdp11]     ', 'waiting for 2.11BSD boot'),
-    (rf'^\[pdp11_pexpect\] {TS}\s+/usr mounted',                  '[pdp11]     ', 'logged in, /usr mounted'),
-    (rf'^\[pdp11_pexpect\] {TS}\s+\[uucp\] Spool delivered',     '[pdp11]     ', 'brad.1.uu decoded -> brad.1'),
-    (rf'^\[pdp11_pexpect\] {TS}\s+nroff complete',                '[pdp11]     ', 'nroff -man rendered brad.man.txt'),
-    (rf'^\[{TS}\] emit-artifact',                                  '[host]      ', 'pipeline complete'),
-]
-
-events = []
-for line in lines:
-    line = line.rstrip()
-    for pattern, machine, event in PATTERNS:
-        m = re.match(pattern, line)
+def find_ts(pattern):
+    for line in log_lines:
+        m = re.search(pattern, line)
         if m:
-            ts = m.group(1)
-            events.append((ts, machine, event))
-            break
+            return m.group(1)
+    return ""
 
-out = [f"build  {build_id}", ""]
-for ts, machine, event in events:
-    out.append(f"{machine} {ts}  {event}")
-out.append("")
-print("\n".join(out))
+def find_line(pattern):
+    for line in log_lines:
+        if re.search(pattern, line):
+            return line.strip()
+    return ""
+
+host_ts    = find_ts(rf'\[{TS}\] prepare-host')
+yaml_ts    = find_ts(rf'\[{TS}\] generate-vintage-yaml')
+vax_ts     = find_ts(rf'\[{TS}\] stage-b-vax')
+pdp11_ts   = find_ts(rf'\[{TS}\] stage-a-pdp11')
+art_ts     = find_ts(rf'\[{TS}\] emit-artifact')
+compile_ts = find_ts(rf'\[vax_pexpect\] {TS}\s+Compiling:')
+nroff_ts   = find_ts(rf'\[pdp11_pexpect\] {TS}\s+nroff complete')
+
+yaml_line  = find_line(r'Wrote: build/vintage/resume')
+brad1_line = find_line(r'\[uucp\] Wrote spool:')
+man_line   = find_line(r'Wrote:.*brad\.man\.txt')
+bio_line   = find_line(r'Wrote bio:')
+
+def sec(name):
+    e = sections.get(name, {})
+    raw = e.get("content", "").strip()
+    return html_mod.escape(raw) if raw else "<em>(no console output captured)</em>"
+
+def ts_span(ts):
+    return f'<span class="ts">{html_mod.escape(ts)}</span>' if ts else ""
+
+CSS = """
+* { box-sizing: border-box; }
+body { font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
+       font-size: 12px; background: #0d1117; color: #e6edf3;
+       margin: 0; padding: 20px 24px; line-height: 1.6; }
+h1 { font-size: 13px; color: #8b949e; font-weight: normal; margin: 0 0 20px; }
+h1 a { color: #58a6ff; text-decoration: none; }
+h1 a:hover { text-decoration: underline; }
+details { margin: 0 0 4px; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; }
+summary { padding: 8px 14px; background: #161b22; cursor: pointer;
+          list-style: none; display: flex; align-items: baseline; gap: 10px;
+          user-select: none; }
+summary::-webkit-details-marker { display: none; }
+.arrow { color: #58a6ff; font-size: 10px; width: 10px; flex-shrink: 0; }
+details:not([open]) .arrow::after { content: "▶"; }
+details[open] .arrow::after { content: "▼"; }
+.step-name { color: #e6edf3; font-weight: bold; }
+.step-meta { color: #8b949e; flex: 1; }
+.step-ts   { color: #6e7681; font-size: 11px; }
+pre { margin: 0; padding: 12px 16px; overflow-x: auto;
+      white-space: pre-wrap; word-break: break-all;
+      background: #0d1117; color: #c9d1d9;
+      border-top: 1px solid #30363d; font-size: 11.5px; line-height: 1.55; }
+.ts   { color: #6e7681; }
+.ok   { color: #3fb950; }
+.info { color: #58a6ff; }
+em { color: #6e7681; font-style: normal; }
+"""
+
+def section(name, title, meta, ts_val, content_html, open_attr=""):
+    ts_part = f' <span class="step-ts">{html_mod.escape(ts_val)}</span>' if ts_val else ""
+    return f"""<details{open_attr}>
+  <summary><span class="arrow"></span><span class="step-name">{title}</span><span class="step-meta">{meta}</span>{ts_part}</summary>
+  <pre>{content_html}</pre>
+</details>"""
+
+# --- Host setup section ---
+host_lines = []
+if host_ts:
+    host_lines.append(f'{ts_span(host_ts)}  <span class="ok">pipeline started</span>')
+if yaml_ts:
+    host_lines.append(f'{ts_span(yaml_ts)}  resume.yaml → resume.vintage.yaml')
+if yaml_line:
+    host_lines.append(f'  {html_mod.escape(yaml_line)}')
+host_content = "\n".join(host_lines) if host_lines else "<em>(no events)</em>"
+
+# --- Host UUCP routing ---
+uucp_lines = []
+if pdp11_ts:
+    uucp_lines.append(f'{ts_span(pdp11_ts)}  routing brad.1.uu → PDP-11')
+if brad1_line:
+    uucp_lines.append(f'  {html_mod.escape(brad1_line)}')
+uucp_content = "\n".join(uucp_lines) if uucp_lines else "<em>(no events)</em>"
+
+# --- Artifact section ---
+art_lines = []
+if art_ts:
+    art_lines.append(f'{ts_span(art_ts)}  <span class="ok">pipeline complete</span>')
+for info in [man_line, bio_line]:
+    if info:
+        art_lines.append(f'  {html_mod.escape(info)}')
+art_content = "\n".join(art_lines) if art_lines else "<em>(no events)</em>"
+
+parts = [f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8">
+<title>{html_mod.escape(build_id)} — vintage pipeline log</title>
+<style>{CSS}</style>
+</head>
+<body>
+<h1>vintage pipeline &middot; <a href="https://github.com/brfid/brfid.github.io">brfid/brfid.github.io</a> &middot; {html_mod.escape(build_id)}</h1>
+"""]
+
+parts.append(section("host-setup", "host", "pipeline setup", host_ts, host_content, " open"))
+parts.append(section("vax-boot",   "VAX 4.3BSD", "SIMH vax780 &middot; boot", vax_ts, sec("vax-boot")))
+parts.append(section("vax-run",    "VAX 4.3BSD", "compile bradman.c &rarr; brad.1 &rarr; uuencode", compile_ts, sec("vax-compile") + "\n\n" + sec("vax-run"), " open"))
+parts.append(section("uucp",       "host", "UUCP routing brad.1.uu &rarr; PDP-11", pdp11_ts, uucp_content))
+parts.append(section("pdp11-boot", "PDP-11 2.11BSD", "SIMH pdp11 &middot; boot", pdp11_ts, sec("pdp11-boot")))
+parts.append(section("pdp11-nroff","PDP-11 2.11BSD", "nroff -man &rarr; brad.man.txt", nroff_ts, sec("pdp11-nroff"), " open"))
+parts.append(section("artifacts",  "host", "artifact extraction", art_ts, art_content, " open"))
+
+parts.append("</body>\n</html>")
+print("".join(parts))
 PY
 )"
 
