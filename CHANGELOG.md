@@ -46,10 +46,11 @@ semantic version tags.
   pexpect `_log()` calls, machine-boundary build log, bio/log artifact extraction
   in `deploy.yml`. CI-validated (`publish-vintage-20260301-194153`).
 - **2026-03-01:** Bio wired into Hugo landing page via `hugo/data/bio.yaml`.
-  Pipeline parses `brad.bio.txt` → `bio.yaml` in "Generate bio data for Hugo" step
-  (deploy.yml, vintage mode only). Static fallback in repo for local dev / fast
-  builds. `hugo/layouts/partials/home_info.html` override renders name, label,
-  summary, and optional build log link from `site.Data.bio`.
+  Pipeline parses `brad.bio.txt` → `bio.yaml` with `build_id` (from build.log.txt
+  header) in "Generate bio data for Hugo" step (deploy.yml, vintage mode only).
+  Static fallback in repo for local dev / fast builds. `home_info.html` override
+  renders name, label, summary, and provenance line (VAX/PDP-11 attribution +
+  build_id + "pipeline log" link) from `site.Data.bio`.
 
 ## [2026-02-28]
 
