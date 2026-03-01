@@ -1,8 +1,9 @@
 {{- $bio := site.Data.bio -}}
+{{- $resume := site.Data.resume -}}
 <article class="first-entry home-info">
     <header class="entry-header">
         <h1>{{ $bio.name }}</h1>
-        {{- with $bio.label }}<p class="bio-label">{{ . }}</p>{{ end }}
+        {{- with (or $bio.label $resume.tagline) }}<p class="bio-label">{{ . }}</p>{{ end }}
     </header>
     <div class="entry-content">
         {{- with $bio.summary }}<p>{{ . }}</p>{{ end }}
@@ -10,7 +11,7 @@
     <footer class="entry-footer">
         {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}
         {{- if $bio.build_log }}
-        <p class="bio-provenance">Generated on a VAX 11/780 (4.3BSD) and typeset on a PDP-11 (2.11BSD) via SIMH.{{ with $bio.build_id }} {{ . }} ·{{ end }} <a href="/build.log.txt">pipeline log</a> · <a href="https://github.com/brfid/brfid.github.io">source</a></p>
+        <p class="bio-provenance">Bio generated from <a href="https://github.com/brfid/brfid.github.io/blob/main/resume.yaml">resume.yaml</a> on a VAX 11/780 (4.3BSD) and typeset on a PDP-11 (2.11BSD) via SIMH{{ with $bio.build_id }} · <a href="/build.log.html">{{ . }}</a>{{ end }} · <a href="https://github.com/brfid/brfid.github.io">source</a></p>
         {{- end }}
     </footer>
 </article>

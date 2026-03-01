@@ -31,6 +31,14 @@ from pathlib import Path
 
 import pexpect
 
+from simh_session import (
+    inject_batched_heredoc,
+    log_console_section,
+    make_logger,
+    strip_console,
+    validate_uu_spool,
+)
+
 # Shell prompt injected after boot; distinctive enough to avoid false matches
 # in heredoc echo output. Uses '>' not '#' so it can't conflict with content.
 _PROMPT = "PDPsh> "
@@ -39,12 +47,8 @@ _BOOT_TIMEOUT = 180    # 2.11BSD on PDP-11 boots slowly (~90-120s under SIMH)
 _CMD_TIMEOUT = 60
 _NROFF_TIMEOUT = 600   # nroff on PDP-11 can take 5+ min on emulated hardware
 _UUE_TIMEOUT = 120     # per-batch UUE heredoc + cat timeout
-_LINE_DELAY = 0.005    # 5 ms between heredoc lines; prevents tty buffer overrun
 
-
-def _log(msg: str) -> None:
-    ts = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-    print(f"[pdp11_pexpect] {ts}  {msg}", file=sys.stderr, flush=True)
+_log = make_logger("pdp11_pexpect")
 
 
 def _parse_args(argv=None):
@@ -84,12 +88,14 @@ def _boot(child: pexpect.spawn) -> None:
     _log("Waiting for 2.11BSD boot prompt (\\r: or Boot:)…")
     child.expect(["\r: ", "Boot:"], timeout=_BOOT_TIMEOUT)
     _log("Got boot prompt — pressing Enter to boot unix kernel")
+    boot_pre = child.before or b""
     child.sendline("")
 
     # 2.11BSD on PDP-11 under SIMH takes ~60-120 s to reach root shell.
     _log("Waiting for root # prompt (this takes up to 2 minutes)…")
     child.expect(["# ", "\\$ "], timeout=_BOOT_TIMEOUT)
     _log("Reached root shell")
+    kernel_boot = child.before or b""
 
     # 2.11BSD root's login shell may be /bin/csh.  csh has the same two
     # incompatibilities as 4.3BSD VAX: PS1= is ignored and heredoc
@@ -110,11 +116,15 @@ def _boot(child: pexpect.spawn) -> None:
     child.sendline("mount /usr")
     child.expect(["# ", "\\$ "], timeout=_CMD_TIMEOUT)
     _log("/usr mounted — nroff and uudecode now available")
+    mount_out = child.before or b""
 
     # Switch to a distinctive prompt to avoid false matches on '#' in file content.
     child.sendline("PS1='" + _PROMPT + "'")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
     _log(f"Custom prompt set: {_PROMPT!r}")
+
+    log_console_section("pdp11", "pdp11-boot",
+        strip_console(boot_pre + b"\n" + kernel_boot + b"\n" + mount_out))
 
 
 def _deliver_uu_spool(child: pexpect.spawn, uu_text: str, remote_uu_path: str) -> None:
@@ -122,7 +132,7 @@ def _deliver_uu_spool(child: pexpect.spawn, uu_text: str, remote_uu_path: str) -
 
     The spool file was uuencoded by the VAX; the host routed it here.
     UUE lines are guaranteed ≤62 chars — no CANBSIZ overflow risk.
-    Inject in batches of 10 lines to avoid PTY echo stall.
+    Injection is delegated to simh_session.inject_batched_heredoc.
     2.11BSD uudecode writes the decoded file into the current directory.
     """
     uue_lines = uu_text.splitlines()
@@ -133,19 +143,7 @@ def _deliver_uu_spool(child: pexpect.spawn, uu_text: str, remote_uu_path: str) -
         f"({len(uue_lines)} encoded lines) to PDP-11…"
     )
 
-    _UUE_CHUNK_SIZE = 10
-    for batch_idx, batch_start in enumerate(
-        range(0, len(uue_lines), _UUE_CHUNK_SIZE)
-    ):
-        batch = uue_lines[batch_start : batch_start + _UUE_CHUNK_SIZE]
-        redirect = ">" if batch_idx == 0 else ">>"
-        child.sendline(f"cat {redirect} {remote_uu_path} << 'HEREDOC_EOF'")
-        for line in batch:
-            child.sendline(line)
-            if _LINE_DELAY:
-                time.sleep(_LINE_DELAY)
-        child.sendline("HEREDOC_EOF")
-        child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
+    inject_batched_heredoc(child, remote_uu_path, uue_lines, _PROMPT, _UUE_TIMEOUT)
 
     child.sendline(f"cd {parent} && uudecode {remote_uu_path} && rm {remote_uu_path}")
     child.expect(_PROMPT, timeout=_UUE_TIMEOUT)
@@ -164,10 +162,15 @@ def _run_nroff(child: pexpect.spawn) -> str:
     child.sendline("nroff -man -Tlp /tmp/brad.1 < /dev/null > /tmp/brad.man.txt")
     child.expect(_PROMPT, timeout=_NROFF_TIMEOUT)
     _log("nroff complete")
+    nroff_out = child.before or b""
 
     # Verify the output file was produced.
     child.sendline("ls -l /tmp/brad.man.txt")
     child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
+    ls_out = child.before or b""
+
+    log_console_section("pdp11", "pdp11-nroff",
+        strip_console(nroff_out + b"\n" + ls_out))
 
     # Disable echo before sending the marker command to prevent pexpect
     # from matching markers in the command echo rather than actual output.
@@ -222,6 +225,7 @@ def _clean_nroff_output(raw: str) -> str:
     return "\n".join(lines) + "\n"
 
 
+
 def main(argv=None) -> int:
     args = _parse_args(argv)
 
@@ -232,6 +236,16 @@ def main(argv=None) -> int:
 
     brad1_uu = brad1_uu_path.read_text(encoding="ascii")
     _log(f"[uucp] Spool received: {args.input} ({len(brad1_uu.splitlines())} encoded lines)")
+
+    try:
+        validate_uu_spool(brad1_uu)
+    except ValueError as exc:
+        _log(f"ERROR: UUE spool validation failed — aborting before SIMH launch: {exc}")
+        _log("First 10 lines of spool:")
+        for ln in brad1_uu.splitlines()[:10]:
+            _log(f"  {ln!r}")
+        return 1
+    _log("[uucp] Spool structure validated (begin/end markers present)")
 
     ini = args.ini
     workdir = args.workdir

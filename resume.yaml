@@ -1,17 +1,15 @@
+tagline: "Technical Writer — API documentation, developer experience, AI workflows"
+
 basics:
   name: Bradley Fidler
-  label: "Technical Writer — API documentation, platform engineering, AI workflows"
+  label: "Technical Writer — API documentation, developer experience, AI workflows"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: Principal technical writer with a focus on documentation strategy, platform
-    ownership, and the tooling that connects the two — CI/CD pipelines, OpenAPI workflows,
-    and production LLM integrations including MCP servers for deterministic quality
-    control. At DomainTools, built docs.domaintools.com end to end for a B2B security
-    intelligence company with 800+ customers and moved documentation into the SDLC
-    so products launch with docs at tech preview. Also a published researcher — peer-reviewed
-    work at USENIX Security and IEEE Annals, and a co-commissioned internet history
-    for Google and ICANN — a background that shapes how I approach complex systems
-    and the people who built them.
+  summary: I build documentation platforms and the tooling that powers them — CI/CD
+    pipelines, OpenAPI workflows, LLM integrations. At DomainTools I run docs.domaintools.com
+    for a B2B security intelligence platform and moved documentation into the development
+    cycle so it ships when features do. I published peer-reviewed work at USENIX Security
+    and IEEE Annals and wrote a commissioned history of the internet for Google and ICANN.
   location:
     city: Warwick
     countryCode: US
