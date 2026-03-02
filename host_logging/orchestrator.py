@@ -190,7 +190,7 @@ class LogOrchestrator:
         print(f"✅ Logs saved to: {self.storage.build_path}")
         print(f"{'='*60}\n")
 
-    def _signal_handler(self, signum, frame):
+    def _signal_handler(self, signum, _frame):
         """Handle shutdown signals gracefully."""
         print(f"\n\n⚠️  Received signal {signum}, shutting down...")
         self.stop()

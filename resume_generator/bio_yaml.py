@@ -13,7 +13,10 @@ brad.bio.txt format (produced by bradman.c -mode bio):
     https://linkedin.com/in/...
 
 This module is the canonical parser. The deploy.yml "Generate bio data for Hugo"
-step calls this as a CLI: ``python -m resume_generator.bio_yaml <src> <dst>``.
+step calls this as a CLI::
+
+    python -m resume_generator.bio_yaml <src_bio_txt> <dst_bio_yaml> \
+        [<build_log_html>] [<resume_yaml>]
 """
 
 from __future__ import annotations
@@ -73,31 +76,32 @@ def parse_bio_txt(text: str) -> BioData:
     )
 
 
-def _read_about_from_yaml(text: str) -> str:
-    """Extract the 'about' field from an existing bio.yaml.
+def _read_about_from_resume_yaml(path: str) -> str:
+    """Extract the top-level 'about' field from resume.yaml.
 
-    Handles both block scalar (>-) and quoted string forms so the field
-    survives a round-trip whether bio.yaml was hand-edited or written by
-    bio_to_yaml.
+    Reads a block scalar (>- or >) under the 'about:' key. The file is
+    operator-controlled so a simple line-by-line reader is sufficient.
 
     Args:
-        text: Contents of an existing bio.yaml file.
+        path: Path to resume.yaml.
 
     Returns:
-        The about value as a plain string, or empty string if absent.
+        The about value as a plain string, or empty string if absent/unreadable.
     """
-    lines = text.splitlines()
+    p = pathlib.Path(path)
+    if not p.exists():
+        return ""
+    lines = p.read_text(encoding="utf-8").splitlines()
     for i, line in enumerate(lines):
         if not line.startswith("about:"):
             continue
         val = line[len("about:") :].strip()
         if val in (">-", ">"):
-            # Block scalar: collect all indented continuation lines.
             block_lines: list[str] = []
             for j in range(i + 1, len(lines)):
                 bl = lines[j]
                 if bl and not bl[0].isspace():
-                    break  # next key starts
+                    break
                 stripped = bl.strip()
                 if stripped:
                     block_lines.append(stripped)
@@ -105,7 +109,7 @@ def _read_about_from_yaml(text: str) -> str:
         if val.startswith('"') or val.startswith("'"):
             try:
                 return str(json.loads(val))
-            except Exception:
+            except json.JSONDecodeError:
                 return val.strip("\"'")
         return val
     return ""
@@ -166,7 +170,8 @@ def main(argv: list[str] | None = None) -> int:
 
     Usage::
 
-        python -m resume_generator.bio_yaml <src_bio_txt> <dst_bio_yaml> [<build_log_txt>]
+        python -m resume_generator.bio_yaml <src_bio_txt> <dst_bio_yaml> \
+            [<build_log_html>] [<resume_yaml>]
 
     Args:
         argv: Argument list (defaults to sys.argv[1:]).
@@ -176,13 +181,17 @@ def main(argv: list[str] | None = None) -> int:
     """
     args = argv if argv is not None else sys.argv[1:]
     if len(args) < 2:
-        print("Usage: bio_yaml <src_bio_txt> <dst_bio_yaml> [<build_log_txt>]", file=sys.stderr)
+        print(
+            "Usage: bio_yaml <src_bio_txt> <dst_bio_yaml> [<build_log_html>] [<resume_yaml>]",
+            file=sys.stderr,
+        )
         return 1
 
     src = pathlib.Path(args[0])
     dst = pathlib.Path(args[1])
     default_log = pathlib.Path("hugo/static/build.log.html")
     build_log = pathlib.Path(args[2]) if len(args) >= 3 else default_log
+    resume_yaml = args[3] if len(args) >= 4 else "resume.yaml"
 
     if not src.exists() or src.stat().st_size == 0:
         print(f"bio_yaml: {src} is missing or empty — skipping", file=sys.stderr)
@@ -191,13 +200,9 @@ def main(argv: list[str] | None = None) -> int:
     text = src.read_text(encoding="utf-8")
     data = parse_bio_txt(text)
 
-    # Carry forward pipeline-agnostic fields (e.g. 'about') from the
-    # existing dst so they survive vintage deploys.
-    if dst.exists():
-        existing = dst.read_text(encoding="utf-8")
-        about = _read_about_from_yaml(existing)
-        if about:
-            data["about"] = about
+    about = _read_about_from_resume_yaml(resume_yaml)
+    if about:
+        data["about"] = about
 
     data["build_log"] = True
     build_id = _read_build_id(build_log)
