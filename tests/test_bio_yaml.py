@@ -6,7 +6,7 @@ import pathlib
 
 from resume_generator.bio_yaml import (
     BioData,
-    _read_about_from_yaml,
+    _read_about_from_resume_yaml,
     _read_build_id,
     bio_to_yaml,
     main,
@@ -140,19 +140,19 @@ def test_main_no_args() -> None:
 # --- about field ---
 
 
-def test_read_about_block_scalar() -> None:
-    yaml = 'name: "X"\nabout: >-\n  Most of my career has been about structure.\nemail: "x@x.com"\n'
-    assert _read_about_from_yaml(yaml) == "Most of my career has been about structure."
+def test_read_about_from_resume_yaml_present(tmp_path: pathlib.Path) -> None:
+    resume = tmp_path / "resume.yaml"
+    resume.write_text(
+        'tagline: "T"\nabout: >-\n  Most of my career has been about structure.\n'
+        "basics:\n  name: X\n"
+    )
+    assert _read_about_from_resume_yaml(str(resume)) == "Most of my career has been about structure."
 
 
-def test_read_about_quoted_string() -> None:
-    yaml = 'name: "X"\nabout: "A quoted about value."\n'
-    assert _read_about_from_yaml(yaml) == "A quoted about value."
-
-
-def test_read_about_absent() -> None:
-    yaml = 'name: "X"\nlabel: "Y"\n'
-    assert _read_about_from_yaml(yaml) == ""
+def test_read_about_from_resume_yaml_absent(tmp_path: pathlib.Path) -> None:
+    resume = tmp_path / "resume.yaml"
+    resume.write_text('tagline: "T"\nbasics:\n  name: X\n')
+    assert _read_about_from_resume_yaml(str(resume)) == ""
 
 
 def test_bio_to_yaml_with_about() -> None:
@@ -182,27 +182,26 @@ def test_bio_to_yaml_no_about() -> None:
     assert "about" not in bio_to_yaml(data)
 
 
-def test_main_carries_forward_about(tmp_path: pathlib.Path) -> None:
+def test_main_reads_about_from_resume_yaml(tmp_path: pathlib.Path) -> None:
     src = tmp_path / "brad.bio.txt"
     src.write_text(SAMPLE_BIO, encoding="utf-8")
     dst = tmp_path / "bio.yaml"
-    # Pre-seed dst with an about field.
-    dst.write_text('name: "old"\nabout: >-\n  Existing about text.\n', encoding="utf-8")
+    resume = tmp_path / "resume.yaml"
+    resume.write_text('tagline: "T"\nabout: >-\n  About from resume.\n')
 
-    rc = main([str(src), str(dst)])
+    rc = main([str(src), str(dst), str(tmp_path / "nonexistent.html"), str(resume)])
 
     assert rc == 0
     content = dst.read_text(encoding="utf-8")
-    assert "Existing about text." in content
-    # Pipeline fields are still updated from the new bio.txt.
+    assert "About from resume." in content
     assert "Bradley Fidler" in content
 
 
-def test_main_no_existing_dst_no_about(tmp_path: pathlib.Path) -> None:
+def test_main_no_resume_yaml_no_about(tmp_path: pathlib.Path) -> None:
     src = tmp_path / "brad.bio.txt"
     src.write_text(SAMPLE_BIO, encoding="utf-8")
     dst = tmp_path / "bio.yaml"
-    # dst does not exist — no about carried forward, no error.
-    rc = main([str(src), str(dst)])
+    # Pass a nonexistent resume.yaml — no about, no crash.
+    rc = main([str(src), str(dst), str(tmp_path / "nonexistent.html"), str(tmp_path / "no-resume.yaml")])
     assert rc == 0
     assert "about" not in dst.read_text(encoding="utf-8")
