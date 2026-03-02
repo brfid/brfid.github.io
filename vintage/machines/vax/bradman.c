@@ -68,9 +68,13 @@ typedef struct {
   char *buildDate;
   char *name;
   char *label;
+  char *principalHeadline;
   char *email;
   char *url;
   char *linkedin;
+  char **impactHighlights;
+  BRADMAN_SIZE_T impactHighlights_len;
+  BRADMAN_SIZE_T impactHighlights_cap;
   char *summary;
   WorkEntry *work;
   BRADMAN_SIZE_T work_len;
@@ -351,7 +355,7 @@ static void parse_resume_vax_yaml(in, r)
 {
   char buf[4096];
 
-  enum { TOP_NONE, TOP_CONTACT, TOP_WORK, TOP_SKILLS } top = TOP_NONE;
+  enum { TOP_NONE, TOP_CONTACT, TOP_IMPACT, TOP_WORK, TOP_SKILLS } top = TOP_NONE;
   int in_work_highlights = 0;
   int in_skill_keywords = 0;
 
@@ -401,6 +405,12 @@ static void parse_resume_vax_yaml(in, r)
       } else if (strcmp(key, "label") == 0) {
         if (!val) die("label must have a value");
         set_field(&r->label, val);
+      } else if (strcmp(key, "principalHeadline") == 0) {
+        if (!val) die("principalHeadline must have a value");
+        set_field(&r->principalHeadline, val);
+      } else if (strcmp(key, "impactHighlights") == 0) {
+        if (val) die("impactHighlights must be a sequence (no scalar value)");
+        top = TOP_IMPACT;
       } else if (strcmp(key, "summary") == 0) {
         if (!val) die("summary must have a value");
         set_field(&r->summary, val);
@@ -418,6 +428,19 @@ static void parse_resume_vax_yaml(in, r)
         if (val) free(val);
       }
       free(key);
+      continue;
+    }
+
+    if (indent == 2 && top == TOP_IMPACT) {
+      if (!starts_with(line, "-")) die("expected list item in impactHighlights: %s", line);
+      rest = skip_ws(line + 1);
+      if (*rest == '"') {
+        val = parse_quoted(rest);
+      } else {
+        val = parse_unquoted(rest);
+      }
+      push_string(
+          &r->impactHighlights, &r->impactHighlights_len, &r->impactHighlights_cap, val);
       continue;
     }
 
@@ -932,9 +955,12 @@ static void free_resume(r)
   free(r->buildDate);
   free(r->name);
   free(r->label);
+  free(r->principalHeadline);
   free(r->email);
   free(r->url);
   free(r->linkedin);
+  for (i = 0; i < r->impactHighlights_len; i++) free(r->impactHighlights[i]);
+  free(r->impactHighlights);
   free(r->summary);
 
   for (i = 0; i < r->work_len; i++) {
@@ -961,13 +987,33 @@ static void emit_bio(out, r)
     FILE *out;
     const Resume *r;
 {
-  /* Plain-text bio block: name, label, blank, summary, blank, contact lines.
-   * Intended as a minimal bio/summary pane for the Hugo site. */
+  BRADMAN_SIZE_T i;
+  /* Plain-text bio block for Hugo parsing:
+   * - Header: name, label, optional principalHeadline
+   * - Blank line
+   * - Optional impact bullets prefixed with "- "
+   * - Blank line
+   * - Summary paragraph lines
+   * - Blank line
+   * - Contact lines */
   if (r->name && r->name[0])
     fprintf(out, "%s\n", r->name);
   if (r->label && r->label[0])
     fprintf(out, "%s\n", r->label);
+  if (r->principalHeadline && r->principalHeadline[0])
+    fprintf(out, "%s\n", r->principalHeadline);
+
   fputc('\n', out);
+
+  for (i = 0; i < r->impactHighlights_len; i++) {
+    if (r->impactHighlights[i] && r->impactHighlights[i][0]) {
+      fprintf(out, "- %s\n", r->impactHighlights[i]);
+    }
+  }
+  if (r->impactHighlights_len > 0) {
+    fputc('\n', out);
+  }
+
   if (r->summary && r->summary[0])
     fprintf(out, "%s\n", r->summary);
   fputc('\n', out);

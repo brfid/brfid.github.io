@@ -6,10 +6,8 @@ Companion docs:
 - `docs/integration/INDEX.md`
 
 This repo is a Hugo-based personal site and technical writing portfolio.
-The vintage pipeline is optional and produces Hugo input artifacts: `hugo/static/brad.man.txt`,
-`hugo/static/brad.bio.txt`, `hugo/static/build.log.txt`, and `hugo/data/bio.yaml`.
-
----
+The vintage pipeline publish path produces Hugo input artifacts: `hugo/static/brad.man.txt`,
+`hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
 
 ## System boundary
 
@@ -20,27 +18,20 @@ Control plane and execution plane are intentionally split.
 
 Hugo remains the site generator in all modes.
 
----
+## Publish mode
 
-## Publish modes
-
-### Local publish (`publish-fast-*`)
-
-1. Sync `resume.yaml` to `hugo/data/resume.yaml`
-2. Build: `hugo --source hugo --destination ../site`
-3. Deploy `site/` to GitHub Pages
-
-### Vintage publish (`publish-vintage-*`)
+Triggered by push to `main` (skip with `[nopublish]` in commit message). Single mode — no local/fast variant.
 
 1. GitHub Actions authenticates to AWS via static credentials
 2. Resolve + start edcloud instance
 3. Run one SSM command on edcloud
-4. edcloud runner executes the vintage pipeline and emits `brad.man.txt` as base64 markers
-5. GitHub Actions writes artifact to `hugo/static/brad.man.txt`
-6. Hugo build + GitHub Pages deploy
-7. Stop edcloud if workflow started it
-
----
+4. edcloud runner executes the vintage pipeline and emits artifacts as base64 markers
+5. GitHub Actions extracts artifacts to `hugo/static/`
+6. Parses `brad.bio.txt` + reads `about` from `resume.yaml` → writes `hugo/data/bio.yaml`
+   (`label`, `principal_headline`, `impact_highlights`, `summary` from vintage path;
+   `principal_headline` rendered on landing page; `impact_highlights` reserved for resume page)
+7. Hugo build + GitHub Pages deploy
+8. Stop edcloud if workflow started it
 
 ## Vintage pipeline (pexpect-based, validated)
 
@@ -50,19 +41,20 @@ ports or screen sessions.
 
 ### Stages
 
-**Stage B — VAX (bradman.c compile + generate)**
+#### Stage B — VAX (bradman.c compile + generate)
 
 - Input: `build/vintage/resume.vintage.yaml` (Python-flattened from `resume.yaml`)
 - Process: pexpect boots 4.3BSD on SIMH VAX, injects `bradman.c` and `resume.vintage.yaml`
   via heredoc, compiles with `cc`, runs binary to produce `brad.1` and `brad.bio.txt`
 - UUCP framing: VAX uuencodes `brad.1` itself (`uuencode brad.1 brad.1 > brad.1.uu`);
   host captures `brad.1.uu` from the pexpect session
-- Bio mode: bradman also runs with `-mode bio` to emit `brad.bio.txt` (plain text);
+- Bio mode: bradman also runs with `-mode bio` to emit `brad.bio.txt` (plain text,
+  including principal headline and impact highlights when present);
   host captures `brad.bio.txt` separately
 - Output: `build/vintage/brad.1.uu`, `build/vintage/brad.bio.txt`
 - Status: Validated
 
-**Stage A — PDP-11 (nroff render)**
+#### Stage A — PDP-11 (nroff render)
 
 - Input: `build/vintage/brad.1.uu` (UUE spool from VAX, delivered by host)
 - Process: pexpect boots 2.11BSD on SIMH PDP-11, injects `brad.1.uu` via UUE batched
@@ -70,7 +62,7 @@ ports or screen sessions.
 - Output: `brad.man.txt`
 - Status: Validated
 
-**Stage A+B — Connected (UUCP framing)**
+#### Stage A+B — Connected (UUCP framing)
 
 - Transfer mechanism: host-mediated UUCP framing
   - VAX uuencodes `brad.1` → host captures `brad.1.uu` → host delivers to PDP-11 →
@@ -87,8 +79,6 @@ ports or screen sessions.
 - VAX console: login as root, no password on 4.3BSD guest.
 - Both machines confirmed booting and tool-ready on 2026-02-28.
 
----
-
 ## Key artifacts
 
 Input:
@@ -102,13 +92,12 @@ Generated (internal):
 Published input to Hugo:
 - `hugo/static/brad.man.txt`
 - `hugo/static/brad.bio.txt`
-- `hugo/static/build.log.txt`
-- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header)
+- `hugo/static/build.log.html`
+- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header; principal
+  homepage fields from vintage pipeline; `about` read from `resume.yaml` top-level field)
 
 Site output:
 - `site/` (gitignored, generated fresh each CI run)
-
----
 
 ## Operational principles
 

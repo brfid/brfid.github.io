@@ -34,11 +34,11 @@ def test_emit_vintage_yaml_uses_double_quotes_and_two_space_indent() -> None:
     assert "\t" not in text
     assert "\r" not in text
     # Simple strings are now unquoted
-    assert 'schemaVersion: v1' in text
+    assert "schemaVersion: v1" in text
     # Strings with special characters are still quoted and escaped
     assert 'label: "Senior \\"Dev\\" \\\\ Writer"' in text
     # Long strings without special chars are unquoted
-    assert 'summary: Line1 Line2 Line3' in text
+    assert "summary: Line1 Line2 Line3" in text
     assert "  email: " in text
 
     # Ensure list indentation is exactly 2 spaces at top level sequences.
@@ -69,9 +69,9 @@ def test_emit_vintage_yaml_is_ascii_clean() -> None:
     text = emit_vintage_yaml(built)
 
     assert text.isascii()
-    assert "--" in text          # em dash → --
-    assert "Great" in text       # curly quotes → straight (appear escaped in YAML as \"Great\")
-    assert "- success" in text   # en dash in highlight → -
+    assert "--" in text  # em dash → --
+    assert "Great" in text  # curly quotes → straight (appear escaped in YAML as \"Great\")
+    assert "- success" in text  # en dash in highlight → -
 
 
 def test_build_limits_work_and_skills() -> None:
@@ -84,3 +84,33 @@ def test_build_limits_work_and_skills() -> None:
     built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25), options=opts)
     assert len(built["work"]) == 2
     assert len(built["skills"]) == 3
+
+
+def test_build_emits_principal_headline_and_impact_highlights() -> None:
+    """Build should pass through principal_headline and impact_highlights."""
+    resume = {
+        "principal_headline": "I lead docs architecture for platform-scale teams.",
+        "principal_impact": [
+            "Reduced mean doc update latency from days to hours.",
+            "Established docs-as-code governance across 5 product lines.",
+            "Built CI quality gates that raised API reference consistency.",
+            "Should be truncated at 3 items.",
+        ],
+        "basics": {
+            "name": "Test",
+            "label": "Principal Technical Writer",
+            "summary": "Summary",
+        },
+    }
+
+    built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25))
+    text = emit_vintage_yaml(built)
+
+    assert built["principalHeadline"] == "I lead docs architecture for platform-scale teams."
+    assert built["impactHighlights"] == [
+        "Reduced mean doc update latency from days to hours.",
+        "Established docs-as-code governance across 5 product lines.",
+        "Built CI quality gates that raised API reference consistency.",
+    ]
+    assert "principalHeadline: I lead docs architecture for platform-scale teams." in text
+    assert "impactHighlights:" in text

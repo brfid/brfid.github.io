@@ -79,4 +79,4 @@ publish-vintage:
 publish_arpanet: publish-vintage
 
 docs:
-	@.venv/bin/pdoc resume_generator host_logging -o site/api --docformat google
+	@.venv/bin/pdoc resume_generator -o site/api --docformat google

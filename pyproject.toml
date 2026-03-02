@@ -12,7 +12,6 @@ dependencies = [
   "Jinja2>=3.1",
   "PyYAML>=6.0",
   "playwright>=1.55",
-  "docker>=7.0",  # For ARPANET logging system
 ]
 
 [project.optional-dependencies]
@@ -30,15 +29,14 @@ dev = [
 
 [project.scripts]
 resume-gen = "resume_generator.cli:main"
-host-logging = "host_logging.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["resume_generator*", "host_logging*"]
+include = ["resume_generator*"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["resume_generator", "host_logging", "tests"]
+files = ["resume_generator", "tests"]
 warn_unused_configs = true
 warn_return_any = true
 warn_redundant_casts = true
@@ -60,8 +58,6 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-  "host_logging",
-  "host_logging.*",
   "tests.*",  # Ignore all test type checking
 ]
 ignore_errors = true
@@ -84,7 +80,7 @@ show_missing = true
 
 [tool.ruff]
 target-version = "py311"
-line-length = 100
+line-length = 120
 
 [tool.ruff.format]
 line-ending = "lf"
@@ -114,10 +110,12 @@ py-version = "3.11"
 jobs = 0
 
 [tool.pylint.format]
-max-line-length = 100
+max-line-length = 120
 
 [tool.pylint.messages_control]
-# Keep this explicit: docstrings are enforced (no global opt-out).
+# Docstring policy: ruff `D` (pydocstyle, Google convention) enforces docstrings
+# on resume_generator and explicitly disables them for tests/** via per-file-ignores.
+# pylint is scoped to resume_generator only, so no per-file override needed here.
 disable = [
     "duplicate-code",  # R0801: Test fixtures have expected duplication
     "too-many-instance-attributes",  # R0902: Config classes need many attributes

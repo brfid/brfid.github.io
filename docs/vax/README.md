@@ -28,9 +28,15 @@ Stage B produces two output artifacts:
 - `brad.1.uu` — UUE-encoded troff source (UUCP spool for PDP-11 delivery)
 - `brad.bio.txt` — plain-text bio excerpt (bio mode)
 
+Current bio output contract (for homepage):
+- Header lines: `name`, `label`, optional principal headline
+- Optional impact section: `- ` bullet lines
+- Summary paragraph block
+- Contact lines
+
 The host captures both from the pexpect session. `brad.1.uu` is delivered to the PDP-11
 for `uudecode` + `nroff` rendering. `brad.bio.txt` is parsed into `hugo/data/bio.yaml`
-by `resume_generator/bio_yaml.py`.
+by `resume_generator/bio_yaml.py` (including `principal_headline` and `impact_highlights`).
 
 ## Orchestration
 

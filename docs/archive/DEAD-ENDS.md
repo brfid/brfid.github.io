@@ -8,8 +8,6 @@ Current active path:
 - `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`
 - `scripts/edcloud-vintage-runner.sh`
 
----
-
 ## Dead Ends
 
 | Path | Status | Why retired |
@@ -23,8 +21,6 @@ Current active path:
 | ARPANET IMP chain (VAX→IMP→IMP→PDP-10) | Retired | Emulator host-link framing mismatch (`bad magic`) and scope pivot to VAX↔PDP-11 artifact path. |
 | Chaosnet / ITS path | Retired | Did not clear blocker chain; not a pipeline dependency. |
 | PDP-10 KS10/TOPS-20 transfer path | Retired | Runtime and compatibility blockers; does not serve VAX↔PDP-11 objective. |
-
----
 
 ## Archive navigation
 

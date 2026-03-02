@@ -3,8 +3,6 @@
 Purpose: as-built implementation reference for the pexpect-based vintage pipeline.
 Primary cold-start doc for debugging or rebuilding the pipeline.
 
----
-
 ## Implementation status (2026-03-01)
 
 Both stages validated end-to-end on edcloud. All architectural improvements merged to `main`.
@@ -22,7 +20,7 @@ Both stages validated end-to-end on edcloud. All architectural improvements merg
 | `scripts/edcloud-vintage-runner.sh` | Orchestrator | No screen/telnet |
 | `.github/workflows/build-images.yml` | Image build + cache workflow | Implemented 2026-03-01 |
 
-**Key implementation learnings:**
+### Key implementation learnings
 
 1. **VAX disk images are gzipped** in `jguillaumes/simh-vaxbsd:latest` (`RA81.000.gz`,
    `RA81VHD.001.gz`). SIMH cannot attach `.gz` files — decompress at Docker build time.
@@ -98,8 +96,6 @@ Both stages validated end-to-end on edcloud. All architectural improvements merg
     force-terminates SIMH regardless. Applied to both `vax_pexpect.py` and
     `pdp11_pexpect.py`.
 
----
-
 ## Why pexpect
 
 The previous approach used GNU `screen` + `telnet` + fixed `sleep` timings to inject
@@ -111,15 +107,11 @@ was a race condition or a missed login prompt.
 by waiting for specific output strings before sending input. It replaces all sleeps with
 deterministic prompt detection.
 
----
-
 ## SIMH console mode
 
 Use SIMH with console on **stdin/stdout** (no telnet port). Remove `set console telnet=NNNN`
 from `.ini` files for the pexpect stages. The pexpect process connects directly to the
 SIMH process via a pty — no separate telnet listener, no port contention, no timeout.
-
----
 
 ## UUCP framing
 
@@ -139,8 +131,6 @@ kernel crashes on `xq` (Ethernet controller) initialization. See `docs/archive/D
 The `validate_uu_spool()` utility in `scripts/simh_session.py` validates the captured
 spool (line count, `begin`/`end` markers) before injection into the PDP-11 session.
 
----
-
 ## Bio mode
 
 `bradman.c` supports `-mode bio` to emit a plain-text bio excerpt instead of troff:
@@ -153,7 +143,11 @@ The VAX pexpect script runs both modes and captures `brad.bio.txt` alongside `br
 The host `resume_generator/bio_yaml.py` parser converts `brad.bio.txt` + build log header
 into `hugo/data/bio.yaml` for the Hugo landing page.
 
----
+Current homepage data contract through this path:
+
+- `resume.yaml` `principal_headline` → vintage YAML `principalHeadline` → bio YAML `principal_headline` → rendered on landing page; fast/local builds fall back to `$resume.principal_headline` (CI copies root `resume.yaml` to `hugo/data/resume.yaml`)
+- `resume.yaml` `principal_impact[]` → vintage YAML `impactHighlights[]` → bio YAML `impact_highlights[]` → generated but not rendered on landing page (reserved for resume page)
+- `resume.yaml` `about` remains host-read by `bio_yaml.py` (not emitted by VAX bio mode)
 
 ## Shared session utilities (`scripts/simh_session.py`)
 
@@ -165,8 +159,6 @@ Both pexpect scripts import common utilities from `scripts/simh_session.py`:
 - `inject_batched_heredoc(child, dest_path, lines, batch_size, prompt, logger)` — injects
   lines in batches of `batch_size` (default 10), appending to `dest_path` between batches;
   prevents PTY echo stall on large payloads
-
----
 
 ## Stage A+B — Connected (as-built)
 
@@ -182,6 +174,6 @@ Stage A (pdp11_pexpect.py):
   PDP-11 2.11BSD ← pexpect → brad.1.uu injected, uudecode, nroff
   brad.man.txt captured by host
           ↓
-Host emits brad.man.txt, brad.bio.txt, build.log.txt as base64 markers
+Host emits brad.man.txt, brad.bio.txt, build.log.html as base64 markers
 GitHub Actions extracts artifacts → bio_yaml.py → bio.yaml → Hugo build
 ```
