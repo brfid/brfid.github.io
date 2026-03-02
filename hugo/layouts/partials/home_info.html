@@ -1,8 +1,9 @@
 {{- $bio := site.Data.bio -}}
+{{- $resume := site.Data.resume -}}
 <article class="first-entry home-info">
     <header class="entry-header">
         <h1>{{ $bio.name }}</h1>
-        {{- with $bio.label }}<p class="bio-label">{{ . }}</p>{{ end }}
+        {{- with (or $bio.label $resume.tagline) }}<p class="bio-label">{{ . }}</p>{{ end }}
     </header>
     <div class="entry-content">
         {{- with $bio.summary }}<p>{{ . }}</p>{{ end }}
