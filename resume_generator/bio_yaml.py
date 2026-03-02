@@ -88,7 +88,8 @@ def parse_bio_txt(text: str) -> BioData:
         summary_start = 3
 
     # Legacy format: summary starts immediately after header and runs until first blank.
-    # New format: header -> blank -> optional impact bullets -> blank -> summary -> blank -> contact.
+    # New format: header -> blank -> optional impact bullets -> blank ->
+    # summary -> blank -> contact.
     blank1 = _find_blank(summary_start)
 
     impact_highlights: list[str] = []

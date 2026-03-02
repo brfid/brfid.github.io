@@ -15,6 +15,7 @@ semantic version tags.
 - `resume_generator` CLI is site-generation only (`--in`, `--out`, `--templates`, `--html-only`); vintage orchestration is owned by pexpect scripts + `scripts/edcloud-vintage-runner.sh`.
 - Landing page hierarchy now supports vintage-pipeline-driven `principal_headline` and `impact_highlights` (emitted via `resume.vintage.yaml` -> `brad.bio.txt` -> `hugo/data/bio.yaml`), while `about` remains sourced from `resume.yaml` top-level `about`.
 - Homepage hero presentation is now recruiter-first: single role line, concise summary, scoped CTA hierarchy, compact proof strip (first three impact highlights), and de-emphasized provenance footer while preserving pipeline-fed content fields.
+- Lint line-length policy relaxed from 100 to 120 chars (`ruff` + `pylint`) to reduce non-semantic quality-check churn while keeping style guardrails.
 - **PDP-11 networking (permanent constraint):** `unix` kernel has no Ethernet; inter-stage file transfer is host-mediated.
 - Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`.
 
@@ -31,6 +32,7 @@ semantic version tags.
 - None.
 
 ### Recently Completed
+- **2026-03-02:** Raised enforced lint line length to 120 and wrapped the remaining offending `bio_yaml.py` comment line that was failing quality checks.
 - **2026-03-02:** Simplified Hugo homepage information density for hiring-chain readability while retaining vintage/resume.yaml sourcing (`home_info.html` + homepage CSS updates).
 - **2026-03-02:** Added principal homepage hierarchy path through vintage pipeline (`principalHeadline`/`impactHighlights` in vintage YAML, `brad.bio.txt` emission+parse, Hugo landing rendering, and tests).
 - **2026-03-02:** Single vintage-only mode, `about` from `resume.yaml`, docs updated — see `[2026-03-02]` dated entry.
