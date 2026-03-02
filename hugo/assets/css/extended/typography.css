@@ -25,9 +25,33 @@ h6 {
   margin: 0.2rem 0 1rem;
 }
 
+.bio-headline {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.bio-impact-list {
+  margin: 0 0 1rem 1.2rem;
+}
+
+.bio-impact-list li {
+  margin-bottom: 0.35rem;
+}
+
+.bio-actions {
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.bio-actions a {
+  text-decoration: none;
+}
+
 .bio-provenance {
   font-size: 0.8rem;
   margin-top: 0.75rem;
+  color: var(--secondary);
 }
 
 .bio-provenance a {

@@ -4,9 +4,23 @@
     <header class="entry-header">
         <h1>{{ $bio.name }}</h1>
         {{- with (or $bio.label $resume.tagline) }}<p class="bio-label">{{ . }}</p>{{ end }}
+        {{- with $bio.principal_headline }}<p class="bio-headline">{{ . }}</p>{{ end }}
     </header>
     <div class="entry-content">
-        {{- with $bio.about }}<p>{{ . }}</p>{{ end }}
+        {{- with $bio.impact_highlights }}
+        <ul class="bio-impact-list">
+            {{- range . }}
+            <li>{{ . }}</li>
+            {{- end }}
+        </ul>
+        {{- end }}
+        {{- with (or $bio.about $bio.summary) }}<p>{{ . }}</p>{{ end }}
+        <p class="bio-actions">
+            <a href="/resume/">View Resume</a>
+            ·
+            <a href="/portfolio/">View Portfolio</a>
+            {{- with $bio.email }} · <a href="mailto:{{ . }}">Email</a>{{ end }}
+        </p>
     </div>
     <footer class="entry-footer">
         {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}

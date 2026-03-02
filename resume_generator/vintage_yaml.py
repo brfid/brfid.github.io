@@ -234,14 +234,27 @@ def build_vintage_resume_v1(
     name = safe_str(basics.get("name")) or ""
     label = safe_str(basics.get("label")) or ""
     summary = safe_str(basics.get("summary")) or ""
+    principal_headline = safe_str(resume.get("principal_headline"))
+
+    impact_raw = resume.get("principal_impact") or []
+    impact_highlights: list[str] = []
+    if isinstance(impact_raw, list):
+        for item in impact_raw:
+            text = safe_str(item)
+            if text:
+                impact_highlights.append(text)
 
     out: dict[str, Any] = {
         "schemaVersion": opts.schema_version,
         "buildDate": build_date.isoformat(),
         "name": name,
         "label": label,
+        "principalHeadline": principal_headline,
         "summary": summary,
     }
+
+    if impact_highlights:
+        out["impactHighlights"] = impact_highlights[:3]
 
     contact = _build_contact(basics)
     if contact:
@@ -272,7 +285,9 @@ def emit_vintage_yaml(value: Mapping[str, Any]) -> str:
         "buildDate",
         "name",
         "label",
+        "principalHeadline",
         "contact",
+        "impactHighlights",
         "summary",
         "work",
         "skills",

@@ -16,6 +16,11 @@ from resume_generator.bio_yaml import (
 SAMPLE_BIO = """\
 Bradley Fidler
 Principal Technical Writer -- API documentation, platform engineering, AI workflows
+I lead principal-level documentation systems for platform teams.
+
+- Built docs CI quality gates adopted across engineering.
+- Reduced API onboarding time with executable reference patterns.
+
 I build documentation platforms and the tooling that powers them.
 
 brfid@icloud.com
@@ -31,6 +36,11 @@ def test_parse_basic_fields() -> None:
         data["label"]
         == "Principal Technical Writer -- API documentation, platform engineering, AI workflows"
     )
+    assert data["principal_headline"] == "I lead principal-level documentation systems for platform teams."
+    assert data["impact_highlights"] == [
+        "Built docs CI quality gates adopted across engineering.",
+        "Reduced API onboarding time with executable reference patterns.",
+    ]
     assert data["summary"] == "I build documentation platforms and the tooling that powers them."
     assert data["email"] == "brfid@icloud.com"
     assert data["url"] == "https://brfid.github.io"
@@ -41,6 +51,9 @@ def test_parse_missing_contact() -> None:
     # No blank between label and summary; no contact block.
     text = "Name\nLabel\nSummary line.\n"
     data = parse_bio_txt(text)
+    assert data["principal_headline"] == ""
+    assert data["impact_highlights"] == []
+    assert data["summary"] == "Summary line."
     assert data["email"] == ""
     assert data["url"] == ""
     assert data["linkedin"] == ""
@@ -52,10 +65,29 @@ def test_parse_no_blank_line() -> None:
     assert data["summary"] == "Summary without blank."
 
 
+def test_parse_legacy_bio_format_back_compatible() -> None:
+    legacy = """\
+Name
+Label
+Legacy summary line.
+
+test@example.com
+https://example.com
+https://linkedin.com/in/example
+"""
+    data = parse_bio_txt(legacy)
+    assert data["principal_headline"] == ""
+    assert data["impact_highlights"] == []
+    assert data["summary"] == "Legacy summary line."
+    assert data["email"] == "test@example.com"
+
+
 def test_bio_to_yaml_no_build_log() -> None:
     data: BioData = {
         "name": "Jane Doe",
         "label": "Writer",
+        "principal_headline": "Principal headline",
+        "impact_highlights": ["A", "B"],
         "summary": "Summary.",
         "email": "jane@example.com",
         "url": "https://example.com",
@@ -65,6 +97,8 @@ def test_bio_to_yaml_no_build_log() -> None:
     assert "build_log" not in yaml
     assert "build_id" not in yaml
     assert '"Jane Doe"' in yaml
+    assert "principal_headline:" in yaml
+    assert "impact_highlights:" in yaml
 
 
 def test_bio_to_yaml_with_build_log() -> None:

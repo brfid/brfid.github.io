@@ -13,7 +13,7 @@ semantic version tags.
 - Site live at www.jockeyholler.net. Pipeline last validated: `publish-vintage-20260302-151109`.
 - Single build mode (vintage). `deploy.yml` triggers on `publish-*` tags only; no fast/local mode.
 - `resume_generator` CLI is site-generation only (`--in`, `--out`, `--templates`, `--html-only`); vintage orchestration is owned by pexpect scripts + `scripts/edcloud-vintage-runner.sh`.
-- `about` paragraph on the landing page is sourced from `resume.yaml` top-level `about` field (read by `bio_yaml.py`). `bio.yaml` in the repo is a minimal placeholder for local dev.
+- Landing page hierarchy now supports vintage-pipeline-driven `principal_headline` and `impact_highlights` (emitted via `resume.vintage.yaml` -> `brad.bio.txt` -> `hugo/data/bio.yaml`), while `about` remains sourced from `resume.yaml` top-level `about`.
 - **PDP-11 networking (permanent constraint):** `unix` kernel has no Ethernet; inter-stage file transfer is host-mediated.
 - Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`.
 
@@ -30,6 +30,7 @@ semantic version tags.
 - None.
 
 ### Recently Completed
+- **2026-03-02:** Added principal homepage hierarchy path through vintage pipeline (`principalHeadline`/`impactHighlights` in vintage YAML, `brad.bio.txt` emission+parse, Hugo landing rendering, and tests).
 - **2026-03-02:** Single vintage-only mode, `about` from `resume.yaml`, docs updated — see `[2026-03-02]` dated entry.
 - **2026-03-02:** Removed legacy `resume_generator` vintage/ARPANET orchestration modules and flags; retained canonical pexpect + edcloud runner path.
 - **2026-03-02:** Added/adjusted script docstrings for Google-style Ruff `D` conformance and fixed `host_logging` warning counter normalization (`WARN` + `WARNING`).
