@@ -30,15 +30,16 @@ Note: `--destination` is relative to the source directory, so `../site` writes t
 
 ---
 
-## Vintage pipeline (optional)
+## Vintage pipeline (publish path)
 
 Generates four Hugo input artifacts and drops them into place before the Hugo build:
 
 - `hugo/static/brad.man.txt` — resume rendered by `nroff -man` on PDP-11 (2.11BSD)
 - `hugo/static/brad.bio.txt` — plain-text bio block emitted by `bradman.c -mode bio` on VAX
 - `hugo/static/build.log.html` — machine-boundary build log with VAX and PDP-11 console sections
-- `hugo/data/bio.yaml` — parsed from `brad.bio.txt`; `label` and `summary` pipeline-generated;
-  `about` read from `resume.yaml` top-level field on each build
+- `hugo/data/bio.yaml` — parsed from `brad.bio.txt`; `label`, `principal_headline`,
+  `impact_highlights`, and `summary` are vintage-pipeline generated;
+  `about` is read from `resume.yaml` top-level field on each build
 
 The pipeline uses **pexpect** to drive SIMH emulators via stdin/stdout (no telnet ports, no sleep-based timing):
 
@@ -71,8 +72,9 @@ python3 -m venv .venv
 2. starts the edcloud instance (if needed),
 3. invokes a single SSM command that runs `scripts/edcloud-vintage-runner.sh` on edcloud,
 4. extracts `brad.man.txt` from runner output into `hugo/static/brad.man.txt`,
-5. builds Hugo and deploys Pages,
-6. best-effort stops edcloud if the workflow started it.
+5. parses `brad.bio.txt` into `hugo/data/bio.yaml` (including principal homepage fields),
+6. builds Hugo and deploys Pages,
+7. best-effort stops edcloud if the workflow started it.
 
 Single orchestration entrypoint: `scripts/edcloud-vintage-runner.sh`.
 Set `KEEP_IMAGES=1` to preserve Docker images between runs (avoids rebuild on retry).

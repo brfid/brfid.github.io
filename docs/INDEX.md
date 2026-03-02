@@ -19,6 +19,14 @@ Then apply `../AGENTS.md` constraints.
 - `../ARCHITECTURE.md` — pipeline design and data contracts
 - `../WORKFLOWS.md` — CI/test/publish behavior (including `build-images.yml` image cache workflow)
 
+Homepage content path (cold-start critical):
+
+- `resume.yaml` (`principal_headline`, `principal_impact`, `about`)
+  → `resume_generator/vintage_yaml.py` (`principalHeadline`, `impactHighlights`)
+  → `vintage/machines/vax/bradman.c -mode bio` (`brad.bio.txt`)
+  → `resume_generator/bio_yaml.py` (`hugo/data/bio.yaml`)
+  → `hugo/layouts/partials/home_info.html`
+
 ### Vintage pipeline
 
 - `vax/INDEX.md` — VAX stage reference (Stage B: bradman.c)

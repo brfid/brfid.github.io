@@ -6,7 +6,7 @@ Companion docs:
 - `docs/integration/INDEX.md`
 
 This repo is a Hugo-based personal site and technical writing portfolio.
-The vintage pipeline is optional and produces Hugo input artifacts: `hugo/static/brad.man.txt`,
+The vintage pipeline publish path produces Hugo input artifacts: `hugo/static/brad.man.txt`,
 `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
 
 ---
@@ -32,6 +32,7 @@ Triggered by `publish-*` tags. Single mode — no local/fast variant.
 4. edcloud runner executes the vintage pipeline and emits artifacts as base64 markers
 5. GitHub Actions extracts artifacts to `hugo/static/`
 6. Parses `brad.bio.txt` + reads `about` from `resume.yaml` → writes `hugo/data/bio.yaml`
+   (`label`, `principal_headline`, `impact_highlights`, `summary` from vintage path)
 7. Hugo build + GitHub Pages deploy
 8. Stop edcloud if workflow started it
 
@@ -52,7 +53,8 @@ ports or screen sessions.
   via heredoc, compiles with `cc`, runs binary to produce `brad.1` and `brad.bio.txt`
 - UUCP framing: VAX uuencodes `brad.1` itself (`uuencode brad.1 brad.1 > brad.1.uu`);
   host captures `brad.1.uu` from the pexpect session
-- Bio mode: bradman also runs with `-mode bio` to emit `brad.bio.txt` (plain text);
+- Bio mode: bradman also runs with `-mode bio` to emit `brad.bio.txt` (plain text,
+  including principal headline and impact highlights when present);
   host captures `brad.bio.txt` separately
 - Output: `build/vintage/brad.1.uu`, `build/vintage/brad.bio.txt`
 - Status: Validated
@@ -98,7 +100,8 @@ Published input to Hugo:
 - `hugo/static/brad.man.txt`
 - `hugo/static/brad.bio.txt`
 - `hugo/static/build.log.html`
-- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header; `about` read from `resume.yaml` top-level field)
+- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header; principal
+  homepage fields from vintage pipeline; `about` read from `resume.yaml` top-level field)
 
 Site output:
 - `site/` (gitignored, generated fresh each CI run)

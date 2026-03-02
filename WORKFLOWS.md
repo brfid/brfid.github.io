@@ -65,6 +65,7 @@ Control plane steps (GitHub Actions):
    - `build.log.html` → `hugo/static/build.log.html` (best-effort)
 7. Sync `resume.yaml` → `hugo/data/resume.yaml`
 8. Generate bio data: parse `brad.bio.txt` + read `about` from `resume.yaml` → `hugo/data/bio.yaml`
+   (`label`, `principal_headline`, `impact_highlights`, `summary` from vintage output)
 9. `hugo --source hugo --destination ../site`
 10. Upload and deploy to GitHub Pages
 11. Best-effort stop edcloud if this workflow started it
