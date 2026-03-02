@@ -182,6 +182,6 @@ Stage A (pdp11_pexpect.py):
   PDP-11 2.11BSD ← pexpect → brad.1.uu injected, uudecode, nroff
   brad.man.txt captured by host
           ↓
-Host emits brad.man.txt, brad.bio.txt, build.log.txt as base64 markers
+Host emits brad.man.txt, brad.bio.txt, build.log.html as base64 markers
 GitHub Actions extracts artifacts → bio_yaml.py → bio.yaml → Hugo build
 ```

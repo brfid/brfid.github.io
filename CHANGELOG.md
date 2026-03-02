@@ -11,10 +11,10 @@ semantic version tags.
 ### Current State
 - Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
   is an on-demand artifact generator — it feeds `hugo/static/brad.man.txt`,
-  `hugo/static/brad.bio.txt`, `hugo/static/build.log.txt`, and `hugo/data/bio.yaml`.
-- **Pexpect pipeline CI-VALIDATED end-to-end (2026-02-28, tag `publish-vintage-20260228-203550`).**
-  Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` → Hugo build → GitHub Pages deploy.
-  All steps green; site live at www.jockeyholler.net.
+  `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
+- **Pexpect pipeline CI-VALIDATED end-to-end (2026-03-02, tag `publish-vintage-20260302-134131`).**
+  Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` + `brad.bio.txt` + `build.log.html`
+  → Hugo build → GitHub Pages deploy. All steps green; site live at www.jockeyholler.net.
 - **Architecture decision (2026-02-28):** screen/telnet/sleep orchestration retired;
   pexpect is the permanent replacement.
 - **PDP-11 networking constraint (permanent):** The `unix` kernel has no working
@@ -46,21 +46,22 @@ semantic version tags.
   pexpect `_log()` calls, machine-boundary build log, bio/log artifact extraction
   in `deploy.yml`. CI-validated (`publish-vintage-20260301-194153`).
 - **2026-03-01:** Bio wired into Hugo landing page via `hugo/data/bio.yaml`.
-  Pipeline parses `brad.bio.txt` → `bio.yaml` with `build_id` (from build.log.txt
-  header) in "Generate bio data for Hugo" step (deploy.yml, vintage mode only).
+  Pipeline parses `brad.bio.txt` → `bio.yaml` with `build_id` (from `build.log.html`
+  `<title>`) in "Generate bio data for Hugo" step (deploy.yml, vintage mode only).
   Static fallback in repo for local dev / fast builds. `home_info.html` override
   renders name, label, summary, and provenance line (VAX/PDP-11 attribution +
-  build_id + "pipeline log" link) from `site.Data.bio`.
-- **2026-03-02:** Architectural improvements CI-validated (`publish-vintage-20260302-014603`,
-  all steps green): `scripts/simh_session.py` (shared `make_logger`, `validate_uu_spool`,
-  `inject_batched_heredoc`); `resume_generator/bio_yaml.py` (bio parser extracted from
-  deploy.yml inline Python); both pexpect scripts import `simh_session`; UUE validation
-  before PDP-11 injection; SIMH SHA pin in both Dockerfiles;
-  `.github/workflows/build-images.yml` (separate image build workflow with GHA cache).
-  150 tests pass. Docs updated (ARCHITECTURE.md, WORKFLOWS.md, PEXPECT-PIPELINE-SPEC.md,
-  DEAD-ENDS.md, docs/vax/README.md, docs/INDEX.md). Archive pruned: ~40 stale files
-  removed (docker-compose, PDP-10 Dockerfiles, test/expect scripts, pycache,
-  docs/legacy/); IMP/Chaosnet restart kit retained.
+  build ID link to `/build.log.html`) from `site.Data.bio`.
+- **2026-03-02:** Architectural improvements CI-validated: `scripts/simh_session.py`
+  (shared `make_logger`, `validate_uu_spool`, `inject_batched_heredoc`,
+  `strip_console`, `log_console_section`); `resume_generator/bio_yaml.py` (bio
+  parser, `_read_build_id` reads `<title>` via regex); both pexpect scripts capture
+  real console I/O at key boundaries and write to `SECTIONS_LOG`; UUE validation;
+  SIMH SHA pin; `.github/workflows/build-images.yml` (GHA cache). Build log is now
+  HTML with `<details>`/`<summary>` sections showing live VAX and PDP-11 console
+  output. `resume.yaml` top-level `tagline` field; `home_info.html` falls back to
+  `site.Data.resume.tagline` when `bio.label` is empty (non-vintage builds).
+  Bio label: "developer experience" (was "platform engineering"). Bio summary revised.
+  150 tests pass. Docs updated; archive pruned (~40 stale files removed).
 
 ## [2026-02-28]
 
