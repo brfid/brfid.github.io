@@ -15,8 +15,14 @@ Pipeline stages (built and validated incrementally):
 | Stage | Machine | Input | Process | Output |
 |-------|---------|-------|---------|--------|
 | A | PDP-11 (2.11BSD) | `brad.1` (troff source) | `nroff -man` | `brad.man.txt` |
-| B | VAX (4.3BSD) | `resume.vintage.yaml` | compile + run `bradman.c` | `brad.1` |
+| B | VAX (4.3BSD) | `resume.vintage.yaml` | compile + run `bradman.c` (`roff` + `bio` modes) | `brad.1`, `brad.bio.txt` |
 | A+B | VAX → host → PDP-11 | `resume.vintage.yaml` | B then A, host as courier | `brad.man.txt` |
+
+Homepage data flow is now part of the publish-critical integration path:
+
+`resume.yaml` (`principal_headline`, `principal_impact`) → `resume.vintage.yaml`
+(`principalHeadline`, `impactHighlights`) → VAX `brad.bio.txt` →
+`resume_generator/bio_yaml.py` → `hugo/data/bio.yaml` → Hugo landing template.
 
 ## Key constraints
 

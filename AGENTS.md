@@ -14,7 +14,7 @@ under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entr
 
 ## Start-here order (for new LLM sessions)
 
-`README.md` is the cold-start entry point (infrastructure boundary, source-of-truth map, quickstart, publish tags).
+`README.md` is the cold-start entry point (infrastructure boundary, source-of-truth map, quickstart).
 
 1. `README.md`
 2. `CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
@@ -96,20 +96,19 @@ Pre-commit checks are optional by default in this repo workflow.
   explicitly requested by the operator.
 - Keep local and remote synchronized after each milestone (`git push origin main`,
   then verify `main...origin/main` is clean).
-- Treat deploy tags as operational triggers, not release history; maintain a short rolling
-  set of timestamp tags and keep milestone/version tags intentionally.
+- Deploy tags are no longer used as publish triggers; every push to `main` deploys unless `[nopublish]` is in the commit message.
 - Before pushing, check for accidental secret material in changed files and avoid committing
   generated artifacts (`site/`, `build/`, `hugo/public/`, `.venv/`).
 
 ## No accidental publishing
 
-- GitHub Pages deploy is tag-triggered (`publish-fast-*`, `publish-vintage-*`). Avoid creating/pushing those tags unless you intend to deploy.
+- GitHub Pages deploy triggers on every push to `main`. To skip a deploy, include `[nopublish]` anywhere in the commit message. `workflow_dispatch` is available for manual re-runs.
 
 ## Do-not-break constraints
 
 - Keep Python execution in `.venv/` only.
 - Avoid global/system package installs.
-- Do not create/push publish tags unless intentionally deploying.
+- Do not push to `main` unless the commit is intended to publish; use `[nopublish]` to suppress deploy when pushing non-publishing changes.
 - Do not reintroduce screen/telnet/sleep-based console orchestration; the pexpect approach supersedes it.
 
 ## Expected output shape for implementation work

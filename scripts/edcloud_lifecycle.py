@@ -87,10 +87,7 @@ def resolve_instance_id(cfg: Config) -> str:
     )
 
     if not instance_id or instance_id == "None":
-        raise RuntimeError(
-            "No edcloud-managed instance found. "
-            "Set EDCLOUD_INSTANCE_ID or provision edcloud first."
-        )
+        raise RuntimeError("No edcloud-managed instance found. Set EDCLOUD_INSTANCE_ID or provision edcloud first.")
     return instance_id
 
 
@@ -122,6 +119,8 @@ def cmd_start(cfg: Config) -> int:
         run_aws(["ec2", "start-instances", "--instance-ids", instance_id])
         print("Waiting for running state...")
         run_aws(["ec2", "wait", "instance-running", "--instance-ids", instance_id])
+        print("Waiting for status checks to pass...")
+        run_aws(["ec2", "wait", "instance-status-ok", "--instance-ids", instance_id])
 
     public_ip = get_instance_field(instance_id, "Reservations[0].Instances[0].PublicIpAddress")
 

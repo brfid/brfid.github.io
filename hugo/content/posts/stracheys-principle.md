@@ -59,8 +59,6 @@ The longer question is what that discipline evolves into. Strachey's commitment 
 
 That remains the right question.
 
----
-
 [^1]: Wheeler, D.J. (1952). "The Use of Sub-Routines in Programmes." *Proceedings of the ACM national meeting*, Pittsburgh, pp. 235–236.
 
 [^2]: Strachey, C. (1965). "A General Purpose Macrogenerator." *The Computer Journal*, 8(3), pp. 225–241.

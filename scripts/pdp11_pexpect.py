@@ -26,7 +26,6 @@ Exit codes:
 import argparse
 import re
 import sys
-import time
 from pathlib import Path
 
 import pexpect
@@ -55,7 +54,11 @@ def _parse_args(argv=None):
     p = argparse.ArgumentParser(
         description="Stage A: render brad.1 → brad.man.txt via nroff on 2.11BSD"
     )
-    p.add_argument("--input", required=True, help="Path to brad.1.uu UUCP spool file (uuencoded by the VAX)")
+    p.add_argument(
+        "--input",
+        required=True,
+        help="Path to brad.1.uu UUCP spool file (uuencoded by the VAX)",
+    )
     p.add_argument("--output", required=True, help="Path to write brad.man.txt")
     p.add_argument(
         "--ini",
@@ -191,7 +194,7 @@ def _run_nroff(child: pexpect.spawn) -> str:
 
 
 def _clean_nroff_output(raw: str) -> str:
-    """Clean terminal and SIMH artefacts from captured nroff output.
+    r"""Clean terminal and SIMH artefacts from captured nroff output.
 
     Steps:
     1. Normalize line endings (pty adds \\r before \\n).
@@ -227,6 +230,14 @@ def _clean_nroff_output(raw: str) -> str:
 
 
 def main(argv=None) -> int:
+    """Run Stage A and write ``brad.man.txt`` from a VAX-generated UUCP spool.
+
+    Args:
+        argv: Optional CLI argument list.
+
+    Returns:
+        Process exit code (``0`` on success, ``1`` on failure).
+    """
     args = _parse_args(argv)
 
     brad1_uu_path = Path(args.input)

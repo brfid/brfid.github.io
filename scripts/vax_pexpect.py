@@ -30,9 +30,9 @@ Exit codes:
 
 import argparse
 import binascii
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 import pexpect
 
@@ -349,6 +349,14 @@ def _capture_bio(child: pexpect.spawn) -> str:
 
 
 def main(argv=None) -> int:
+    """Run Stage B and write VAX-generated spool/bio artifacts to disk.
+
+    Args:
+        argv: Optional CLI argument list.
+
+    Returns:
+        Process exit code (``0`` on success, ``1`` on failure).
+    """
     args = _parse_args(argv)
 
     # Validate inputs.

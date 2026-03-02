@@ -1,3 +1,5 @@
+"""Shared test utilities for resume_generator tests."""
+
 from __future__ import annotations
 
 import binascii
@@ -5,6 +7,7 @@ from pathlib import Path
 
 
 def write_minimal_resume(path: Path) -> None:
+    """Write a minimal valid resume.yaml fixture to path."""
     path.write_text(
         "\n".join(
             [
@@ -24,6 +27,7 @@ def write_minimal_resume(path: Path) -> None:
 
 
 def uuencode_bytes(data: bytes, filename: str = "x.bin") -> str:
+    """UUencode bytes and return the full begin/end block as a string."""
     lines = [f"begin 644 {filename}"]
     for i in range(0, len(data), 45):
         chunk = data[i : i + 45]
