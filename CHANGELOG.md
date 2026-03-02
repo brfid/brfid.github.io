@@ -12,9 +12,16 @@ semantic version tags.
 - Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
   is an on-demand artifact generator — it feeds `hugo/static/brad.man.txt`,
   `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
-- **Pexpect pipeline CI-VALIDATED end-to-end (2026-03-02, tag `publish-vintage-20260302-134131`).**
+- **Pexpect pipeline CI-VALIDATED end-to-end (2026-03-02, tag `publish-vintage-20260302-145011`).**
   Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` + `brad.bio.txt` + `build.log.html`
   → Hugo build → GitHub Pages deploy. All steps green; site live at www.jockeyholler.net.
+- `hugo/data/bio.yaml` has three authored fields: `label` (pipeline-generated tagline),
+  `summary` (credential paragraph, used on resume page and PDF), and `about`
+  (landing-page narrative paragraph, pipeline-agnostic — carried forward by `bio_yaml.py`
+  on vintage deploys and never overwritten). Landing page renders `about`; resume page
+  and PDF render `summary`.
+- Resume/portfolio: principal-level framing throughout (`resume.yaml` tagline and
+  `basics.label`); DomainTools role has sole-TW scope as first highlight bullet.
 - **Architecture decision (2026-02-28):** screen/telnet/sleep orchestration retired;
   pexpect is the permanent replacement.
 - **PDP-11 networking constraint (permanent):** The `unix` kernel has no working
