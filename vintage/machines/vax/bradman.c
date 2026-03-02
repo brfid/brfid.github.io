@@ -957,12 +957,35 @@ static void free_resume(r)
   free(r->skills);
 }
 
+static void emit_bio(out, r)
+    FILE *out;
+    const Resume *r;
+{
+  /* Plain-text bio block: name, label, blank, summary, blank, contact lines.
+   * Intended as a minimal bio/summary pane for the Hugo site. */
+  if (r->name && r->name[0])
+    fprintf(out, "%s\n", r->name);
+  if (r->label && r->label[0])
+    fprintf(out, "%s\n", r->label);
+  fputc('\n', out);
+  if (r->summary && r->summary[0])
+    fprintf(out, "%s\n", r->summary);
+  fputc('\n', out);
+  if (r->email && r->email[0])
+    fprintf(out, "%s\n", r->email);
+  if (r->url && r->url[0])
+    fprintf(out, "%s\n", r->url);
+  if (r->linkedin && r->linkedin[0])
+    fprintf(out, "%s\n", r->linkedin);
+}
+
 static void usage(argv0)
     const char *argv0;
 {
-  fprintf(stderr, "usage: %s -i INPUT [-o OUTPUT] [-mode roff|html]\n", argv0);
+  fprintf(stderr, "usage: %s -i INPUT [-o OUTPUT] [-mode roff|html|bio]\n", argv0);
   fprintf(stderr, "  roff mode (default): -i resume.vax.yaml -o brad.1\n");
   fprintf(stderr, "  html mode: -i contact.json -o contact.html\n");
+  fprintf(stderr, "  bio mode:  -i resume.vax.yaml -o brad.bio.txt\n");
   exit(2);
 }
 
@@ -1000,8 +1023,8 @@ int main(argc, argv)
 
   if (!in_path) usage(argv[0]);
 
-  if (strcmp(mode, "roff") != 0 && strcmp(mode, "html") != 0) {
-    die("invalid mode: %s (expected 'roff' or 'html')", mode);
+  if (strcmp(mode, "roff") != 0 && strcmp(mode, "html") != 0 && strcmp(mode, "bio") != 0) {
+    die("invalid mode: %s (expected 'roff', 'html', or 'bio')", mode);
   }
 
   in = fopen(in_path, "r");
@@ -1028,7 +1051,11 @@ int main(argc, argv)
       die("unsupported or missing schemaVersion (expected \"v1\")");
     }
     if (!r.label) die("missing required field: label");
-    emit_roff(out, &r);
+    if (strcmp(mode, "bio") == 0) {
+      emit_bio(out, &r);
+    } else {
+      emit_roff(out, &r);
+    }
     if (out != stdout) fclose(out);
     free_resume(&r);
   }

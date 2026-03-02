@@ -2,14 +2,49 @@
 
 This module converts raw JSON Resume structures into a "view model" that is
 stable and convenient for templates (sorted lists, computed date ranges, etc.).
+It also provides ASCII transliteration for vintage (ASCII-only) output targets.
 """
 
 from __future__ import annotations
 
+import unicodedata
 from datetime import date
 from typing import Any, cast
 
 from .types import ProjectItemView, Resume, ResumeView, WorkItemView
+
+# Common Unicode → ASCII substitutions for content fed to ASCII-only vintage guests.
+_UNICODE_SUBS: dict[str, str] = {
+    "\u2014": "--",   # em dash
+    "\u2013": "-",    # en dash
+    "\u2018": "'",    # left single quotation mark
+    "\u2019": "'",    # right single quotation mark
+    "\u201c": '"',    # left double quotation mark
+    "\u201d": '"',    # right double quotation mark
+    "\u2026": "...",  # horizontal ellipsis
+    "\u00a0": " ",    # non-breaking space
+    "\u2022": "*",    # bullet
+}
+
+
+def to_ascii(text: str) -> str:
+    """Transliterate a Unicode string to ASCII for vintage (ASCII-only) targets.
+
+    Applies a substitution table for common typographic characters, then uses
+    NFKD normalization to decompose accented letters, then drops any remaining
+    non-ASCII bytes.
+
+    Args:
+        text: Input string, possibly containing Unicode.
+
+    Returns:
+        ASCII-only string. Non-ASCII characters not covered by the substitution
+        table or NFKD decomposition are replaced with '?'.
+    """
+    for ch, sub in _UNICODE_SUBS.items():
+        text = text.replace(ch, sub)
+    normalized = unicodedata.normalize("NFKD", text)
+    return normalized.encode("ascii", errors="replace").decode("ascii")
 
 
 def _parse_iso_date(value: str | None) -> date | None:
