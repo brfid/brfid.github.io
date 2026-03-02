@@ -2,7 +2,7 @@
 
 Source for [jockeyholler.net](https://www.jockeyholler.net/) — a Hugo-based personal site and technical writing portfolio deployed to GitHub Pages.
 
-The repo has two independent build paths: a Hugo content pipeline for the live site, and an optional vintage computing pipeline (VAX/PDP-11 via SIMH) that generates a rendered artifact for inclusion in the Hugo build.
+The live site is built and deployed via a Hugo + vintage computing pipeline (VAX/PDP-11 via SIMH). The vintage pipeline generates rendered artifacts that Hugo includes in the final build.
 
 ---
 
@@ -26,7 +26,7 @@ hugo --source hugo --destination ../site
 
 Note: `--destination` is relative to the source directory, so `../site` writes to `site/` at the repo root.
 
-**Publish:** push a `publish-fast-*` tag → GitHub Actions builds Hugo and deploys to GitHub Pages.
+**Publish:** push a `publish-*` tag → GitHub Actions runs the vintage pipeline and deploys to GitHub Pages.
 
 ---
 
@@ -37,8 +37,8 @@ Generates four Hugo input artifacts and drops them into place before the Hugo bu
 - `hugo/static/brad.man.txt` — resume rendered by `nroff -man` on PDP-11 (2.11BSD)
 - `hugo/static/brad.bio.txt` — plain-text bio block emitted by `bradman.c -mode bio` on VAX
 - `hugo/static/build.log.html` — machine-boundary build log with VAX and PDP-11 console sections
-- `hugo/data/bio.yaml` — parsed from `brad.bio.txt`; `label` and `summary` are pipeline-generated;
-  `about` is a pipeline-agnostic field maintained in the repo and carried forward on each build
+- `hugo/data/bio.yaml` — parsed from `brad.bio.txt`; `label` and `summary` pipeline-generated;
+  `about` read from `resume.yaml` top-level field on each build
 
 The pipeline uses **pexpect** to drive SIMH emulators via stdin/stdout (no telnet ports, no sleep-based timing):
 
@@ -65,7 +65,7 @@ python3 -m venv .venv
 .venv/bin/python -m ruff check resume_generator
 ```
 
-**Publish:** push a `publish-vintage-*` tag → CI does a minimal bootstrap:
+**Publish:** push a `publish-*` tag → CI does a minimal bootstrap:
 
 1. authenticates to AWS via static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`),
 2. starts the edcloud instance (if needed),

@@ -3,18 +3,8 @@ name: Publish Site
 on:
   push:
     tags:
-      - "publish-vintage-*"
-      - "publish-fast-*"
+      - "publish-*"
   workflow_dispatch:
-    inputs:
-      build_mode:
-        description: "Build mode"
-        required: true
-        default: "local"
-        type: choice
-        options:
-          - local
-          - vintage
 
 permissions:
   contents: read
@@ -46,30 +36,7 @@ jobs:
           hugo-version: '0.156.0'
           extended: true
 
-      - name: Determine build mode
-        id: mode
-        run: |
-          TAG_NAME="${{ github.ref_name }}"
-
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            REQUESTED="${{ inputs.build_mode }}"
-            if [[ "$REQUESTED" == "vintage" ]]; then
-              echo "build_mode=vintage" >> "$GITHUB_OUTPUT"
-              echo "mode_name=Vintage (edcloud/SSM)" >> "$GITHUB_OUTPUT"
-            else
-              echo "build_mode=local" >> "$GITHUB_OUTPUT"
-              echo "mode_name=Local (Hugo-only)" >> "$GITHUB_OUTPUT"
-            fi
-          elif [[ "$TAG_NAME" == publish-vintage-* ]]; then
-            echo "build_mode=vintage" >> "$GITHUB_OUTPUT"
-            echo "mode_name=Vintage (edcloud/SSM)" >> "$GITHUB_OUTPUT"
-          else
-            echo "build_mode=local" >> "$GITHUB_OUTPUT"
-            echo "mode_name=Local (Hugo-only)" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Configure AWS credentials
-        if: steps.mode.outputs.build_mode == 'vintage'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -77,7 +44,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Start edcloud instance
-        if: steps.mode.outputs.build_mode == 'vintage'
         id: edcloud_start
         env:
           EDCLOUD_INSTANCE_ID: ${{ secrets.EDCLOUD_INSTANCE_ID }}
@@ -142,7 +108,6 @@ jobs:
           esac
 
       - name: Run vintage pipeline on edcloud via SSM
-        if: steps.mode.outputs.build_mode == 'vintage'
         env:
           INSTANCE_ID: ${{ steps.edcloud_start.outputs.instance_id }}
           GIT_SHA: ${{ github.sha }}
@@ -279,13 +244,13 @@ jobs:
         run: cp resume.yaml hugo/data/resume.yaml
 
       - name: Generate bio data for Hugo
-        if: steps.mode.outputs.build_mode == 'vintage'
         run: |
           if [[ -s hugo/static/brad.bio.txt ]]; then
             python3 resume_generator/bio_yaml.py \
               hugo/static/brad.bio.txt \
               hugo/data/bio.yaml \
-              hugo/static/build.log.html
+              hugo/static/build.log.html \
+              resume.yaml
           fi
 
       - name: Build Hugo site
@@ -301,7 +266,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
       - name: Stop edcloud instance
-        if: always() && steps.mode.outputs.build_mode == 'vintage'
+        if: always()
         continue-on-error: true
         env:
           INSTANCE_ID: ${{ steps.edcloud_start.outputs.instance_id }}
@@ -333,6 +298,5 @@ jobs:
         run: |
           echo "## Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Mode: ${{ steps.mode.outputs.mode_name }}" >> "$GITHUB_STEP_SUMMARY"
           echo "URL: ${{ steps.deployment.outputs.page_url }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Tag: ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"

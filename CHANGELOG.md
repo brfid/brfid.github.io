@@ -11,7 +11,9 @@ semantic version tags.
 ### Current State
 - Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) is stable and produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
 - Site live at www.jockeyholler.net. Pipeline last validated: `publish-vintage-20260302-151109`.
-- `hugo/data/bio.yaml` three-field model: `label` and `summary` are pipeline-generated (from `brad.bio.txt`); `about` is repo-maintained and carried forward by `bio_yaml.py` on every vintage deploy — never overwritten. Landing page renders `about`; resume page and PDF render `summary`.
+- Single build mode (vintage). `deploy.yml` triggers on `publish-*` tags only; no fast/local mode.
+- `resume_generator` CLI is site-generation only (`--in`, `--out`, `--templates`, `--html-only`); vintage orchestration is owned by pexpect scripts + `scripts/edcloud-vintage-runner.sh`.
+- `about` paragraph on the landing page is sourced from `resume.yaml` top-level `about` field (read by `bio_yaml.py`). `bio.yaml` in the repo is a minimal placeholder for local dev.
 - **PDP-11 networking (permanent constraint):** `unix` kernel has no Ethernet; inter-stage file transfer is host-mediated.
 - Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`.
 
@@ -28,23 +30,28 @@ semantic version tags.
 - None.
 
 ### Recently Completed
-- **2026-03-02:** Portfolio/resume improvements and pipeline docs — see `[2026-03-02]` dated entry.
+- **2026-03-02:** Single vintage-only mode, `about` from `resume.yaml`, docs updated — see `[2026-03-02]` dated entry.
+- **2026-03-02:** Removed legacy `resume_generator` vintage/ARPANET orchestration modules and flags; retained canonical pexpect + edcloud runner path.
+- **2026-03-02:** Added/adjusted script docstrings for Google-style Ruff `D` conformance and fixed `host_logging` warning counter normalization (`WARN` + `WARNING`).
+- **2026-03-02:** Ran scoped validation (`pytest`), Bandit, and Vulture; triaged findings for portfolio-readiness review.
 
 ## [2026-03-02]
 
 ### Added
-- `hugo/data/bio.yaml` `about` field: pipeline-agnostic landing-page narrative paragraph; `bio_yaml.py` carries it forward on vintage deploys.
+- `resume.yaml` top-level `about` field: single editorial source of truth for the landing page narrative paragraph.
+- `hugo/data/bio.yaml` `about` field: pipeline-agnostic landing-page narrative paragraph.
 - `home_info.html` renders `$bio.about` on landing page (`summary` retained for resume page and PDF).
 - DomainTools role: sole-TW scope added as first highlight bullet.
-- 8 new tests for `bio_yaml` `about` field (read, write, carry-forward). 157 tests total.
 
 ### Changed
+- Single vintage-only build mode: `deploy.yml` trigger is now `publish-*`; fast/local mode and mode detection removed. Every deploy runs the full vintage pipeline.
+- `bio_yaml.py`: `about` is now sourced from `resume.yaml` top-level field (passed as 4th CLI arg) instead of being carried forward from the existing `hugo/data/bio.yaml`. Removes `_read_about_from_yaml`; adds `_read_about_from_resume_yaml`.
+- `hugo/data/bio.yaml` in repo reduced to a minimal 4-key empty placeholder for local dev.
 - `resume.yaml` tagline and `basics.label`: "Technical Writer" → "Principal Technical Writer" throughout.
 - All prose strings in `resume.yaml` unwrapped to single lines (IDE word-wrap; YAML values unchanged).
 - `portfolio.yaml` jockeyholler.net entry: `status: in-progress` → `live`; summary updated.
-- `ARCHITECTURE.md`: document `about` field and `bio_yaml.py` carry-forward behavior.
-- `README.md`: vintage pipeline section lists all four artifacts with descriptions.
-- `scripts/simh_session.py` (shared session utilities), `resume_generator/bio_yaml.py` (bio parser extracted), UUE validation, SIMH SHA pin, `.github/workflows/build-images.yml` (GHA image cache), HTML build log with `<details>` console sections. 150 → 157 tests.
+- `README.md`, `ARCHITECTURE.md`, `WORKFLOWS.md`: updated for single vintage mode, new `about` sourcing.
+- `scripts/simh_session.py` (shared session utilities), `resume_generator/bio_yaml.py` (bio parser extracted), UUE validation, SIMH SHA pin, `.github/workflows/build-images.yml` (GHA image cache), HTML build log with `<details>` console sections. 156 tests.
 
 ## [2026-03-01]
 
