@@ -156,9 +156,10 @@ class LogStorage:
         stats.last_timestamp = entry.timestamp
 
         # Count errors/warnings
-        if entry.log_level == "ERROR":
+        level = entry.log_level.upper()
+        if level == "ERROR":
             stats.errors += 1
-        elif entry.log_level == "WARN":
+        elif level in {"WARN", "WARNING"}:
             stats.warnings += 1
 
     def finalize(self, metadata: BuildMetadata):

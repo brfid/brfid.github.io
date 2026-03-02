@@ -47,46 +47,37 @@ Defined in `tests/conftest.py`:
 ## `deploy.yml`
 
 - Trigger:
-  - tags
-    - fast/local: `publish-fast-*`
-    - vintage: `publish-vintage-*`
-  - manual dispatch (`build_mode`: `local` or `vintage`)
+  - tags: `publish-*`
+  - manual dispatch (no inputs; useful for re-runs without tagging)
 
-Mode resolution:
+Single mode (vintage). No local/fast variant.
 
-- `publish-vintage-*` tags → vintage mode
-- manual dispatch `build_mode=vintage` → vintage mode
-- otherwise → local mode
-
-Local mode:
+Control plane steps (GitHub Actions):
 
 1. Checkout with submodules (PaperMod theme)
 2. Setup Hugo 0.156.0 extended
-3. Sync `resume.yaml` → `hugo/data/resume.yaml`
-4. `hugo --source hugo --destination ../site`
-5. Upload and deploy to GitHub Pages
-
-Vintage mode control plane (GitHub Actions):
-
-1. Authenticate to AWS via static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`)
-2. Resolve + start edcloud instance
-3. Invoke a single SSM command on edcloud
-4. Extract artifacts from SSM output markers:
+3. Authenticate to AWS via static credentials (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`)
+4. Resolve + start edcloud instance
+5. Invoke a single SSM command on edcloud
+6. Extract artifacts from SSM output markers:
    - `brad.man.txt` → `hugo/static/brad.man.txt`
    - `brad.bio.txt` → `hugo/static/brad.bio.txt` (best-effort)
-   - `build.log.txt` → `hugo/static/build.log.txt` (best-effort)
-5. Generate bio data for Hugo: parse `brad.bio.txt` + build log header → `hugo/data/bio.yaml`
-6. Best-effort stop edcloud if this workflow started it
-7. Build/deploy Hugo as normal
+   - `build.log.html` → `hugo/static/build.log.html` (best-effort)
+7. Sync `resume.yaml` → `hugo/data/resume.yaml`
+8. Generate bio data: parse `brad.bio.txt` + read `about` from `resume.yaml` → `hugo/data/bio.yaml`
+   (`label`, `principal_headline`, `impact_highlights`, `summary` from vintage output)
+9. `hugo --source hugo --destination ../site`
+10. Upload and deploy to GitHub Pages
+11. Best-effort stop edcloud if this workflow started it
 
-Vintage mode execution plane (edcloud host):
+Execution plane (edcloud host):
 
 - Single entrypoint: `scripts/edcloud-vintage-runner.sh`
 - Script orchestrates the pexpect-based VAX/PDP-11 pipeline (see `ARCHITECTURE.md`)
-- Emits artifact as base64 between hard markers on stdout for CI extraction
+- Emits artifacts as base64 between hard markers on stdout for CI extraction
 - Debug override: set `KEEP_IMAGES=1` to keep containers running after a run
 
-Required secrets for vintage mode:
+Required secrets:
 
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`

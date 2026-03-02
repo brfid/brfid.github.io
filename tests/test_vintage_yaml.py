@@ -84,3 +84,32 @@ def test_build_limits_work_and_skills() -> None:
     built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25), options=opts)
     assert len(built["work"]) == 2
     assert len(built["skills"]) == 3
+
+
+def test_build_emits_principal_headline_and_impact_highlights() -> None:
+    resume = {
+        "principal_headline": "I lead docs architecture for platform-scale teams.",
+        "principal_impact": [
+            "Reduced mean doc update latency from days to hours.",
+            "Established docs-as-code governance across 5 product lines.",
+            "Built CI quality gates that raised API reference consistency.",
+            "Should be truncated at 3 items.",
+        ],
+        "basics": {
+            "name": "Test",
+            "label": "Principal Technical Writer",
+            "summary": "Summary",
+        },
+    }
+
+    built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25))
+    text = emit_vintage_yaml(built)
+
+    assert built["principalHeadline"] == "I lead docs architecture for platform-scale teams."
+    assert built["impactHighlights"] == [
+        "Reduced mean doc update latency from days to hours.",
+        "Established docs-as-code governance across 5 product lines.",
+        "Built CI quality gates that raised API reference consistency.",
+    ]
+    assert "principalHeadline: I lead docs architecture for platform-scale teams." in text
+    assert "impactHighlights:" in text

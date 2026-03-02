@@ -153,6 +153,12 @@ The VAX pexpect script runs both modes and captures `brad.bio.txt` alongside `br
 The host `resume_generator/bio_yaml.py` parser converts `brad.bio.txt` + build log header
 into `hugo/data/bio.yaml` for the Hugo landing page.
 
+Current homepage data contract through this path:
+
+- `resume.yaml` `principal_headline` → vintage YAML `principalHeadline` → bio YAML `principal_headline`
+- `resume.yaml` `principal_impact[]` → vintage YAML `impactHighlights[]` → bio YAML `impact_highlights[]`
+- `resume.yaml` `about` remains host-read by `bio_yaml.py` (not emitted by VAX bio mode)
+
 ---
 
 ## Shared session utilities (`scripts/simh_session.py`)
@@ -182,6 +188,6 @@ Stage A (pdp11_pexpect.py):
   PDP-11 2.11BSD ← pexpect → brad.1.uu injected, uudecode, nroff
   brad.man.txt captured by host
           ↓
-Host emits brad.man.txt, brad.bio.txt, build.log.txt as base64 markers
+Host emits brad.man.txt, brad.bio.txt, build.log.html as base64 markers
 GitHub Actions extracts artifacts → bio_yaml.py → bio.yaml → Hugo build
 ```

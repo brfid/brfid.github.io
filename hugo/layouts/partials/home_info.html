@@ -3,15 +3,29 @@
 <article class="first-entry home-info">
     <header class="entry-header">
         <h1>{{ $bio.name }}</h1>
-        {{- with (or $bio.label $resume.tagline) }}<p class="bio-label">{{ . }}</p>{{ end }}
+        {{- with (or $bio.principal_headline $bio.label $resume.tagline) }}<p class="bio-role">{{ . }}</p>{{ end }}
     </header>
     <div class="entry-content">
-        {{- with $bio.summary }}<p>{{ . }}</p>{{ end }}
+        {{- with (or $bio.about $bio.summary) }}<p class="bio-summary">{{ . }}</p>{{ end }}
+
+        <p class="bio-actions">
+            <a class="bio-action bio-action-primary" href="/portfolio/">View Portfolio</a>
+            <a class="bio-action bio-action-secondary" href="/resume/">View Resume</a>
+            {{- with $bio.email }}<a class="bio-action bio-action-tertiary" href="mailto:{{ . }}">Contact</a>{{ end }}
+        </p>
+
+        {{- with $bio.impact_highlights }}
+        <ul class="bio-proof-strip">
+            {{- range first 3 . }}
+            <li>{{ . }}</li>
+            {{- end }}
+        </ul>
+        {{- end }}
     </div>
     <footer class="entry-footer">
         {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}
         {{- if $bio.build_log }}
-        <p class="bio-provenance">Bio generated from <a href="https://github.com/brfid/brfid.github.io/blob/main/resume.yaml">resume.yaml</a> on a VAX 11/780 (4.3BSD) and typeset on a PDP-11 (2.11BSD) via SIMH{{ with $bio.build_id }} · <a href="/build.log.html">{{ . }}</a>{{ end }} · <a href="https://github.com/brfid/brfid.github.io">source</a></p>
+        <p class="bio-provenance">Homepage profile data generated from <a href="https://github.com/brfid/brfid.github.io/blob/main/resume.yaml">resume.yaml</a> through the VAX/PDP-11 pipeline{{ with $bio.build_id }} · <a href="/build.log.html">{{ . }}</a>{{ end }} · <a href="https://github.com/brfid/brfid.github.io">source</a></p>
         {{- end }}
     </footer>
 </article>
