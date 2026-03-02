@@ -1,7 +1,6 @@
 """Data models for ARPANET logging."""
 
 from dataclasses import dataclass, field, asdict
-from datetime import datetime
 from typing import Dict, List, Optional, Any
 import json
 

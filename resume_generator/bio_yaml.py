@@ -48,6 +48,34 @@ class BioData(TypedDict, total=False):
     build_id: str
 
 
+def _is_contact_line(line: str) -> bool:
+    """Return True if *line* looks like a contact-info line (email or URL)."""
+    stripped = line.strip()
+    return bool(stripped) and (
+        "@" in stripped
+        or stripped.startswith("http://")
+        or stripped.startswith("https://")
+    )
+
+
+def _split_paragraphs(lines: list[str]) -> list[list[str]]:
+    """Partition *lines* into paragraphs separated by blank lines.
+
+    Returns a list of non-empty groups; leading/trailing blank lines are ignored.
+    """
+    paragraphs: list[list[str]] = []
+    current: list[str] = []
+    for line in lines:
+        if line.strip():
+            current.append(line)
+        elif current:
+            paragraphs.append(current)
+            current = []
+    if current:
+        paragraphs.append(current)
+    return paragraphs
+
+
 def parse_bio_txt(text: str) -> BioData:
     """Parse brad.bio.txt content into a BioData dict.
 
@@ -61,61 +89,40 @@ def parse_bio_txt(text: str) -> BioData:
     """
     lines = text.strip().splitlines()
 
-    def _find_blank(start: int) -> int:
-        try:
-            return next(i for i, ln in enumerate(lines[start:], start=start) if not ln.strip())
-        except StopIteration:
-            return len(lines)
-
-    name = lines[0] if len(lines) > 0 else ""
+    name = lines[0] if lines else ""
     label = lines[1] if len(lines) > 1 else ""
+
+    # Detect the optional principal_headline (new-format only):
+    # line 2 must be non-blank and non-bullet; line 3 must be blank;
+    # and the first line of the body (line 4) must not already be contact info.
     principal_headline = ""
-
-    def _looks_like_contact(line: str) -> bool:
-        stripped = line.strip()
-        return bool(stripped) and ("@" in stripped or stripped.startswith("http://") or stripped.startswith("https://"))
-
-    summary_start = 2
-    next_is_not_contact = len(lines) <= 4 or not _looks_like_contact(lines[4])
+    body_start = 2
+    no_contact_follows = len(lines) <= 4 or not _is_contact_line(lines[4])
     if (
         len(lines) > 3
         and lines[2].strip()
         and not lines[2].lstrip().startswith("- ")
         and not lines[3].strip()
-        and next_is_not_contact
+        and no_contact_follows
     ):
-        # Newer bio format includes an explicit principal headline line.
-        principal_headline = lines[2]
-        summary_start = 3
+        principal_headline = lines[2].strip()
+        body_start = 4  # skip the headline and its trailing blank line
 
-    # Legacy format: summary starts immediately after header and runs until first blank.
-    # New format: header -> blank -> optional impact bullets -> blank ->
-    # summary -> blank -> contact.
-    blank1 = _find_blank(summary_start)
+    # Split the remaining body into paragraphs (groups of non-blank lines).
+    paragraphs = _split_paragraphs(lines[body_start:])
 
+    # Classify paragraphs in order: optional impact bullets → summary → contact.
     impact_highlights: list[str] = []
+    if paragraphs and all(ln.lstrip().startswith("- ") for ln in paragraphs[0]):
+        impact_highlights = [ln.lstrip()[2:].strip() for ln in paragraphs[0]]
+        paragraphs = paragraphs[1:]
+
     summary = ""
-    contact_start = blank1 + 1
-    if blank1 == summary_start:
-        second_block_start = blank1 + 1
-        blank2 = _find_blank(second_block_start)
-        second_block = [ln for ln in lines[second_block_start:blank2] if ln.strip()]
+    if paragraphs:
+        summary = " ".join(ln for ln in paragraphs[0] if ln.strip())
+        paragraphs = paragraphs[1:]
 
-        if second_block and all(ln.lstrip().startswith("- ") for ln in second_block):
-            impact_highlights = [ln.lstrip()[2:].strip() for ln in second_block]
-            summary_start2 = blank2 + 1
-            blank3 = _find_blank(summary_start2)
-            summary = " ".join(ln for ln in lines[summary_start2:blank3] if ln.strip())
-            contact_start = blank3 + 1
-        else:
-            # Backward-compatible fallback when there are no impact bullets.
-            summary = " ".join(second_block)
-            contact_start = blank2 + 1
-    else:
-        summary = " ".join(ln for ln in lines[summary_start:blank1] if ln.strip())
-        contact_start = blank1 + 1
-
-    contact = [ln for ln in lines[contact_start:] if ln.strip()]
+    contact = [ln.strip() for para in paragraphs for ln in para if ln.strip()]
 
     return BioData(
         name=name,
@@ -123,7 +130,7 @@ def parse_bio_txt(text: str) -> BioData:
         principal_headline=principal_headline,
         impact_highlights=impact_highlights,
         summary=summary,
-        email=contact[0] if len(contact) > 0 else "",
+        email=contact[0] if contact else "",
         url=contact[1] if len(contact) > 1 else "",
         linkedin=contact[2] if len(contact) > 2 else "",
     )

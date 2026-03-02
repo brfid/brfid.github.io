@@ -3,7 +3,7 @@
 try:
     import docker
 except ModuleNotFoundError:  # pragma: no cover - environment-dependent
-    docker = None  # type: ignore[assignment]
+    docker = None  # type: ignore[assignment]  # pylint: disable=invalid-name
 
 from datetime import datetime, timezone
 from typing import Optional, List
@@ -39,7 +39,7 @@ class BaseCollector:
         storage: LogStorage,
         phase: str = "phase2",
         parser: Optional[BaseParser] = None
-    ):
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         """Initialize collector.
 
         Args:
@@ -109,11 +109,13 @@ class BaseCollector:
                     # Process the line
                     self._process_line(line)
 
-                except Exception as e:
+                # Per-line errors must not kill the collector thread.
+                except Exception as e:  # pylint: disable=broad-exception-caught
                     print(f"Error processing log line from {self.component_name}: {e}")
                     continue
 
-        except Exception as exc:
+        # Docker SDK raises varied errors (APIError, ConnectionError, NotFound, etc.).
+        except Exception as exc:  # pylint: disable=broad-exception-caught
             if docker is not None and isinstance(exc, docker.errors.NotFound):
                 print(f"❌ Container {self.container_name} not found")
                 return
@@ -173,7 +175,7 @@ class BaseCollector:
             parsed=parsed
         )
 
-    def create_entry(
+    def create_entry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         timestamp: str,
         message: str,

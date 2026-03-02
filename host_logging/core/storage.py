@@ -1,8 +1,6 @@
 """Storage backend for ARPANET logs."""
 
 import json
-import os
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -81,7 +79,7 @@ class LogStorage:
 
         # Write metadata
         metadata_path = self.build_path / "metadata.json"
-        with open(metadata_path, "w") as f:
+        with open(metadata_path, "w", encoding="utf-8") as f:
             f.write(metadata.to_json())
 
         # Update index
@@ -99,7 +97,8 @@ class LogStorage:
         # Get or create file handle
         if component not in self._raw_handles:
             log_file = self.build_path / component / f"{component}.log"
-            self._raw_handles[component] = open(log_file, "a", buffering=1)  # Line buffered
+            # pylint: disable=consider-using-with  # handle kept open for streaming writes
+            self._raw_handles[component] = open(log_file, "a", buffering=1, encoding="utf-8")  # Line buffered
 
         # Write message (ensure newline)
         if not message.endswith("\n"):
@@ -117,7 +116,8 @@ class LogStorage:
         # Get or create file handle
         if component not in self._event_handles:
             events_file = self.build_path / component / "events.jsonl"
-            self._event_handles[component] = open(events_file, "a", buffering=1)
+            # pylint: disable=consider-using-with  # handle kept open for streaming writes
+            self._event_handles[component] = open(events_file, "a", buffering=1, encoding="utf-8")
 
         # Write JSON Line
         self._event_handles[component].write(entry.to_json() + "\n")
@@ -177,12 +177,12 @@ class LogStorage:
         # Write component summaries
         for component, stats in self._stats.items():
             summary_path = self.build_path / component / "summary.json"
-            with open(summary_path, "w") as f:
+            with open(summary_path, "w", encoding="utf-8") as f:
                 f.write(stats.to_json())
 
         # Update metadata with end time
         metadata_path = self.build_path / "metadata.json"
-        with open(metadata_path, "w") as f:
+        with open(metadata_path, "w", encoding="utf-8") as f:
             f.write(metadata.to_json())
 
         # Update index
@@ -199,7 +199,7 @@ class LogStorage:
         # Load existing index
         index = []
         if self.index_path.exists():
-            with open(self.index_path) as f:
+            with open(self.index_path, encoding="utf-8") as f:
                 index = json.load(f)
 
         # Remove existing entry for this build_id if present
@@ -213,7 +213,7 @@ class LogStorage:
 
         # Write index
         self.base_path.mkdir(parents=True, exist_ok=True)
-        with open(self.index_path, "w") as f:
+        with open(self.index_path, "w", encoding="utf-8") as f:
             json.dump(index, f, indent=2)
 
     def get_stats(self, component: str) -> Optional[ComponentStats]:

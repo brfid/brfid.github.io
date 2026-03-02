@@ -14,8 +14,8 @@ try:
     from host_logging.core.collector import BaseCollector
     from host_logging.collectors.vax import VAXCollector
 except ModuleNotFoundError:  # pragma: no cover - environment-dependent
-    BaseCollector = None  # type: ignore[assignment]
-    VAXCollector = None  # type: ignore[assignment]
+    BaseCollector = None  # type: ignore[assignment]  # pylint: disable=invalid-name
+    VAXCollector = None  # type: ignore[assignment]  # pylint: disable=invalid-name
 
 __all__ = [
     "LogEntry",

@@ -20,7 +20,6 @@ class BaseParser(ABC):
         Returns:
             Dictionary of parsed data, or None if not parseable
         """
-        pass
 
     @abstractmethod
     def extract_tags(self, message: str) -> List[str]:
@@ -32,7 +31,6 @@ class BaseParser(ABC):
         Returns:
             List of tags
         """
-        pass
 
     def detect_log_level(self, message: str) -> str:
         """Detect log level from message.
@@ -47,9 +45,8 @@ class BaseParser(ABC):
 
         if any(word in message_lower for word in ["error", "fail", "fatal", "panic"]):
             return "ERROR"
-        elif any(word in message_lower for word in ["warn", "warning"]):
+        if any(word in message_lower for word in ["warn", "warning"]):
             return "WARN"
-        elif any(word in message_lower for word in ["debug", "trace"]):
+        if any(word in message_lower for word in ["debug", "trace"]):
             return "DEBUG"
-        else:
-            return "INFO"
+        return "INFO"

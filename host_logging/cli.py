@@ -1,10 +1,11 @@
 """Command-line interface for ARPANET logging system."""
 
 import argparse
+import json
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-import json
 
 from host_logging.orchestrator import LogOrchestrator
 
@@ -45,7 +46,7 @@ def cmd_list(args):
         print(f"No builds found at {base_path}")
         return
 
-    with open(index_path) as f:
+    with open(index_path, encoding="utf-8") as f:
         builds = json.load(f)
 
     if not builds:
@@ -77,7 +78,7 @@ def cmd_show(args):
 
     # Load metadata
     metadata_path = build_path / "metadata.json"
-    with open(metadata_path) as f:
+    with open(metadata_path, encoding="utf-8") as f:
         metadata = json.load(f)
 
     print(f"\n{'='*80}")
@@ -98,7 +99,7 @@ def cmd_show(args):
         summary_path = component_path / "summary.json"
 
         if summary_path.exists():
-            with open(summary_path) as f:
+            with open(summary_path, encoding="utf-8") as f:
                 summary = json.load(f)
 
             print(f"\n  {component.upper()}:")
@@ -138,10 +139,9 @@ def cmd_cleanup(args):
 
     for build_dir in to_remove:
         print(f"  Removing: {build_dir.name}")
-        import shutil
         shutil.rmtree(build_dir)
 
-    print(f"\n✅ Cleanup complete")
+    print("\n✅ Cleanup complete")
 
 
 def main():

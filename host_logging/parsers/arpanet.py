@@ -174,9 +174,8 @@ class ArpanetParser(BaseParser):
 
         if re.search(r'\b(error|fail|fatal|panic|bad registers)\b', message_lower):
             return "ERROR"
-        elif re.search(r'\b(warn|warning|timeout)\b', message_lower):
+        if re.search(r'\b(warn|warning|timeout)\b', message_lower):
             return "WARNING"
-        elif re.search(r'\b(debug|trace|packet|send|recv)\b', message_lower):
+        if re.search(r'\b(debug|trace|packet|send|recv)\b', message_lower):
             return "DEBUG"
-        else:
-            return "INFO"
+        return "INFO"

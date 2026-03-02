@@ -1,11 +1,13 @@
 """Log collection orchestrator for multiple components."""
 
+import os
+import platform
+import signal
 import subprocess
+import sys
+import time
 from datetime import datetime, timezone
 from typing import List, Dict, Any
-import time
-import signal
-import sys
 
 from host_logging.core.models import BuildMetadata
 from host_logging.core.storage import LogStorage
@@ -77,10 +79,11 @@ class LogOrchestrator:
                 ["git", "rev-parse", "HEAD"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                check=False,
             )
             return result.stdout.strip()
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             return "unknown"
 
     def _get_git_branch(self) -> str:
@@ -90,17 +93,15 @@ class LogOrchestrator:
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
+                check=False,
             )
             return result.stdout.strip()
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             return "unknown"
 
     def _get_environment(self) -> Dict[str, Any]:
         """Get environment information."""
-        import platform
-        import os
-
         return {
             "hostname": platform.node(),
             "platform": platform.system(),
@@ -112,7 +113,7 @@ class LogOrchestrator:
     def start(self):
         """Initialize storage and start all collectors."""
         print(f"\n{'='*60}")
-        print(f"📝 ARPANET Logging System")
+        print("📝 ARPANET Logging System")
         print(f"{'='*60}")
         print(f"Build ID: {self.build_id}")
         print(f"Phase: {self.phase}")
@@ -152,12 +153,12 @@ class LogOrchestrator:
                 print(f"⚠️  {e}, skipping")
                 continue
 
-        print(f"\n✅ All collectors started\n")
+        print("\n✅ All collectors started\n")
 
     def stop(self):
         """Stop all collectors and finalize storage."""
         print(f"\n{'='*60}")
-        print(f"⏹️  Stopping collectors...")
+        print("⏹️  Stopping collectors...")
         print(f"{'='*60}\n")
 
         # Stop all collectors
@@ -173,7 +174,7 @@ class LogOrchestrator:
 
         # Print statistics
         print(f"\n{'='*60}")
-        print(f"📊 Collection Statistics")
+        print("📊 Collection Statistics")
         print(f"{'='*60}")
         for component in self.storage.list_components():
             stats = self.storage.get_stats(component)
@@ -209,7 +210,7 @@ class LogOrchestrator:
                 print(f"📅 Running for {duration} seconds (Ctrl-C to stop early)...\n")
                 time.sleep(duration)
             else:
-                print(f"📅 Running until interrupted (Ctrl-C to stop)...\n")
+                print("📅 Running until interrupted (Ctrl-C to stop)...\n")
                 while True:
                     time.sleep(1)
 
