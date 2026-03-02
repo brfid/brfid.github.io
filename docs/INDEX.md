@@ -17,7 +17,7 @@ Then apply `../AGENTS.md` constraints.
 - `../resume.yaml` — canonical resume source
 - `../CHANGELOG.md` — project history and current state
 - `../ARCHITECTURE.md` — pipeline design and data contracts
-- `../WORKFLOWS.md` — CI/test/publish behavior
+- `../WORKFLOWS.md` — CI/test/publish behavior (including `build-images.yml` image cache workflow)
 
 ### Vintage pipeline
 

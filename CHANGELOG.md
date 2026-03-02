@@ -51,6 +51,16 @@ semantic version tags.
   Static fallback in repo for local dev / fast builds. `home_info.html` override
   renders name, label, summary, and provenance line (VAX/PDP-11 attribution +
   build_id + "pipeline log" link) from `site.Data.bio`.
+- **2026-03-02:** Architectural improvements CI-validated (`publish-vintage-20260302-014603`,
+  all steps green): `scripts/simh_session.py` (shared `make_logger`, `validate_uu_spool`,
+  `inject_batched_heredoc`); `resume_generator/bio_yaml.py` (bio parser extracted from
+  deploy.yml inline Python); both pexpect scripts import `simh_session`; UUE validation
+  before PDP-11 injection; SIMH SHA pin in both Dockerfiles;
+  `.github/workflows/build-images.yml` (separate image build workflow with GHA cache).
+  150 tests pass. Docs updated (ARCHITECTURE.md, WORKFLOWS.md, PEXPECT-PIPELINE-SPEC.md,
+  DEAD-ENDS.md, docs/vax/README.md, docs/INDEX.md). Archive pruned: ~40 stale files
+  removed (docker-compose, PDP-10 Dockerfiles, test/expect scripts, pycache,
+  docs/legacy/); IMP/Chaosnet restart kit retained.
 
 ## [2026-02-28]
 
