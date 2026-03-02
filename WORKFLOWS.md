@@ -9,7 +9,7 @@ Current workflow map for `.github/workflows/`.
   - `ruff check resume_generator`
   - `mypy resume_generator host_logging tests`
   - `pytest -q -m "unit and not docker and not slow"`
-  - `pylint resume_generator -sn`
+  - `pylint resume_generator host_logging -sn`
   - `vulture --config pyproject.toml resume_generator`
 
 ## `test.yml`

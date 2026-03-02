@@ -32,7 +32,7 @@ semantic version tags.
 - None.
 
 ### Recently Completed
-- **2026-03-02:** Raised enforced lint line length to 120 and wrapped the remaining offending `bio_yaml.py` comment line that was failing quality checks.
+- **2026-03-02:** Code quality pass across `resume_generator` and `host_logging`: refactored `bio_yaml.parse_bio_txt` from a position-arithmetic state machine into a paragraph-classifier (two module-level helpers, clearer data flow); fixed all pylint violations in `host_logging` (unused imports, missing `encoding=` on `open()`, naked f-strings, buried imports, `elif`-after-`return`, `pass` in ABCs, broad-except narrowed or documented, `subprocess.run` missing `check=`); extended CI pylint scope to cover `host_logging` in both `ci.yml` and `test.yml`.
 - **2026-03-02:** Simplified Hugo homepage information density for hiring-chain readability while retaining vintage/resume.yaml sourcing (`home_info.html` + homepage CSS updates).
 - **2026-03-02:** Added principal homepage hierarchy path through vintage pipeline (`principalHeadline`/`impactHighlights` in vintage YAML, `brad.bio.txt` emission+parse, Hugo landing rendering, and tests).
 - **2026-03-02:** Single vintage-only mode, `about` from `resume.yaml`, docs updated — see `[2026-03-02]` dated entry.

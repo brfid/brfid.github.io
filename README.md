@@ -64,6 +64,7 @@ python3 -m venv .venv
 .venv/bin/python -m pytest -q
 .venv/bin/python -m mypy resume_generator host_logging tests
 .venv/bin/python -m ruff check resume_generator
+.venv/bin/python -m pylint resume_generator host_logging -sn
 ```
 
 **Publish:** push a `publish-*` tag → CI does a minimal bootstrap:
