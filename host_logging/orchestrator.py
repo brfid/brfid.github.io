@@ -6,14 +6,15 @@ import signal
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
-from typing import List, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
 from host_logging.core.models import BuildMetadata
 from host_logging.core.storage import LogStorage
 
 try:
     from host_logging.collectors import get_collector_class
+
     COLLECTORS_AVAILABLE = True
 except ModuleNotFoundError:  # pragma: no cover - environment-dependent
     COLLECTORS_AVAILABLE = False
@@ -29,14 +30,10 @@ class LogOrchestrator:
     @staticmethod
     def _utc_now_isoz() -> str:
         """Return a UTC ISO-8601 timestamp with trailing Z."""
-        return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     def __init__(
-        self,
-        build_id: str,
-        components: List[str],
-        phase: str = "phase2",
-        base_path: str = "/mnt/arpanet-logs"
+        self, build_id: str, components: list[str], phase: str = "phase2", base_path: str = "/mnt/arpanet-logs"
     ):
         """Initialize orchestrator.
 
@@ -55,7 +52,7 @@ class LogOrchestrator:
         self.storage = LogStorage(build_id, base_path)
 
         # Collectors
-        self.collectors: List = []
+        self.collectors: list = []
 
         # Metadata
         self.metadata = BuildMetadata(
@@ -65,7 +62,7 @@ class LogOrchestrator:
             components=components,
             git_commit=self._get_git_commit(),
             git_branch=self._get_git_branch(),
-            environment=self._get_environment()
+            environment=self._get_environment(),
         )
 
         # Setup signal handlers for graceful shutdown
@@ -100,7 +97,7 @@ class LogOrchestrator:
         except (OSError, subprocess.SubprocessError):
             return "unknown"
 
-    def _get_environment(self) -> Dict[str, Any]:
+    def _get_environment(self) -> dict[str, Any]:
         """Get environment information."""
         return {
             "hostname": platform.node(),
@@ -112,14 +109,14 @@ class LogOrchestrator:
 
     def start(self):
         """Initialize storage and start all collectors."""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("📝 ARPANET Logging System")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Build ID: {self.build_id}")
         print(f"Phase: {self.phase}")
         print(f"Components: {', '.join(self.components)}")
         print(f"Storage: {self.storage.build_path}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
         # Initialize storage
         self.storage.initialize(self.metadata)
@@ -137,10 +134,7 @@ class LogOrchestrator:
                 # Get collector class from registry
                 collector_class = get_collector_class(component)
                 collector = collector_class(
-                    build_id=self.build_id,
-                    container_name=container_name,
-                    storage=self.storage,
-                    phase=self.phase
+                    build_id=self.build_id, container_name=container_name, storage=self.storage, phase=self.phase
                 )
                 # Override component name for multi-instance components
                 collector.component_name = component
@@ -157,9 +151,9 @@ class LogOrchestrator:
 
     def stop(self):
         """Stop all collectors and finalize storage."""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("⏹️  Stopping collectors...")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
         # Stop all collectors
         for collector in self.collectors:
@@ -173,9 +167,9 @@ class LogOrchestrator:
         self.storage.finalize(self.metadata)
 
         # Print statistics
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("📊 Collection Statistics")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         for component in self.storage.list_components():
             stats = self.storage.get_stats(component)
             if stats:
@@ -187,9 +181,9 @@ class LogOrchestrator:
                     top_tags = sorted(stats.tags.items(), key=lambda x: x[1], reverse=True)[:5]
                     print(f"  Top tags: {', '.join(f'{tag}({count})' for tag, count in top_tags)}")
 
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"✅ Logs saved to: {self.storage.build_path}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
     def _signal_handler(self, signum, _frame):
         """Handle shutdown signals gracefully."""

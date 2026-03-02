@@ -1,8 +1,8 @@
 """Core logging infrastructure."""
 
-from host_logging.core.models import LogEntry, BuildMetadata
-from host_logging.core.storage import LogStorage
+from host_logging.core.models import BuildMetadata, LogEntry
 from host_logging.core.parser import BaseParser
+from host_logging.core.storage import LogStorage
 
 try:
     from host_logging.core.collector import BaseCollector

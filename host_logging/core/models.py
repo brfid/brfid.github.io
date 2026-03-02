@@ -1,8 +1,8 @@
 """Data models for ARPANET logging."""
 
-from dataclasses import dataclass, field, asdict
-from typing import Dict, List, Optional, Any
 import json
+from dataclasses import asdict, dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -28,10 +28,10 @@ class LogEntry:
     log_level: str
     source: str
     message: str
-    parsed: Dict[str, Any] = field(default_factory=dict)
-    tags: List[str] = field(default_factory=list)
+    parsed: dict[str, Any] = field(default_factory=dict)
+    tags: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -40,7 +40,7 @@ class LogEntry:
         return json.dumps(self.to_dict())
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LogEntry":
+    def from_dict(cls, data: dict[str, Any]) -> "LogEntry":
         """Create from dictionary."""
         return cls(**data)
 
@@ -65,15 +65,15 @@ class BuildMetadata:
     build_id: str
     phase: str
     start_time: str  # ISO 8601
-    end_time: Optional[str] = None  # ISO 8601
-    components: List[str] = field(default_factory=list)
-    git_commit: Optional[str] = None
-    git_branch: Optional[str] = None
-    environment: Dict[str, Any] = field(default_factory=dict)
+    end_time: str | None = None  # ISO 8601
+    components: list[str] = field(default_factory=list)
+    git_commit: str | None = None
+    git_branch: str | None = None
+    environment: dict[str, Any] = field(default_factory=dict)
     status: str = "running"
     notes: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -82,7 +82,7 @@ class BuildMetadata:
         return json.dumps(self.to_dict(), indent=indent)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BuildMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> "BuildMetadata":
         """Create from dictionary."""
         return cls(**data)
 
@@ -104,14 +104,14 @@ class ComponentStats:
 
     component: str
     total_lines: int = 0
-    log_levels: Dict[str, int] = field(default_factory=dict)
-    tags: Dict[str, int] = field(default_factory=dict)
-    first_timestamp: Optional[str] = None
-    last_timestamp: Optional[str] = None
+    log_levels: dict[str, int] = field(default_factory=dict)
+    tags: dict[str, int] = field(default_factory=dict)
+    first_timestamp: str | None = None
+    last_timestamp: str | None = None
     errors: int = 0
     warnings: int = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 

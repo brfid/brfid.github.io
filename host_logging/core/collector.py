@@ -5,13 +5,12 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - environment-dependent
     docker = None  # type: ignore[assignment]  # pylint: disable=invalid-name
 
-from datetime import datetime, timezone
-from typing import Optional, List
 import threading
+from datetime import UTC, datetime
 
 from host_logging.core.models import LogEntry
-from host_logging.core.storage import LogStorage
 from host_logging.core.parser import BaseParser
+from host_logging.core.storage import LogStorage
 
 
 class BaseCollector:
@@ -24,7 +23,7 @@ class BaseCollector:
     @staticmethod
     def _utc_now_isoz() -> str:
         """Return a UTC ISO-8601 timestamp with trailing Z."""
-        return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     # Component name (override in subclass)
     component_name: str = "unknown"
@@ -38,7 +37,7 @@ class BaseCollector:
         container_name: str,
         storage: LogStorage,
         phase: str = "phase2",
-        parser: Optional[BaseParser] = None
+        parser: BaseParser | None = None,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         """Initialize collector.
 
@@ -57,7 +56,7 @@ class BaseCollector:
 
         self.docker_client = docker.from_env() if docker is not None else None
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
 
     def start(self):
         """Start collecting logs in background thread."""
@@ -66,11 +65,7 @@ class BaseCollector:
             return
 
         self.running = True
-        self.thread = threading.Thread(
-            target=self._collect_loop,
-            daemon=True,
-            name=f"collector-{self.component_name}"
-        )
+        self.thread = threading.Thread(target=self._collect_loop, daemon=True, name=f"collector-{self.component_name}")
         self.thread.start()
         print(f"🔄 {self.component_name.upper()} collector started")
 
@@ -94,17 +89,13 @@ class BaseCollector:
             container = self.docker_client.containers.get(self.container_name)
 
             # Stream logs in real-time
-            for log_line in container.logs(
-                stream=True,
-                follow=True,
-                timestamps=True
-            ):
+            for log_line in container.logs(stream=True, follow=True, timestamps=True):
                 if not self.running:
                     break
 
                 try:
                     # Decode log line
-                    line = log_line.decode('utf-8', errors='replace').rstrip()
+                    line = log_line.decode("utf-8", errors="replace").rstrip()
 
                     # Process the line
                     self._process_line(line)
@@ -129,8 +120,8 @@ class BaseCollector:
         """
         # Parse Docker timestamp format: "2026-02-07T22:30:15.123456789Z message"
         try:
-            if ' ' in line:
-                timestamp_str, message = line.split(' ', 1)
+            if " " in line:
+                timestamp_str, message = line.split(" ", 1)
             else:
                 timestamp_str = self._utc_now_isoz()
                 message = line
@@ -148,7 +139,7 @@ class BaseCollector:
             # Write structured event
             self.storage.write_event(entry)
 
-    def parse_line(self, timestamp: str, message: str) -> Optional[LogEntry]:
+    def parse_line(self, timestamp: str, message: str) -> LogEntry | None:
         """Parse a log line into a structured entry.
 
         Default implementation uses the collector's parser if available.
@@ -167,21 +158,15 @@ class BaseCollector:
         log_level = self.parser.detect_log_level(message) if self.parser else "INFO"
 
         # Create entry
-        return self.create_entry(
-            timestamp=timestamp,
-            message=message,
-            log_level=log_level,
-            tags=tags,
-            parsed=parsed
-        )
+        return self.create_entry(timestamp=timestamp, message=message, log_level=log_level, tags=tags, parsed=parsed)
 
     def create_entry(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         timestamp: str,
         message: str,
         log_level: str = "INFO",
-        tags: Optional[List[str]] = None,
-        parsed: Optional[dict] = None
+        tags: list[str] | None = None,
+        parsed: dict | None = None,
     ) -> LogEntry:
         """Helper to create a LogEntry with common fields filled in.
 
@@ -204,5 +189,5 @@ class BaseCollector:
             source=self.log_source,
             message=message,
             parsed=parsed or {},
-            tags=tags or []
+            tags=tags or [],
         )

@@ -2,9 +2,9 @@
 
 import json
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 
-from host_logging.core.models import LogEntry, BuildMetadata, ComponentStats
+from host_logging.core.models import BuildMetadata, ComponentStats, LogEntry
 
 
 class LogStorage:
@@ -30,12 +30,7 @@ class LogStorage:
                     └── summary.json
     """
 
-    def __init__(
-        self,
-        build_id: str,
-        base_path: str = "/mnt/arpanet-logs",
-        local_fallback: bool = True
-    ):
+    def __init__(self, build_id: str, base_path: str = "/mnt/arpanet-logs", local_fallback: bool = True):
         """Initialize storage.
 
         Args:
@@ -55,11 +50,11 @@ class LogStorage:
         self.index_path = self.base_path / "index.json"
 
         # Component log files (open handles)
-        self._raw_handles: Dict[str, Any] = {}
-        self._event_handles: Dict[str, Any] = {}
+        self._raw_handles: dict[str, Any] = {}
+        self._event_handles: dict[str, Any] = {}
 
         # Statistics trackers
-        self._stats: Dict[str, ComponentStats] = {}
+        self._stats: dict[str, ComponentStats] = {}
 
     def initialize(self, metadata: BuildMetadata):
         """Initialize storage structure for a new build.
@@ -216,7 +211,7 @@ class LogStorage:
         with open(self.index_path, "w", encoding="utf-8") as f:
             json.dump(index, f, indent=2)
 
-    def get_stats(self, component: str) -> Optional[ComponentStats]:
+    def get_stats(self, component: str) -> ComponentStats | None:
         """Get current statistics for a component.
 
         Args:
@@ -227,7 +222,7 @@ class LogStorage:
         """
         return self._stats.get(component)
 
-    def list_components(self) -> List[str]:
+    def list_components(self) -> list[str]:
         """List components being logged in this build.
 
         Returns:

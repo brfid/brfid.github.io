@@ -4,7 +4,7 @@ import argparse
 import json
 import shutil
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from host_logging.orchestrator import LogOrchestrator
@@ -16,7 +16,7 @@ def generate_build_id() -> str:
     Returns:
         Build ID string (e.g., "build-20260207-221530")
     """
-    return datetime.now(timezone.utc).strftime("build-%Y%m%d-%H%M%S")
+    return datetime.now(UTC).strftime("build-%Y%m%d-%H%M%S")
 
 
 def cmd_collect(args):
@@ -27,10 +27,7 @@ def cmd_collect(args):
 
     # Create orchestrator
     orchestrator = LogOrchestrator(
-        build_id=args.build_id,
-        components=args.components,
-        phase=args.phase,
-        base_path=args.path
+        build_id=args.build_id, components=args.components, phase=args.phase, base_path=args.path
     )
 
     # Run collection
@@ -53,11 +50,11 @@ def cmd_list(args):
         print("No builds found")
         return
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"Available Builds ({len(builds)} total)")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
-    for build in builds[:args.limit]:
+    for build in builds[: args.limit]:
         print(f"Build ID: {build['build_id']}")
         print(f"  Phase: {build['phase']}")
         print(f"  Start: {build['start_time']}")
@@ -81,9 +78,9 @@ def cmd_show(args):
     with open(metadata_path, encoding="utf-8") as f:
         metadata = json.load(f)
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * 80}")
     print(f"Build: {metadata['build_id']}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * 80}\n")
 
     print(f"Phase: {metadata['phase']}")
     print(f"Start Time: {metadata['start_time']}")
@@ -94,7 +91,7 @@ def cmd_show(args):
     print()
 
     print("Components:")
-    for component in metadata['components']:
+    for component in metadata["components"]:
         component_path = build_path / component
         summary_path = component_path / "summary.json"
 
@@ -109,8 +106,8 @@ def cmd_show(args):
             print(f"    First log: {summary.get('first_timestamp', 'N/A')}")
             print(f"    Last log: {summary.get('last_timestamp', 'N/A')}")
 
-            if summary.get('tags'):
-                top_tags = sorted(summary['tags'].items(), key=lambda x: x[1], reverse=True)[:5]
+            if summary.get("tags"):
+                top_tags = sorted(summary["tags"].items(), key=lambda x: x[1], reverse=True)[:5]
                 print(f"    Top tags: {', '.join(f'{tag}({count})' for tag, count in top_tags)}")
 
     print(f"\nPath: {build_path}")
@@ -134,7 +131,7 @@ def cmd_cleanup(args):
         return
 
     # Remove old builds
-    to_remove = builds[args.keep:]
+    to_remove = builds[args.keep :]
     print(f"Removing {len(to_remove)} old build(s)...\n")
 
     for build_dir in to_remove:
@@ -165,49 +162,31 @@ Examples:
 
   # Clean up old builds (keep last 20)
   python -m host_logging cleanup --keep 20
-        """
+        """,
     )
 
     parser.add_argument(
-        "--path",
-        default="/mnt/arpanet-logs",
-        help="Base path for log storage (default: /mnt/arpanet-logs)"
+        "--path", default="/mnt/arpanet-logs", help="Base path for log storage (default: /mnt/arpanet-logs)"
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # collect command
     collect_parser = subparsers.add_parser("collect", help="Collect logs from components")
-    collect_parser.add_argument(
-        "--build-id",
-        help="Build ID (auto-generated if not provided)"
-    )
+    collect_parser.add_argument("--build-id", help="Build ID (auto-generated if not provided)")
     collect_parser.add_argument(
         "--components",
         nargs="+",
         default=["vax"],
         choices=["vax", "imp1", "imp2", "pdp10"],
-        help="Components to collect from"
+        help="Components to collect from",
     )
-    collect_parser.add_argument(
-        "--phase",
-        default="phase2",
-        help="Testing phase"
-    )
-    collect_parser.add_argument(
-        "--duration",
-        type=int,
-        help="Duration in seconds (omit to run until interrupted)"
-    )
+    collect_parser.add_argument("--phase", default="phase2", help="Testing phase")
+    collect_parser.add_argument("--duration", type=int, help="Duration in seconds (omit to run until interrupted)")
 
     # list command
     list_parser = subparsers.add_parser("list", help="List available builds")
-    list_parser.add_argument(
-        "--limit",
-        type=int,
-        default=20,
-        help="Number of builds to show"
-    )
+    list_parser.add_argument("--limit", type=int, default=20, help="Number of builds to show")
 
     # show command
     show_parser = subparsers.add_parser("show", help="Show build details")
@@ -215,12 +194,7 @@ Examples:
 
     # cleanup command
     cleanup_parser = subparsers.add_parser("cleanup", help="Clean up old builds")
-    cleanup_parser.add_argument(
-        "--keep",
-        type=int,
-        default=20,
-        help="Number of recent builds to keep"
-    )
+    cleanup_parser.add_argument("--keep", type=int, default=20, help="Number of recent builds to keep")
 
     args = parser.parse_args()
 

@@ -1,7 +1,7 @@
 """Base parser interface for log parsing."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, List
+from typing import Any
 
 
 class BaseParser(ABC):
@@ -11,7 +11,7 @@ class BaseParser(ABC):
     """
 
     @abstractmethod
-    def parse(self, message: str) -> Optional[Dict[str, Any]]:
+    def parse(self, message: str) -> dict[str, Any] | None:
         """Parse a log message.
 
         Args:
@@ -22,7 +22,7 @@ class BaseParser(ABC):
         """
 
     @abstractmethod
-    def extract_tags(self, message: str) -> List[str]:
+    def extract_tags(self, message: str) -> list[str]:
         """Extract tags/categories from a log message.
 
         Args:

@@ -51,11 +51,7 @@ class BioData(TypedDict, total=False):
 def _is_contact_line(line: str) -> bool:
     """Return True if *line* looks like a contact-info line (email or URL)."""
     stripped = line.strip()
-    return bool(stripped) and (
-        "@" in stripped
-        or stripped.startswith("http://")
-        or stripped.startswith("https://")
-    )
+    return bool(stripped) and ("@" in stripped or stripped.startswith("http://") or stripped.startswith("https://"))
 
 
 def _split_paragraphs(lines: list[str]) -> list[list[str]]:
