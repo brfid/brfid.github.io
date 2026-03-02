@@ -74,7 +74,7 @@ Vintage mode control plane (GitHub Actions):
 4. Extract artifacts from SSM output markers:
    - `brad.man.txt` → `hugo/static/brad.man.txt`
    - `brad.bio.txt` → `hugo/static/brad.bio.txt` (best-effort)
-   - `build.log.txt` → `hugo/static/build.log.txt` (best-effort)
+   - `build.log.html` → `hugo/static/build.log.html` (best-effort)
 5. Generate bio data for Hugo: parse `brad.bio.txt` + build log header → `hugo/data/bio.yaml`
 6. Best-effort stop edcloud if this workflow started it
 7. Build/deploy Hugo as normal

@@ -9,21 +9,11 @@ semantic version tags.
 ## [Unreleased]
 
 ### Current State
-- Hugo is the site generator (`hugo/`); the vintage pipeline (VAX/PDP-11 via SIMH)
-  is an on-demand artifact generator — it feeds `hugo/static/brad.man.txt`,
-  `hugo/static/brad.bio.txt`, `hugo/static/build.log.txt`, and `hugo/data/bio.yaml`.
-- **Pexpect pipeline CI-VALIDATED end-to-end (2026-02-28, tag `publish-vintage-20260228-203550`).**
-  Stage B (VAX) → Stage A (PDP-11) → `brad.man.txt` → Hugo build → GitHub Pages deploy.
-  All steps green; site live at www.jockeyholler.net.
-- **Architecture decision (2026-02-28):** screen/telnet/sleep orchestration retired;
-  pexpect is the permanent replacement.
-- **PDP-11 networking constraint (permanent):** The `unix` kernel has no working
-  Ethernet. File transfer between stages is host-mediated.
-- Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`
-  → `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`.
-- **GitHub Pages source set to GitHub Actions (2026-02-28).** Pages previously
-  reverted to legacy (Jekyll) mode when repo was made private; corrected by
-  switching source to GitHub Actions in repo Settings → Pages UI.
+- Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) is stable and produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
+- Site live at www.jockeyholler.net. Pipeline last validated: `publish-vintage-20260302-151109`.
+- `hugo/data/bio.yaml` three-field model: `label` and `summary` are pipeline-generated (from `brad.bio.txt`); `about` is repo-maintained and carried forward by `bio_yaml.py` on every vintage deploy — never overwritten. Landing page renders `about`; resume page and PDF render `summary`.
+- **PDP-11 networking (permanent constraint):** `unix` kernel has no Ethernet; inter-stage file transfer is host-mediated.
+- Cold-start doc order: `README.md` → this file → `docs/integration/INDEX.md`.
 
 ### Active Priorities
 - None.
@@ -38,29 +28,33 @@ semantic version tags.
 - None.
 
 ### Recently Completed
-- **2026-03-01:** UUCP framing (VAX uuencodes `brad.1` itself; host routes spool;
-  PDP-11 decodes), ASCII conversion moved to `resume_generator/normalize.py`,
-  deprecated `uu` module replaced with `binascii.b2a_uu`. CI-validated
-  (`publish-vintage-20260301-192822`).
-- **2026-03-01:** Bio mode (`-mode bio` in `bradman.c`), UTC timestamps on all
-  pexpect `_log()` calls, machine-boundary build log, bio/log artifact extraction
-  in `deploy.yml`. CI-validated (`publish-vintage-20260301-194153`).
-- **2026-03-01:** Bio wired into Hugo landing page via `hugo/data/bio.yaml`.
-  Pipeline parses `brad.bio.txt` → `bio.yaml` with `build_id` (from build.log.txt
-  header) in "Generate bio data for Hugo" step (deploy.yml, vintage mode only).
-  Static fallback in repo for local dev / fast builds. `home_info.html` override
-  renders name, label, summary, and provenance line (VAX/PDP-11 attribution +
-  build_id + "pipeline log" link) from `site.Data.bio`.
-- **2026-03-02:** Architectural improvements CI-validated (`publish-vintage-20260302-014603`,
-  all steps green): `scripts/simh_session.py` (shared `make_logger`, `validate_uu_spool`,
-  `inject_batched_heredoc`); `resume_generator/bio_yaml.py` (bio parser extracted from
-  deploy.yml inline Python); both pexpect scripts import `simh_session`; UUE validation
-  before PDP-11 injection; SIMH SHA pin in both Dockerfiles;
-  `.github/workflows/build-images.yml` (separate image build workflow with GHA cache).
-  150 tests pass. Docs updated (ARCHITECTURE.md, WORKFLOWS.md, PEXPECT-PIPELINE-SPEC.md,
-  DEAD-ENDS.md, docs/vax/README.md, docs/INDEX.md). Archive pruned: ~40 stale files
-  removed (docker-compose, PDP-10 Dockerfiles, test/expect scripts, pycache,
-  docs/legacy/); IMP/Chaosnet restart kit retained.
+- **2026-03-02:** Portfolio/resume improvements and pipeline docs — see `[2026-03-02]` dated entry.
+
+## [2026-03-02]
+
+### Added
+- `hugo/data/bio.yaml` `about` field: pipeline-agnostic landing-page narrative paragraph; `bio_yaml.py` carries it forward on vintage deploys.
+- `home_info.html` renders `$bio.about` on landing page (`summary` retained for resume page and PDF).
+- DomainTools role: sole-TW scope added as first highlight bullet.
+- 8 new tests for `bio_yaml` `about` field (read, write, carry-forward). 157 tests total.
+
+### Changed
+- `resume.yaml` tagline and `basics.label`: "Technical Writer" → "Principal Technical Writer" throughout.
+- All prose strings in `resume.yaml` unwrapped to single lines (IDE word-wrap; YAML values unchanged).
+- `portfolio.yaml` jockeyholler.net entry: `status: in-progress` → `live`; summary updated.
+- `ARCHITECTURE.md`: document `about` field and `bio_yaml.py` carry-forward behavior.
+- `README.md`: vintage pipeline section lists all four artifacts with descriptions.
+- `scripts/simh_session.py` (shared session utilities), `resume_generator/bio_yaml.py` (bio parser extracted), UUE validation, SIMH SHA pin, `.github/workflows/build-images.yml` (GHA image cache), HTML build log with `<details>` console sections. 150 → 157 tests.
+
+## [2026-03-01]
+
+### Added
+- Bio mode: `bradman.c -mode bio` emits `brad.bio.txt` (name, label, summary, contact block); `bio_yaml.py` parses it into `hugo/data/bio.yaml` with `build_id` from `build.log.html`.
+- Landing page bio: `home_info.html` renders name, label, summary, and pipeline provenance line from `site.Data.bio`; static fallback in repo for fast builds.
+- Machine-boundary build log emitted by runner; extracted to `hugo/static/build.log.html` by CI.
+
+### Changed
+- UUCP framing: VAX uuencodes `brad.1` itself; host routes spool to PDP-11; PDP-11 `uudecode`s. ASCII conversion in `resume_generator/normalize.py`; `binascii.b2a_uu` replaces deprecated `uu` module.
 
 ## [2026-02-28]
 

@@ -31,6 +31,7 @@ class BioData(TypedDict, total=False):
     name: str
     label: str
     summary: str
+    about: str
     email: str
     url: str
     linkedin: str
@@ -60,7 +61,7 @@ def parse_bio_txt(text: str) -> BioData:
         blank1 = len(lines)
 
     summary = " ".join(ln for ln in lines[2:blank1] if ln.strip())
-    contact = [ln for ln in lines[blank1 + 1:] if ln.strip()]
+    contact = [ln for ln in lines[blank1 + 1 :] if ln.strip()]
 
     return BioData(
         name=name,
@@ -72,14 +73,53 @@ def parse_bio_txt(text: str) -> BioData:
     )
 
 
+def _read_about_from_yaml(text: str) -> str:
+    """Extract the 'about' field from an existing bio.yaml.
+
+    Handles both block scalar (>-) and quoted string forms so the field
+    survives a round-trip whether bio.yaml was hand-edited or written by
+    bio_to_yaml.
+
+    Args:
+        text: Contents of an existing bio.yaml file.
+
+    Returns:
+        The about value as a plain string, or empty string if absent.
+    """
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if not line.startswith("about:"):
+            continue
+        val = line[len("about:") :].strip()
+        if val in (">-", ">"):
+            # Block scalar: collect all indented continuation lines.
+            block_lines: list[str] = []
+            for j in range(i + 1, len(lines)):
+                bl = lines[j]
+                if bl and not bl[0].isspace():
+                    break  # next key starts
+                stripped = bl.strip()
+                if stripped:
+                    block_lines.append(stripped)
+            return " ".join(block_lines)
+        if val.startswith('"') or val.startswith("'"):
+            try:
+                return str(json.loads(val))
+            except Exception:
+                return val.strip("\"'")
+        return val
+    return ""
+
+
 def bio_to_yaml(data: BioData) -> str:
     """Serialise a BioData dict to YAML text for hugo/data/bio.yaml.
 
     Uses json.dumps for quoting (safe superset of YAML scalar quoting for
-    simple strings; avoids a PyYAML dependency).
+    simple strings; avoids a PyYAML dependency). The optional ``about``
+    field is emitted as a >- block scalar so it is readable when hand-edited.
 
     Args:
-        data: BioData dict, may include optional build_log / build_id fields.
+        data: BioData dict, may include optional about / build_log / build_id.
 
     Returns:
         YAML string.
@@ -88,6 +128,10 @@ def bio_to_yaml(data: BioData) -> str:
         f"name: {json.dumps(data.get('name', ''))}",
         f"label: {json.dumps(data.get('label', ''))}",
         f"summary: {json.dumps(data.get('summary', ''))}",
+    ]
+    if data.get("about"):
+        lines.append(f"about: >-\n  {data['about']}")
+    lines += [
         f"email: {json.dumps(data.get('email', ''))}",
         f"url: {json.dumps(data.get('url', ''))}",
         f"linkedin: {json.dumps(data.get('linkedin', ''))}",
@@ -146,6 +190,15 @@ def main(argv: list[str] | None = None) -> int:
 
     text = src.read_text(encoding="utf-8")
     data = parse_bio_txt(text)
+
+    # Carry forward pipeline-agnostic fields (e.g. 'about') from the
+    # existing dst so they survive vintage deploys.
+    if dst.exists():
+        existing = dst.read_text(encoding="utf-8")
+        about = _read_about_from_yaml(existing)
+        if about:
+            data["about"] = about
+
     data["build_log"] = True
     build_id = _read_build_id(build_log)
     if build_id:

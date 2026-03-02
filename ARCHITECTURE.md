@@ -7,7 +7,7 @@ Companion docs:
 
 This repo is a Hugo-based personal site and technical writing portfolio.
 The vintage pipeline is optional and produces Hugo input artifacts: `hugo/static/brad.man.txt`,
-`hugo/static/brad.bio.txt`, `hugo/static/build.log.txt`, and `hugo/data/bio.yaml`.
+`hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
 
 ---
 
@@ -102,8 +102,8 @@ Generated (internal):
 Published input to Hugo:
 - `hugo/static/brad.man.txt`
 - `hugo/static/brad.bio.txt`
-- `hugo/static/build.log.txt`
-- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header)
+- `hugo/static/build.log.html`
+- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header; pipeline-agnostic fields such as `about` are carried forward from the existing file and never overwritten by the pipeline)
 
 Site output:
 - `site/` (gitignored, generated fresh each CI run)

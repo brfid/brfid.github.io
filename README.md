@@ -32,7 +32,13 @@ Note: `--destination` is relative to the source directory, so `../site` writes t
 
 ## Vintage pipeline (optional)
 
-Generates `brad.man.txt` — a resume rendered on VAX/PDP-11 via SIMH — and drops it into `hugo/static/` before the Hugo build.
+Generates four Hugo input artifacts and drops them into place before the Hugo build:
+
+- `hugo/static/brad.man.txt` — resume rendered by `nroff -man` on PDP-11 (2.11BSD)
+- `hugo/static/brad.bio.txt` — plain-text bio block emitted by `bradman.c -mode bio` on VAX
+- `hugo/static/build.log.html` — machine-boundary build log with VAX and PDP-11 console sections
+- `hugo/data/bio.yaml` — parsed from `brad.bio.txt`; `label` and `summary` are pipeline-generated;
+  `about` is a pipeline-agnostic field maintained in the repo and carried forward on each build
 
 The pipeline uses **pexpect** to drive SIMH emulators via stdin/stdout (no telnet ports, no sleep-based timing):
 

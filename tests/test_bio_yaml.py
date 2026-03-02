@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 import pathlib
-import tempfile
-
-import pytest
 
 from resume_generator.bio_yaml import (
     BioData,
+    _read_about_from_yaml,
     _read_build_id,
     bio_to_yaml,
     main,
@@ -29,7 +27,10 @@ https://www.linkedin.com/in/brfid/
 def test_parse_basic_fields() -> None:
     data = parse_bio_txt(SAMPLE_BIO)
     assert data["name"] == "Bradley Fidler"
-    assert data["label"] == "Principal Technical Writer -- API documentation, platform engineering, AI workflows"
+    assert (
+        data["label"]
+        == "Principal Technical Writer -- API documentation, platform engineering, AI workflows"
+    )
     assert data["summary"] == "I build documentation platforms and the tooling that powers them."
     assert data["email"] == "brfid@icloud.com"
     assert data["url"] == "https://brfid.github.io"
@@ -134,3 +135,74 @@ def test_main_missing_src(tmp_path: pathlib.Path) -> None:
 def test_main_no_args() -> None:
     rc = main([])
     assert rc == 1
+
+
+# --- about field ---
+
+
+def test_read_about_block_scalar() -> None:
+    yaml = 'name: "X"\nabout: >-\n  Most of my career has been about structure.\nemail: "x@x.com"\n'
+    assert _read_about_from_yaml(yaml) == "Most of my career has been about structure."
+
+
+def test_read_about_quoted_string() -> None:
+    yaml = 'name: "X"\nabout: "A quoted about value."\n'
+    assert _read_about_from_yaml(yaml) == "A quoted about value."
+
+
+def test_read_about_absent() -> None:
+    yaml = 'name: "X"\nlabel: "Y"\n'
+    assert _read_about_from_yaml(yaml) == ""
+
+
+def test_bio_to_yaml_with_about() -> None:
+    data: BioData = {
+        "name": "Jane Doe",
+        "label": "Writer",
+        "summary": "Summary.",
+        "about": "About paragraph.",
+        "email": "",
+        "url": "",
+        "linkedin": "",
+    }
+    yaml = bio_to_yaml(data)
+    assert "about: >-" in yaml
+    assert "About paragraph." in yaml
+
+
+def test_bio_to_yaml_no_about() -> None:
+    data: BioData = {
+        "name": "Jane",
+        "label": "L",
+        "summary": "S",
+        "email": "",
+        "url": "",
+        "linkedin": "",
+    }
+    assert "about" not in bio_to_yaml(data)
+
+
+def test_main_carries_forward_about(tmp_path: pathlib.Path) -> None:
+    src = tmp_path / "brad.bio.txt"
+    src.write_text(SAMPLE_BIO, encoding="utf-8")
+    dst = tmp_path / "bio.yaml"
+    # Pre-seed dst with an about field.
+    dst.write_text('name: "old"\nabout: >-\n  Existing about text.\n', encoding="utf-8")
+
+    rc = main([str(src), str(dst)])
+
+    assert rc == 0
+    content = dst.read_text(encoding="utf-8")
+    assert "Existing about text." in content
+    # Pipeline fields are still updated from the new bio.txt.
+    assert "Bradley Fidler" in content
+
+
+def test_main_no_existing_dst_no_about(tmp_path: pathlib.Path) -> None:
+    src = tmp_path / "brad.bio.txt"
+    src.write_text(SAMPLE_BIO, encoding="utf-8")
+    dst = tmp_path / "bio.yaml"
+    # dst does not exist — no about carried forward, no error.
+    rc = main([str(src), str(dst)])
+    assert rc == 0
+    assert "about" not in dst.read_text(encoding="utf-8")
