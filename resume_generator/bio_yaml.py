@@ -76,12 +76,13 @@ def parse_bio_txt(text: str) -> BioData:
         return bool(stripped) and ("@" in stripped or stripped.startswith("http://") or stripped.startswith("https://"))
 
     summary_start = 2
+    next_is_not_contact = len(lines) <= 4 or not _looks_like_contact(lines[4])
     if (
         len(lines) > 3
         and lines[2].strip()
         and not lines[2].lstrip().startswith("- ")
         and not lines[3].strip()
-        and (len(lines) <= 4 or not _looks_like_contact(lines[4]))
+        and next_is_not_contact
     ):
         # Newer bio format includes an explicit principal headline line.
         principal_headline = lines[2]
