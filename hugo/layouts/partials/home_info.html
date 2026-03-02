@@ -6,7 +6,7 @@
         {{- with (or $bio.label $resume.tagline) }}<p class="bio-label">{{ . }}</p>{{ end }}
     </header>
     <div class="entry-content">
-        {{- with $bio.summary }}<p>{{ . }}</p>{{ end }}
+        {{- with $bio.about }}<p>{{ . }}</p>{{ end }}
     </div>
     <footer class="entry-footer">
         {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}

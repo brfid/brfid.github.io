@@ -1,15 +1,11 @@
-tagline: "Technical Writer — API documentation, developer experience, AI workflows"
+tagline: "Principal Technical Writer — API documentation, developer experience, AI workflows"
 
 basics:
   name: Bradley Fidler
-  label: "Technical Writer — API documentation, developer experience, AI workflows"
+  label: "Principal Technical Writer — API documentation, developer experience, AI workflows"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: I build documentation platforms and the tooling that powers them — CI/CD
-    pipelines, OpenAPI workflows, LLM integrations. At DomainTools I run docs.domaintools.com
-    for a B2B security intelligence platform and moved documentation into the development
-    cycle so it ships when features do. I published peer-reviewed work at USENIX Security
-    and IEEE Annals and wrote a commissioned history of the internet for Google and ICANN.
+  summary: "I build documentation platforms and the tooling that powers them — CI/CD pipelines, OpenAPI workflows, LLM integrations. At DomainTools I run docs.domaintools.com for a B2B security intelligence platform and moved documentation into the development cycle so it ships when features do. I published peer-reviewed work at USENIX Security and IEEE Annals and wrote a commissioned history of the internet for Google and ICANN."
   location:
     city: Warwick
     countryCode: US
@@ -29,48 +25,32 @@ work:
   url: https://docs.domaintools.com
   location: Seattle (Remote), WA, US
   startDate: '2023-10-01'
-  summary: Own docs.domaintools.com and all supporting tooling for a 150-person B2B
-    security intelligence company serving 800+ customers. Moved documentation into
-    the SDLC — critical updates ship same-day, and products launch with docs at tech preview.
+  summary: "Own docs.domaintools.com and all supporting tooling for a 150-person B2B security intelligence company serving 800+ customers. Moved documentation into the SDLC — critical updates ship same-day, and products launch with docs at tech preview."
   highlights:
-  - Authored the company's documentation strategy and roadmap from scratch, defining
-    platform architecture, tooling selection, SDLC integration model, SME contribution
-    workflows, and quality standards.
-  - Migrated 120+ documents into a unified MkDocs-Material platform with CI/CD,
-    Swagger UI, and SME contribution workflows across 4 engineering teams.
-  - Authored OpenAPI specifications across 4 API product lines; specs drive production
-    code generation, Swagger UI rendering, and contract validation.
-  - Reduced documentation cycle time from weeks (ticket-driven, manual) to same-day
-    for critical updates; docs now ship with products at tech preview.
-  - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded
-    customer-facing documentation.
-  - Built a production MCP server for deterministic quality control in LLM-assisted
-    documentation — integrates Vale, markdownlint, spaCy, and custom linters as
-    callable tools, giving LLMs an auditable, repeatable path through quality fixes.
+  - Sole technical writer for the company — own documentation strategy, platform, tooling, and all content end-to-end.
+  - "Authored the company's documentation strategy and roadmap from scratch, defining platform architecture, tooling selection, SDLC integration model, SME contribution workflows, and quality standards."
+  - Migrated 120+ documents into a unified MkDocs-Material platform with CI/CD, Swagger UI, and SME contribution workflows across 4 engineering teams.
+  - Authored OpenAPI specifications across 4 API product lines; specs drive production code generation, Swagger UI rendering, and contract validation.
+  - Reduced documentation cycle time from weeks (ticket-driven, manual) to same-day for critical updates; docs now ship with products at tech preview.
+  - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded customer-facing documentation.
+  - "Built a production MCP server for deterministic quality control in LLM-assisted documentation — integrates Vale, markdownlint, spaCy, and custom linters as callable tools, giving LLMs an auditable, repeatable path through quality fixes."
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
   endDate: '2023-09-01'
-  summary: Owned the Hybrid Cloud Migration Hub — an enterprise Confluence portal
-    supporting 50,000+ engineers in JPMC's central IT division through a hyperscale
-    hybrid cloud datacenter modernization.
+  summary: "Owned the Hybrid Cloud Migration Hub — an enterprise Confluence portal supporting 50,000+ engineers in JPMC's central IT division through a hyperscale hybrid cloud datacenter modernization."
   highlights:
-  - Drafted cloud migration and configuration management policy reviewed and approved
-    by VPs and Managing Directors; documentation passed external audit.
-  - Coordinated documentation deliverables with CM tooling development teams across
-    cross-functional working sessions.
+  - Drafted cloud migration and configuration management policy reviewed and approved by VPs and Managing Directors; documentation passed external audit.
+  - Coordinated documentation deliverables with CM tooling development teams across cross-functional working sessions.
   location: Jersey City (Hybrid), NJ, US
 - name: Romeo Power, Inc.
   position: Technical Writer
   startDate: '2022-06-01'
   endDate: '2023-03-01'
-  summary: Brought SDLC and configuration management documentation to ASPICE certification
-    readiness for an EV battery manufacturer in the automotive supply chain.
+  summary: Brought SDLC and configuration management documentation to ASPICE certification readiness for an EV battery manufacturer in the automotive supply chain.
   highlights:
-  - Interviewed engineering SMEs to document SDLC practices including git workflows,
-    branching strategies, and release processes for ASPICE process compliance.
-  - Produced B2B technical documentation and document control artifacts meeting ISO
-    9001 and ASPICE requirements; documentation passed compliance assessment.
+  - Interviewed engineering SMEs to document SDLC practices including git workflows, branching strategies, and release processes for ASPICE process compliance.
+  - Produced B2B technical documentation and document control artifacts meeting ISO 9001 and ASPICE requirements; documentation passed compliance assessment.
   - Earned intacs Automotive SPICE Provisional Assessor certification.
   location: Los Angeles (Remote), CA, US
 - name: Stevens Institute of Technology
@@ -78,42 +58,28 @@ work:
   url: https://www.stevens.edu
   startDate: '2017-08-01'
   endDate: '2021-05-01'
-  summary: Led funded research and consulting engagements for Google, ICANN, NSF,
-    and Lockheed Martin alongside a faculty appointment in Science and Technology Studies.
+  summary: Led funded research and consulting engagements for Google, ICANN, NSF, and Lockheed Martin alongside a faculty appointment in Science and Technology Studies.
   highlights:
-  - Co-PI on NSF EAGER grant to develop new performance metrics frameworks for Security
-    Operations Centers (SOCs).
-  - Co-authored a comprehensive history of unique identifier creation and
-    administration from ARPANET origins through 2017; jointly commissioned by ICANN
-    and Google; used in policy deliberations on IP governance and ownership.
-  - Wrote historical lessons-learned analysis of distributed simulation for a Lockheed
-    Martin defense program.
-  - Received institutional teaching recognition for courses that required translation
-    in both directions — STEM students through policy, historians through networking
-    and computing.
+  - Co-PI on NSF EAGER grant to develop new performance metrics frameworks for Security Operations Centers (SOCs).
+  - Co-authored a comprehensive history of unique identifier creation and administration from ARPANET origins through 2017; jointly commissioned by ICANN and Google; used in policy deliberations on IP governance and ownership.
+  - Wrote historical lessons-learned analysis of distributed simulation for a Lockheed Martin defense program.
+  - "Received institutional teaching recognition for courses that required translation in both directions — STEM students through policy, historians through networking and computing."
   location: Hoboken (Hybrid), NJ, US
 - name: UCLA Computer Science
   position: Researcher (Assistant)
   url: https://www.cs.ucla.edu
   startDate: '2013-09-01'
   endDate: '2017-01-01'
-  summary: Research assistant on a DARPA-funded oral history of ARPANET protocol
-    strategy; conducted structured interviews with senior technical and government
-    officials and performed archival research on early internet history.
+  summary: Research assistant on a DARPA-funded oral history of ARPANET protocol strategy; conducted structured interviews with senior technical and government officials and performed archival research on early internet history.
   highlights:
-  - Conducted structured SME interviews with senior technical and government officials,
-    including at the Assistant Secretary of Defense level, as part of a DARPA-funded
-    oral history of ARPANET protocol strategy.
-  - Assessed primary source corpora on early ARPANET and internet history; built
-    taxonomies and finding aids — structured, researcher-facing summaries — to make
-    materials navigable and discoverable.
+  - Conducted structured SME interviews with senior technical and government officials, including at the Assistant Secretary of Defense level, as part of a DARPA-funded oral history of ARPANET protocol strategy.
+  - "Assessed primary source corpora on early ARPANET and internet history; built taxonomies and finding aids — structured, researcher-facing summaries — to make materials navigable and discoverable."
   location: Los Angeles (Hybrid), CA, US
 volunteer:
 - organization: IEEE Academic Journals
   startDate: '2015-01-01'
   endDate: '2021-01-01'
-  summary: Sustained involvement as contributor, reviewer, and editorial board member,
-    mainly for the IEEE Annals of the History of Computing.
+  summary: Sustained involvement as contributor, reviewer, and editorial board member, mainly for the IEEE Annals of the History of Computing.
 education:
 - institution: UCLA
   area: History (information systems)
@@ -124,18 +90,12 @@ publications:
   publisher: ICANN / Google (Commissioned Document)
   releaseDate: '2020-11-01'
   url: https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf
-  summary: Co-authored a comprehensive history and analysis of unique identifier
-    creation and administration from ARPANET origins through 2017; jointly commissioned
-    by ICANN and Google for policy deliberations on IP governance. Co-author Russ Mundy.
-- name: 'Work-From-Home and COVID-19: Trajectories of Endpoint Security Management
-    in a Security Operations Center'
+  summary: Co-authored a comprehensive history and analysis of unique identifier creation and administration from ARPANET origins through 2017; jointly commissioned by ICANN and Google for policy deliberations on IP governance. Co-author Russ Mundy.
+- name: "Work-From-Home and COVID-19: Trajectories of Endpoint Security Management in a Security Operations Center"
   publisher: USENIX Security '23
   releaseDate: '2023-08-01'
   url: https://www.usenix.org/conference/usenixsecurity23/presentation/jones
-  summary: Co-author (Jones, Brucker-Hahn, Fidler, Bardas). Contributed historical
-    analysis tracing endpoint security management from the 1970s through the COVID-19
-    WFH transition; complemented an ethnographic SOC study spanning 1,000+ hours
-    and quantitative interviews across 7 SOCs.
+  summary: Co-author (Jones, Brucker-Hahn, Fidler, Bardas). Contributed historical analysis tracing endpoint security management from the 1970s through the COVID-19 WFH transition; complemented an ethnographic SOC study spanning 1,000+ hours and quantitative interviews across 7 SOCs.
 - name: Edge Cryptography and the Codevelopment of Computer Networks and Cybersecurity
   publisher: IEEE Annals of the History of Computing
   releaseDate: '2016-10-01'
@@ -189,26 +149,20 @@ certifications:
 - name: intacs Automotive SPICE Provisional Assessor
   issuer: intacs (International Assessor Certification Scheme)
   date: '2023-01-01'
-  description: ISO/IEC 330xx process assessment, evidence collection, SME interviewing,
-    and NPLF-rated capability evaluation.
+  description: ISO/IEC 330xx process assessment, evidence collection, SME interviewing, and NPLF-rated capability evaluation.
 languages:
 - language: English
   fluency: Native
 projects:
 - name: Documentation Diagnostic Tools (DDT)
-  description: Production MCP server addressing non-deterministic quality outputs
-    in LLM-assisted documentation. Integrates Vale, markdownlint, spaCy, and custom
-    linters as callable MCP tools, giving LLMs a structured, auditable path through
-    documentation quality fixes. Built and deployed at DomainTools.
+  description: Production MCP server addressing non-deterministic quality outputs in LLM-assisted documentation. Integrates Vale, markdownlint, spaCy, and custom linters as callable MCP tools, giving LLMs a structured, auditable path through documentation quality fixes. Built and deployed at DomainTools.
   keywords:
   - Python
   - MCP
   - Vale
   - pytest
 - name: PDF Documentation Generator
-  description: Python tooling using Jinja2 templates and LaTeX rendering to produce
-    branded PDF documentation with theming, dynamic table of contents, and automated
-    builds.
+  description: Python tooling using Jinja2 templates and LaTeX rendering to produce branded PDF documentation with theming, dynamic table of contents, and automated builds.
   keywords:
   - Python
   - Jinja2

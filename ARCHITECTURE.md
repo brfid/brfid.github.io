@@ -103,7 +103,7 @@ Published input to Hugo:
 - `hugo/static/brad.man.txt`
 - `hugo/static/brad.bio.txt`
 - `hugo/static/build.log.html`
-- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header)
+- `hugo/data/bio.yaml` (parsed from `brad.bio.txt` + build log header; pipeline-agnostic fields such as `about` are carried forward from the existing file and never overwritten by the pipeline)
 
 Site output:
 - `site/` (gitignored, generated fresh each CI run)

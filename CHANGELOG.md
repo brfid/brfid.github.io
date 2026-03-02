@@ -38,6 +38,7 @@ semantic version tags.
 - None.
 
 ### Recently Completed
+- **2026-03-02:** Portfolio/resume improvements: `bio.yaml` gains pipeline-agnostic `about` field (landing-page narrative paragraph); `bio_yaml.py` carries forward `about` and any unknown fields on vintage deploys so they survive pipeline overwrites; `home_info.html` renders `$bio.about` on landing page (summary retained for resume page and PDF only). `resume.yaml` tagline and `basics.label` updated to "Principal Technical Writer"; DomainTools highlights gain sole-TW scope bullet as first item; all prose strings unwrapped to single lines (IDE word-wrap). 157 tests pass.
 - **2026-03-01:** UUCP framing (VAX uuencodes `brad.1` itself; host routes spool;
   PDP-11 decodes), ASCII conversion moved to `resume_generator/normalize.py`,
   deprecated `uu` module replaced with `binascii.b2a_uu`. CI-validated
