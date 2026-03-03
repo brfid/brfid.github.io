@@ -18,16 +18,38 @@ h6 {
   font-weight: 500;
 }
 
-/* Bio: landing page bio panel */
-.bio-label {
+/* Bio: landing page hero and proof strip */
+.home-info {
+  max-width: 68ch;
+}
+
+.bio-role {
   color: var(--secondary);
-  font-size: 0.95rem;
-  margin: 0.2rem 0 1rem;
+  font-size: 1rem;
+  margin: 0.35rem 0 0;
+}
+
+.bio-summary {
+  margin: 1rem 0 0;
+}
+
+.bio-summary p + p {
+  margin-top: 0.75rem;
+}
+
+.bio-proof-strip {
+  margin: 1.15rem 0 0;
+  padding-left: 1rem;
+}
+
+.bio-proof-strip li {
+  margin: 0.2rem 0;
 }
 
 .bio-provenance {
   font-size: 0.8rem;
-  margin-top: 0.75rem;
+  margin-top: 0.9rem;
+  color: var(--secondary);
 }
 
 .bio-provenance a {

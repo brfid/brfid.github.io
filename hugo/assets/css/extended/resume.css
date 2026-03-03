@@ -27,10 +27,13 @@
   margin: 0;
 }
 
-.resume-pdf-link {
-  display: inline-block;
-  margin-top: 0.5rem;
+.resume-pdf-bar {
+  text-align: right;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
   font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.6rem;
 }
 
 .resume-section {
@@ -104,7 +107,7 @@
 }
 
 @media print {
-  header, footer, .resume-pdf-link {
+  header, footer, .resume-pdf-bar {
     display: none !important;
   }
 
