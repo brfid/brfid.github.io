@@ -8,6 +8,9 @@ enableRobotsTXT = true
 buildDrafts = false
 buildFuture = false
 
+[params.label]
+  text = "jockeyholler.net"
+
 [params]
   env = "production"
   author = "Bradley Fidler"
