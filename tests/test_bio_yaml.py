@@ -6,7 +6,6 @@ import pathlib
 
 from resume_generator.bio_yaml import (
     BioData,
-    _read_about_from_resume_yaml,
     _read_build_id,
     bio_to_yaml,
     main,
@@ -41,7 +40,7 @@ def test_parse_basic_fields() -> None:
         "Built docs CI quality gates adopted across engineering.",
         "Reduced API onboarding time with executable reference patterns.",
     ]
-    assert data["summary"] == "I build documentation platforms and the tooling that powers them."
+    assert data["about"] == "I build documentation platforms and the tooling that powers them."
     assert data["email"] == "brfid@icloud.com"
     assert data["url"] == "https://brfid.github.io"
     assert data["linkedin"] == "https://www.linkedin.com/in/brfid/"
@@ -53,7 +52,7 @@ def test_parse_missing_contact() -> None:
     data = parse_bio_txt(text)
     assert data["principal_headline"] == ""
     assert data["impact_highlights"] == []
-    assert data["summary"] == "Summary line."
+    assert data["about"] == "Summary line."
     assert data["email"] == ""
     assert data["url"] == ""
     assert data["linkedin"] == ""
@@ -62,7 +61,7 @@ def test_parse_missing_contact() -> None:
 def test_parse_no_blank_line() -> None:
     text = "Name\nLabel\nSummary without blank."
     data = parse_bio_txt(text)
-    assert data["summary"] == "Summary without blank."
+    assert data["about"] == "Summary without blank."
 
 
 def test_parse_legacy_bio_format_back_compatible() -> None:
@@ -78,7 +77,7 @@ https://linkedin.com/in/example
     data = parse_bio_txt(legacy)
     assert data["principal_headline"] == ""
     assert data["impact_highlights"] == []
-    assert data["summary"] == "Legacy summary line."
+    assert data["about"] == "Legacy summary line."
     assert data["email"] == "test@example.com"
 
 
@@ -88,7 +87,7 @@ def test_bio_to_yaml_no_build_log() -> None:
         "label": "Writer",
         "principal_headline": "Principal headline",
         "impact_highlights": ["A", "B"],
-        "summary": "Summary.",
+        "about": "Profile statement.",
         "email": "jane@example.com",
         "url": "https://example.com",
         "linkedin": "https://linkedin.com/in/jane",
@@ -105,7 +104,7 @@ def test_bio_to_yaml_with_build_log() -> None:
     data: BioData = {
         "name": "Jane Doe",
         "label": "Writer",
-        "summary": "Summary.",
+        "about": "Profile statement.",
         "email": "",
         "url": "",
         "linkedin": "",
@@ -121,7 +120,7 @@ def test_bio_to_yaml_special_chars() -> None:
     data: BioData = {
         "name": 'Name "Quoted"',
         "label": "Label",
-        "summary": "Sum",
+        "about": "Sum",
         "email": "",
         "url": "",
         "linkedin": "",
@@ -174,34 +173,18 @@ def test_main_no_args() -> None:
 # --- about field ---
 
 
-def test_read_about_from_resume_yaml_present(tmp_path: pathlib.Path) -> None:
-    resume = tmp_path / "resume.yaml"
-    resume.write_text(
-        'tagline: "T"\nabout: >-\n  Most of my career has been about structure.\n'
-        "basics:\n  name: X\n"
-    )
-    assert _read_about_from_resume_yaml(str(resume)) == "Most of my career has been about structure."
-
-
-def test_read_about_from_resume_yaml_absent(tmp_path: pathlib.Path) -> None:
-    resume = tmp_path / "resume.yaml"
-    resume.write_text('tagline: "T"\nbasics:\n  name: X\n')
-    assert _read_about_from_resume_yaml(str(resume)) == ""
-
-
 def test_bio_to_yaml_with_about() -> None:
     data: BioData = {
         "name": "Jane Doe",
         "label": "Writer",
-        "summary": "Summary.",
-        "about": "About paragraph.",
+        "about": "Profile statement.",
         "email": "",
         "url": "",
         "linkedin": "",
     }
     out = bio_to_yaml(data)
     assert "about:" in out
-    assert "About paragraph." in out
+    assert "Profile statement." in out
 
 
 def test_bio_to_yaml_multiline_about_preserves_paragraphs() -> None:
@@ -209,7 +192,6 @@ def test_bio_to_yaml_multiline_about_preserves_paragraphs() -> None:
     data: BioData = {
         "name": "Jane Doe",
         "label": "Writer",
-        "summary": "Summary.",
         "about": about,
         "email": "",
         "url": "",
@@ -221,60 +203,3 @@ def test_bio_to_yaml_multiline_about_preserves_paragraphs() -> None:
     import yaml as _yaml  # local import to keep test dependency explicit
     parsed = _yaml.safe_load(out)
     assert parsed["about"] == about
-
-
-def test_bio_to_yaml_no_about() -> None:
-    data: BioData = {
-        "name": "Jane",
-        "label": "L",
-        "summary": "S",
-        "email": "",
-        "url": "",
-        "linkedin": "",
-    }
-    assert "about" not in bio_to_yaml(data)
-
-
-def test_main_reads_about_from_resume_yaml(tmp_path: pathlib.Path) -> None:
-    src = tmp_path / "brad.bio.txt"
-    src.write_text(SAMPLE_BIO, encoding="utf-8")
-    dst = tmp_path / "bio.yaml"
-    resume = tmp_path / "resume.yaml"
-    resume.write_text('tagline: "T"\nabout: >-\n  About from resume.\n')
-
-    rc = main([str(src), str(dst), str(tmp_path / "nonexistent.html"), str(resume)])
-
-    assert rc == 0
-    content = dst.read_text(encoding="utf-8")
-    assert "About from resume." in content
-    assert "Bradley Fidler" in content
-
-
-def test_main_no_resume_yaml_no_about(tmp_path: pathlib.Path) -> None:
-    src = tmp_path / "brad.bio.txt"
-    src.write_text(SAMPLE_BIO, encoding="utf-8")
-    dst = tmp_path / "bio.yaml"
-    # Pass a nonexistent resume.yaml — no about, no crash.
-    rc = main([str(src), str(dst), str(tmp_path / "nonexistent.html"), str(tmp_path / "no-resume.yaml")])
-    assert rc == 0
-    assert "about" not in dst.read_text(encoding="utf-8")
-
-
-def test_read_about_from_resume_yaml_literal_block(tmp_path: pathlib.Path) -> None:
-    # Regression: |- was returned as the literal string "|-" before the fix.
-    resume = tmp_path / "resume.yaml"
-    resume.write_text(
-        'tagline: "T"\nabout: |-\n  Literal block scalar content.\nbasics:\n  name: X\n'
-    )
-    assert _read_about_from_resume_yaml(str(resume)) == "Literal block scalar content."
-
-
-def test_read_about_from_resume_yaml_literal_block_multiline(tmp_path: pathlib.Path) -> None:
-    resume = tmp_path / "resume.yaml"
-    resume.write_text(
-        "tagline: T\nabout: |-\n  First paragraph.\n\n  Second paragraph.\nbasics:\n  name: X\n"
-    )
-    result = _read_about_from_resume_yaml(str(resume))
-    assert "First paragraph." in result
-    assert "Second paragraph." in result
-    assert "\n\n" in result

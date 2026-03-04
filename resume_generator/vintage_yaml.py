@@ -235,6 +235,7 @@ def build_vintage_resume_v1(
     label = safe_str(basics.get("label")) or ""
     summary = safe_str(basics.get("summary")) or ""
     principal_headline = safe_str(resume.get("principal_headline"))
+    profile = safe_str(resume.get("profile"))
 
     impact_raw = resume.get("principal_impact") or []
     impact_highlights: list[str] = []
@@ -252,6 +253,9 @@ def build_vintage_resume_v1(
         "principalHeadline": principal_headline,
         "summary": summary,
     }
+
+    if profile:
+        out["profile"] = profile
 
     if impact_highlights:
         out["impactHighlights"] = impact_highlights[:3]
@@ -286,6 +290,7 @@ def emit_vintage_yaml(value: Mapping[str, Any]) -> str:
         "name",
         "label",
         "principalHeadline",
+        "profile",
         "contact",
         "impactHighlights",
         "summary",
