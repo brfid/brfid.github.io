@@ -1,18 +1,14 @@
-tagline: "Principal Technical Writer — API documentation, developer experience, AI workflows"
-principal_headline: "Principal Technical Writer"
-about: |-
-  I build documentation — a part of a product designed to help people and their tools succeed with it.
-
-  That means building and maintaining the documentation tools that create and improve tech docs. Those docs also feed the AI assistants developers use — the ones that answer questions and suggest code. I'm responsible for both: the documentation tools and the quality that makes the docs reliable for everything that uses them.
-
-  It also means owning modern docs — user guides and reference material, but also the specifications and definitions that feed the tools developers use: code generators, API validators, and AI assistants.
+tagline: "Technical Writer — API documentation, LLM integration, developer experience"
+principal_headline: "Technical Writer"
+profile: |-
+  Technical documentation has two audiences: the developer reading it, and the tools that consume it. I own the content and the infrastructure that makes it reliable for both.
 
 basics:
   name: Bradley Fidler
-  label: "Principal Technical Writer — API documentation, developer experience, AI workflows"
+  label: "Technical Writer — API documentation, LLM integration, developer experience"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: "I build documentation platforms and the tooling that powers them — CI/CD pipelines, OpenAPI workflows, LLM integrations. At DomainTools I run docs.domaintools.com for a B2B security intelligence platform and moved documentation into the development cycle so it ships when features do. I published peer-reviewed work at USENIX Security and IEEE Annals and wrote a commissioned history of the internet for Google and ICANN."
+  summary: "I set how documentation integrates into the development cycle and build the infrastructure that makes it work — CI/CD pipelines, OpenAPI workflows, LLM integrations. At DomainTools I own docs.domaintools.com and documentation strategy for a B2B security intelligence platform, directing a documentation specialist and leading SDLC integration so docs ship when features do. I published peer-reviewed work at USENIX Security and IEEE Annals and wrote a commissioned history of the internet for Google and ICANN."
   location:
     city: Warwick
     countryCode: US
@@ -32,15 +28,16 @@ work:
   url: https://docs.domaintools.com
   location: Seattle (Remote), WA, US
   startDate: '2023-10-01'
-  summary: "Own docs.domaintools.com and all supporting tooling for a 150-person B2B security intelligence company serving 800+ customers. Moved documentation into the SDLC — critical updates ship same-day, and products launch with docs at tech preview."
+  summary: "Own docs.domaintools.com, documentation strategy, and all supporting tooling for a 150-person B2B security intelligence company serving 800+ customers. Technical lead for the documentation function, directing a documentation specialist. Moved documentation into the SDLC — critical updates ship same-day, and products launch with docs at tech preview."
   highlights:
-  - Sole technical writer for the company — own documentation strategy, platform, tooling, and all content end-to-end.
-  - "Authored the company's documentation strategy and roadmap from scratch, defining platform architecture, tooling selection, SDLC integration model, SME contribution workflows, and quality standards."
+  - Reduced documentation cycle time from weeks to same-day for critical updates; products now launch with docs at tech preview — as the company's sole technical writer owning strategy, platform, tooling, and all content.
+  - "Authored the company's documentation strategy and roadmap from scratch — platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards."
   - Migrated 120+ documents into a unified MkDocs-Material platform with CI/CD, Swagger UI, and SME contribution workflows across 4 engineering teams.
-  - Authored OpenAPI specifications across 4 API product lines; specs drive production code generation, Swagger UI rendering, and contract validation.
-  - Reduced documentation cycle time from weeks (ticket-driven, manual) to same-day for critical updates; docs now ship with products at tech preview.
+  - Defined OpenAPI specifications across 4 API product lines; specs govern production code generation, Swagger UI rendering, and contract validation.
   - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded customer-facing documentation.
-  - "Built a production MCP server for deterministic quality control in LLM-assisted documentation — integrates Vale, markdownlint, spaCy, and custom linters as callable tools, giving LLMs an auditable, repeatable path through quality fixes."
+  - "Built a production MCP server for deterministic quality control in LLM-assisted documentation — integrates Vale, markdownlint, spaCy, and custom linters as callable tools, enabling consistent quality at scale without reviewer bottlenecks."
+  - Owned the full deployment stack for docs.domaintools.com — container-based image builds, GitOps-managed cluster deployments, and CI/CD pipelines that map environment branching strategy to staged promotion across dev and production.
+  - "Authored the company's documentation style guide and contribution guide; enabled engineering teams to contribute directly to the docs platform via git. Engineers review documentation MRs; API reference verified against source code."
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
@@ -108,24 +105,18 @@ publications:
   releaseDate: '2016-10-01'
   url: https://doi.org/10.1109/MAHC.2016.49
 skills:
-- name: Docs platform and automation
+- name: Documentation platform architecture
   keywords:
-  - Markdown
-  - git
-  - OpenAPI
   - MkDocs
   - Docusaurus
   - Hugo
-  - GitHub Actions
+  - Markdown
+  - git
   - CI/CD
+  - GitHub Actions
   - Python 3.11+
-  - pytest
-  - Ruff
-  - CLI tooling
-  - venv
-  - pipx
   - Vale
-- name: API and Developer Tooling
+- name: API specification and developer experience
   keywords:
   - OpenAPI
   - Swagger
@@ -133,24 +124,45 @@ skills:
   - cURL
   - Bruno
   - schemathesis
-- name: Content Architecture and Generative AI
+  - Code generation
+  - Contract validation
+- name: LLM integration and AI-assisted authoring
   keywords:
   - MCP (Model Context Protocol)
-  - Chunking
-  - Embeddings
   - RAG metadata
-  - LLM CLI/IDE tooling
+  - LLM context files
   - Prompt design
   - Prompt evaluation
   - Hugging Face inference
-- name: Security and Networking
+  - Embeddings
+  - Chunking
+- name: SDLC integration and docs-as-code
+  keywords:
+  - CI/CD pipeline design
+  - Docs ship with release
+  - SME contribution workflows
+  - Automated quality checks
+  - pytest
+  - Ruff
+- name: Container and deployment infrastructure
+  keywords:
+  - Docker
+  - Multi-stage builds
+  - Kubernetes
+  - OpenShift
+  - Kustomize
+  - GitLab CI/CD
+  - ArgoCD
+  - GitOps
+  - Nginx
+  - Container registries
+- name: Security and networking domains
   keywords:
   - BGP
   - DNS
   - SIEMs
   - SOARs
-  - IPv4
-  - IPv6
+  - IPv4/IPv6
   - Wireshark
 certifications:
 - name: intacs Automotive SPICE Provisional Assessor

@@ -9,7 +9,7 @@ brad.bio.txt format (produced by bradman.c -mode bio):
     - Impact highlight one
     - Impact highlight two
 
-    Summary paragraph text that may span
+    Profile paragraph text that may span
     multiple lines.
 
     email@example.com
@@ -20,7 +20,7 @@ This module is the canonical parser. The deploy.yml "Generate bio data for Hugo"
 step calls this as a CLI::
 
     python -m resume_generator.bio_yaml <src_bio_txt> <dst_bio_yaml> \
-        [<build_log_html>] [<resume_yaml>]
+        [<build_log_html>]
 """
 
 from __future__ import annotations
@@ -31,8 +31,6 @@ import re
 import sys
 from typing import TypedDict
 
-import yaml
-
 
 class BioData(TypedDict, total=False):
     """Typed dict for Hugo landing page bio data parsed from brad.bio.txt."""
@@ -41,7 +39,6 @@ class BioData(TypedDict, total=False):
     label: str
     principal_headline: str
     impact_highlights: list[str]
-    summary: str
     about: str
     email: str
     url: str
@@ -82,7 +79,7 @@ def parse_bio_txt(text: str) -> BioData:
 
     Returns:
         Dict with name, label, principal_headline, impact_highlights,
-        summary, email, url, linkedin fields.
+        about, email, url, linkedin fields.
         build_log and build_id are NOT set here — callers add them.
     """
     lines = text.strip().splitlines()
@@ -109,15 +106,15 @@ def parse_bio_txt(text: str) -> BioData:
     # Split the remaining body into paragraphs (groups of non-blank lines).
     paragraphs = _split_paragraphs(lines[body_start:])
 
-    # Classify paragraphs in order: optional impact bullets → summary → contact.
+    # Classify paragraphs in order: optional impact bullets → profile → contact.
     impact_highlights: list[str] = []
     if paragraphs and all(ln.lstrip().startswith("- ") for ln in paragraphs[0]):
         impact_highlights = [ln.lstrip()[2:].strip() for ln in paragraphs[0]]
         paragraphs = paragraphs[1:]
 
-    summary = ""
+    about = ""
     if paragraphs:
-        summary = " ".join(ln for ln in paragraphs[0] if ln.strip())
+        about = " ".join(ln for ln in paragraphs[0] if ln.strip())
         paragraphs = paragraphs[1:]
 
     contact = [ln.strip() for para in paragraphs for ln in para if ln.strip()]
@@ -127,46 +124,21 @@ def parse_bio_txt(text: str) -> BioData:
         label=label,
         principal_headline=principal_headline,
         impact_highlights=impact_highlights,
-        summary=summary,
+        about=about,
         email=contact[0] if contact else "",
         url=contact[1] if len(contact) > 1 else "",
         linkedin=contact[2] if len(contact) > 2 else "",
     )
 
 
-def _read_about_from_resume_yaml(path: str) -> str:
-    """Extract the top-level 'about' field from resume.yaml.
-
-    Uses yaml.safe_load so all YAML scalar styles (|-, >, >-, quoted, plain)
-    are handled correctly.
-
-    Args:
-        path: Path to resume.yaml.
-
-    Returns:
-        The about value as a plain string, or empty string if absent/unreadable.
-    """
-    p = pathlib.Path(path)
-    if not p.exists():
-        return ""
-    try:
-        data = yaml.safe_load(p.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            return str(data.get("about", "") or "")
-        return ""
-    except yaml.YAMLError:
-        return ""
-
-
 def bio_to_yaml(data: BioData) -> str:
     """Serialise a BioData dict to YAML text for hugo/data/bio.yaml.
 
     Uses json.dumps for quoting (safe superset of YAML scalar quoting for
-    simple strings; avoids a PyYAML dependency). The optional ``about``
-    field is emitted as a >- block scalar so it is readable when hand-edited.
+    simple strings; avoids a PyYAML dependency).
 
     Args:
-        data: BioData dict, may include optional about / build_log / build_id.
+        data: BioData dict, may include optional build_log / build_id.
 
     Returns:
         YAML string.
@@ -182,10 +154,8 @@ def bio_to_yaml(data: BioData) -> str:
         for item in highlights:
             lines.append(f"  - {json.dumps(item)}")
     lines += [
-        f"summary: {json.dumps(data.get('summary', ''))}",
+        f"about: {json.dumps(data.get('about', ''))}",
     ]
-    if data.get("about"):
-        lines.append(f"about: {json.dumps(data['about'])}")
     lines += [
         f"email: {json.dumps(data.get('email', ''))}",
         f"url: {json.dumps(data.get('url', ''))}",
@@ -222,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     Usage::
 
         python -m resume_generator.bio_yaml <src_bio_txt> <dst_bio_yaml> \
-            [<build_log_html>] [<resume_yaml>]
+            [<build_log_html>]
 
     Args:
         argv: Argument list (defaults to sys.argv[1:]).
@@ -233,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     if len(args) < 2:
         print(
-            "Usage: bio_yaml <src_bio_txt> <dst_bio_yaml> [<build_log_html>] [<resume_yaml>]",
+            "Usage: bio_yaml <src_bio_txt> <dst_bio_yaml> [<build_log_html>]",
             file=sys.stderr,
         )
         return 1
@@ -242,7 +212,6 @@ def main(argv: list[str] | None = None) -> int:
     dst = pathlib.Path(args[1])
     default_log = pathlib.Path("hugo/static/build.log.html")
     build_log = pathlib.Path(args[2]) if len(args) >= 3 else default_log
-    resume_yaml = args[3] if len(args) >= 4 else "resume.yaml"
 
     if not src.exists() or src.stat().st_size == 0:
         print(f"bio_yaml: {src} is missing or empty — skipping", file=sys.stderr)
@@ -250,10 +219,6 @@ def main(argv: list[str] | None = None) -> int:
 
     text = src.read_text(encoding="utf-8")
     data = parse_bio_txt(text)
-
-    about = _read_about_from_resume_yaml(resume_yaml)
-    if about:
-        data["about"] = about
 
     data["build_log"] = True
     build_id = _read_build_id(build_log)

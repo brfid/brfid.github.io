@@ -86,6 +86,27 @@ def test_build_limits_work_and_skills() -> None:
     assert len(built["skills"]) == 3
 
 
+def test_build_emits_profile() -> None:
+    """profile field from resume top-level should pass through to vintage YAML."""
+    resume = {
+        "profile": "Technical documentation has two audiences: the developer reading it, and the tools that consume it.",
+        "basics": {"name": "Test", "label": "Principal Technical Writer", "summary": "Summary"},
+    }
+    built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25))
+    text = emit_vintage_yaml(built)
+    assert built["profile"] == "Technical documentation has two audiences: the developer reading it, and the tools that consume it."
+    assert "profile:" in text
+    assert "two audiences" in text
+
+
+def test_build_omits_profile_when_absent() -> None:
+    """profile should not appear in output when not set in resume."""
+    resume = {"basics": {"name": "Test", "label": "X", "summary": "Y"}}
+    built = build_vintage_resume_v1(cast(Resume, resume), build_date=date(2026, 1, 25))
+    assert "profile" not in built
+    assert "profile:" not in emit_vintage_yaml(built)
+
+
 def test_build_emits_principal_headline_and_impact_highlights() -> None:
     """Build should pass through principal_headline and impact_highlights."""
     resume = {

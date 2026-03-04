@@ -75,6 +75,7 @@ typedef struct {
   char **impactHighlights;
   BRADMAN_SIZE_T impactHighlights_len;
   BRADMAN_SIZE_T impactHighlights_cap;
+  char *profile;
   char *summary;
   WorkEntry *work;
   BRADMAN_SIZE_T work_len;
@@ -411,6 +412,9 @@ static void parse_resume_vax_yaml(in, r)
       } else if (strcmp(key, "impactHighlights") == 0) {
         if (val) die("impactHighlights must be a sequence (no scalar value)");
         top = TOP_IMPACT;
+      } else if (strcmp(key, "profile") == 0) {
+        if (!val) die("profile must have a value");
+        set_field(&r->profile, val);
       } else if (strcmp(key, "summary") == 0) {
         if (!val) die("summary must have a value");
         set_field(&r->summary, val);
@@ -961,6 +965,7 @@ static void free_resume(r)
   free(r->linkedin);
   for (i = 0; i < r->impactHighlights_len; i++) free(r->impactHighlights[i]);
   free(r->impactHighlights);
+  free(r->profile);
   free(r->summary);
 
   for (i = 0; i < r->work_len; i++) {
@@ -1014,7 +1019,9 @@ static void emit_bio(out, r)
     fputc('\n', out);
   }
 
-  if (r->summary && r->summary[0])
+  if (r->profile && r->profile[0])
+    fprintf(out, "%s\n", r->profile);
+  else if (r->summary && r->summary[0])
     fprintf(out, "%s\n", r->summary);
   fputc('\n', out);
   if (r->email && r->email[0])

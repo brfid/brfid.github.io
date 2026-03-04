@@ -14,7 +14,7 @@ buildFuture = false
 [params]
   env = "production"
   author = "Bradley Fidler"
-  description = "Technical writer specializing in API documentation, docs-as-code platforms, and AI-assisted authoring workflows for B2B developer tools and security products."
+  description = "Technical writer specializing in API documentation, LLM integration, and developer experience for B2B developer tools and security products."
   defaultTheme = "dark"
   disableThemeToggle = false
   ShowReadingTime = true
@@ -28,7 +28,7 @@ buildFuture = false
 
   [params.homeInfoParams]
     Title = "Bradley Fidler"
-    Content = "Technical writer — API documentation, docs-as-code platforms, AI workflows."
+    Content = "Technical writer — API documentation, LLM integration, developer experience."
 
   [[params.socialIcons]]
     name = "linkedin"

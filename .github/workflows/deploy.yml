@@ -253,8 +253,7 @@ jobs:
             python3 resume_generator/bio_yaml.py \
               hugo/static/brad.bio.txt \
               hugo/data/bio.yaml \
-              hugo/static/build.log.html \
-              resume.yaml
+              hugo/static/build.log.html
           fi
 
       - name: Build Hugo site

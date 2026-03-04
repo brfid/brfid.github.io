@@ -6,12 +6,12 @@
         {{- with (or $bio.principal_headline $resume.principal_headline $bio.label $resume.tagline) }}<p class="bio-role">{{ . }}</p>{{ end }}
     </header>
     <div class="entry-content">
-        {{- with (or $bio.about $bio.summary) }}<div class="bio-summary">{{ . | markdownify }}</div>{{ end }}
+        {{- with $bio.about }}<div class="bio-summary">{{ . | markdownify }}</div>{{ end }}
     </div>
     <footer class="entry-footer">
         {{ partial "social_icons.html" (dict "align" site.Params.homeInfoParams.AlignSocialIconsTo) }}
         {{- if $bio.build_log }}
-        <p class="bio-provenance">Homepage profile data generated from <a href="https://github.com/brfid/brfid.github.io/blob/main/resume.yaml">resume.yaml</a> through the VAX/PDP-11 pipeline{{ with $bio.build_id }} · <a href="/build.log.html">{{ . }}</a>{{ end }} · <a href="https://github.com/brfid/brfid.github.io">source</a></p>
+        <p class="bio-provenance">{{ with $bio.build_id }}<a href="/build.log.html">{{ . }}</a> · {{ end }}<a href="https://github.com/brfid/brfid.github.io">source</a></p>
         {{- end }}
     </footer>
 </article>

@@ -8,7 +8,8 @@ sections:
         publisher: "DomainTools"
         summary: "OpenAPI 3.0.3 specification for DomainTools Feeds — real-time and batch
           endpoints, download workflow, reusable components, examples, and error contracts.
-          Built for code generation, Swagger UI rendering, and contract validation."
+          This spec drives production code generation, Swagger UI rendering, and contract
+          validation — it's a build artifact, not just documentation."
         status: live
         tags: [OpenAPI, "API documentation", "docs-as-code"]
 
@@ -18,7 +19,8 @@ sections:
         role: "Author"
         publisher: "DomainTools"
         summary: "API reference documentation for DomainTools data products and endpoints,
-          including the Threat Intelligence Feeds API."
+          including the Threat Intelligence Feeds API. Covers the full product surface for
+          800+ enterprise customers across 4 API product lines."
         status: live
         tags: ["API documentation", "developer docs", security]
 
@@ -28,7 +30,8 @@ sections:
         role: "Author"
         publisher: "DomainTools"
         summary: "Developer guide and API reference: installation, authentication, usage
-          patterns, method reference."
+          patterns, method reference. Written to reduce integration friction for customers
+          adopting DomainTools programmatically."
         status: live
         tags: ["SDK documentation", Python, "developer docs"]
 
@@ -38,7 +41,8 @@ sections:
         role: "Author"
         publisher: "DomainTools"
         summary: "User-facing documentation for DomainTools security intelligence products
-          and workflows."
+          and workflows. Unified 120+ documents from scattered sources into a single
+          MkDocs-Material platform with CI/CD, search, and versioning."
         status: live
         tags: ["product documentation", security, MkDocs]
 
@@ -51,7 +55,8 @@ sections:
         publisher: "DomainTools"
         summary: "Auto-generated structured context files covering DomainTools API products
           and data schemas, produced by CI/CD pipeline for use in LLM tooling and
-          retrieval workflows."
+          retrieval workflows. Designed so AI assistants can answer customer questions
+          using authoritative, up-to-date product documentation."
         status: live
         tags: [LLM, RAG, CI/CD, "structured data"]
 
@@ -64,7 +69,8 @@ sections:
         publisher: "ICANN / Google"
         summary: "Comprehensive history of internet unique identifier creation and
           administration from ARPANET origins through 2017. Jointly commissioned by ICANN
-          and Google for policy deliberations on IP governance. Co-authored with Russ Mundy."
+          and Google for policy deliberations on IP governance and ownership — used in
+          active international policy proceedings. Co-authored with Russ Mundy."
         status: live
         tags: [research, "internet history", ARPANET, "policy"]
 
