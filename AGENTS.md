@@ -19,14 +19,12 @@ under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entr
 1. `README.md`
 2. `CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
 3. `hugo/` (Hugo site root — theme, content, config)
-4. `docs/INDEX.md`
-5. `docs/integration/INDEX.md` (only if touching vintage pipeline internals)
+4. `docs/integration/INDEX.md` (only if touching vintage pipeline internals)
 
 ## Source-of-truth map
 
 - Current mutable state / active queue: `CHANGELOG.md` `[Unreleased]`
 - Change history / milestone evidence: dated `CHANGELOG.md` entries
-- Documentation hub: `docs/INDEX.md`
 - Integration active path + spec: `docs/integration/INDEX.md`
 - Implementation spec (pexpect pipeline): `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`
 - Explicit retired/blocked path registry: `docs/archive/DEAD-ENDS.md`
@@ -85,7 +83,7 @@ Commit at significant milestones so the history stays readable and bisectable. E
 Pre-commit checks are optional by default in this repo workflow.
 
 - Run `.venv/bin/python -m pytest -q`, `.venv/bin/python -m ruff check resume_generator`, and
-  `.venv/bin/python -m mypy resume_generator host_logging tests` when a task or reviewer
+  `.venv/bin/python -m mypy resume_generator tests` when a task or reviewer
   explicitly requests validation.
 - When a milestone completes, update `CHANGELOG.md` in the same change set.
 
@@ -115,7 +113,7 @@ Pre-commit checks are optional by default in this repo workflow.
 
 - Summarize changes by file path.
 - Include validation performed (or explicitly state none performed).
-- If docs paths changed, update central indexes (`docs/INDEX.md`, relevant domain INDEX files).
+- If docs paths changed, update relevant indexes (`docs/integration/INDEX.md` for pipeline docs).
 
 ## Runtime-status boundary
 

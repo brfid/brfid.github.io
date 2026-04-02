@@ -46,7 +46,7 @@ The pipeline uses **pexpect** to drive SIMH emulators via stdin/stdout (no telne
 
 Both stages are implemented and validated on `main`. See `CHANGELOG.md` for validation details.
 
-See `ARCHITECTURE.md` and `docs/integration/INDEX.md` for design details.
+See `docs/integration/INDEX.md` for design details.
 
 ### Setup
 
@@ -59,9 +59,9 @@ python3 -m venv .venv
 
 ```bash
 .venv/bin/python -m pytest -q
-.venv/bin/python -m mypy resume_generator host_logging tests
+.venv/bin/python -m mypy resume_generator tests
 .venv/bin/python -m ruff check resume_generator
-.venv/bin/python -m pylint resume_generator host_logging -sn
+.venv/bin/python -m pylint resume_generator -sn
 ```
 
 **Publish:** push to `main` → CI does a minimal bootstrap:
@@ -100,15 +100,12 @@ Infrastructure lifecycle managed separately: [brfid/edcloud](https://github.com/
 |-----|------|
 | `CHANGELOG.md` (`[Unreleased]`) | Current project state, active priorities, blockers, decisions |
 | `CHANGELOG.md` (dated entries) | Chronological change history and milestone evidence |
-| `WORKFLOWS.md` | CI/test/publish behavior |
-| `ARCHITECTURE.md` | System design |
-| `docs/INDEX.md` | Documentation hub |
+| `docs/integration/INDEX.md` | Vintage pipeline design, stages, artifacts, constraints |
 
 ## Cold start order
 
 1. This file
 2. `CHANGELOG.md` (`[Unreleased]` first, then latest dated entries)
 3. `hugo/` (Hugo site root — theme, content, config)
-4. `docs/INDEX.md`
 
 Then apply `AGENTS.md` constraints.
