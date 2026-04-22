@@ -1,7 +1,7 @@
 ---
 title: "Wireword: Agent Control Words Should Be Hard to Misread"
 date: 2026-04-21
-draft: true
+draft: false
 tags: ["llm", "agents", "history", "workflow"]
 ---
 
