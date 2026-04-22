@@ -147,14 +147,16 @@ Fix: use ENV_PRODUCTION as the only valid production label.
 
 That is the product line: do not only lint strings. Lint control words by the action they can trigger.
 
-### V1 plan
+### Current prototype and V1 plan
 
 The tool is [Wireword](https://github.com/brfid/wireword). V1 should stay small.
 
-It should lint two layers:
+The current prototype now checks both layers:
 
 - **raw labels:** visual confusables, edit-distance-one pairs, case-only differences, punctuation-only differences, plural/stem collisions, and production-like aliases
-- **agent-aware labels:** routes, tools, environments, approval targets, and exact enum values, with severity based on the effect of choosing the wrong label
+- **agent-aware labels:** routes, tools, named agent handoffs, approval targets, macros, profiles, production-like environments, and exact enum values the model must emit
+
+That is enough to test the shape of the idea. The repo now has a small validation corpus with safe, dangerous, and malformed configs, plus a narrow FastMCP source extractor for tool names. It is still not a full agent security scanner.
 
 The useful output is not just `these strings are similar`. It is `these strings are similar, the model can see or emit them, and confusing them could call the wrong tool, route work to the wrong place, or target the wrong environment`.
 
