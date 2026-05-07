@@ -30,14 +30,17 @@ work:
   startDate: '2023-10-01'
   summary: "Own docs.domaintools.com, documentation strategy, and all supporting tooling for a 150-person B2B security intelligence company serving 800+ customers. Technical lead for the documentation function, directing a documentation specialist. Moved documentation into the SDLC — critical updates ship same-day, and products launch with docs at tech preview."
   highlights:
-  - Reduced documentation cycle time from weeks to same-day for critical updates; products now launch with docs at tech preview — as the company's sole technical writer owning strategy, platform, tooling, and all content.
+  - Reduced documentation cycle time from weeks to same-day for critical updates; products now launch with docs at tech preview — as technical lead owning strategy, platform, tooling, and direction of the documentation function.
   - "Authored the company's documentation strategy and roadmap from scratch — platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards."
   - Migrated 120+ documents into a unified MkDocs-Material platform with CI/CD, Swagger UI, and SME contribution workflows across 4 engineering teams.
-  - Defined OpenAPI specifications across 4 API product lines; specs govern production code generation, Swagger UI rendering, and contract validation.
+  - Defined OpenAPI specifications across 4 API product lines; specs govern production code generation, Swagger UI rendering, contract validation, and Schemathesis conformance testing.
   - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded customer-facing documentation.
   - "Built a production MCP server for deterministic quality control in LLM-assisted documentation — integrates Vale, markdownlint, spaCy, and custom linters as callable tools, enabling consistent quality at scale without reviewer bottlenecks."
   - Owned the full deployment stack for docs.domaintools.com — container-based image builds, GitOps-managed cluster deployments, and CI/CD pipelines that map environment branching strategy to staged promotion across dev and production.
   - "Authored the company's documentation style guide and contribution guide; enabled engineering teams to contribute directly to the docs platform via git. Engineers review documentation MRs; API reference verified against source code."
+  - Designed a multi-consumer documentation model treating human readers, AI agents, and automated pipelines as distinct audiences — each with different access patterns, metadata requirements, and context windows.
+  - Developed a cold-start completeness test methodology for evaluating documentation coverage from zero; produced a reusable build-trial harness for assessing MCP server documentation at launch.
+  - Replaced an outsourced WordPress/Confluence changelog pipeline with a self-operated docs.domaintools.com/changelog system serving RSS and JSON feeds.
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
@@ -133,6 +136,10 @@ skills:
   - LLM context files
   - Prompt design
   - Prompt evaluation
+  - LLM-as-judge evaluation
+  - Prompt injection benchmarking
+  - Agent SDK integration
+  - Platform-agnostic agent design
   - Hugging Face inference
   - Embeddings
   - Chunking
@@ -164,6 +171,16 @@ skills:
   - SOARs
   - IPv4/IPv6
   - Wireshark
+- name: Content governance and measurement
+  keywords:
+  - Content strategy ownership
+  - Documentation-as-a-product
+  - Documentation effectiveness frameworks
+  - llms.txt instrumentation
+  - User-agent classification
+  - MCP telemetry
+  - Handbook authorship
+  - Operating model design
 certifications:
 - name: intacs Automotive SPICE Provisional Assessor
   issuer: intacs (International Assessor Certification Scheme)
@@ -180,10 +197,10 @@ projects:
   - MCP
   - Vale
   - pytest
-- name: PDF Documentation Generator
-  description: Python tooling using Jinja2 templates and LaTeX rendering to produce branded PDF documentation with theming, dynamic table of contents, and automated builds.
+- name: Wireword
+  description: Lint tool for LLM agent control words — route names, tool names, exact enum values. Distinguishes agent-aware label collisions, where the model can emit a label and a wrong match triggers incorrect tool calls or routing, from generic string similarity. Research grounded in telegraph codebook design.
   keywords:
   - Python
-  - Jinja2
-  - LaTeX
-  - CI/CD
+  - CLI
+  - Agent systems
+  - pytest
