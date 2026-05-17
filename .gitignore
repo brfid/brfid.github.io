@@ -24,14 +24,5 @@ hugo/public/
 .env.test.local
 .env.production.local
 
-# ARPANET upstream repository (cloned for reference)
-arpanet-upstream/
-
-# CDK
-infra/cdk/cdk.out/
-test_infra/cdk/cdk.out/
-test_infra/cdk/cdk.context.json
-test_infra/cdk/.venv/
-test_infra/cdk/__pycache__/
 hugo/.hugo_build.lock
 hugo/data/resume.yaml

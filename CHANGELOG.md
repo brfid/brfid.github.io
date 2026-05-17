@@ -34,6 +34,7 @@ entries because this repository does not currently publish semantic version tags
 
 ### Recently Completed
 - Migrated site from jockeyholler.net custom domain to brfid.github.io. Removed CNAME, updated hugo.toml baseURL and label, updated portfolio/README/AGENTS references.
+- Removed dead infrastructure: `infra/`, `test_infra/`, tag-based publish scripts, legacy Makefile targets (`publish`, `publish-vintage`, `publish_arpanet`, `test_docker`). Cleaned `.gitignore` and `conftest.py`.
 
 ## [2026-04-01]
 
