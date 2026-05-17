@@ -1,6 +1,6 @@
 # brfid.github.io
 
-Source for [jockeyholler.net](https://www.jockeyholler.net/) — a Hugo-based personal site and technical writing portfolio deployed to GitHub Pages.
+Source for [brfid.github.io](https://brfid.github.io/) — a Hugo-based personal site and technical writing portfolio deployed to GitHub Pages.
 
 The live site is built and deployed via a Hugo + vintage computing pipeline (VAX/PDP-11 via SIMH). The vintage pipeline generates rendered artifacts that Hugo includes in the final build.
 

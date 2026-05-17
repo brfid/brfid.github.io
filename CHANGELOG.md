@@ -13,7 +13,7 @@ entries because this repository does not currently publish semantic version tags
 
 ### Current State
 - Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) is stable and produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
-- Site live at www.jockeyholler.net. Pipeline last validated: `publish-vintage-20260302-151109`.
+- Site live at brfid.github.io. Pipeline last validated: `publish-vintage-20260302-151109`.
 - Single build mode (vintage). `deploy.yml` triggers on push to `main` (skip with `[nopublish]` in commit message); `workflow_dispatch` is available for re-runs.
 - `resume_generator` CLI is site-generation only (`--in`, `--out`, `--templates`, `--html-only`); vintage orchestration is owned by pexpect scripts and `scripts/edcloud-vintage-runner.sh`.
 - Landing page data hierarchy supports vintage-pipeline-driven `principal_headline` and `impact_highlights` (`resume.vintage.yaml` -> `brad.bio.txt` -> `hugo/data/bio.yaml`); `about` remains sourced from root `resume.yaml` during CI.
@@ -33,7 +33,7 @@ entries because this repository does not currently publish semantic version tags
 - None.
 
 ### Recently Completed
-- None.
+- Migrated site from jockeyholler.net custom domain to brfid.github.io. Removed CNAME, updated hugo.toml baseURL and label, updated portfolio/README/AGENTS references.
 
 ## [2026-04-01]
 

@@ -1,4 +1,4 @@
-baseURL = "https://www.jockeyholler.net/"
+baseURL = "https://brfid.github.io/"
 languageCode = "en-us"
 title = "Bradley Fidler"
 theme = "PaperMod"
@@ -9,7 +9,7 @@ buildDrafts = false
 buildFuture = false
 
 [params.label]
-  text = "jockeyholler.net"
+  text = "brfid.github.io"
 
 [params]
   env = "production"

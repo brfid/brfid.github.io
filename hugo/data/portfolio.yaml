@@ -98,7 +98,7 @@ sections:
 
   - title: "Projects"
     items:
-      - name: "jockeyholler.net"
+      - name: "brfid.github.io"
         url: "https://github.com/brfid/brfid.github.io"
         year: 2026
         summary: "This site — Hugo static site with a custom docs-as-code pipeline. Includes a Python resume generator producing PDF and plain-text outputs, CI/CD deploy via GitHub Actions, and a vintage pipeline generating a man-page resume on an emulated VAX/PDP-11 via SIMH."

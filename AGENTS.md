@@ -6,7 +6,7 @@ under `[Unreleased]`; chronological history belongs in dated `CHANGELOG.md` entr
 
 ## Mission (stable constraints)
 
-- Build and publish a Hugo-based personal site and technical writing portfolio at jockeyholler.net.
+- Build and publish a Hugo-based personal site and technical writing portfolio at brfid.github.io.
 - Hugo owns the full site (landing page, blog, resume, portfolio). The vintage pipeline (VAX/PDP-11 via SIMH) remains as an on-demand artifact generator feeding Hugo inputs — not a site generator.
 - Blog and portfolio are the primary content surfaces; the vintage pipeline is a technical signal, not the product.
 - Prefer clear, evidence-backed updates over broad speculative changes.
