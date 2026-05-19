@@ -92,9 +92,7 @@ Pre-commit checks are optional by default in this repo workflow.
 - Keep `main` linear and readable: small, intention-revealing commits; no WIP commits.
 - Prefer additive fixes over history rewrites; rewrite shared `main` history only when
   explicitly requested by the operator.
-- Keep local and remote synchronized after each milestone (`git push origin main`,
-  then verify `main...origin/main` is clean).
-- Deploy tags are no longer used as publish triggers; every push to `main` deploys unless `[nopublish]` is in the commit message.
+- Do not push to GitHub unless the operator explicitly requests a push.
 - Before pushing, check for accidental secret material in changed files and avoid committing
   generated artifacts (`site/`, `build/`, `hugo/public/`, `.venv/`).
 
@@ -106,7 +104,6 @@ Pre-commit checks are optional by default in this repo workflow.
 
 - Keep Python execution in `.venv/` only.
 - Avoid global/system package installs.
-- Do not push to `main` unless the commit is intended to publish; use `[nopublish]` to suppress deploy when pushing non-publishing changes.
 - Do not reintroduce screen/telnet/sleep-based console orchestration; the pexpect approach supersedes it.
 
 ## Expected output shape for implementation work
