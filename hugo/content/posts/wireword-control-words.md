@@ -63,7 +63,7 @@ The severity boundary depends on the label's role:
 - Two confusable environment labels that both mean production: critical.
 - Two confusable enum values the model must emit exactly: high risk.
 
-I am experimenting with small tools to check this: [agentskills](https://github.com/brfid/agentskills). The rules are simple and include visual confusables, edit-distance-one pairs, case-only and punctuation-only differences, plural/stem collisions, and production-alias overload.
+I am experimenting with small tools to check this: [wireword](https://github.com/brfid/wireword). The rules are simple and include visual confusables, edit-distance-one pairs, case-only and punctuation-only differences, plural/stem collisions, and production-alias overload.
 
 ## Appendix: telegraph practices and LLM-agent counterparts
 
