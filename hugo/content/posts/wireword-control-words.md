@@ -1,191 +1,81 @@
 ---
-title: "Wireword: Agent Control Words Should Be Hard to Misread"
+title: "Lessons from the Telegraph for LLM Agent Design"
 date: 2026-04-21
+lastmod: 2026-05-30
 draft: false
 tags: ["llm", "agents", "history", "workflow"]
 ---
 
-This is a research note for [Wireword](https://github.com/brfid/wireword), a small tool I am building to lint LLM agent control words.
+This started as a question applied historians ask routinely: can we find lessons from history that inform current practice? The specific case was commercial telegraphy and LLM agents — two systems that compress language for expensive, noisy channels.
 
-By control words, I mean short labels that can change what an agent does:
+I went through a lot of telegraph techniques and operations asking what might be useful when working with LLMs. Almost everything survived — delimiters, confirmation, priority tiers, compression, validation, observability, access control — but as information management fundamentals, not telegraph-specific insights. They entered the general toolkit long ago. (Some comparisons are in the [appendix](#appendix-telegraph-practices-and-llm-agent-counterparts).)
 
-- route names
-- tool names
-- prompt macro names
-- environment targets
-- approval targets
-- exact enum values the model must emit
+But there's one area that might not have! A lessons from history? I give you: redundancy in control labels.
 
-The goal is narrow: make labels that control agent behavior harder to misread, miscopy, or misroute.
+## What codebooks got right
 
-## Of words and tokens being expensive
-
-This started with [caveman-style LLM output](https://github.com/juliusbrussee/caveman). The useful comparison is not really cavemen. It is telegraphese: compressed language for an expensive channel.
-
-Western Union did not bill like an LLM API, but the pressure was similar. Ordinary domestic telegrams were billed by chargeable body word, usually with a ten-word minimum; address, signature, and date were free, while extra body words cost more.[^ross] A ten-word sentence from New York to Boston could cost 30 cents.[^wu1869]
-
-That maps to LLM work in two basic ways:
-
-- **Token cost:** shorter turns are cheaper.
-- **Context quality:** shorter turns leave less low-information text in the conversation history.
-
-The second point is not just aesthetic. Long histories are not used perfectly. Irrelevant text can distract the model or bury the useful constraint.
-
-But compression has a failure mode. If compressed labels become too similar, the model has less redundancy to recover the intended control word.
-
-## Learning from telegraphy
-
-I looked at other telegraph practices to see what might apply to LLM agents. Could Victorian engineers provide fresh insights for our changing world? No, except for one thing, sort of.
-
-Most parallels are useful but general:
-
-| Telegraph practice | General pattern | LLM-agent version |
-|---|---|---|
-| `STOP` and spelled punctuation | delimiters | source/task boundaries |
-| repeat-back | confirmation | human approval gates |
-| service classes | priority and cost tiers | model routing / effort levels |
-| codebooks | macros | prompt libraries |
-| word-count checks | validation | output checks |
-| operators | review and observability | linters / traces |
-| private codes | substitution | PII masking |
-
-These are durable information-management practices. They are worth remembering, but they do not justify a new tool by themselves.
-
-The more specific lead was codeword design.
-
-## Compression with redundancy
-
-Commercial telegraph codebooks had to balance compression and recoverability. A codeword had to be short enough to save money, but distinct enough that a damaged word did not silently become another valid word.
-
-E. L. Bentley described the rule directly: good codewords should differ by at least two letters. Then a one-letter mutilation produces an invalid codeword, not the wrong valid codeword.[^bentley]
-
-The ABC Code used the same principle. John McVey's index quotes the 1920 sixth edition saying its five-letter codewords were built with at least a two-letter difference. The same note says the compilers considered Morse similarities and removed risky words.[^abc]
-
-Useful rule:
+Telegraph codebooks had to compress messages cheaply while ensuring a damaged codeword didn't silently become a different valid one. Bentley's rule: good codewords should differ by at least two letters.[^bentley] The ABC Code applied the same principle, screening out Morse-similar words.[^abc] Bellovin surveys the full design space — compression, error correction, confidentiality — and how codebook designers balanced all three.[^bellovin]
 
 > Good compression leaves enough redundancy to detect mistakes.
 
-## The LLM agent version
+This didn't carry forward into LLM agent design because the problem is newly common. LLM agents combine properties that make label confusability newly dangerous:
 
-This problem is not unique to LLMs. Similar issues appear in APIs, command-line flags, protocol enums, medication names, service names, and airport codes.
+- probabilistic language generation (the model can produce near-miss strings)
+- exact symbolic control (downstream code treats labels as exact inputs)
+- natural-language prompts wrapped around short labels (easy to miscopy or misread)
+- tool calls and routes with real side effects (wrong label → wrong action)
 
-LLM agents make the problem newly common because they combine:
+Recent research confirms this is not hypothetical. Qiu et al. show that LLM tool selection is sensitive to surface-level cues in tool names: assertive names, specific phrasing, and similar-looking alternatives all shift routing behavior measurably.[^toolprefs] Wang et al. demonstrate that small adversarial perturbations to tool names can reliably redirect tool calls to attacker-controlled tools.[^tooltweak]
 
-- probabilistic language generation
-- exact symbolic control
-- natural-language prompts around short labels
-- tool calls and routes with real side effects
-
-Example labels:
+Example labels that are too close:
 
 ```text
-A1
-AI
-Al
-prod
-production
-live
-docs.api
-doc.api
-FACTCHECK_API
-FACT_CHECK_API
+A1  /  AI  /  Al
+prod  /  production  /  live
+docs.api  /  doc.api
+FACTCHECK_API  /  FACT_CHECK_API
 ```
 
-These are not just strings. In an agent system, they may route work, call tools, select environments, expand macros, approve targets, or satisfy exact enum values.
+In an agent system, these may route work, call tools, select environments, or satisfy exact enum values. A wrong valid label is worse than an invalid label, because invalid labels fail validation, wrong valid labels pass validation and trigger the wrong action.
 
-The risk boundary is narrow. Similar labels matter when three conditions hold:
+## An agent-aware check
 
-- the label is visible to the model or copied through natural language
-- the model or a human can choose or emit the label
-- downstream code treats the label as an exact control input
-
-A wrong valid label is worse than an invalid label. Invalid labels can fail validation. Wrong valid labels can pass validation and trigger the wrong action.
-
-This matters less when routing is deterministic, internal IDs are hidden from the model, schemas constrain the choice, or a UI forces selection from canonical options.
-
-So Wireword should not only ask whether two strings are similar. It should ask:
-
-- What kind of label is this?
-- Can the model emit it?
-- Does a parser require an exact match?
-- What happens if the wrong label is chosen?
-- Does it target production or another external system?
-
-### Generic check vs agent-aware check
+The check that matters is not just string similarity. It is string similarity weighted by what the label controls.
 
 Generic similarity check:
 
 ```text
-docs.api / doc.api
-Reason: edit distance 1.
+docs.api / doc.api — edit distance 1.
 ```
 
 Agent-aware check:
 
 ```text
-CRITICAL docs.api / doc.api
-Reason: route-name collision across different effects.
-Risk: read-only route is one edit away from external-write route.
-Fix: rename to ROUTE_DOCS_REVIEW and ROUTE_DOCS_PUBLISH.
+CRITICAL  docs.api / doc.api
+route-name collision across different effects.
+read-only route is one edit away from external-write route.
 ```
 
-Generic similarity check:
+The severity boundary depends on the label's role:
 
-```text
-prod / production / live
-Reason: related strings.
-```
+- Two confusable read-only routes: annoying but low risk.
+- Two confusable routes where one is destructive: critical.
+- Two confusable environment labels that both mean production: critical.
+- Two confusable enum values the model must emit exactly: high risk.
 
-Agent-aware check:
+I am experimenting with small tools to check this: [agentskills](https://github.com/brfid/agentskills). The rules are simple and include visual confusables, edit-distance-one pairs, case-only and punctuation-only differences, plural/stem collisions, and production-alias overload.
 
-```text
-CRITICAL prod / production / live
-Reason: multiple production-like environment labels.
-Risk: agent may choose an inconsistent deployment target.
-Fix: use ENV_PRODUCTION as the only valid production label.
-```
+## Appendix: telegraph practices and LLM-agent counterparts
 
-That is the product line: do not only lint strings. Lint control words by the action they can trigger.
-
-### Current prototype and V1 plan
-
-The tool is [Wireword](https://github.com/brfid/wireword). V1 should stay small.
-
-The current prototype now checks both layers:
-
-- **raw labels:** visual confusables, edit-distance-one pairs, case-only differences, punctuation-only differences, plural/stem collisions, and production-like aliases
-- **agent-aware labels:** routes, tools, named agent handoffs, approval targets, macros, profiles, production-like environments, and exact enum values the model must emit
-
-That is enough to test the shape of the idea. The repo now has a small validation corpus with safe, dangerous, and malformed configs, plus a narrow FastMCP source extractor for tool names. It is still not a full agent security scanner.
-
-The useful output is not just `these strings are similar`. It is `these strings are similar, the model can see or emit them, and confusing them could call the wrong tool, route work to the wrong place, or target the wrong environment`.
-
-Representative targets:
-
-- MCP servers with model-visible tools
-- router or handoff agents
-- graph-based agent workflows
-- skill/plugin systems with named routes
-- exact enum outputs consumed by parsers
-
-The repo should carry the detailed CLI examples, fixtures, and tests. This note only needs the argument.
-
-### What Wireword is not
-
-Wireword is not:
-
-- an agent framework
-- a prompt framework
-- a general security scanner
-- a replacement for schemas or constrained decoding
-- a proof that LLMs confuse every similar label
-- necessary when labels are hidden behind deterministic routing, internal IDs, or strict UI selection
-
-It is a narrow lint pass for labels that become model-visible or human-visible control inputs.
-
-## Conclusion
-
-Telegraph codebooks might inspire useful linting for LLM agent control identifiers.
+| Telegraph practice | What it was | LLM-agent version | How it survived |
+|---|---|---|---|
+| `STOP` and spelled punctuation | Explicit delimiters in a whitespace-charged medium | Source/task boundary markers | Structured data formats (XML, JSON, protocol framing) |
+| Repeat-back | Operator reads message back for sender confirmation | Human approval gates | Confirmation dialogs, two-person integrity |
+| Service classes | Ordinary, urgent, night letter — priority and cost tiers | Model routing, effort levels | QoS, SLAs, tiered pricing |
+| Codebooks | Substitution tables compressing phrases to single words | Prompt libraries, macros | Compression, abbreviation, lookup tables |
+| Word-count checks | Validation that the received message had the expected length | Output validation, schema checks | Checksums, content-length headers, schema validation |
+| Operators | Human review at relay points for accuracy and routing | Linters, traces, observability | Monitoring, logging, human-in-the-loop review |
+| Private codes | Custom substitution hiding meaning from operators | PII masking, redaction | Encryption, access control, data masking |
 
 ## Sources
 
@@ -200,3 +90,9 @@ Telegraph codebooks might inspire useful linting for LLM agent control identifie
 [^ross]: Nelson E. Ross, [_How to Write Telegrams Properly_](https://en.wikisource.org/wiki/How_to_Write_Telegrams_Properly) (1928), "How Tolls Are Computed" and "Punctuation Marks." Ross explains domestic body-word billing, cable/radiogram address billing, and the rule that requested punctuation marks were counted and charged as words.
 
 [^wu1869]: Western Union Telegraph Company, [_The Proposed Union of the Telegraph and Postal Systems_](https://www.gutenberg.org/ebooks/62214.html.images) (1869). Western Union gives the 1866 New York-to-Boston tariff as 30 cents for ten words, exclusive of address and signature.
+
+[^bellovin]: Steven M. Bellovin, ["Compression, Correction, Confidentiality, and Comprehension: A Modern Look at Commercial Telegraph Codes"](https://www.usenix.org/conference/usenixsecurity09/technical-sessions/presentation/compression-correction-confidentiality), USENIX Security 2009. Surveys the design tradeoffs in commercial telegraph codebooks across compression, error resistance, and secrecy.
+
+[^toolprefs]: Qiu et al., ["Tool Preferences in Agentic LLMs Are Unreliable"](https://arxiv.org/abs/2505.18135) (2025). Shows that LLM tool selection is measurably sensitive to surface-level cues in tool names and descriptions.
+
+[^tooltweak]: Wang et al., ["ToolTweak: Attack on Tool Selection of Large Language Models"](https://arxiv.org/abs/2510.02554) (2025). Demonstrates that adversarial perturbations to tool names can reliably redirect LLM tool calls.
