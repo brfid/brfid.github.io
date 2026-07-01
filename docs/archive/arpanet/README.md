@@ -20,8 +20,6 @@ interoperate.
 Evidence: `bad magic number` errors on IMP2 HI1 with values like `feffffff`,
 `00000219`, `ffffffff`.
 
-See `handoffs/LLM-KS10-IMP-MISMATCH-2026-02-10.md` for full analysis.
-
 ## Files moved here
 
 ### IMP Chain (original blocker)
