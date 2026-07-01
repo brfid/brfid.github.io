@@ -27,9 +27,6 @@ dev = [
   "vulture>=2.11",
 ]
 
-[project.scripts]
-resume-gen = "resume_generator.cli:main"
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["resume_generator*"]

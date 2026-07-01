@@ -31,8 +31,6 @@ def load_resume(path: Path) -> Resume:
 def make_jinja_env(templates_dir: Path) -> Environment:
     """Create a Jinja2 environment configured for HTML templates.
 
-    Shared by both the resume and landing renderers so settings stay in sync.
-
     Args:
         templates_dir: Directory to load templates from.
 
