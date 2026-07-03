@@ -14,7 +14,7 @@ entries because this repository does not currently publish semantic version tags
 ### Current State
 
 - Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) normally produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
-- Site live at brfid.github.io. Pipeline last validated: run `28685066553` (2026-07-03, `workflow_dispatch`). Vintage pipeline (Stage B VAX + Stage A PDP-11) passed end-to-end through CI for the first time since 2026-05-31.
+- Site live at brfid.github.io. Pipeline last validated: run `28685342586` (2026-07-03, `workflow_dispatch`). Full vintage pipeline + Hugo build + GitHub Pages deploy all green — first fully green CI run since 2026-05-31.
 - Single build mode (vintage). `deploy.yml` triggers on push to `main` (skip with `[nopublish]` in commit message); `workflow_dispatch` is available for re-runs.
 - `resume_generator.cli.build_html()` renders only the resume page (used by `make resume-pdf`); vintage orchestration is owned by pexpect scripts and `scripts/edcloud-vintage-runner.sh`.
 - Landing page data hierarchy supports vintage-pipeline-driven `principal_headline` and `impact_highlights` (`resume.vintage.yaml` -> `brad.bio.txt` -> `hugo/data/bio.yaml`); `about` remains sourced from root `resume.yaml` during CI.
@@ -23,11 +23,11 @@ entries because this repository does not currently publish semantic version tags
 
 ### Active Priorities
 
-- Retry the `Publish Site` workflow. The vintage pipeline and Hugo build completed successfully in run `28685066553`, but the final "Deploy to GitHub Pages" step failed with a transient "Deployment failed, try again later." error. A retry run (`28685342586`) is in progress.
+- None.
 
 ### In Progress
 
-- VAX TODR clock-drift fix shipped through CI. The updated `vax-pexpect` image was rebuilt via `build-images.yml` (run `28684953925`, completed successfully) and the full vintage pipeline validated end-to-end in run `28685066553` (Stage B VAX ✓, Stage A PDP-11 ✓, Hugo build ✓). The GitHub Pages deploy step failed transiently; a retry is in progress. The edcloud instance (`i-01884060fea188bcd`) can be stopped via `aws ec2 stop-instances --instance-ids i-01884060fea188bcd` if not needed for further validation.
+- None.
 
 ### Blocked
 
