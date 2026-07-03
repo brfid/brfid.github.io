@@ -412,6 +412,9 @@ def main(argv=None) -> int:
         return 1
     except pexpect.EOF:
         _log("SIMH process exited unexpectedly")
+        _log("Last SIMH output:")
+        if child.before:
+            _log(child.before.decode("ascii", errors="replace")[-500:])
         return 1
     finally:
         if child.isalive():

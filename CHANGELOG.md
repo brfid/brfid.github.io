@@ -14,7 +14,6 @@ entries because this repository does not currently publish semantic version tags
 ### Current State
 
 - Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) normally produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
-- **Deploy pipeline currently broken:** every `Publish Site` run since 2026-07-01 fails in `stage_b_vax`. Root cause identified; see Blocked.
 - Site live at brfid.github.io. Pipeline last validated: `publish-vintage-20260302-151109`.
 - Single build mode (vintage). `deploy.yml` triggers on push to `main` (skip with `[nopublish]` in commit message); `workflow_dispatch` is available for re-runs.
 - `resume_generator.cli.build_html()` renders only the resume page (used by `make resume-pdf`); vintage orchestration is owned by pexpect scripts and `scripts/edcloud-vintage-runner.sh`.
@@ -24,29 +23,30 @@ entries because this repository does not currently publish semantic version tags
 
 ### Active Priorities
 
-- `scripts/vax_pexpect.py`'s `pexpect.EOF` handler (around line 413) discards `child.before` on exit, unlike the `TIMEOUT` handler which logs the last 500 bytes. This is why the CI logs for the current Stage B failures show only "SIMH process exited unexpectedly" with no console context — fix by logging `child.before` in the EOF branch too, so future crashes are diagnosable from CI logs alone without a manual SSM reproduction.
+- Rebuild and push `ghcr.io/brfid/vax-pexpect:latest` via `build-images.yml` so the updated `vax780-pexpect.ini` (with `attach todr /image/todr.dat`) is baked into the image. The fix was validated on the instance with a manually-patched ini inside the existing image, but the published image (digest `sha256:a70f3e373ac8…`, created 2026-05-19T21:23:27Z) still has the old ini without the TODR attach line. Trigger: push these changes to `main` (the `build-images.yml` path filter covers `vintage/machines/vax/configs/vax780-pexpect.ini` and `scripts/vax_pexpect.py`), or run `workflow_dispatch` on `build-images.yml`.
+- After the image rebuild completes, trigger a `deploy.yml` run (push to `main` or `workflow_dispatch`) to validate the full vintage pipeline end-to-end through CI. The last 3 CI runs (28677776909, 28630295526, 28526962194) all failed at `stage_b_vax`; this should be the first green run since 2026-05-31 (run 26701025358, commit `17fc3ff`).
+- Once CI validates, clear `Active Priorities`/`In Progress` and update `Current State` with the new "pipeline last validated" run ID.
 
 ### In Progress
 
-- None.
+- VAX TODR clock-drift fix implemented and validated on-instance, not yet shipped through CI. Three files changed locally (not yet pushed): `vintage/machines/vax/configs/vax780-pexpect.ini`, `scripts/vax_pexpect.py`, and this changelog. The edcloud instance (`i-01884060fea188bcd`) was started during this session and is currently running + SSM-online; it can be stopped via `aws ec2 stop-instances --instance-ids i-01884060fea188bcd` if not needed for further validation.
 
 ### Blocked
 
-- **`deploy.yml` Stage B (`stage_b_vax`) fails on every run since 2026-07-01** (3 consecutive `Publish Site` failures as of `c13789b`). Confirmed unrelated to repo changes: diffed every pexpect-critical file (`Dockerfile.vax-pexpect`, `configs/vax780-pexpect.ini`, `scripts/vax_pexpect.py`, `scripts/simh_session.py`, `scripts/edcloud-vintage-runner.sh`) against the last known-good deploy (`17fc3ff`, 2026-05-31) — no changes. `build-images.yml` (which builds `ghcr.io/brfid/vax-pexpect`) hasn't run since 2026-05-19, so the image is byte-identical between the working and failing runs. Reproduced directly on the edcloud instance (`i-01884060fea188bcd`) via SSM, running the container manually with `--verbose`: host resources are clean (2 vCPU/1.9GB RAM, load average 0.00, 18GB disk free, no OOM/segfault in `dmesg`), but the guest 4.3BSD kernel itself panics during boot:
-
-  ```text
-  WARNING: clock lost 165 days -- CHECK AND RESET THE DATE!
-  Automatic reboot in progress...
-  /dev/ra0a: SUMMARY INFORMATION BAD (SALVAGED)
-  Reboot request failed, PC: 8002A90C (MOVL 8003E628,R0)
-  Goodbye
-  ```
-
-  The RA81 disk image's internal clock has drifted far enough from real time to trigger 4.3BSD's auto-fsck-and-reboot path, which crashes in-kernel before reaching the `login:` prompt. This is a guest-OS/disk-image issue, not host or CI infrastructure.
+- None.
 
 ### Decisions Needed
 
-- **How to fix the VAX guest clock/reboot crash blocking Stage B:** candidates are (a) rebuild/patch `Dockerfile.vax-pexpect` or the RA81 disk image to pin or advance the guest clock before the auto-reboot check fires, (b) have `vax_pexpect.py`'s `_boot()` detect and answer the clock-reset prompt interactively instead of hitting the crashing auto-reboot path, (c) check whether upstream `jguillaumes/simh-vaxbsd` has a fix. Needs a decision before Stage B can run reliably again.
+- None.
+
+## [2026-07-03]
+
+### Fixed
+- Fixed `deploy.yml` Stage B (`stage_b_vax`) VAX guest clock crash that broke every `Publish Site` run since 2026-07-01. Root cause: SIMH's default VMS-mode TODR derives the guest clock from host wall-clock time; as real time advanced past ~165 days from the disk image's frozen date, 4.3BSD's boot triggered "clock lost N days" → auto-reboot → kernel panic before reaching `login:`. Fix: added `attach todr /image/todr.dat` to `configs/vax780-pexpect.ini` to switch SIMH to OS Agnostic mode (TODR starts at 0 each boot, producing a non-fatal "todr too small" warning instead of a crash). The "why now, not on 5/31" gap from the prior diagnosis is now fully explained: the TODR is wall-clock-derived, not image-state-derived, so the drift crosses the fatal threshold as calendar time advances — independent of image rebuilds or container statelessness. Validated end-to-end on the edcloud instance (`i-01884060fea188bcd`) with real `bradman.c` and `resume.vintage.yaml`: `brad.1.uu` (92 lines) and `brad.bio.txt` (9 lines) produced successfully.
+- Fixed `scripts/vax_pexpect.py`'s `pexpect.EOF` handler (around line 413) to log `child.before` (last 500 bytes), matching the existing `TIMEOUT` handler. Future SIMH crashes will be diagnosable from CI logs alone without a manual SSM reproduction.
+
+### Changed
+- `configs/vax780-pexpect.ini`: added `attach todr /image/todr.dat` before `load -o boot43 0` to enable SIMH TODR OS Agnostic mode. Requires a rebuild of `ghcr.io/brfid/vax-pexpect` via `build-images.yml` before the next deploy.
 
 ## [2026-07-01]
 
