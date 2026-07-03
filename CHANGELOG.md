@@ -13,7 +13,8 @@ entries because this repository does not currently publish semantic version tags
 
 ### Current State
 
-- Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) is stable and produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
+- Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) normally produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
+- **Deploy pipeline currently broken:** every `Publish Site` run since 2026-07-01 fails in `stage_b_vax`. Root cause identified; see Blocked.
 - Site live at brfid.github.io. Pipeline last validated: `publish-vintage-20260302-151109`.
 - Single build mode (vintage). `deploy.yml` triggers on push to `main` (skip with `[nopublish]` in commit message); `workflow_dispatch` is available for re-runs.
 - `resume_generator.cli.build_html()` renders only the resume page (used by `make resume-pdf`); vintage orchestration is owned by pexpect scripts and `scripts/edcloud-vintage-runner.sh`.
@@ -22,16 +23,30 @@ entries because this repository does not currently publish semantic version tags
 - Cold-start doc order: `README.md` -> this file -> `hugo/` (then `docs/integration/INDEX.md` only for vintage pipeline work).
 
 ### Active Priorities
-- None.
+
+- `scripts/vax_pexpect.py`'s `pexpect.EOF` handler (around line 413) discards `child.before` on exit, unlike the `TIMEOUT` handler which logs the last 500 bytes. This is why the CI logs for the current Stage B failures show only "SIMH process exited unexpectedly" with no console context — fix by logging `child.before` in the EOF branch too, so future crashes are diagnosable from CI logs alone without a manual SSM reproduction.
 
 ### In Progress
+
 - None.
 
 ### Blocked
-- None.
+
+- **`deploy.yml` Stage B (`stage_b_vax`) fails on every run since 2026-07-01** (3 consecutive `Publish Site` failures as of `c13789b`). Confirmed unrelated to repo changes: diffed every pexpect-critical file (`Dockerfile.vax-pexpect`, `configs/vax780-pexpect.ini`, `scripts/vax_pexpect.py`, `scripts/simh_session.py`, `scripts/edcloud-vintage-runner.sh`) against the last known-good deploy (`17fc3ff`, 2026-05-31) — no changes. `build-images.yml` (which builds `ghcr.io/brfid/vax-pexpect`) hasn't run since 2026-05-19, so the image is byte-identical between the working and failing runs. Reproduced directly on the edcloud instance (`i-01884060fea188bcd`) via SSM, running the container manually with `--verbose`: host resources are clean (2 vCPU/1.9GB RAM, load average 0.00, 18GB disk free, no OOM/segfault in `dmesg`), but the guest 4.3BSD kernel itself panics during boot:
+
+  ```text
+  WARNING: clock lost 165 days -- CHECK AND RESET THE DATE!
+  Automatic reboot in progress...
+  /dev/ra0a: SUMMARY INFORMATION BAD (SALVAGED)
+  Reboot request failed, PC: 8002A90C (MOVL 8003E628,R0)
+  Goodbye
+  ```
+
+  The RA81 disk image's internal clock has drifted far enough from real time to trigger 4.3BSD's auto-fsck-and-reboot path, which crashes in-kernel before reaching the `login:` prompt. This is a guest-OS/disk-image issue, not host or CI infrastructure.
 
 ### Decisions Needed
-- None.
+
+- **How to fix the VAX guest clock/reboot crash blocking Stage B:** candidates are (a) rebuild/patch `Dockerfile.vax-pexpect` or the RA81 disk image to pin or advance the guest clock before the auto-reboot check fires, (b) have `vax_pexpect.py`'s `_boot()` detect and answer the clock-reset prompt interactively instead of hitting the crashing auto-reboot path, (c) check whether upstream `jguillaumes/simh-vaxbsd` has a fix. Needs a decision before Stage B can run reliably again.
 
 ## [2026-07-01]
 
