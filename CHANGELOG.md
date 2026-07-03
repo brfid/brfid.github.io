@@ -14,7 +14,7 @@ entries because this repository does not currently publish semantic version tags
 ### Current State
 
 - Hugo is the site generator; the vintage pipeline (VAX/PDP-11 via SIMH) normally produces four Hugo inputs: `hugo/static/brad.man.txt`, `hugo/static/brad.bio.txt`, `hugo/static/build.log.html`, and `hugo/data/bio.yaml`.
-- Site live at brfid.github.io. Pipeline last validated: `publish-vintage-20260302-151109`.
+- Site live at brfid.github.io. Pipeline last validated: run `28685066553` (2026-07-03, `workflow_dispatch`). Vintage pipeline (Stage B VAX + Stage A PDP-11) passed end-to-end through CI for the first time since 2026-05-31.
 - Single build mode (vintage). `deploy.yml` triggers on push to `main` (skip with `[nopublish]` in commit message); `workflow_dispatch` is available for re-runs.
 - `resume_generator.cli.build_html()` renders only the resume page (used by `make resume-pdf`); vintage orchestration is owned by pexpect scripts and `scripts/edcloud-vintage-runner.sh`.
 - Landing page data hierarchy supports vintage-pipeline-driven `principal_headline` and `impact_highlights` (`resume.vintage.yaml` -> `brad.bio.txt` -> `hugo/data/bio.yaml`); `about` remains sourced from root `resume.yaml` during CI.
@@ -23,13 +23,11 @@ entries because this repository does not currently publish semantic version tags
 
 ### Active Priorities
 
-- Rebuild and push `ghcr.io/brfid/vax-pexpect:latest` via `build-images.yml` so the updated `vax780-pexpect.ini` (with `attach todr /image/todr.dat`) is baked into the image. The fix was validated on the instance with a manually-patched ini inside the existing image, but the published image (digest `sha256:a70f3e373ac8…`, created 2026-05-19T21:23:27Z) still has the old ini without the TODR attach line. Trigger: push these changes to `main` (the `build-images.yml` path filter covers `vintage/machines/vax/configs/vax780-pexpect.ini` and `scripts/vax_pexpect.py`), or run `workflow_dispatch` on `build-images.yml`.
-- After the image rebuild completes, trigger a `deploy.yml` run (push to `main` or `workflow_dispatch`) to validate the full vintage pipeline end-to-end through CI. The last 3 CI runs (28677776909, 28630295526, 28526962194) all failed at `stage_b_vax`; this should be the first green run since 2026-05-31 (run 26701025358, commit `17fc3ff`).
-- Once CI validates, clear `Active Priorities`/`In Progress` and update `Current State` with the new "pipeline last validated" run ID.
+- Retry the `Publish Site` workflow. The vintage pipeline and Hugo build completed successfully in run `28685066553`, but the final "Deploy to GitHub Pages" step failed with a transient "Deployment failed, try again later." error. A retry run (`28685342586`) is in progress.
 
 ### In Progress
 
-- VAX TODR clock-drift fix implemented and validated on-instance, not yet shipped through CI. Three files changed locally (not yet pushed): `vintage/machines/vax/configs/vax780-pexpect.ini`, `scripts/vax_pexpect.py`, and this changelog. The edcloud instance (`i-01884060fea188bcd`) was started during this session and is currently running + SSM-online; it can be stopped via `aws ec2 stop-instances --instance-ids i-01884060fea188bcd` if not needed for further validation.
+- VAX TODR clock-drift fix shipped through CI. The updated `vax-pexpect` image was rebuilt via `build-images.yml` (run `28684953925`, completed successfully) and the full vintage pipeline validated end-to-end in run `28685066553` (Stage B VAX ✓, Stage A PDP-11 ✓, Hugo build ✓). The GitHub Pages deploy step failed transiently; a retry is in progress. The edcloud instance (`i-01884060fea188bcd`) can be stopped via `aws ec2 stop-instances --instance-ids i-01884060fea188bcd` if not needed for further validation.
 
 ### Blocked
 
