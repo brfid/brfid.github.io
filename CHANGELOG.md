@@ -33,12 +33,16 @@ entries because this repository does not currently publish semantic version tags
 ### Decisions Needed
 - None.
 
-### Recently Completed
+## [2026-07-01]
 
+### Changed
+- Migrated site from jockeyholler.net custom domain to brfid.github.io. Removed CNAME, updated hugo.toml baseURL and label, updated portfolio/README/AGENTS references.
+
+### Removed
 - Removed the pre-Hugo static site generator left over from before Hugo took over the landing/portfolio pages: `resume_generator/{landing,portfolio,manifest,manpage}.py`, `cli.py`'s `build_site()`/`main()` and the `resume-gen` console script, and the orphaned `templates/{index,portfolio}.html.j2` and `build-info-widget.html`. `resume_generator.cli.build_html()` (resume page + PDF, used by `make resume-pdf`) and the vintage-pipeline parsers (`bio_yaml.py`, `vintage_yaml.py`) are unaffected.
 - Removed dead vintage-pipeline files from the retired telnet/FTP/IMP era (superseded by the pexpect pipeline; see `docs/archive/DEAD-ENDS.md`): `vintage/machines/pdp11/{Dockerfile.pdp11,pdp11-boot.sh,pdp11_autoboot.exp}`, the IMP/ARPANET config tree under `vintage/machines/pdp11/configs/`, `vintage/machines/vax/{Dockerfile.ftp-server,Dockerfile.simh-ftp,vsftpd*.conf,vax-boot.sh}`, and `vintage/tools/extract_simh_tap.py`.
-- Migrated site from jockeyholler.net custom domain to brfid.github.io. Removed CNAME, updated hugo.toml baseURL and label, updated portfolio/README/AGENTS references.
 - Removed dead infrastructure: `infra/`, `test_infra/`, tag-based publish scripts, legacy Makefile targets (`publish`, `publish-vintage`, `publish_arpanet`, `test_docker`). Cleaned `.gitignore` and `conftest.py`.
+- Removed the dead ARPANET archive binary (`docs/archive/arpanet/imp/h316ov`, a 1.1MB compiled ELF with no traceability value) and stale `vintage/machines/vax/examples/` scratch notes predating the current `bradman.c` YAML-subset parser.
 
 ## [2026-04-01]
 

@@ -55,6 +55,9 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
 ```
 
+Run `make help` to list common commands (`Makefile` wraps the raw commands
+documented in this file: tests, Hugo build, resume PDF, edcloud lifecycle).
+
 ### Quality checks
 
 ```bash

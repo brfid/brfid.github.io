@@ -42,20 +42,24 @@ Use Keep a Changelog structure with one repo convention:
   3. `In Progress`
   4. `Blocked`
   5. `Decisions Needed`
-  6. `Recently Completed`
 - Keep every subcategory present; if empty, use `- None.`.
 - Dated entries (`## [YYYY-MM-DD]`) keep normal Keep a Changelog categories
   (`Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`).
 
+`[Unreleased]` holds forward-looking/current state only — not a running log of
+finished work. Completed work is discoverable from `git log` (this repo keeps
+clean, intention-revealing commits; see Git discipline) and doesn't need restating
+here except where it changes `Current State`.
+
 Update rules:
 
-1. On start/end of a task, update `In Progress` and `Recently Completed`.
+1. On start/end of a task, update `In Progress`.
 2. On new queued work, update `Active Priorities`.
 3. On external dependency or waiting condition, update `Blocked`.
 4. On user choice needed, update `Decisions Needed`.
 5. On architecture/runtime truth changes, update `Current State`.
-6. On milestone/date cut, move `Recently Completed` items into a dated entry and
-   classify under standard Keep a Changelog categories.
+6. On a significant milestone (see Commit cadence), add a new dated entry directly,
+   classified under standard Keep a Changelog categories.
 7. Do not record routine blog content authoring/editing/import work in `CHANGELOG.md`;
    reserve changelog updates for repo workflow, infrastructure, tooling, and runtime-status changes.
 
