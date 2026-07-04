@@ -244,6 +244,13 @@ jobs:
             base64 -d /tmp/build.log.b64 > hugo/static/build.log.html
           fi
 
+          # Extract machine-readable pipeline status JSON
+          awk '/^<<<PIPELINE_STATUS_JSON_BASE64_BEGIN>>>/{flag=1;next}/^<<<PIPELINE_STATUS_JSON_BASE64_END>>>/{flag=0}flag' /tmp/edcloud-stdout.txt \
+            | tr -d '\n' > /tmp/pipeline-status.json.b64
+          if [[ -s /tmp/pipeline-status.json.b64 ]]; then
+            base64 -d /tmp/pipeline-status.json.b64 > hugo/static/pipeline-status.json
+          fi
+
       - name: Sync resume data for Hugo
         run: cp resume.yaml hugo/data/resume.yaml
 
@@ -264,8 +271,20 @@ jobs:
         with:
           path: site
 
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (attempt 1/3)
+        id: deploy1
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 2/3)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 3/3)
         id: deployment
+        if: steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
       - name: Stop edcloud instance
@@ -299,7 +318,8 @@ jobs:
 
       - name: Summary
         run: |
+          PAGE_URL="${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url || 'https://brfid.github.io' }}"
           echo "## Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "URL: ${{ steps.deployment.outputs.page_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "URL: $PAGE_URL" >> "$GITHUB_STEP_SUMMARY"
           echo "SHA: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"

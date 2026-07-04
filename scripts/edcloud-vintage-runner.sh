@@ -33,6 +33,7 @@ LOG_DIR="${LOG_DIR:-/tmp/edcloud-vintage}"
 LOG_FILE="${LOG_DIR}/${BUILD_ID}.log"
 SECTIONS_LOG="${LOG_DIR}/${BUILD_ID}.sections.jsonl"
 KEEP_IMAGES="${KEEP_IMAGES:-0}"
+GIT_SHA="${GIT_SHA:-$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || echo 'unknown')}"
 
 PDP11_IMAGE="pdp11-pexpect"
 VAX_IMAGE="vax-pexpect"
@@ -217,6 +218,54 @@ stage_a_pdp11() {
   echo "Stage A complete: build/vintage/brad.man.txt  ($(wc -l < build/vintage/brad.man.txt) lines)"
 }
 
+emit_status_json() {
+  # Emit a machine-readable pipeline status artifact for CI triage.
+  # Called from main() after all stages complete (or from on_exit on failure).
+  cd "$ROOT_DIR"
+
+  local status_file="build/vintage/pipeline-status.json"
+  local exit_code="${1:-0}"
+  local now
+  now="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+  # Collect stage-level stats
+  local yaml_lines=0 brad1_lines=0 man_lines=0 bio_lines=0
+  [[ -s build/vintage/resume.vintage.yaml ]] && yaml_lines=$(wc -l < build/vintage/resume.vintage.yaml)
+  [[ -s build/vintage/brad.1.uu ]] && brad1_lines=$(wc -l < build/vintage/brad.1.uu)
+  [[ -s build/vintage/brad.man.txt ]] && man_lines=$(wc -l < build/vintage/brad.man.txt)
+  [[ -s build/vintage/brad.bio.txt ]] && bio_lines=$(wc -l < build/vintage/brad.bio.txt)
+
+  python3 - "$exit_code" "$now" "$yaml_lines" "$brad1_lines" "$man_lines" "$bio_lines" "$BUILD_ID" "$GIT_SHA" <<'PY'
+import json, sys
+
+exit_code    = int(sys.argv[1])
+completed_at = sys.argv[2]
+yaml_lines   = int(sys.argv[3])
+brad1_lines  = int(sys.argv[4])
+man_lines    = int(sys.argv[5])
+bio_lines    = int(sys.argv[6])
+build_id     = sys.argv[7]
+git_sha      = sys.argv[8] if len(sys.argv) > 8 else ""
+
+status = {
+    "pipeline": "edcloud-vintage",
+    "build_id": build_id,
+    "git_sha": git_sha,
+    "completed_at": completed_at,
+    "exit_code": exit_code,
+    "result": "success" if exit_code == 0 else "failure",
+    "stages": {
+        "generate_vintage_yaml": {"lines": yaml_lines},
+        "stage_b_vax":           {"brad_1_uu_lines": brad1_lines},
+        "stage_a_pdp11":         {"brad_man_txt_lines": man_lines},
+        "bio":                   {"brad_bio_txt_lines": bio_lines},
+    },
+}
+print(json.dumps(status, indent=2))
+PY
+  > "$status_file"
+}
+
 emit_artifact() {
   stage "emit-artifact"
   cd "$ROOT_DIR"
@@ -233,6 +282,13 @@ emit_artifact() {
     local bio_b64
     bio_b64="$(base64 -w 0 build/vintage/brad.bio.txt)"
     printf '<<<BRAD_BIO_TXT_BASE64_BEGIN>>>\n%s\n<<<BRAD_BIO_TXT_BASE64_END>>>\n' "$bio_b64" >&3
+  fi
+
+  # Emit machine-readable pipeline status JSON (base64-encoded for safe transport)
+  if [[ -s build/vintage/pipeline-status.json ]]; then
+    local status_b64
+    status_b64="$(base64 -w 0 build/vintage/pipeline-status.json)"
+    printf '<<<PIPELINE_STATUS_JSON_BASE64_BEGIN>>>\n%s\n<<<PIPELINE_STATUS_JSON_BASE64_END>>>\n' "$status_b64" >&3
   fi
 
   printf 'LOG_FILE=%s\n' "$LOG_FILE" >&3
@@ -404,6 +460,7 @@ main() {
   generate_vintage_yaml
   stage_b_vax
   stage_a_pdp11
+  emit_status_json 0
   emit_artifact
   emit_build_log
 }
