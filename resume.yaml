@@ -1,14 +1,14 @@
-tagline: "Technical Writer — API documentation, LLM integration, developer experience"
-principal_headline: "Technical Writer"
+tagline: "Technical Writer — Documentation Platform Engineering & LLM Integration"
+principal_headline: "Senior Technical Writer"
 profile: |-
-  Technical documentation has two audiences: the developer reading it, and the tools that consume it. I own the content and the infrastructure that makes it reliable for both.
+  I own documentation end-to-end — content, platform, and AI integration — for a B2B security intelligence company serving 800+ customers. I built and run docs.domaintools.com: platform architecture, CI/CD, OpenAPI-as-contract across four API product lines, deployment, and a production MCP server for LLM-assisted documentation quality control. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN.
 
 basics:
   name: Bradley Fidler
-  label: "Technical Writer — API documentation, LLM integration, developer experience"
+  label: "Technical Writer — Documentation Platform Engineering & LLM Integration"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: "I set how documentation integrates into the development cycle and build the infrastructure that makes it work — CI/CD pipelines, OpenAPI workflows, LLM integrations. At DomainTools I own docs.domaintools.com and documentation strategy for a B2B security intelligence platform, directing a documentation specialist and leading SDLC integration so docs ship when features do. I published peer-reviewed work at USENIX Security and IEEE Annals and wrote a commissioned history of the internet for Google and ICANN."
+  summary: "I own documentation end-to-end — content, platform, and AI integration. At DomainTools I built and run docs.domaintools.com for a B2B security intelligence platform serving 800+ customers: platform architecture, OpenAPI-as-contract across four API product lines, CI/CD, deployment, and a production MCP server for LLM-assisted documentation quality control. As technical lead for the documentation function, I direct a documentation specialist and lead SDLC integration so docs ship when features do — engineers across 4 teams contribute via git. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN."
   location:
     city: Warwick
     countryCode: US
@@ -28,19 +28,15 @@ work:
   url: https://docs.domaintools.com
   location: Seattle (Remote), WA, US
   startDate: '2023-10-01'
-  summary: "Own docs.domaintools.com, documentation strategy, and all supporting tooling for a 150-person B2B security intelligence company serving 800+ customers. Technical lead for the documentation function, directing a documentation specialist. Moved documentation into the SDLC — critical updates ship same-day, and products launch with docs at tech preview."
+  summary: "Own docs.domaintools.com end-to-end — platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy — as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers."
   highlights:
-  - Reduced documentation cycle time from weeks to same-day for critical updates; products now launch with docs at tech preview — as technical lead owning strategy, platform, tooling, and direction of the documentation function.
-  - "Authored the company's documentation strategy and roadmap from scratch — platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards."
-  - Migrated 120+ documents into a unified MkDocs-Material platform with CI/CD, Swagger UI, and SME contribution workflows across 4 engineering teams.
-  - Defined OpenAPI specifications across 4 API product lines; specs govern production code generation, Swagger UI rendering, contract validation, and Schemathesis conformance testing.
-  - Built Python/Jinja2/LaTeX PDF generator with theming and dynamic TOC for branded customer-facing documentation.
+  - Own docs.domaintools.com end-to-end — platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy — as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers. Replaced an outsourced WordPress/Confluence changelog pipeline with a self-operated docs.domaintools.com/changelog system serving RSS and JSON feeds.
   - "Built a production MCP server for deterministic quality control in LLM-assisted documentation — integrates Vale, markdownlint, spaCy, and custom linters as callable tools, enabling consistent quality at scale without reviewer bottlenecks."
-  - Owned the full deployment stack for docs.domaintools.com — container-based image builds, GitOps-managed cluster deployments, and CI/CD pipelines that map environment branching strategy to staged promotion across dev and production.
-  - "Authored the company's documentation style guide and contribution guide; enabled engineering teams to contribute directly to the docs platform via git. Engineers review documentation MRs; API reference verified against source code."
+  - Defined OpenAPI specifications across 4 API product lines; specs govern production code generation, Swagger UI rendering, contract validation, and Schemathesis conformance testing.
+  - "Moved documentation into the SDLC: critical updates ship same-day, products launch with docs at tech preview, and engineers across 4 teams contribute directly via git and review documentation MRs."
   - Designed a multi-consumer documentation model treating human readers, AI agents, and automated pipelines as distinct audiences — each with different access patterns, metadata requirements, and context windows.
   - Developed a cold-start completeness test methodology for evaluating documentation coverage from zero; produced a reusable build-trial harness for assessing MCP server documentation at launch.
-  - Replaced an outsourced WordPress/Confluence changelog pipeline with a self-operated docs.domaintools.com/changelog system serving RSS and JSON feeds.
+  - Authored the company's documentation strategy, style guide, and contribution guide from scratch — platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards.
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'

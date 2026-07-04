@@ -6,45 +6,30 @@ sections:
         year: 2025
         role: "Author"
         publisher: "DomainTools"
-        summary: "Documentation platform for a B2B security intelligence company:
-          unified 120+ documents from scattered sources into a single MkDocs-Material
-          site with CI/CD, search, versioning, Swagger UI, SME contribution workflows,
-          and release-cycle integration."
+        summary: "Platform architecture, documentation strategy, and end-to-end ownership of
+          docs.domaintools.com for a 150-person B2B security intelligence company serving 800+
+          customers. OpenAPI-as-contract across four API product lines, CI/CD with GitOps-managed
+          deployment, SME contribution workflows across 4 engineering teams, and AI-integrated
+          quality control via DDT. Unified 120+ documents from scattered sources into a single
+          MkDocs-Material platform with Swagger UI, search, and release-cycle integration.
+          Produces auto-generated structured context files (llms.txt, LLM context files)
+          covering all API products and data schemas via CI/CD for use in LLM tooling and
+          retrieval workflows."
         status: live
-        tags: ["documentation systems", MkDocs, CI/CD, security]
+        tags: ["documentation systems", MkDocs, "OpenAPI", CI/CD, "GitOps", security, LLM]
 
-      - name: "brfid.github.io Publishing Pipeline"
-        url: "https://github.com/brfid/brfid.github.io"
-        year: 2026
-        summary: "This site: Hugo static publishing with generated resume artifacts,
-          GitHub Actions deployment, and a vintage pipeline that drives emulated VAX
-          and PDP-11 systems via SIMH/pexpect to generate a man-page resume artifact."
-        status: live
-        tags: [Hugo, Python, "GitHub Actions", SIMH, CI/CD]
-
-  - title: "Documentation Systems"
-    items:
-      - name: "DomainTools Product Documentation"
-        url: "https://docs.domaintools.com"
-        year: 2025
-        role: "Author"
-        publisher: "DomainTools"
-        summary: "User-facing documentation for DomainTools security intelligence
-          products and workflows. Consolidated product docs, API references, and
-          contributor workflows into a single docs-as-code platform."
-        status: live
-        tags: ["product documentation", "docs-as-code", security]
-
-      - name: "DomainTools LLM Context Files"
+      - name: "Documentation Diagnostic Tools (DDT)"
         url: "https://docs.domaintools.com/llm/"
         year: 2025
         role: "Author"
-        publisher: "DomainTools"
-        summary: "Auto-generated structured context files covering DomainTools API
-          products and data schemas, produced by CI/CD for use in LLM tooling and
-          retrieval workflows."
+        publisher: "Internal · DomainTools · production"
+        summary: "Production MCP server for deterministic quality control in LLM-assisted
+          documentation. Integrates Vale, markdownlint, spaCy, and custom linters as callable MCP
+          tools — giving LLM writing assistants a structured, auditable quality gate.
+          TODO: quantified outcomes pending — number of checks, docs gated, what it replaced,
+          before/after error or consistency rates."
         status: live
-        tags: [LLM, RAG, CI/CD, "structured data"]
+        tags: [MCP, LLM, "quality control", Python, "production"]
 
   - title: "Developer Documentation"
     items:
@@ -80,58 +65,83 @@ sections:
         status: live
         tags: ["SDK documentation", Python, "developer docs"]
 
-  - title: "Tools, Automation, and AI"
+  - title: "Writing & Methodology"
     items:
-      - name: "lcost"
-        url: "https://github.com/brfid/lcost"
+      - name: "Lessons from the Telegraph for LLM Agent Design"
+        url: "/posts/wireword-control-words/"
         year: 2026
-        summary: "AI cost tracking and terminal dashboard for Claude Code and Cline
-          workflows. Built to make token use, cache behavior, project-level spend,
-          and model mix visible during everyday AI-assisted work."
-        status: live
-        tags: [Python, Textual, TUI, "AI tooling"]
+        summary: "Published essay. Systematic review of telegraph techniques (compression,
+          error correction, codebook design) applied to LLM agent architectures — finding
+          that most practices survived as information-management fundamentals, and the one
+          actionable gap is redundancy in control-label design. Cites recent arxiv research
+          on LLM tool-selection sensitivity and adversarial tool-name attacks. Paired with the
+          Wireword linter as a proof artifact."
+        tags: [LLM, agents, history, telegraph, research]
 
+      - name: "Strachey's Principle: The Discipline That Makes Abstraction Work"
+        url: "/posts/stracheys-principle/"
+        year: 2026
+        summary: "Published essay. Argues that the power of an abstraction layer comes from
+          committing to it entirely — partial adoption breaks the model. Traces this principle
+          from Strachey's 1965 macrogenerator through Dijkstra, Kay, and into current LLM-assisted
+          work. Closes with first-person investment in the discipline of learning LLM failure
+          modes."
+        tags: [history, computing, LLM, programming, methodology]
+
+      - name: "Using CHANGELOG.md as LLM Session Memory"
+        url: "/posts/changelog-as-llm-memory/"
+        year: 2026
+        summary: "Practical workflow essay. Documents the Keep a Changelog [Unreleased] section
+          pattern as structured LLM session state — a small, version-controlled working-memory
+          document that reduces cold-start orientation cost and preserves accruable context
+          across sessions."
+        tags: [LLM, documentation, workflow, methodology]
+
+  - title: "Tools & Automation"
+    items:
       - name: "Wireword"
         url: "https://github.com/brfid/wireword"
         year: 2026
         summary: "Linter for LLM agent control labels: route names, tool names, enum
-          values, environments, approval targets, and other short labels that can
-          change agent behavior if misread or confused."
+          values, environments, and approval targets. Detects confusable label pairs weighted
+          by what the label controls — visual confusables, edit-distance-one, case-only,
+          punctuation-only, plural/stem collisions, and production-alias overload. Research
+          grounded in telegraph codebook design (Bentley's two-letter-difference rule, ABC
+          Code). Config-aware linting with effect-based severity escalation."
         status: live
-        tags: [Python, LLM, agents, linting]
+        tags: [Python, LLM, agents, linting, CLI]
 
-      - name: "oldspeak"
-        url: "https://github.com/brfid/oldspeak"
+      - name: "lcost"
+        url: "https://github.com/brfid/lcost"
         year: 2026
-        summary: "Small MCP server exposing practical prose checks derived from
-          Orwell's rules as callable document-analysis tools, with normalized
-          findings, filtering, caching, and MCP runtime tests."
+        summary: "Local CLI and LCARS TUI for tracking LLM token and cost data across Claude
+          Code and Cline sessions. Reads session files, deduplicates against a local ledger,
+          reports cost and token breakdowns across multiple providers (Anthropic, OpenAI,
+          Bedrock, Google, Meta, Mistral)."
         status: live
-        tags: [Python, MCP, "writing tools"]
+        tags: [Python, TUI, "AI tooling", cost]
 
       - name: "edcloud"
         url: "https://github.com/brfid/edcloud"
         year: 2026
-        summary: "Single-instance AWS EC2 Linux workflow environment used when local
-          Linux hardware is offline: Tailscale-only access, CLI lifecycle tooling,
-          persistent state volume, snapshots, restore drills, runbooks, and cost
-          guardrails."
+        summary: "Single-instance AWS EC2 personal cloud lab: Tailscale-only access, CLI
+          lifecycle tooling, persistent state volume, snapshots, restore drills, runbooks,
+          and cost guardrails. Designed to be operated from lightweight ARM/Linux nodes."
         status: live
         tags: [Python, AWS, Tailscale, runbooks]
 
-  - title: "Research and Publications"
-    items:
-      - name: "The Creation and Administration of Unique Identifiers, 1967-2017"
-        url: "https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf"
-        year: 2020
-        role: "Co-author"
-        publisher: "ICANN / Google"
-        summary: "Comprehensive history of internet unique identifier creation and
-          administration from ARPANET origins through 2017. Jointly commissioned by
-          ICANN and Google for policy deliberations on IP governance and ownership."
+      - name: "brfid.github.io Publishing Pipeline"
+        url: "https://github.com/brfid/brfid.github.io"
+        year: 2026
+        summary: "This site: Hugo static publishing with GitHub Actions deployment. A vintage
+          computing pipeline drives emulated VAX and PDP-11 systems via SIMH/pexpect to generate
+          a man-page resume artifact — a technical signal of systems-level documentation
+          thinking."
         status: live
-        tags: [research, "internet history", ARPANET, policy]
+        tags: [Hugo, Python, "GitHub Actions", SIMH, CI/CD]
 
+  - title: "Research & Publications"
+    items:
       - name: "Work-From-Home and COVID-19: Trajectories of Endpoint Security Management in a Security Operations Center"
         url: "https://www.usenix.org/conference/usenixsecurity23/presentation/jones"
         year: 2023
@@ -142,6 +152,17 @@ sections:
           work-from-home transition, complementing a 1,000-hour SOC ethnography."
         status: live
         tags: ["peer-reviewed", security, "historical research"]
+
+      - name: "The Creation and Administration of Unique Identifiers, 1967-2017"
+        url: "https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf"
+        year: 2020
+        role: "Co-author"
+        publisher: "ICANN / Google"
+        summary: "Comprehensive history of internet unique identifier creation and
+          administration from ARPANET origins through 2017. Jointly commissioned by
+          ICANN and Google for policy deliberations on IP governance and ownership."
+        status: live
+        tags: [research, "internet history", ARPANET, policy]
 
       - name: "Edge Cryptography and the Codevelopment of Computer Networks and Cybersecurity"
         url: "https://doi.org/10.1109/MAHC.2016.49"
