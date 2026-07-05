@@ -25,11 +25,37 @@ sections:
         publisher: "Internal · DomainTools · production"
         summary: "Production MCP server for deterministic quality control in LLM-assisted
           documentation. Integrates Vale, markdownlint, spaCy, and custom linters as callable MCP
-          tools — giving LLM writing assistants a structured, auditable quality gate.
-          TODO: quantified outcomes pending — number of checks, docs gated, what it replaced,
-          before/after error or consistency rates."
+          tools, giving LLM writing assistants a structured, auditable quality gate — the
+          mechanical enforcement layer beneath the DomainTools documentation platform."
         status: live
         tags: [MCP, LLM, "quality control", Python, "production"]
+
+      - name: "Agent Memory Architecture for Documentation"
+        url: ""
+        year: 2025
+        role: "Architect & Author"
+        publisher: "Internal · DomainTools · production"
+        summary: "A git-native knowledge system that lets AI documentation agents improve
+          safely: every change to what the agents know is human-reviewed via pull request, so
+          nothing degrades silently. Four-tier memory architecture with an explicit consolidation
+          loop that captures lessons from completed work and promotes them into reusable skills
+          and standing rules. Deployed at DomainTools across multiple agent tools, sitting beneath
+          DDT and the documentation platform as the workflow-memory layer."
+        status: live
+        tags: ["knowledge architecture", MCP, LLM, "agent systems", "compound engineering"]
+
+      - name: "Wireword"
+        url: "https://github.com/brfid/wireword"
+        year: 2026
+        role: "Author"
+        publisher: "brfid"
+        summary: "Linter for LLM agent control labels: route names, tool names, enum
+          values, environments, and approval targets. Detects confusable label pairs weighted
+          by what the label controls — the same reliability concern that drives DDT's quality
+          gate, investigated independently through telegraph codebook history. Research
+          published alongside a companion essay on the Wireword blog post."
+        status: live
+        tags: [Python, LLM, agents, linting]
 
   - title: "Developer Documentation"
     items:
@@ -99,18 +125,6 @@ sections:
 
   - title: "Tools & Automation"
     items:
-      - name: "Wireword"
-        url: "https://github.com/brfid/wireword"
-        year: 2026
-        summary: "Linter for LLM agent control labels: route names, tool names, enum
-          values, environments, and approval targets. Detects confusable label pairs weighted
-          by what the label controls — visual confusables, edit-distance-one, case-only,
-          punctuation-only, plural/stem collisions, and production-alias overload. Research
-          grounded in telegraph codebook design (Bentley's two-letter-difference rule, ABC
-          Code). Config-aware linting with effect-based severity escalation."
-        status: live
-        tags: [Python, LLM, agents, linting, CLI]
-
       - name: "lcost"
         url: "https://github.com/brfid/lcost"
         year: 2026
