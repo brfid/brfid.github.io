@@ -5,9 +5,9 @@ draft: false
 tags: ["llm", "documentation", "workflow"]
 ---
 
-Most LLM assistants don't maintain memory between sessions. The standard workaround — a large `CLAUDE.md` or `AGENTS.md` with everything in it — breaks down quickly. What's more, it duplicates other content in your repo, growing the documentation maintenance surface without adding value.
+Most LLM assistants don't maintain memory between sessions. The standard workaround, a large `CLAUDE.md` or `AGENTS.md` with everything in it, breaks down quickly. What's more, it duplicates other content in your repo, growing the documentation maintenance surface without adding value.
 
-Lately I avoid this problem by treating `CHANGELOG.md` as my LLM's memory — specifically the `[Unreleased]` section from the format standardized by [Keep a Changelog](https://keepachangelog.com/), which becomes the primary mutable state document.
+Lately I avoid this problem by treating `CHANGELOG.md` as my LLM's memory: specifically the `[Unreleased]` section from the format standardized by [Keep a Changelog](https://keepachangelog.com/), which becomes the primary mutable state document.
 
 ## Why it works
 
@@ -15,8 +15,8 @@ Lately I avoid this problem by treating `CHANGELOG.md` as my LLM's memory — sp
 
 That maps directly onto what you need for session continuity:
 
-- **`[Unreleased]`** — mutable, updated every session. Current state, active priorities, blockers, decisions pending. The model reads this first.
-- **Dated entries** — append-only history. Evidence that decisions happened and why. The model reads these to reconstruct context if it needs depth.
+- **`[Unreleased]`**: mutable, updated every session. Current state, active priorities, blockers, decisions pending. The model reads this first.
+- **Dated entries**: append-only history. Evidence that decisions happened and why. The model reads these to reconstruct context if it needs depth.
 
 The AGENTS.md (or CLAUDE.md) file becomes stable configuration: conventions, file paths, source-of-truth map. It changes rarely. The CHANGELOG takes on everything that does change.
 
@@ -28,7 +28,7 @@ One line at the top of `AGENTS.md` is enough:
 Read CHANGELOG.md [Unreleased] at session start.
 ```
 
-From there the model knows where it is, what's in flight, and what to do next — without re-explanation.
+From there the model knows where it is, what's in flight, and what to do next, without re-explanation.
 
 ## What goes in [Unreleased]
 
@@ -66,6 +66,6 @@ It also does not solve the problem of context window limits on large projects. I
 
 ## Result
 
-Sessions are shorter to start, more reliable to hand off, and easier to audit. The changelog does the work it was always supposed to do — track what changed and when — and the LLM does less redundant orientation work each time.
+Sessions are shorter to start, more reliable to hand off, and easier to audit. The changelog does the work it was always supposed to do (track what changed and when) and the LLM does less redundant orientation work each time.
 
 The format is well-understood, self-describing, and version-controlled. If you're already using Keep a Changelog, the only addition is a discipline: update `[Unreleased]` at the end of each session.

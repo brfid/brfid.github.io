@@ -6,15 +6,15 @@ draft: false
 tags: ["llm", "agents", "history", "workflow"]
 ---
 
-This started as a question applied historians ask routinely: can we find lessons from history that inform current practice? The specific case was commercial telegraphy and LLM agents — two systems that compress language for expensive, noisy channels.
+This started as a question applied historians ask routinely: can we find lessons from history that inform current practice? The specific case was commercial telegraphy and LLM agents: two systems that compress language for expensive, noisy channels.
 
-I went through a lot of telegraph techniques and operations asking what might be useful when working with LLMs. Almost everything survived — delimiters, confirmation, priority tiers, compression, validation, observability, access control — but as information management fundamentals, not telegraph-specific insights. They entered the general toolkit long ago. (Some comparisons are in the [appendix](#appendix-telegraph-practices-and-llm-agent-counterparts).)
+I went through a lot of telegraph techniques and operations asking what might be useful when working with LLMs. Almost everything survived (delimiters, confirmation, priority tiers, compression, validation, observability, access control) but as information management fundamentals, not telegraph-specific insights. They entered the general toolkit long ago. (Some comparisons are in the [appendix](#appendix-telegraph-practices-and-llm-agent-counterparts).)
 
 But there's one area that might not have! A lessons from history? I give you: redundancy in control labels.
 
 ## What codebooks got right
 
-Telegraph codebooks had to compress messages cheaply while ensuring a damaged codeword didn't silently become a different valid one. Bentley's rule: good codewords should differ by at least two letters.[^bentley] The ABC Code applied the same principle, screening out Morse-similar words.[^abc] Bellovin surveys the full design space — compression, error correction, confidentiality — and how codebook designers balanced all three.[^bellovin]
+Telegraph codebooks had to compress messages cheaply while ensuring a damaged codeword didn't silently become a different valid one. Bentley's rule: good codewords should differ by at least two letters.[^bentley] The ABC Code applied the same principle, screening out Morse-similar words.[^abc] Bellovin surveys the full design space (compression, error correction, confidentiality) and how codebook designers balanced all three.[^bellovin]
 
 > Good compression leaves enough redundancy to detect mistakes.
 
@@ -45,7 +45,7 @@ The check that matters is not just string similarity. It is string similarity we
 Generic similarity check:
 
 ```text
-docs.api / doc.api — edit distance 1.
+docs.api / doc.api: edit distance 1.
 ```
 
 Agent-aware check:
@@ -71,7 +71,7 @@ I am experimenting with small tools to check this: [wireword](https://github.com
 |---|---|---|---|
 | `STOP` and spelled punctuation | Explicit delimiters in a whitespace-charged medium | Source/task boundary markers | Structured data formats (XML, JSON, protocol framing) |
 | Repeat-back | Operator reads message back for sender confirmation | Human approval gates | Confirmation dialogs, two-person integrity |
-| Service classes | Ordinary, urgent, night letter — priority and cost tiers | Model routing, effort levels | QoS, SLAs, tiered pricing |
+| Service classes | Ordinary, urgent, night letter: priority and cost tiers | Model routing, effort levels | QoS, SLAs, tiered pricing |
 | Codebooks | Substitution tables compressing phrases to single words | Prompt libraries, macros | Compression, abbreviation, lookup tables |
 | Word-count checks | Validation that the received message had the expected length | Output validation, schema checks | Checksums, content-length headers, schema validation |
 | Operators | Human review at relay points for accuracy and routing | Linters, traces, observability | Monitoring, logging, human-in-the-loop review |
