@@ -1,14 +1,14 @@
-tagline: "Technical Writer — Documentation Platform Engineering & LLM Integration"
-principal_headline: "Senior Technical Writer"
+tagline: "Principal Technical Writer: Documentation Platform Engineering & LLM Integration"
+principal_headline: "Principal Technical Writer"
 profile: |-
-  I own documentation end-to-end — content, platform, and AI integration — for a B2B security intelligence company serving 800+ customers. I built and run docs.domaintools.com: platform architecture, CI/CD, OpenAPI-as-contract across four API product lines, deployment, and a production MCP server for LLM-assisted documentation quality control. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN.
+  I own documentation end-to-end (content, platform, and AI integration) for a B2B security intelligence company serving 800+ customers. I built and run docs.domaintools.com: platform architecture, CI/CD, OpenAPI-as-contract across four API product lines, deployment, and a production MCP server for LLM-assisted documentation quality control. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN.
 
 basics:
   name: Bradley Fidler
-  label: "Technical Writer — Documentation Platform Engineering & LLM Integration"
+  label: "Principal Technical Writer: Documentation Platform Engineering & LLM Integration"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: "I own documentation end-to-end — content, platform, and AI integration. At DomainTools I built and run docs.domaintools.com for a B2B security intelligence platform serving 800+ customers: platform architecture, OpenAPI-as-contract across four API product lines, CI/CD, deployment, and a production MCP server for LLM-assisted documentation quality control. As technical lead for the documentation function, I direct a documentation specialist and lead SDLC integration so docs ship when features do — engineers across 4 teams contribute via git. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN."
+  summary: "I own documentation end-to-end: content, platform, and AI integration. At DomainTools I built and run docs.domaintools.com for a B2B security intelligence platform serving 800+ customers: platform architecture, OpenAPI-as-contract across four API product lines, CI/CD, deployment, and a production MCP server for LLM-assisted documentation quality control. As technical lead for the documentation function, I direct a documentation specialist and lead SDLC integration so docs ship when features do, engineers across 4 teams contribute via git. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN."
   location:
     city: Warwick
     countryCode: US
@@ -24,25 +24,37 @@ basics:
     url: https://github.com/brfid
 work:
 - name: DomainTools
-  position: Senior Technical Writer
+  position: Principal Technical Writer
   url: https://docs.domaintools.com
   location: Seattle (Remote), WA, US
-  startDate: '2023-10-01'
-  summary: "Own docs.domaintools.com end-to-end — platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy — as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers."
+  startDate: '2026-07-01'
+  summary: "Own docs.domaintools.com end-to-end (platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy) as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers."
   highlights:
-  - Own docs.domaintools.com end-to-end — platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy — as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers. Replaced an outsourced WordPress/Confluence changelog pipeline with a self-operated docs.domaintools.com/changelog system serving RSS and JSON feeds.
-  - "Built a production MCP server for deterministic quality control in LLM-assisted documentation — integrates Vale, markdownlint, spaCy, and custom linters as callable tools, enabling consistent quality at scale without reviewer bottlenecks."
-  - "Designed a governed, human-in-the-loop memory architecture for AI documentation agents — four-tier knowledge system with a consolidation loop that captures lessons from completed work and promotes them into reusable skills; every lifecycle transition is human-approved via PR, so agent knowledge improves without silent drift. Deployed across multiple agent tools."
+  - Own docs.domaintools.com end-to-end (platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy) as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers. Replaced an outsourced WordPress/Confluence changelog pipeline with a self-operated docs.domaintools.com/changelog system serving RSS and JSON feeds.
+  - Developed a cold-start completeness test methodology for evaluating documentation coverage from zero; produced a reusable build-trial harness for assessing MCP server documentation at launch.
+- name: DomainTools
+  position: Senior Technical Writer
+  startDate: '2025-01-01'
+  endDate: '2026-06-01'
+  summary: "Scaled documentation into a platform engineering function: OpenAPI-as-contract across four API product lines, SDLC integration, and production AI-assisted documentation tooling."
+  highlights:
   - Defined OpenAPI specifications across 4 API product lines; specs govern production code generation, Swagger UI rendering, contract validation, and Schemathesis conformance testing.
   - "Moved documentation into the SDLC: critical updates ship same-day, products launch with docs at tech preview, and engineers across 4 teams contribute directly via git and review documentation MRs."
-  - Designed a multi-consumer documentation model treating human readers, AI agents, and automated pipelines as distinct audiences — each with different access patterns, metadata requirements, and context windows.
-  - Developed a cold-start completeness test methodology for evaluating documentation coverage from zero; produced a reusable build-trial harness for assessing MCP server documentation at launch.
-  - Authored the company's documentation strategy, style guide, and contribution guide from scratch — platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards.
+  - "Built a production MCP server for deterministic quality control in LLM-assisted documentation: integrates Vale, markdownlint, spaCy, and custom linters as callable tools, enabling consistent quality at scale without reviewer bottlenecks."
+  - "Designed a governed, human-in-the-loop memory architecture for AI documentation agents: four-tier knowledge system with a consolidation loop that captures lessons from completed work and promotes them into reusable skills; every lifecycle transition is human-approved via PR, so agent knowledge improves without silent drift. Deployed across multiple agent tools."
+  - Designed a multi-consumer documentation model treating human readers, AI agents, and automated pipelines as distinct audiences, each with different access patterns, metadata requirements, and context windows.
+- name: DomainTools
+  position: Technical Writer
+  startDate: '2023-10-01'
+  endDate: '2024-12-01'
+  summary: "Joined as the first dedicated technical writer. Built the documentation platform from scratch: authored strategy, style guide, and contribution guide; selected tooling and established the docs.domaintools.com architecture."
+  highlights:
+  - Authored the company's documentation strategy, style guide, and contribution guide from scratch: platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards.
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
   endDate: '2023-09-01'
-  summary: "Owned the Hybrid Cloud Migration Hub — an enterprise Confluence portal supporting 50,000+ engineers in JPMC's central IT division through a hyperscale hybrid cloud datacenter modernization."
+  summary: "Owned the Hybrid Cloud Migration Hub, an enterprise Confluence portal supporting 50,000+ engineers in JPMC's central IT division through a hyperscale hybrid cloud datacenter modernization."
   highlights:
   - Drafted cloud migration and configuration management policy reviewed and approved by VPs and Managing Directors; documentation passed external audit.
   - Coordinated documentation deliverables with CM tooling development teams across cross-functional working sessions.
@@ -67,7 +79,7 @@ work:
   - Co-PI on NSF EAGER grant to develop new performance metrics frameworks for Security Operations Centers (SOCs).
   - Co-authored a comprehensive history of unique identifier creation and administration from ARPANET origins through 2017; jointly commissioned by ICANN and Google; used in policy deliberations on IP governance and ownership.
   - Wrote historical lessons-learned analysis of distributed simulation for a Lockheed Martin defense program.
-  - "Received institutional teaching recognition for courses that required translation in both directions — STEM students through policy, historians through networking and computing."
+  - "Received institutional teaching recognition for courses that required translation in both directions: STEM students through policy, historians through networking and computing."
   location: Hoboken (Hybrid), NJ, US
 - name: UCLA Computer Science
   position: Researcher (Assistant)
@@ -77,7 +89,7 @@ work:
   summary: Research assistant on a DARPA-funded oral history of ARPANET protocol strategy; conducted structured interviews with senior technical and government officials and performed archival research on early internet history.
   highlights:
   - Conducted structured SME interviews with senior technical and government officials, including at the Assistant Secretary of Defense level, as part of a DARPA-funded oral history of ARPANET protocol strategy.
-  - "Assessed primary source corpora on early ARPANET and internet history; built taxonomies and finding aids — structured, researcher-facing summaries — to make materials navigable and discoverable."
+  - "Assessed primary source corpora on early ARPANET and internet history; built taxonomies and finding aids (structured, researcher-facing summaries) to make materials navigable and discoverable."
   location: Los Angeles (Hybrid), CA, US
 volunteer:
 - organization: IEEE Academic Journals
@@ -195,7 +207,7 @@ projects:
   - Vale
   - pytest
 - name: Wireword
-  description: Lint tool for LLM agent control words — route names, tool names, exact enum values. Distinguishes agent-aware label collisions, where the model can emit a label and a wrong match triggers incorrect tool calls or routing, from generic string similarity. Research grounded in telegraph codebook design.
+  description: "Lint tool for LLM agent control words: route names, tool names, exact enum values. Distinguishes agent-aware label collisions, where the model can emit a label and a wrong match triggers incorrect tool calls or routing, from generic string similarity. Research grounded in telegraph codebook design."
   keywords:
   - Python
   - CLI

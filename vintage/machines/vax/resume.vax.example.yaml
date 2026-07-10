@@ -1,15 +1,15 @@
 schemaVersion: "v1"
 buildDate: "2026-01-25"
 name: "Bradley Fidler"
-label: "Senior Technical Writer"
+label: "Principal Technical Writer"
 contact:
   email: "brfid@icloud.com"
   url: "https://brfid.github.io"
   linkedin: "https://www.linkedin.com/in/brfid/"
-summary: "Senior Technical Writer focused on API documentation and docs-as-code. Lead docs strategy, content, and platform. Build OpenAPI and prose workflows that speed releases, encourage subject-matter expert contributions, and prepare docs for AI use."
+summary: "Principal Technical Writer focused on API documentation and docs-as-code. Lead docs strategy, content, and platform. Build OpenAPI and prose workflows that speed releases, encourage subject-matter expert contributions, and prepare docs for AI use."
 work:
   - company: "DomainTools"
-    position: "Senior Technical Writer"
+    position: "Principal Technical Writer"
     dateRange: "Oct 2023 – Present"
     location: "Seattle (Remote), WA, US"
     highlights:
