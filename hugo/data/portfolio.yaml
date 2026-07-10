@@ -25,7 +25,7 @@ sections:
         publisher: "Internal · DomainTools · production"
         summary: "Production MCP server for deterministic quality control in LLM-assisted
           documentation. Integrates Vale, markdownlint, spaCy, and custom linters as callable MCP
-          tools, giving LLM writing assistants a structured, auditable quality gate — the
+          tools, giving LLM writing assistants a structured, auditable quality gate, the
           mechanical enforcement layer beneath the DomainTools documentation platform."
         status: live
         tags: [MCP, LLM, "quality control", Python, "production"]
@@ -51,7 +51,7 @@ sections:
         publisher: "brfid"
         summary: "Linter for LLM agent control labels: route names, tool names, enum
           values, environments, and approval targets. Detects confusable label pairs weighted
-          by what the label controls — the same reliability concern that drives DDT's quality
+          by what the label controls, the same reliability concern that drives DDT's quality
           gate, investigated independently through telegraph codebook history. Research
           published alongside a companion essay on the Wireword blog post."
         status: live
@@ -97,7 +97,7 @@ sections:
         url: "/posts/wireword-control-words/"
         year: 2026
         summary: "Published essay. Systematic review of telegraph techniques (compression,
-          error correction, codebook design) applied to LLM agent architectures — finding
+          error correction, codebook design) applied to LLM agent architectures, finding
           that most practices survived as information-management fundamentals, and the one
           actionable gap is redundancy in control-label design. Cites recent arxiv research
           on LLM tool-selection sensitivity and adversarial tool-name attacks. Paired with the
@@ -108,7 +108,7 @@ sections:
         url: "/posts/stracheys-principle/"
         year: 2026
         summary: "Published essay. Argues that the power of an abstraction layer comes from
-          committing to it entirely — partial adoption breaks the model. Traces this principle
+          committing to it entirely: partial adoption breaks the model. Traces this principle
           from Strachey's 1965 macrogenerator through Dijkstra, Kay, and into current LLM-assisted
           work. Closes with first-person investment in the discipline of learning LLM failure
           modes."
@@ -118,7 +118,7 @@ sections:
         url: "/posts/changelog-as-llm-memory/"
         year: 2026
         summary: "Practical workflow essay. Documents the Keep a Changelog [Unreleased] section
-          pattern as structured LLM session state — a small, version-controlled working-memory
+          pattern as structured LLM session state, a small, version-controlled working-memory
           document that reduces cold-start orientation cost and preserves accruable context
           across sessions."
         tags: [LLM, documentation, workflow, methodology]
@@ -149,7 +149,7 @@ sections:
         year: 2026
         summary: "This site: Hugo static publishing with GitHub Actions deployment. A vintage
           computing pipeline drives emulated VAX and PDP-11 systems via SIMH/pexpect to generate
-          a man-page resume artifact — a technical signal of systems-level documentation
+          a man-page resume artifact, a technical signal of systems-level documentation
           thinking."
         status: live
         tags: [Hugo, Python, "GitHub Actions", SIMH, CI/CD]
