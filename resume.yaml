@@ -1,14 +1,14 @@
-tagline: "Principal Technical Writer: Documentation Platform Engineering & LLM Integration"
+tagline: "Principal Technical Writer: Documentation platforms that stay true as products and AI change"
 principal_headline: "Principal Technical Writer"
 profile: |-
-  I own documentation end-to-end (content, platform, and AI integration) for a B2B security intelligence company serving 800+ customers. I built and run docs.domaintools.com: platform architecture, CI/CD, OpenAPI-as-contract across four API product lines, deployment, and a production MCP server for LLM-assisted documentation quality control. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN.
+  I keep documentation true as products and their tools change, so customer integrations don't break quietly when AI agents read stale docs as fact. I build and run docs.domaintools.com for a B2B security intelligence company used by 800+ customers: platform architecture, OpenAPI-as-contract across four API product lines, contract tests that poll the live API, CI/CD, and a production MCP server for quality control in LLM-assisted documentation. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN.
 
 basics:
   name: Bradley Fidler
-  label: "Principal Technical Writer: Documentation Platform Engineering & LLM Integration"
+  label: "Principal Technical Writer: Documentation Platform Engineering"
   email: brfid@icloud.com
   phone: +1-310-488-1980
-  summary: "I own documentation end-to-end: content, platform, and AI integration. At DomainTools I built and run docs.domaintools.com for a B2B security intelligence platform serving 800+ customers: platform architecture, OpenAPI-as-contract across four API product lines, CI/CD, deployment, and a production MCP server for LLM-assisted documentation quality control. As technical lead for the documentation function, I direct a documentation specialist and lead SDLC integration so docs ship when features do, engineers across 4 teams contribute via git. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN."
+  summary: "I keep documentation true as products and their tools change, so customer integrations don't break quietly when AI agents read stale docs as fact. At DomainTools I build and run docs.domaintools.com for a B2B security intelligence platform used by 800+ customers: platform architecture, OpenAPI-as-contract across four API product lines, contract tests that poll the live API, CI/CD, and a production MCP server for quality control in LLM-assisted documentation. As technical lead for the documentation function, I work with a documentation specialist and on SDLC integration, with a contribution model that lets engineers in four teams contribute via git. Before industry: PhD research on internet history, peer-reviewed work at USENIX Security and IEEE Annals, and a commissioned history of the internet for Google and ICANN."
   location:
     city: Warwick
     countryCode: US
@@ -28,21 +28,23 @@ work:
   url: https://docs.domaintools.com
   location: Seattle (Remote), WA, US
   startDate: '2026-07-01'
-  summary: "Own docs.domaintools.com end-to-end (platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy) as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers."
+  summary: "Continuing the documentation platform program started at Senior level, as technical lead for the function working with a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers. Current focus: building LLM workflows as products and techdocs as an internal service."
   highlights:
-  - Own docs.domaintools.com end-to-end (platform architecture, tooling, CI/CD, GitOps-managed deployment, and documentation strategy) as technical lead directing a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers. Replaced an outsourced WordPress/Confluence changelog pipeline with a self-operated docs.domaintools.com/changelog system serving RSS and JSON feeds.
-  - Developed a cold-start completeness test methodology for evaluating documentation coverage from zero; produced a reusable build-trial harness for assessing MCP server documentation at launch.
+  - Building techdocs as an internal service: the documentation platform consumed by other teams' doc-writing integrations and services, not internal-docs authoring for specialized teams.
+  - Building LLM workflows as products: agent skills and rules, and a governed, self-learning memory of past solutions (BM25, human-reviewed via PR), operated by other writers rather than one-off scripts.
 - name: DomainTools
   position: Senior Technical Writer
   startDate: '2025-01-01'
   endDate: '2026-06-01'
-  summary: "Scaled documentation into a platform engineering function: OpenAPI-as-contract across four API product lines, SDLC integration, and production AI-assisted documentation tooling."
+  summary: "Built the documentation platform engineering function from scratch: OpenAPI-as-contract, docs-as-code CI/CD with reproducible builds, SDLC integration, production AI tooling, and a multi-consumer model treating human readers, AI agents, and pipelines as distinct audiences."
   highlights:
-  - Defined OpenAPI specifications across 4 API product lines; specs govern production code generation, Swagger UI rendering, contract validation, and Schemathesis conformance testing.
-  - "Moved documentation into the SDLC: critical updates ship same-day, products launch with docs at tech preview, and engineers across 4 teams contribute directly via git and review documentation MRs."
-  - "Built a production MCP server for deterministic quality control in LLM-assisted documentation: integrates Vale, markdownlint, spaCy, and custom linters as callable tools, enabling consistent quality at scale without reviewer bottlenecks."
-  - "Designed a governed, human-in-the-loop memory architecture for AI documentation agents: four-tier knowledge system with a consolidation loop that captures lessons from completed work and promotes them into reusable skills; every lifecycle transition is human-approved via PR, so agent knowledge improves without silent drift. Deployed across multiple agent tools."
-  - Designed a multi-consumer documentation model treating human readers, AI agents, and automated pipelines as distinct audiences, each with different access patterns, metadata requirements, and context windows.
+  - Built a containerized build pipeline that generates the docs site, PDFs, and plain-text versions for language models, with reproducible builds that catch drift between the published output and its source. Adopted by the team.
+  - Defined OpenAPI specifications across four API product lines; specs govern production code generation, Swagger UI rendering, contract validation, and Schemathesis conformance testing.
+  - "Moved documentation into the SDLC: critical updates ship same-day, products launch with docs at tech preview, and the platform's contribution model lets engineers in four teams contribute directly via git and review documentation MRs."
+  - Replaced an outsourced WordPress/Confluence changelog pipeline with a self-operated docs.domaintools.com/changelog system serving RSS and JSON feeds.
+  - "Built a production MCP server for deterministic quality control in LLM-assisted documentation (Vale, markdownlint, spaCy, and custom linters as callable tools), and tested it by its effect on the model's behavior to sharpen its tool and resource definitions so the model uses them more reliably."
+  - "Designed a governed, human-in-the-loop memory for AI agents: lessons from completed work are promoted into reusable skills through human-approved PR transitions, so agent knowledge improves without silent drift. Adopted across multiple agent tools."
+  - Developed a cold-start completeness test methodology for evaluating documentation coverage from zero; produced a reusable build-trial harness for assessing MCP server documentation at launch.
 - name: DomainTools
   position: Technical Writer
   startDate: '2023-10-01'
@@ -76,8 +78,8 @@ work:
   endDate: '2022-05-01'
   summary: Led funded research and consulting engagements for Google, ICANN, NSF, and Lockheed Martin alongside a faculty appointment in Science and Technology Studies.
   highlights:
-  - Co-PI on NSF EAGER grant to develop new performance metrics frameworks for Security Operations Centers (SOCs).
-  - Co-authored a comprehensive history of unique identifier creation and administration from ARPANET origins through 2017; jointly commissioned by ICANN and Google; used in policy deliberations on IP governance and ownership.
+  - Co-PI on NSF EAGER grant on SOC performance metrics; contributed the historical analysis of SOC operations alongside the team's ethnographic study.
+  - Co-authored a history of unique identifier creation and administration from ARPANET origins through 2017; jointly commissioned by ICANN and Google; used in policy deliberations on IP governance and ownership.
   - Wrote historical lessons-learned analysis of distributed simulation for a Lockheed Martin defense program.
   - "Received institutional teaching recognition for courses that required translation in both directions: STEM students through policy, historians through networking and computing."
   location: Hoboken (Hybrid), NJ, US
@@ -106,7 +108,7 @@ publications:
   publisher: ICANN / Google (Commissioned Document)
   releaseDate: '2020-11-01'
   url: https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf
-  summary: Co-authored a comprehensive history and analysis of unique identifier creation and administration from ARPANET origins through 2017; jointly commissioned by ICANN and Google for policy deliberations on IP governance. Co-author Russ Mundy.
+  summary: Co-authored a history and analysis of unique identifier creation and administration from ARPANET origins through 2017; jointly commissioned by ICANN and Google for policy deliberations on IP governance. Co-author Russ Mundy.
 - name: "Work-From-Home and COVID-19: Trajectories of Endpoint Security Management in a Security Operations Center"
   publisher: USENIX Security '23
   releaseDate: '2023-08-01'
