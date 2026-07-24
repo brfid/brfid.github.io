@@ -30,13 +30,13 @@ work:
   startDate: '2026-07-01'
   summary: "Continuing the documentation platform program started at Senior level, as technical lead for the function working with a documentation specialist for a 150-person B2B security intelligence company serving 800+ customers. Current focus: building LLM workflows as products and techdocs as an internal service."
   highlights:
-  - Building techdocs as an internal service: the documentation platform consumed by other teams' doc-writing integrations and services, not internal-docs authoring for specialized teams.
-  - Building LLM workflows as products: agent skills and rules, and a governed, self-learning memory of past solutions (BM25, human-reviewed via PR), operated by other writers rather than one-off scripts.
+  - "Building techdocs as an internal service: a documentation platform other teams integrate with for their own doc-writing needs, not internal-docs authoring for specialized teams."
+  - "Building LLM workflows as products: agent skills and rules, and a governed, self-learning memory of past solutions (BM25, human-reviewed via PR), operated by other writers rather than one-off scripts."
 - name: DomainTools
   position: Senior Technical Writer
   startDate: '2025-01-01'
   endDate: '2026-06-01'
-  summary: "Built the documentation platform engineering function from scratch: OpenAPI-as-contract, docs-as-code CI/CD with reproducible builds, SDLC integration, production AI tooling, and a multi-consumer model treating human readers, AI agents, and pipelines as distinct audiences."
+  summary: "Built the documentation platform engineering function from scratch: OpenAPI-as-contract, docs-as-code CI/CD with reproducible builds, SDLC integration, production AI tooling, and a multi-consumer model treating human readers, customer-run coding agents, and CI pipelines as distinct audiences."
   highlights:
   - Built a containerized build pipeline that generates the docs site, PDFs, and plain-text versions for language models, with reproducible builds that catch drift between the published output and its source. Adopted by the team.
   - Defined OpenAPI specifications across four API product lines; specs govern production code generation, Swagger UI rendering, contract validation, and Schemathesis conformance testing.
@@ -51,7 +51,7 @@ work:
   endDate: '2024-12-01'
   summary: "Joined as the first dedicated technical writer. Built the documentation platform from scratch: authored strategy, style guide, and contribution guide; selected tooling and established the docs.domaintools.com architecture."
   highlights:
-  - Authored the company's documentation strategy, style guide, and contribution guide from scratch: platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards.
+  - "Authored the company's documentation strategy, style guide, and contribution guide from scratch: platform architecture, tooling selection, SDLC integration, SME contribution workflows, and quality standards."
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
