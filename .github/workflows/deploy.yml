@@ -161,6 +161,21 @@ jobs:
             exit 1
           fi
 
+      - name: Verify blog surface
+        run: |
+          set -euo pipefail
+
+          test -s site/posts/index.html || { echo "::error::Blog index is missing"; exit 1; }
+          test -s site/index.xml || { echo "::error::public RSS feed is missing"; exit 1; }
+          test -s site/posts/index.xml || { echo "::error::Blog RSS feed is missing"; exit 1; }
+          grep -Fq '/posts/' site/index.html || { echo "::error::landing page is missing the Blog link"; exit 1; }
+          grep -Fq '/posts/index.xml' site/posts/index.html || { echo "::error::Blog index is missing its RSS link"; exit 1; }
+
+          if grep -Fq 'https://brfid.github.io/resume/' site/index.xml; then
+            echo "::error::public RSS feed contains the resume"
+            exit 1
+          fi
+
       - name: Verify build provenance links
         env:
           BUILD_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -182,6 +197,8 @@ jobs:
           grep -Fxq 'Allow: /' site/robots.txt
           grep -Fxq 'Disallow: /pipeline-status.json' site/robots.txt
           grep -Fxq 'Disallow: /resume.pdf' site/robots.txt
+          grep -Fxq 'Disallow: /index.xml' site/robots.txt
+          grep -Fxq 'Disallow: /posts/index.xml' site/robots.txt
           if grep -Fxq 'Disallow: /' site/robots.txt; then
             echo "::error::robots.txt blocks crawlers from observing the HTML noindex directive"
             exit 1

@@ -69,7 +69,7 @@ Update rules:
 
 ## Local dev
 
-Run `make preview` from the repo root to preview locally. It syncs the site and resume data, builds the production-equivalent public resume HTML and phone-free `site/resume.pdf`, then runs Hugo with that output directory so both `/resume/` and `/resume.pdf` work at `http://localhost:1313/`. `make preview-public` is a compatibility alias with the same privacy boundary. Files under `hugo/` live-reload. Restart either command after changing `resume.yaml`, or after layout and CSS changes when the PDF itself also needs to be regenerated. Set `PREVIEW_PORT` to use a port other than 1313. The operator node is an arm64 Mac with Hugo and Docker installed. No staging environment or remote preview URL is needed.
+Run `make preview` from the repo root to preview locally. It syncs the site and resume data, builds the production-equivalent public resume HTML and phone-free `site/resume.pdf`, then runs Hugo with that output directory so both `/resume/` and `/resume.pdf` work at `http://localhost:1313/`. `make preview-drafts` uses the same privacy boundary and also renders draft blog posts; `make preview-public` is a compatibility alias for the production-equivalent preview. Files under `hugo/` live-reload. Restart any preview command after changing `resume.yaml`, or after layout and CSS changes when the PDF itself also needs to be regenerated. Set `PREVIEW_PORT` to use a port other than 1313. The operator node is an arm64 Mac with Hugo and Docker installed. No staging environment or remote preview URL is needed.
 
 During resume work, keep `make preview` running; regenerate and inspect both `/resume/` and `/resume.pdf` after meaningful source or print-layout changes. When the application PDF also needs verification, run `make resume-pdf-application` and inspect the generated file under `local/`, then restart the preview because the application build cleans `site/`. Create local milestone commits, and never push without Brad's explicit approval.
 
@@ -109,7 +109,7 @@ Pre-commit checks are optional by default in this repo workflow.
 ## No accidental publishing
 
 - GitHub Pages deploy triggers on every push to `main`. To skip a deploy, include `[nopublish]` anywhere in the commit message. `workflow_dispatch` is available for manual re-runs.
-- Production publishes `/resume/`, its `/about/` alias, and `/resume.pdf`. Deployment must fail if any is absent, if the navigation links are missing, if the HTML or PDF contains a telephone number, or if the private application PDF appears anywhere under the web root.
+- Production publishes `/posts/`, `/index.xml`, `/posts/index.xml`, `/resume/`, its `/about/` alias, and `/resume.pdf`. Deployment must fail if any mechanical surface is absent, if the navigation links are missing, if the RSS feed contains the resume, if the HTML or PDF contains a telephone number, or if the private application PDF appears anywhere under the web root. Individual posts publish only when their front matter sets `draft: false`.
 
 ## Do-not-break constraints
 

@@ -2,7 +2,7 @@ baseURL = "https://brfid.github.io/"
 locale = "en-US"
 title = "Bradley Fidler"
 theme = "PaperMod"
-disableKinds = ["RSS", "sitemap", "taxonomy", "term"]
+disableKinds = ["sitemap", "taxonomy", "term"]
 
 # robots.txt is a static file (hugo/static/robots.txt) we control directly.
 # Disable Hugo's generated robots.txt so there is a single source of truth.
@@ -10,6 +10,9 @@ enableRobotsTXT = false
 buildDrafts = false
 buildFuture = false
 disableAliases = false
+
+[pagination]
+  pagerSize = 10
 
 [[cascade]]
   [cascade.params]
@@ -19,6 +22,11 @@ disableAliases = false
   text = "brfid.github.io"
 
 [menu]
+  [[menu.main]]
+    identifier = "posts"
+    name = "Blog"
+    url = "/posts/"
+    weight = 1
   [[menu.main]]
     identifier = "resume"
     name = "Resume"
@@ -39,6 +47,7 @@ disableAliases = false
   env = "production"
   author = "Bradley Fidler"
   description = "Bradley Fidler, Principal Technical Writer."
+  mainSections = ["posts"]
   resumeEnabled = true
   defaultTheme = "auto"
   disableThemeToggle = false
@@ -48,6 +57,7 @@ disableAliases = false
   ShowCodeCopyButtons = true
   ShowShareButtons = false
   ShowFullTextinRSS = true
+  ShowRssButtonInSectionTermList = true
   ShowToc = true
   TocOpen = false
 
@@ -55,7 +65,7 @@ disableAliases = false
     publisherType = "Person"
 
 [outputs]
-  home = ["HTML"]
+  home = ["HTML", "RSS"]
 
 [markup]
   [markup.goldmark.renderer]

@@ -1,6 +1,6 @@
 # brfid.github.io
 
-Source for [brfid.github.io](https://brfid.github.io/), a Hugo-based personal site and resume deployed to GitHub Pages.
+Source for [brfid.github.io](https://brfid.github.io/), a Hugo-based personal site, blog, and resume deployed to GitHub Pages.
 
 The live site is built and deployed via a Hugo + vintage computing pipeline (VAX/PDP-11 via SIMH). The vintage pipeline generates rendered artifacts that Hugo includes in the final build.
 
@@ -10,7 +10,7 @@ Public landing content lives in `site.yaml`; Hugo templates and assets live unde
 
 Front-end assets are vendored, not fetched at build or view time: the Newsreader and IBM Plex Mono fonts ship as woff2 files in `hugo/static/fonts/` (self-hosted via `@font-face`, no CDN) and custom styles live in `hugo/assets/css/extended/`. Hugo bundles both — there is no separate asset build step.
 
-Every HTML surface carries a site-wide `noindex, nofollow` robots directive, including the resume and generated vintage build log, and Hugo does not publish a sitemap. `robots.txt` leaves HTML crawlable so search engines can observe `noindex`; it blocks the machine-readable pipeline status and public resume PDF. The deploy workflow fails if any published HTML omits the directive or a sitemap reappears.
+Every HTML surface carries a site-wide `noindex, nofollow` robots directive, including blog posts, the resume, and the generated vintage build log, and Hugo does not publish a sitemap. `robots.txt` leaves HTML crawlable so search engines can observe `noindex`; it blocks the machine-readable pipeline status, public resume PDF, and RSS feeds. The deploy workflow fails if any published HTML omits the directive or a sitemap reappears.
 
 ### Local preview
 
@@ -31,6 +31,12 @@ hugo --source hugo --destination ../site
 Note: `--destination` is relative to the source directory, so `../site` writes to `site/` at the repo root.
 
 **Publish:** pushing to `main` runs the vintage pipeline, builds the public resume HTML and phone-free PDF, verifies their navigation and privacy boundaries, and deploys the complete site to GitHub Pages. To skip a deploy, include `[nopublish]` anywhere in the commit message. `workflow_dispatch` is available for manual re-runs without a new commit.
+
+### Blog posts
+
+Published posts are Hugo page bundles under `hugo/content/posts/<slug>/`. Create a draft bundle with `make new-post POST_SLUG=<slug>`, put the post in its generated `index.md`, and place any referenced images beside it. The scaffold is a draft by default; `make preview-drafts` includes it locally, while production ignores it until its front matter sets `draft: false`.
+
+Working essay sources stay in the private career repository. Only approved publish copy and its public assets cross into this public repository. The Blog index is `/posts/`; RSS is available at the historical `/index.xml` route and the section-specific `/posts/index.xml` route.
 
 ## Vintage pipeline (publish path)
 
