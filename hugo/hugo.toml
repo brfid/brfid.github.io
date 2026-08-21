@@ -1,0 +1,69 @@
+baseURL = "https://brfid.github.io/"
+locale = "en-US"
+title = "Bradley Fidler"
+theme = "PaperMod"
+disableKinds = ["RSS", "sitemap", "taxonomy", "term"]
+
+# robots.txt is a static file (hugo/static/robots.txt) we control directly.
+# Disable Hugo's generated robots.txt so there is a single source of truth.
+enableRobotsTXT = false
+buildDrafts = false
+buildFuture = false
+disableAliases = false
+
+[[cascade]]
+  [cascade.params]
+    robotsNoIndex = true
+
+[params.label]
+  text = "brfid.github.io"
+
+[menu]
+  [[menu.main]]
+    identifier = "resume"
+    name = "Resume"
+    url = "/resume/"
+    weight = 5
+    [menu.main.params]
+      companionurl = "/resume.pdf"
+      companionlabel = "Download resume PDF"
+  [[menu.main]]
+    identifier = "source"
+    name = "Source"
+    url = "https://github.com/brfid/brfid.github.io"
+    weight = 10
+    [menu.main.params]
+      icon = "github"
+
+[params]
+  env = "production"
+  author = "Bradley Fidler"
+  description = "Bradley Fidler, Principal Technical Writer."
+  resumeEnabled = true
+  defaultTheme = "auto"
+  disableThemeToggle = false
+  ShowReadingTime = true
+  ShowPostNavLinks = true
+  ShowBreadCrumbs = false
+  ShowCodeCopyButtons = true
+  ShowShareButtons = false
+  ShowFullTextinRSS = true
+  ShowToc = true
+  TocOpen = false
+
+  [params.schema]
+    publisherType = "Person"
+
+[outputs]
+  home = ["HTML"]
+
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = false
+  [markup.highlight]
+    noClasses = false
+    style = "monokai"
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = false

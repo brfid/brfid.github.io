@@ -1,0 +1,187 @@
+principal_headline: "Principal Technical Writer"
+
+basics:
+  name: Bradley Fidler
+  label: "Principal Technical Writer | Documentation Platforms"
+  email: brfid@icloud.com
+  summary: |-
+    I run technical documentation at a mid-sized B2B cybersecurity company. I write documentation and build the tooling and processes through which product teams contribute to it. Before this, I wrote lessons-learned analyses of distributed systems and taught technology history in college.
+  location:
+    city: Seattle
+    countryCode: US
+    region: Washington
+  profiles:
+  - network: LinkedIn
+    icon: linkedin
+    username: brfid
+    url: https://www.linkedin.com/in/brfid/
+  - network: GitHub
+    icon: github
+    username: brfid
+    url: https://github.com/brfid
+  - network: ORCID
+    icon: orcid
+    username: "0000-0002-2882-5915"
+    url: https://orcid.org/0000-0002-2882-5915
+work:
+- name: DomainTools
+  url: https://docs.domaintools.com
+  location: Seattle, WA, US
+  startDate: '2023-10-01'
+  positions:
+  - position: Principal Technical Writer
+    startDate: '2026-07-01'
+    summary: "Technical lead for documentation at a B2B security intelligence company. Current work develops the documentation platform as an internal service, establishes contribution standards, and defines practical measures of documentation quality and use."
+    highlights: []
+  - position: Senior Technical Writer
+    startDate: '2025-01-01'
+    endDate: '2026-06-01'
+    summary: "Built the documentation platform for a security intelligence company serving 800+ customers, with reproducible delivery, OpenAPI contracts, automated validation, and documentation integrated into release workflows."
+    highlights:
+    - Migrated the site from MkDocs to Astro and Starlight and rebuilt its Docker pipeline. The documentation team now operates the site, build tooling, and multi-format changelog directly.
+    - Wrote and maintained OpenAPI specifications used for reference documentation, code generation, and contract tests against API behavior.
+    - Integrated documentation into release workflows, supporting same-day critical updates, publication at tech preview, and reviewed engineering contributions.
+    - Wrote documentation for the customer-facing DomainTools MCP server and contributed its resource and tool definitions to the product codebase. Built a reusable cold-start harness for validating documentation coverage.
+    - Built an internal MCP server that exposes documentation quality checks as callable tools and evaluated its tool descriptions against model behavior.
+    - Built a human-reviewed memory system for documentation agents in which reusable guidance requires approval in git.
+  - position: Technical Writer
+    startDate: '2023-10-01'
+    endDate: '2024-12-01'
+    summary: "Established docs.domaintools.com and the governance model it still uses: documentation strategy, style guide, and contribution model."
+    highlights: []
+- name: JPMorgan Chase & Co.
+  position: Contract Technical Writer
+  startDate: '2023-04-01'
+  endDate: '2023-09-01'
+  summary: "Ran a cloud migration hub supporting datacenter modernization for 50,000+ engineers. Drafted cloud-migration and configuration-management policy that passed external audit."
+  highlights: []
+  location: Jersey City (Hybrid), NJ, US
+- name: Romeo Power, Inc.
+  position: Technical Writer (Document Control Analyst II)
+  startDate: '2022-06-01'
+  endDate: '2023-03-01'
+  summary: Prepared SDLC and configuration-management documentation for an Automotive SPICE (ASPICE) process assessment at an EV battery manufacturer.
+  highlights:
+  - Documented git workflows, branching strategies, release processes, and related control evidence with engineering SMEs; the documentation passed the process assessment.
+  - Passed the intacs Automotive SPICE Provisional Assessor examination covering ISO/IEC 330xx process assessment and evidence-based capability evaluation.
+  location: Los Angeles (Remote), CA, US
+- name: Stevens Institute of Technology
+  position: Faculty (Assistant Professor), Science and Technology Studies
+  url: https://www.stevens.edu
+  startDate: '2017-08-01'
+  endDate: '2022-05-01'
+  summary: Assistant professor in Science and Technology Studies, running funded research and consulting projects and teaching courses on computing, networking, and policy.
+  highlights:
+  - Co-PI on an NSF EAGER grant on SOC performance metrics; contributed the historical analysis of SOC operations while colleagues conducted the ethnographic study.
+  - Wrote a historical lessons-learned analysis of distributed simulation for a Lockheed Martin defense program.
+  location: Hoboken (Hybrid), NJ, US
+- name: UCLA Computer Science
+  position: Assistant Researcher
+  url: https://www.cs.ucla.edu
+  startDate: '2012-09-01'
+  endDate: '2016-07-01'
+  summary: Co-PI on a historical ethnography of research practices at DARPA-funded centers of excellence that shaped ARPANET and the early Internet. Interviewed senior technical and government figures and analyzed primary sources for a lessons-learned study intended to help DARPA leadership replicate the impact of its networking programs.
+  highlights: []
+  location: Los Angeles (Hybrid), CA, US
+volunteer:
+- organization: IEEE Academic Journals
+  startDate: '2015-01-01'
+  endDate: '2021-01-01'
+  summary: Contributor, reviewer, and editorial board member, primarily for the IEEE Annals of the History of Computing.
+education:
+- institution: UCLA
+  area: History of Science, Technology, and Medicine
+  studyType: PhD
+- institution: York University
+  area: Political Science
+  studyType: Master of Arts
+- institution: Beijing University
+  area: Chinese Language and Literature
+  studyType: Scholars' Exchange Program Diploma
+publications:
+- name: "Work-From-Home and COVID-19: Trajectories of Endpoint Security Management in a Security Operations Center"
+  publisher: USENIX Security '23
+  releaseDate: '2023-08-01'
+  url: https://www.usenix.org/conference/usenixsecurity23/presentation/jones
+  summary: Contributed the historical analysis of endpoint security management; colleagues conducted the ethnographic SOC study.
+- name: 'The Creation and Administration of Unique Identifiers, 1967–2017'
+  publisher: ICANN / Google (Commissioned Policy Research)
+  releaseDate: '2020-11-01'
+  url: https://www.icann.org/en/system/files/files/creation-administration-unique-identifiers-1967-2017-18nov20-en.pdf
+  summary: Co-authored with Russ Mundy; commissioned by ICANN and Google to inform policy deliberations on internet identifier governance.
+- name: Edge Cryptography and the Codevelopment of Computer Networks and Cybersecurity
+  publisher: IEEE Annals of the History of Computing
+  releaseDate: '2016-10-01'
+  url: https://doi.org/10.1109/MAHC.2016.49
+skills:
+- name: Documentation platforms and delivery
+  keywords:
+  - Astro
+  - Starlight
+  - MkDocs
+  - Docusaurus
+  - Hugo
+  - Markdown
+  - Git
+  - GitHub Actions
+  - GitLab CI/CD
+  - Docker
+  - Linux (Debian)
+  - Python
+  - pytest
+  - HTML/CSS
+  - TypeScript (working knowledge)
+  - Shell scripting
+  - YAML/JSON
+  - Vale
+- name: API specification and developer experience
+  keywords:
+  - API documentation
+  - REST APIs
+  - OpenAPI
+  - Scalar
+  - Swagger UI
+  - Schemathesis
+  - Postman
+  - Bruno
+  - cURL
+  - Code generation
+  - Contract validation
+  - API taxonomy and naming
+- name: AI agents and documentation systems
+  keywords:
+  - MCP (Model Context Protocol)
+  - Agent skills and instructions
+  - RAG and retrieval
+  - Tool descriptions
+  - Prompt and tool evaluation
+  - Human-in-the-loop workflows
+  - Embeddings
+- name: Technical leadership and contribution systems
+  keywords:
+  - Technical leadership
+  - Documentation governance
+  - Policy and standards
+  - Roadmaps and prioritization
+  - Design and pull-request review
+  - Mentoring
+  - Engineering contribution models
+  - SME coordination
+  - Cross-functional alignment
+  - Information architecture
+  - Search and findability
+  - Documentation measurement
+- name: Analytics and observability
+  keywords:
+  - Google Analytics
+  - Grafana
+  - Kibana
+  - Splunk
+- name: Security and networking domains
+  keywords:
+  - BGP
+  - DNS
+  - WHOIS/RDAP
+  - Passive DNS
+  - SIEM/SOAR integrations
+  - IPv4/IPv6

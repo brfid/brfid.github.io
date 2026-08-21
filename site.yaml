@@ -1,0 +1,20 @@
+name: Bradley Fidler
+headline: Principal Technical Writer
+# The landing bio text lives in resume.yaml `basics.summary` (one bio source).
+# site.yaml owns the public identity and links.
+links:
+  - label: LinkedIn
+    icon: linkedin
+    url: https://www.linkedin.com/in/brfid/
+  - label: GitHub
+    icon: github
+    url: https://github.com/brfid
+  - label: GitLab
+    icon: gitlab
+    url: https://gitlab.com/brfid
+  - label: ORCID
+    icon: orcid
+    url: https://orcid.org/0000-0002-2882-5915
+  - label: Strava
+    icon: strava
+    url: https://www.strava.com/athletes/brfid

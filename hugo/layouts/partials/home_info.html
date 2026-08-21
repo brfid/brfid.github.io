@@ -1,0 +1,27 @@
+{{- $bio := hugo.Data.bio -}}
+{{- $landing := hugo.Data.site -}}
+{{- $pipelineBuild := $bio.build_log -}}
+{{- $name := or (and $pipelineBuild $bio.name) $landing.name -}}
+{{- $headline := or (and $pipelineBuild $bio.principal_headline) $landing.headline -}}
+{{- $blurb := or (and $pipelineBuild $bio.about) hugo.Data.resume.basics.summary -}}
+<article class="first-entry home-info">
+    <header class="entry-header">
+        <h1>{{ $name }}</h1>
+        {{- with $headline }}<p class="bio-role">{{ . }}</p>{{ end }}
+    </header>
+    <div class="entry-content">
+        {{- with $blurb }}<div class="bio-summary">{{ . | markdownify }}</div>{{ end }}
+    </div>
+    <footer class="entry-footer">
+        {{- with $landing.links }}
+        <nav class="bio-links" aria-label="Online profiles">
+            {{- range . }}
+            <a class="bio-link" href="{{ trim .url " " | safeURL }}" target="_blank" rel="noopener noreferrer me">
+                <span class="bio-link-icon" aria-hidden="true">{{ partial "svg.html" (dict "name" .icon) }}</span>
+                <span>{{ .label }}</span>
+            </a>
+            {{- end }}
+        </nav>
+        {{- end }}
+    </footer>
+</article>

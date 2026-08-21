@@ -1,0 +1,65 @@
+/* Shared list/section primitives for the resume and portfolio layouts.
+   Both _default/resume.html and _default/portfolio.html render the same
+   section > item structure, so the visual primitives live here under neutral
+   `listing-*` names. Page-specific chrome stays in resume.css / portfolio.css. */
+
+.listing-section {
+  margin-bottom: 2rem;
+}
+
+.listing-section h2 {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.listing-item {
+  margin-bottom: 1.25rem;
+}
+
+.listing-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.listing-dates {
+  color: var(--secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 0.9em;
+}
+
+.listing-item-sub {
+  color: var(--secondary);
+  font-size: 0.95em;
+  margin: 0.1rem 0 0.4rem;
+}
+
+.listing-keywords {
+  display: block;
+  color: var(--secondary);
+  font-size: 0.88em;
+  margin-top: 0.25rem;
+}
+
+.listing-item p {
+  margin: 0.4rem 0;
+}
+
+.listing-item ul {
+  margin: 0.4rem 0;
+  padding-left: 1.4rem;
+}
+
+.listing-item li {
+  margin: 0.25rem 0;
+}
+
+@media (max-width: 600px) {
+  .listing-item-head {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+}

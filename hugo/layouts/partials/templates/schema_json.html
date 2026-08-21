@@ -1,0 +1,15 @@
+{{- if .IsHome }}
+{{- $landing := hugo.Data.site -}}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": {{ $landing.name }},
+  "url": {{ site.Home.Permalink }},
+  "description": {{ hugo.Data.resume.basics.summary }},
+  "sameAs": [
+    {{- range $index, $link := $landing.links }}{{ if $index }}, {{ end }}{{ $link.url }}{{ end }}
+  ]
+}
+</script>
+{{- end }}

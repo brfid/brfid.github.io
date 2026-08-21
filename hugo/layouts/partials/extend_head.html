@@ -1,0 +1,10 @@
+{{- /* Fonts are self-hosted (see assets/css/extended/typography.css). Preload the
+     two above-the-fold faces (serif body/name, mono metadata) so first paint
+     doesn't wait on the CSS to request them. */}}
+<link rel="preload" href="/fonts/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/plex-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin>
+{{- /* SVG favicon: modern browsers prefer this over the .ico PaperMod injects. */}}
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+{{- /* Keep every Hugo-rendered surface out of search indexes. This must stay
+     crawlable in robots.txt so crawlers can observe the directive. */}}
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">

@@ -1,0 +1,7 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY ./scripts/hi1_shim.py /app/hi1_shim.py
+
+ENTRYPOINT ["python3", "/app/hi1_shim.py"]

@@ -1,0 +1,221 @@
+name: Validate vintage pipeline
+
+# Runs the vintage pipeline on a GitHub-hosted runner and checks the rendered
+# landing bio: it must round-trip the public fields in site.yaml, and its
+# SHA256 can optionally be compared against a known-good baseline. Publishes
+# nothing and touches no site content, so the pipeline can be exercised without
+# a deploy.
+#
+# SIMH emulates the guest CPU deterministically and the bio carries no date
+# (bradman stamps the build date only in a troff comment, which nroff strips),
+# so a byte-identical brad.bio.txt across runs proves a host or architecture
+# migration changed nothing about the artifact. The baseline is tied to the
+# current site.yaml; update it when the landing copy changes.
+#
+# The marker-extraction awk below deliberately mirrors deploy.yml's: the base64
+# round-trip through the runner's stdout is the part of the transport most
+# likely to break, so this validates it rather than reading build/vintage
+# directly. deploy.yml remains the source of truth for the publish path.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha256:
+        description: "Expected brad.bio.txt SHA256 (blank to record the hash without comparing)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    # Runtime on a hosted runner is being established by this workflow; keep the
+    # ceiling well clear of the measured time rather than close to it, since a
+    # SIMH console hang is the failure this bounds.
+    timeout-minutes: 180
+
+    steps:
+      # No submodules: this job never builds Hugo, and PaperMod is a large clone.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Record host facts
+        run: |
+          echo "arch:   $(uname -m)"
+          echo "kernel: $(uname -sr)"
+          echo "docker: $(docker --version)"
+          echo "python: $(python3 --version)"
+          echo "cpus:   $(nproc)"
+          echo "memory: $(free -h | awk '/^Mem:/{print $2}')"
+          echo "disk:   $(df -h / | awk 'NR==2{print $4" free"}')"
+
+      - name: Run vintage pipeline
+        id: vintage
+        env:
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          BUILD_ID="validate-$(date -u '+%Y%m%d-%H%M%S')"
+          LOG_DIR=/tmp/edcloud-vintage
+          echo "build_id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
+          echo "log_file=${LOG_DIR}/${BUILD_ID}.log" >> "$GITHUB_OUTPUT"
+
+          start="$(date -u +%s)"
+          rc=0
+          bash scripts/edcloud-vintage-runner.sh "$BUILD_ID" > /tmp/vintage-stdout.txt || rc=$?
+          elapsed=$(( $(date -u +%s) - start ))
+
+          printf 'Pipeline wall clock: %dm%02ds (exit %d)\n' \
+            "$((elapsed / 60))" "$((elapsed % 60))" "$rc"
+          echo "elapsed_seconds=${elapsed}" >> "$GITHUB_OUTPUT"
+
+          if (( rc != 0 )); then
+            echo "::error::Vintage pipeline failed after ${elapsed}s"
+            cat /tmp/vintage-stdout.txt >&2
+            exit "$rc"
+          fi
+
+      - name: Extract artifacts and check bio
+        id: compare
+        env:
+          EXPECTED: ${{ inputs.expected_sha256 }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+
+          extract() {
+            # extract <marker-prefix> <destination>
+            # index(...)==1 is a literal "line starts with", matching the
+            # semantics of deploy.yml's /^<<<MARKER>>>/ without regex escaping.
+            awk -v b="<<<${1}_BASE64_BEGIN>>>" -v e="<<<${1}_BASE64_END>>>" \
+              'index($0,b)==1{flag=1;next} index($0,e)==1{flag=0} flag' \
+              /tmp/vintage-stdout.txt | tr -d '\n' > /tmp/blob.b64
+            if [[ ! -s /tmp/blob.b64 ]]; then
+              return 1
+            fi
+            base64 -d /tmp/blob.b64 > "$2"
+          }
+
+          if ! extract BRAD_BIO_TXT out/brad.bio.txt; then
+            echo "::error::brad.bio.txt marker block missing from runner stdout"
+            exit 1
+          fi
+          if ! extract BUILD_LOG out/build.log.html; then
+            echo "::error::build.log.html marker block missing from runner stdout"
+            exit 1
+          fi
+          if ! extract PIPELINE_STATUS_JSON out/pipeline-status.json; then
+            echo "::error::pipeline-status.json marker block missing from runner stdout"
+            exit 1
+          fi
+          python3 -m json.tool out/pipeline-status.json >/dev/null
+
+          # The marker transport must be lossless: what came back over stdout has
+          # to match what the pipeline actually wrote on disk.
+          if ! cmp -s out/brad.bio.txt build/vintage/brad.bio.txt; then
+            echo "::error::base64 marker transport corrupted brad.bio.txt"
+            exit 1
+          fi
+
+          # The rendered bio must carry its sources through both machines
+          # faithfully: name and headline from site.yaml verbatim, and the shared
+          # summary from resume.yaml word-for-word (nroff reflows and justifies
+          # the prose, so compare word tokens, not exact spacing).
+          .venv/bin/python - <<'PY'
+          from pathlib import Path
+
+          import yaml
+
+          from resume_generator.bio_yaml import parse_bio_txt
+
+          site = yaml.safe_load(Path("site.yaml").read_text(encoding="utf-8"))
+          resume = yaml.safe_load(Path("resume.yaml").read_text(encoding="utf-8"))
+          bio = parse_bio_txt(Path("out/brad.bio.txt").read_text(encoding="utf-8"))
+
+          checks = {
+              "name": (bio["name"], site["name"]),
+              "headline": (bio["principal_headline"], site["headline"]),
+              "summary (words)": (
+                  " ".join(bio["about"].split()),
+                  " ".join(resume["basics"]["summary"].split()),
+              ),
+          }
+          bad = {k: v for k, v in checks.items() if v[0] != v[1]}
+          if bad:
+              raise SystemExit(f"bio round trip mismatch: {bad!r}")
+          print("bio round trip matches sources (site.yaml identity, resume.yaml basics.summary)")
+          PY
+
+          # deploy.yml redirects the decoded artifact back onto
+          # build/vintage/brad.bio.txt, which the SIMH containers created as root.
+          # Exercise the same write here (with the same ownership fix) so this
+          # harness fails wherever the real deploy would.
+          sudo chown -R "$(id -u):$(id -g)" build/vintage
+          if ! cp out/brad.bio.txt build/vintage/brad.bio.txt; then
+            echo "::error::cannot write build/vintage/brad.bio.txt — deploy.yml would fail here"
+            ls -la build/vintage
+            exit 1
+          fi
+
+          # The bio carries no date, so its raw hash is directly comparable to a
+          # baseline; no date normalization is needed.
+          sha="$(sha256sum out/brad.bio.txt | cut -d' ' -f1)"
+          echo "sha256=${sha}" >> "$GITHUB_OUTPUT"
+          echo "brad.bio.txt: $(wc -l < out/brad.bio.txt) lines, $(wc -c < out/brad.bio.txt) bytes"
+          echo "sha256: ${sha}"
+
+          {
+            echo "## Vintage pipeline validation"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Wall clock | ${{ steps.vintage.outputs.elapsed_seconds }}s |"
+            echo "| brad.bio.txt | $(wc -c < out/brad.bio.txt) bytes, $(wc -l < out/brad.bio.txt) lines |"
+            echo "| Round trip | ✅ site.yaml identity + resume.yaml basics.summary |"
+            echo "| SHA256 | \`${sha}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ -z "$EXPECTED" ]]; then
+            echo "| Baseline | not compared (no hash given) |" >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::Recorded SHA256 ${sha} (no comparison requested)"
+            exit 0
+          fi
+
+          if [[ "$sha" == "$EXPECTED" ]]; then
+            echo "| Baseline | ✅ identical |" >> "$GITHUB_STEP_SUMMARY"
+            echo "::notice::brad.bio.txt matches the baseline"
+          else
+            echo "| Baseline | ❌ MISMATCH (expected \`${EXPECTED}\`) |" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::brad.bio.txt does not match the baseline"
+            echo "  expected: ${EXPECTED}"
+            echo "  actual:   ${sha}"
+            exit 1
+          fi
+
+      # Runs even when the pipeline step itself failed, which is exactly when the
+      # full log matters — the runner only echoes its last 80 lines to stdout.
+      - name: Collect diagnostics
+        if: always()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          mkdir -p out
+          cp /tmp/vintage-stdout.txt out/runner-stdout.txt 2>/dev/null || true
+          cp "${{ steps.vintage.outputs.log_file }}" out/pipeline.log 2>/dev/null || true
+          cp build/vintage/sections.jsonl out/sections.jsonl 2>/dev/null || true
+          ls -la out/
+
+      # Uploaded unconditionally: on a mismatch these are the only way to diff
+      # the render, and on success they are the evidence for the run.
+      - name: Upload artifacts and log
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: vintage-${{ steps.vintage.outputs.build_id || github.run_id }}
+          path: out/
+          retention-days: 14
+          if-no-files-found: warn

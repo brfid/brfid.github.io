@@ -1,0 +1,222 @@
+/* Forest Terminal palette + landing composition.
+   Overrides PaperMod's core theme variables (theme-vars.css) for both themes,
+   then styles the home article and the nav/footer chrome on top of them.
+
+   Concept: the person is set like a book (Newsreader serif), the machine is set
+   like a terminal (IBM Plex Mono). Forest green is the single accent — it reads
+   as pine and as green-screen phosphor at once, which is what lets the humanist
+   and retro-computing halves share one page. */
+
+:root {
+  /* Light "reading room, daylight" */
+  --theme: #f4f1e6;
+  --entry: #eee9d8;
+  --primary: #21281f;
+  --secondary: #5f6b5c;
+  --tertiary: #ddd7c2;
+  --content: #21281f;
+  --border: #ddd7c2;
+  --code-bg: #eee9d8;
+  --code-block-bg: #e6e1d0;
+
+  --forest: #2f6b43;
+  --forest-strong: #26583a;
+  --interactive-hover: var(--forest-strong);
+
+  /* One unified column: nav, content, and footer share the same width. */
+  --main-width: 640px;
+  --nav-width: 640px;
+}
+
+:root[data-theme="dark"] {
+  /* Dark "phosphor at night" */
+  --theme: #141a15;
+  --entry: #1c231d;
+  --primary: #e7e3d4;
+  --secondary: #8a9c8c;
+  --tertiary: #2b342c;
+  --content: #e7e3d4;
+  --border: #2b342c;
+  --code-bg: #1c231d;
+  --code-block-bg: #171d18;
+
+  --forest: #7fbf8e;
+  --forest-strong: #97d1a4;
+}
+
+/* ============================================================
+   Home article
+   ============================================================ */
+
+/* The home hero is a PaperMod .first-entry; drop its vertical centering and
+   line clamping so the composition reads top-down like a page. */
+.home-info.first-entry {
+  min-height: auto;
+  justify-content: flex-start;
+  margin: 2rem 0 0;
+}
+
+.home-info .entry-header {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: none;
+}
+
+.home-info .entry-header h1 {
+  font-size: clamp(2.6rem, 6vw, 3.6rem);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  margin: 0;
+  text-wrap: balance;
+}
+
+/* Role: the machine's one-line spec of the person, under the name. */
+.bio-role {
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--secondary);
+  margin: 0.9rem 0 0;
+}
+
+/* Bio: the person set like a book — Newsreader serif prose. The vintage
+   machines still produce this text (VAX composes the troff, the PDP-11 fills it
+   with nroff), but that fixed-width justification is collapsed back to flowing
+   sentences upstream in bio_yaml.py, so the type reads as humanist prose. The
+   machine provenance lives in the footer's VAX/PDP-11 build-log link, not in
+   the letterforms. */
+.bio-summary {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  line-height: 1.62;
+  margin-top: 1.7rem;
+}
+
+.bio-summary p + p {
+  margin-top: 0.7rem;
+}
+
+/* Social links: one row, icon + label, no chrome. */
+.bio-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  margin-top: 1.8rem;
+}
+
+.bio-link {
+  align-items: center;
+  color: var(--secondary);
+  display: inline-flex;
+  gap: 0.45rem;
+  transition: color 0.15s ease;
+}
+
+.bio-link span:last-child {
+  font-family: var(--mono);
+  font-size: 0.84rem;
+}
+
+.bio-link-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.bio-link-icon svg {
+  height: 0.95rem;
+  width: 0.95rem;
+}
+
+
+/* ============================================================
+   Nav + footer chrome
+   ============================================================ */
+
+.header .logo a {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  transition: color 0.15s ease;
+}
+
+#menu a {
+  align-items: center;
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 14px;
+  gap: 0.35rem;
+  transition: color 0.15s ease;
+}
+
+#menu > li {
+  align-items: center;
+  display: inline-flex;
+}
+
+#menu .menu-item-with-companion {
+  gap: 0.35rem;
+}
+
+#menu .menu-link-icon,
+#menu .menu-companion-link {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+}
+
+#menu .menu-link-icon svg,
+#menu .menu-companion-link svg {
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+#menu .menu-companion-link {
+  color: var(--secondary);
+}
+
+/* Single-document links: the resume now, and article pages when restored. */
+.post-single a {
+  transition: color 0.15s ease;
+}
+
+.header .logo a:hover,
+.header .logo a:focus-visible,
+#menu a:hover,
+#menu a:focus-visible,
+.bio-link:hover,
+.bio-link:focus-visible,
+.post-single a:hover,
+.post-single a:focus-visible,
+.footer a:hover,
+.footer a:focus-visible {
+  color: var(--interactive-hover);
+}
+
+/* PaperMod gives heading anchors an !important hover color. Keep those future
+   article controls in the same interaction system. */
+.post-single .anchor:hover,
+.post-single .anchor:focus-visible {
+  color: var(--interactive-hover) !important;
+}
+
+.theme-toggle svg {
+  transition: stroke 0.15s ease;
+}
+
+.theme-toggle:hover svg,
+.theme-toggle:focus-visible svg {
+  stroke: var(--interactive-hover);
+}
+
+.footer {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+}
+
+.footer a {
+  text-decoration: none;
+  transition: color 0.15s ease;
+}

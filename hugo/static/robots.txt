@@ -1,0 +1,5 @@
+# HTML remains crawlable so search engines can observe its noindex directive.
+User-agent: *
+Allow: /
+Disallow: /pipeline-status.json
+Disallow: /resume.pdf
