@@ -5,9 +5,9 @@ PYTHON ?= .venv/bin/python
 PREVIEW_PORT ?= 1313
 
 .PHONY: help test check check_env clean \
-        sync-site-data sync-resume-data hugo-build \
+        sync-site-data sync-resume-data new-post hugo-build \
         resume-pdf resume-pdf-public resume-pdf-application \
-        preview preview-public docs
+        preview preview-drafts preview-public docs
 
 help:
 	@echo "brfid.github.io - Active Make Commands"
@@ -20,11 +20,13 @@ help:
 	@echo "Building:"
 	@echo "  make sync-site-data    Sync site.yaml -> hugo/data/site.yaml"
 	@echo "  make sync-resume-data  Sync resume.yaml -> hugo/data/resume.yaml"
+	@echo "  make new-post POST_SLUG=my-post  Scaffold a draft post bundle"
 	@echo "  make hugo-build        Build the public site, including resume HTML, into site/"
 	@echo "  make resume-pdf             Build the site and public phone-free PDF"
 	@echo "  make resume-pdf-public      CI-compatible alias for resume-pdf"
 	@echo "  make resume-pdf-application Build a private application PDF outside the web root"
 	@echo "  make preview                Serve the production-equivalent site and phone-free PDF"
+	@echo "  make preview-drafts         Serve the site with draft blog posts"
 	@echo "  make preview-public         Compatibility alias for preview"
 	@echo ""
 	@echo "Docs:"
@@ -63,6 +65,10 @@ sync-resume-data:
 	@cp resume.yaml hugo/data/resume.yaml
 	@echo "Synced resume.yaml -> hugo/data/resume.yaml"
 
+new-post:
+	@test -n "$(POST_SLUG)" || { echo "Usage: make new-post POST_SLUG=my-post"; exit 2; }
+	@hugo new content --source hugo --kind posts "posts/$(POST_SLUG)"
+
 hugo-build: sync-site-data sync-resume-data
 	@hugo --source hugo --destination ../site --cleanDestinationDir
 
@@ -78,6 +84,9 @@ resume-pdf-application: hugo-build
 
 preview: resume-pdf
 	@hugo server --source hugo --destination ../site --disableFastRender --port $(PREVIEW_PORT)
+
+preview-drafts: resume-pdf
+	@hugo server --source hugo --destination ../site --buildDrafts --disableFastRender --port $(PREVIEW_PORT)
 
 preview-public: resume-pdf-public
 	@hugo server --source hugo --destination ../site --disableFastRender --port $(PREVIEW_PORT)

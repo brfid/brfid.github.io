@@ -4,8 +4,8 @@ Mutable operational state for the site, pipeline, and resume surfaces. **Strateg
 
 ## Current State
 
-- The production site at `https://brfid.github.io/` publishes the landing page, Resume navigation, `/resume/`, its `/about/` alias, and the phone-free `/resume.pdf`; blog, portfolio, RSS, JSON, taxonomy, and pagination-alias outputs remain absent. The repository is public, GitHub Pages uses the Actions deployment mode with HTTPS enforced, and `site.yaml` is the source for the public name, headline, and labeled icon links (`resume.yaml`'s `basics.summary` supplies both the landing bio and resume Summary). Every HTML surface carries a site-wide `noindex` directive, `robots.txt` blocks non-HTML artifacts including the PDF, and the production build emits no sitemap.
-- The four former Hugo posts and the packet-history image assets now live as drafts under the private `~/src/career/essays/` tree. Public branches and tags have been rewritten so their histories contain neither the former post sources and assets nor tracked generated-site copies. The public `hugo/content/posts/` tree remains removed.
+- The public build publishes the landing page, Blog navigation, `/posts/`, `/index.xml`, `/posts/index.xml`, Resume navigation, `/resume/`, its `/about/` alias, and the phone-free `/resume.pdf`; JSON, taxonomy, and sitemap outputs remain absent. The Blog section publishes one post, `/posts/stracheys-principle/`. The repository is public, GitHub Pages uses the Actions deployment mode with HTTPS enforced, and `site.yaml` is the source for the public name, headline, and labeled icon links (`resume.yaml`'s `basics.summary` supplies both the landing bio and resume Summary). Every HTML surface carries a site-wide `noindex` directive, `robots.txt` blocks non-HTML artifacts including the PDF and feeds, and the production build emits no sitemap.
+- The remaining former Hugo posts and the packet-history image assets still live as drafts under the private `~/src/career/essays/` tree. Public branches and tags have been rewritten so their histories contain neither the former post sources and assets nor tracked generated-site copies. The public `hugo/content/posts/` tree contains the Blog section index and the published `stracheys-principle/` bundle; further approved post copy returns as page bundles, and the draft bundle archetype keeps work out of production until explicitly published.
 - **The resume uses one Hugo render for local and public surfaces.** `resume.yaml` syncs to the gitignored `hugo/data/resume.yaml`; Hugo renders `/resume/` and Playwright prints it to `site/resume.pdf`. `make resume-pdf`, `make resume-pdf-public`, `make preview`, `make preview-public`, and production all build the phone-free public PDF. Only `make resume-pdf-application` reads the separate gitignored `resume.private.yaml`, and it writes the phone-bearing application PDF to `local/bradley-fidler-resume.pdf` outside the web root; HTML never carries it. The resume no longer touches the vintage pipeline, and the retired PDP-11 man-page renderer is absent. Dormant portfolio data containing obsolete resume copy has been removed while the portfolio page remains suppressed. The approved application resume renders as a three-page PDF.
 - **The vintage pipeline runs on GitHub-hosted `ubuntu-latest` runners** (ported 2026-07-25, same day the AWS/edcloud host was decommissioned). `deploy.yml` invokes `scripts/edcloud-vintage-runner.sh` directly on the runner; control plane and execution plane are now the same machine and the publish path touches no external infrastructure. Cached GHCR images provide the emulators and disk images, but the runner bind-mounts the checked-out pexpect scripts and shared session helper over their baked copies so CI cannot execute stale orchestration. Per `AGENTS.md`, do not reintroduce a cloud dependency here.
 - The vintage pipeline is bio-only: `site.yaml` identity plus `resume.yaml` `basics.summary` → `build/vintage/bio.vintage.yaml` → the VAX composes the bio as troff (`bradman.c`) → the PDP-11 fills and justifies it with `nroff` → `brad.bio.txt` → `hugo/data/bio.yaml`. The raw bio stays inside `build/vintage/`; only the rendered homepage and build log publish. Missing or mismatched bio output fails validation. The summary reaches the page as humanist prose: the VAX composes it and the PDP-11 fills and justifies it, then `bio_yaml.py` collapses that fixed-width justification back to flowing single-spaced sentences, which the landing template (`home_info.html`, `.bio-summary`) sets in the Newsreader serif. The machine provenance shows in the footer's VAX/PDP-11 build-log link, not in the letterforms.
@@ -22,17 +22,17 @@ Mutable operational state for the site, pipeline, and resume surfaces. **Strateg
 
 ## Goals
 
-1. Later, restore selected essays and portfolio material only after their copy is ready in the private career repo.
+1. Publish a selected essay only after its copy is ready in the private career repo; leave the portfolio suppressed until its material receives the same review.
 2. Optional: publish multi-arch vintage images and add a `make vintage` target so the full pipeline has a tested native path on the arm64 Mac. The GitHub-hosted amd64 path remains the production path.
 3. Optionally rename the historical `edcloud-vintage-runner.sh` and its marker/JSON labels in a separate contract change.
 
 ## Now
 
-- Keep the approved resume, public HTML, and phone-free production PDF aligned while further site work proceeds. A full pre-rewrite backup is verified at `/Users/brf/src/brfid.github.io-pre-history-rewrite-20260821` and must never be pushed.
+- First Blog post is published and live at `/posts/stracheys-principle/`. Keep the approved resume, public HTML, and phone-free production PDF aligned. The verified pre-rewrite backup at `/Users/brf/src/brfid.github.io-pre-history-rewrite-20260821` must never be pushed.
 
 ## Next
 
-- Continue site and resume revisions from the clean-root history without restoring superseded copy from the offline backup.
+- Import further approved essays as page bundles when selected, validating public routes and assets; never restore superseded copy from the offline backup.
 
 ## Blocked
 

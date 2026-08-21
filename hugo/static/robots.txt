@@ -3,3 +3,5 @@ User-agent: *
 Allow: /
 Disallow: /pipeline-status.json
 Disallow: /resume.pdf
+Disallow: /index.xml
+Disallow: /posts/index.xml
