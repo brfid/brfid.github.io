@@ -121,6 +121,7 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     assert "#menu .menu-utility-item" in theme
     assert "--interactive-highlight:" in theme
     assert "background-color: var(--interactive-highlight);" in theme
+    assert "background-size: 100% 1.5rem;" in theme
     assert "text-decoration-thickness: 2px;" in theme
     assert ".resume-download-link {\n  color: var(--forest);" not in resume_css
     assert 'aria-label="Post navigation"' in post_nav
