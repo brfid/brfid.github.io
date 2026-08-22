@@ -148,3 +148,18 @@ def test_content_templates_preserve_clear_summaries_and_semantics() -> None:
     assert '<caption class="table-caption-sr">' in grid
     assert 'scope="col"' in grid
     assert 'scope="row"' in grid
+
+
+def test_resume_print_styles_are_scoped_to_the_resume() -> None:
+    """Resume PDF geometry and typography must not leak into printed posts."""
+    base = (ROOT / "hugo" / "layouts" / "baseof.html").read_text(encoding="utf-8")
+    resume_css = (ROOT / "hugo" / "assets" / "css" / "extended" / "resume.css").read_text(encoding="utf-8")
+
+    assert "else if eq .Layout `resume`" in base
+    assert '<body class="resume-page" id="top">' in base
+    assert "@page resume {" in resume_css
+    assert "@page {" not in resume_css
+    assert "page: resume;" in resume_css
+    assert "body.resume-page .post-title" in resume_css
+    assert "body.resume-page .post-content h2" in resume_css
+    assert "body.resume-page a" in resume_css

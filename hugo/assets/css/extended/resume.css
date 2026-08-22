@@ -19,7 +19,7 @@
   align-items: center;
   color: var(--secondary);
   display: inline-flex;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   gap: 0.45rem;
   line-height: 1.3rem;
   margin: 0.1rem 0;
@@ -82,10 +82,6 @@
   margin: 0;
 }
 
-.resume-employer-title {
-  font-size: 1.05em;
-}
-
 .listing-section a:not(.resume-contact-link) {
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
@@ -139,7 +135,7 @@
    size and margins. 0.75in side margins leave a 7in printable column; the
    content still caps at --main-width (640px), so the PDF wraps line-for-line
    like the on-screen page instead of reflowing wider. */
-@page {
+@page resume {
   size: Letter;
   margin: 0.5in 0.65in;
 }
@@ -149,17 +145,10 @@
    own .post-header with the name and contact, and force a white, light palette
    regardless of the viewer's theme. */
 @media print {
-  .header,
-  .footer,
-  .skip-link,
-  .resume-download-link {
-    display: none !important;
-  }
-
   /* !important so these beat theme.css's :root and the prefers-color-scheme
-     dark block regardless of cascade order. */
-  :root,
-  :root[data-theme="dark"] {
+     dark block regardless of cascade order. The body hook keeps the palette,
+     type, and named sheet specific to the resume. */
+  body.resume-page {
     --theme: #fff !important;
     --entry: #fff !important;
     --primary: #1a1a1a !important;
@@ -171,124 +160,135 @@
     --code-block-bg: #f2f2f2 !important;
     --forest: #2f6b43 !important;
     --forest-strong: #26583a !important;
-  }
-
-  body {
     background: #fff;
     color: var(--content);
     font-size: 10pt;
     line-height: 1.35;
+    page: resume;
   }
 
-  .main {
+  body.resume-page .header,
+  body.resume-page .footer,
+  body.resume-page .skip-link,
+  body.resume-page .resume-download-link {
+    display: none !important;
+  }
+
+  body.resume-page .main {
     max-width: none;
     padding: 0;
   }
 
-  .post-title {
+  body.resume-page .post-title {
     font-size: 23pt;
     margin-bottom: 0.1rem;
   }
 
-  .post-content {
+  body.resume-page .post-content {
     font-size: 10pt;
     line-height: 1.35;
   }
 
-  .post-content h2 {
+  body.resume-page .post-content h2 {
     font-size: 15pt;
     line-height: 1.2;
   }
 
-  .resume-header {
+  body.resume-page .resume-header {
     margin-bottom: 0.4rem;
   }
 
-  .resume-header-right,
-  .resume-contact-link {
+  body.resume-page .resume-header-right,
+  body.resume-page .resume-contact-link {
     font-size: 9pt;
-    line-height: 1.15rem;
+    line-height: 1.2;
   }
 
-  .resume-label,
-  .resume-location {
+  body.resume-page .resume-label,
+  body.resume-page .resume-location {
     line-height: 1.25;
   }
 
-  .listing-section {
+  body.resume-page .listing-section {
     margin-bottom: 0.55rem;
   }
 
   /* Keep a section heading with the content beneath it: never let an <h2>
      print as the last line of a page with its items overleaf. */
-  .listing-section h2 {
+  body.resume-page .listing-section h2 {
     break-after: avoid;
     margin-bottom: 0.45rem;
     padding-bottom: 0.1rem;
   }
 
-  .listing-item {
+  body.resume-page .listing-item {
     margin-bottom: 0.55rem;
   }
 
-  .listing-item p,
-  .listing-item ul {
+  body.resume-page .listing-item p,
+  body.resume-page .listing-item ul {
     margin-bottom: 0.2rem;
     margin-top: 0.2rem;
   }
 
-  .listing-item li {
+  body.resume-page .listing-item li {
     margin-bottom: 0.08rem;
     margin-top: 0.08rem;
   }
 
-  .listing-item-sub {
+  body.resume-page .listing-dates,
+  body.resume-page .listing-item-sub,
+  body.resume-page .listing-keywords {
+    font-size: 9pt;
+  }
+
+  body.resume-page .listing-item-sub {
     margin-bottom: 0.2rem;
   }
 
-  .resume-role-list {
+  body.resume-page .resume-role-list {
     margin-top: 0.45rem;
     padding-left: 0.8rem;
   }
 
-  .resume-role + .resume-role {
+  body.resume-page .resume-role + .resume-role {
     margin-top: 0.6rem;
   }
 
-  .resume-role::before {
+  body.resume-page .resume-role::before {
     left: calc(-0.8rem - 0.3rem);
   }
 
-  .listing-item {
+  body.resume-page .listing-item {
     page-break-inside: avoid;
   }
 
   /* Keep the short education block together instead of leaving one degree
      isolated on the next page when the skills inventory changes. */
-  .resume-education {
+  body.resume-page .resume-education {
     break-inside: avoid;
   }
 
-  .resume-employer {
+  body.resume-page .resume-employer {
     page-break-inside: auto;
   }
 
-  .resume-employer-head,
-  .resume-employer-location,
-  .resume-role-head {
+  body.resume-page .resume-employer-head,
+  body.resume-page .resume-employer-location,
+  body.resume-page .resume-role-head {
     break-inside: avoid;
     break-after: avoid;
   }
 
-  .resume-role {
+  body.resume-page .resume-role {
     break-inside: auto;
   }
 
-  .resume-role li {
+  body.resume-page .resume-role li {
     break-inside: avoid;
   }
 
-  a {
+  body.resume-page a {
     color: inherit;
     text-decoration: none;
   }
