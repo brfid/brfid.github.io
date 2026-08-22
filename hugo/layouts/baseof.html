@@ -19,6 +19,8 @@
 
 {{- if (or (ne .Kind `page` ) (eq .Layout `archives`) (eq .Layout `search`)) }}
 <body class="list" id="top">
+{{- else if eq .Layout `resume` }}
+<body class="resume-page" id="top">
 {{- else }}
 <body id="top">
 {{- end }}

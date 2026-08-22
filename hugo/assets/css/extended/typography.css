@@ -68,6 +68,10 @@ body {
   line-height: 1.6;
 }
 
+code {
+  font-family: var(--mono);
+}
+
 h1,
 h2,
 h3 {
