@@ -2,11 +2,13 @@
 
 from pathlib import Path
 
-RUNNER = Path(__file__).resolve().parents[1] / "scripts" / "edcloud-vintage-runner.sh"
-WORKFLOWS = Path(__file__).resolve().parents[1] / ".github" / "workflows"
+ROOT = Path(__file__).resolve().parents[1]
+RUNNER = ROOT / "scripts" / "vintage-runner.sh"
+WORKFLOWS = ROOT / ".github" / "workflows"
 PEXPECT_SCRIPTS = (
     RUNNER.parent / "vax_pexpect.py",
     RUNNER.parent / "pdp11_pexpect.py",
+    RUNNER.parent / "simh_session.py",
 )
 
 
@@ -65,15 +67,80 @@ def test_publish_paths_use_the_shared_semantic_validator() -> None:
         assert ".venv/bin/python -m resume_generator.vintage_contract" in workflow
 
 
+def test_workflows_consume_direct_runner_artifacts() -> None:
+    """Deployment and validation must consume the runner's files without stdout transport."""
+    runner = RUNNER.read_text(encoding="utf-8")
+
+    assert "_BASE64_BEGIN" not in runner
+    assert "base64 <" not in runner
+    for name in ("deploy.yml", "vintage-validate.yml"):
+        workflow = (WORKFLOWS / name).read_text(encoding="utf-8")
+        assert "bash scripts/vintage-runner.sh" in workflow
+        assert "/tmp/vintage-stdout.txt" not in workflow
+        assert "_BASE64_BEGIN" not in workflow
+        assert "for artifact in brad.bio.txt build.log.html pipeline-status.json; do" in workflow
+        assert '"build/vintage/${artifact}"' in workflow
+
+
+def test_runner_preserves_public_status_and_log_identifiers() -> None:
+    """Renaming the executable must not rename published provenance or documented logs."""
+    runner = RUNNER.read_text(encoding="utf-8")
+
+    assert 'LOG_DIR="${LOG_DIR:-/tmp/edcloud-vintage}"' in runner
+    assert '"pipeline": "edcloud-vintage"' in runner
+
+
 def test_runner_clears_owned_generated_outputs_before_each_run() -> None:
     """A failed retry must not reuse the prior run's successful artifacts."""
     runner = RUNNER.read_text(encoding="utf-8")
 
     for output in (
         "bio.vintage.yaml",
+        "build.log.html",
         "brad.bio.uu",
         "brad.bio.txt",
         "pipeline-status.json",
         "sections.jsonl",
     ):
         assert f"build/vintage/{output}" in runner
+
+
+def test_image_recipes_pin_external_inputs() -> None:
+    """Image rebuilds must use immutable base references and verify the guest archive."""
+    pdp11 = (ROOT / "vintage" / "machines" / "pdp11" / "Dockerfile.pdp11-pexpect").read_text(encoding="utf-8")
+    vax = (ROOT / "vintage" / "machines" / "vax" / "Dockerfile.vax-pexpect").read_text(encoding="utf-8")
+
+    pdp11_from = next(line for line in pdp11.splitlines() if line.startswith("FROM "))
+    vax_from = next(line for line in vax.splitlines() if line.startswith("FROM "))
+    assert pdp11_from.startswith("FROM debian:bookworm-slim@sha256:")
+    assert vax_from.startswith("FROM jguillaumes/simh-vaxbsd:latest@sha256:")
+    assert "74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42" in pdp11
+    assert "sha256sum -c -" in pdp11
+
+
+def test_docker_context_is_a_strict_allowlist() -> None:
+    """Local image builds must not expose unrelated or private checkout files."""
+    dockerignore = ROOT / ".dockerignore"
+    rules = {
+        line for line in dockerignore.read_text(encoding="utf-8").splitlines() if line and not line.startswith("#")
+    }
+
+    assert "**" in rules
+    assert rules == {
+        "**",
+        "!.dockerignore",
+        "!scripts/",
+        "!scripts/pdp11_pexpect.py",
+        "!scripts/simh_session.py",
+        "!scripts/vax_pexpect.py",
+        "!vintage/",
+        "!vintage/machines/",
+        "!vintage/machines/pdp11/",
+        "!vintage/machines/pdp11/Dockerfile.pdp11-pexpect",
+        "!vintage/machines/pdp11/configs/",
+        "!vintage/machines/pdp11/configs/pdp11-pexpect.ini",
+        "!vintage/machines/vax/",
+        "!vintage/machines/vax/Dockerfile.vax-pexpect",
+        "!vintage/machines/vax/configs/",
+        "!vintage/machines/vax/configs/vax780-pexpect.ini",
+    }

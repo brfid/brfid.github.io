@@ -2,6 +2,7 @@ baseURL = "https://brfid.github.io/"
 locale = "en-US"
 title = "Bradley Fidler"
 theme = "PaperMod"
+publishDir = "../site"
 disableKinds = ["sitemap", "taxonomy", "term"]
 
 # Use only the static hugo/static/robots.txt file.
@@ -46,7 +47,6 @@ disableAliases = false
   hideAuthor = true
   description = "Bradley Fidler, Principal Technical Writer."
   mainSections = ["posts"]
-  resumeEnabled = true
   defaultTheme = "auto"
   disableThemeToggle = false
   ShowReadingTime = true

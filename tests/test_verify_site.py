@@ -81,6 +81,22 @@ def test_robots_check_rejects_a_conflicting_index_directive(tmp_path: Path) -> N
     assert errors == ["index.html: conflicting robots index/follow policy"]
 
 
+def test_linked_build_log_must_exist_in_rendered_tree(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / "index.html").write_text('<a href="/build.log.html">build log</a>\n', encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_linked_artifacts(site_dir, errors)
+
+    assert errors == ["index.html: links to missing or empty build.log.html"]
+
+    (site_dir / "build.log.html").write_text("<html>build log</html>\n", encoding="utf-8")
+    errors = []
+    verifier.verify_linked_artifacts(site_dir, errors)
+    assert errors == []
+
+
 def test_feed_check_allows_literal_entities_but_rejects_double_escaped_quotes(tmp_path: Path) -> None:
     site_dir = tmp_path / "site"
     post = site_dir / "posts" / "example" / "index.html"

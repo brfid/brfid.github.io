@@ -11,16 +11,13 @@ Install Git and Python 3.11 or newer, then start Docker. Run the command from th
 ```bash
 DOCKER_DEFAULT_PLATFORM=linux/amd64 \
   ALLOW_LOCAL_IMAGE_BUILD=0 \
-  bash scripts/edcloud-vintage-runner.sh \
-  "local-$(date -u +%Y%m%d-%H%M%S)" \
-  > /tmp/vintage-stdout.txt
+  bash scripts/vintage-runner.sh \
+  "local-$(date -u +%Y%m%d-%H%M%S)"
 ```
 
 This command uses the immutable production image pair. Remove `ALLOW_LOCAL_IMAGE_BUILD=0` to let a failed pull build the checked-out Dockerfiles for local development.
 
-The runner writes intermediate artifacts to `build/vintage/`, detailed logs to `/tmp/edcloud-vintage/`, and base64 artifact markers to redirected stdout. It creates `.venv/` and installs the package only when the existing environment cannot import the pipeline dependencies.
-
-Despite its name, the script makes no cloud calls.
+The runner writes intermediate and final artifacts to `build/vintage/`, detailed logs to `/tmp/edcloud-vintage/`, and a concise completion message or failure tail to stdout. It creates `.venv/` and installs the package only when the existing environment cannot import the pipeline dependencies.
 
 ### Runner environment
 
@@ -42,7 +39,8 @@ Production and the validation workflow set `ALLOW_LOCAL_IMAGE_BUILD=0`.
 |---|---|---|---|
 | B | VAX 4.3BSD | Compile and run `bradman.c`, then `uuencode` its troff output | `brad.bio.uu` |
 | A | PDP-11 2.11BSD | `uudecode` the spool, then run `nroff -Tlp` | `brad.bio.txt` |
-| Deployment workflow | GitHub runner | Validate source equivalence, add build metadata, and prepare Hugo data | `hugo/data/bio.yaml` |
+| Runner finalization | Local or GitHub runner | Record status and render the host and guest log | `pipeline-status.json`, `build.log.html` |
+| Deployment workflow | GitHub runner | Validate source equivalence and stage the three final artifacts for Hugo | `hugo/data/bio.yaml`, published log and status |
 
 The host transfers the spool between guests. The PDP-11 `unix` kernel has no working Ethernet.
 
@@ -54,14 +52,15 @@ The host transfers the spool between guests. The PDP-11 `unix` kernel has no wor
 |---|---|---|
 | `build/vintage/bio.vintage.yaml` | Internal | Fixed guest input contract |
 | `build/vintage/brad.bio.uu` | Internal | VAX-generated UUCP spool |
-| `build/vintage/brad.bio.txt` | Internal | PDP-11-rendered bio |
+| `build/vintage/brad.bio.txt` | Final | PDP-11-rendered bio |
+| `build/vintage/build.log.html` | Final | Host and guest build log |
 | `build/vintage/sections.jsonl` | Internal | Named guest-console sections |
-| `build/vintage/pipeline-status.json` | Internal | Current run result and stage counts |
+| `build/vintage/pipeline-status.json` | Final | Current run result and stage counts |
 | `hugo/data/bio.yaml` | Deployment output | Flowing bio text and build provenance |
-| `hugo/static/build.log.html` | Published | Host and guest build log |
-| `hugo/static/pipeline-status.json` | Published | Build identity, result, commit, time, and stage counts |
+| `hugo/static/build.log.html` | Deployment output | Published copy of the final build log |
+| `hugo/static/pipeline-status.json` | Deployment output | Published copy of the final status |
 
-The runner removes the generated files it owns before every run. After environment setup, a failed stage writes `result: failure` with the current build ID and exit code, preventing a retry from reusing a prior success.
+The runner removes the generated files it owns before every run. After environment setup, a failed stage writes `result: failure` with the current build ID and exit code, preventing a retry from reusing a prior success. Deployment copies only a successful run's final artifacts into Hugo.
 
 ## Console contracts
 
@@ -70,11 +69,11 @@ The runner removes the generated files it owns before every run. After environme
 - Artifact-producing guest commands use `run_checked()` and must return status `0` before the pipeline continues.
 - The checkout's VAX and PDP-11 scripts and `simh_session.py` are bind-mounted over the copies in cached images.
 - The VAX produces the UUCP spool. The host preserves it as text and injects it into the PDP-11 in short heredoc batches.
-- `base64 | tr -d '\n'` carries host artifact markers on GNU and BSD systems.
+- The runner and workflows hand off the final files directly under `build/vintage/`; stdout is diagnostic only.
 
 ## Validate without publishing
 
-Push the branch and authenticate the GitHub CLI with permission to run Actions workflows. Then run the manual validation workflow to exercise marker extraction, semantic comparison, status generation, and artifact upload:
+Push the branch and authenticate the GitHub CLI with permission to run Actions workflows. Then run the manual validation workflow to exercise direct artifact collection, semantic comparison, status generation, and artifact upload:
 
 ```bash
 BRANCH="$(git branch --show-current)"
@@ -95,16 +94,16 @@ Use this procedure after changing an emulator Dockerfile, configuration, base im
    ```
 
 2. Copy both image digests from the workflow summary.
-3. Update both `GHCR_VAX` and `GHCR_PDP11` in `scripts/edcloud-vintage-runner.sh` so the release records an explicit pair.
+3. Update both `GHCR_VAX` and `GHCR_PDP11` in `scripts/vintage-runner.sh` so the release records an explicit pair.
 4. Push the digest update and run `gh workflow run vintage-validate.yml --ref "$(git branch --show-current)"`.
 5. Inspect `pipeline-status.json`, `brad.bio.txt`, `build.log.html`, and the console-section artifact.
 6. Merge only after validation succeeds.
 
-`build-images.yml` publishes source-commit tags for discovery. Deployment uses only the pinned digests and never waits for an image build.
+`build-images.yml` publishes source-commit tags for discovery. Deployment uses only the pinned digests and never waits for an image build. The Dockerfiles pin their base images by digest, and the PDP-11 recipe verifies the downloaded disk archive before extraction.
 
 ## References
 
 - [`pexpect` implementation reference](operations/PEXPECT-PIPELINE-SPEC.md)
 - [VAX stage and guest input contract](../vax/README.md)
-- [Pipeline runner](../../scripts/edcloud-vintage-runner.sh)
+- [Pipeline runner](../../scripts/vintage-runner.sh)
 - [Retired approaches](../archive/DEAD-ENDS.md)

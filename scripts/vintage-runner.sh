@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Usage:
-#   ./scripts/edcloud-vintage-runner.sh <build-id>
+#   ./scripts/vintage-runner.sh <build-id>
 #
 # Outputs:
-#   build/vintage/          guest inputs, spool, bio, sections, and status
+#   build/vintage/          guest inputs, spool, bio, build log, sections, and status
 #   LOG_DIR                 detailed host log and copied console sections
-#   stdout                  base64 markers consumed by workflows
+#   stdout                  concise completion status or failure diagnostics
 #
 # Environment:
 #   ROOT_DIR                repository root (default: current directory)
@@ -39,7 +39,7 @@ GHCR_PDP11="ghcr.io/brfid/pdp11-pexpect@sha256:9e44185b9b128a7999292e5780413c46c
 
 mkdir -p "$LOG_DIR"
 
-# Reserve stdout for artifact markers.
+# Keep verbose output in the host log while preserving stdout for concise status.
 exec 3>&1
 exec >"$LOG_FILE" 2>&1
 
@@ -51,12 +51,9 @@ on_exit() {
     set +e
     if [[ -x "${ROOT_DIR}/.venv/bin/python" ]]; then
       emit_status_json "$code"
-      emit_status_artifact
     fi
-    printf '<<<EDCLOUD_RUNNER_FAILED>>> build_id=%s log=%s\n' "$BUILD_ID" "$LOG_FILE" >&3
-    printf '<<<EDCLOUD_RUNNER_LOG_TAIL_BEGIN>>>\n' >&3
+    printf 'Vintage pipeline failed: build_id=%s log=%s\n' "$BUILD_ID" "$LOG_FILE" >&3
     tail -80 "$LOG_FILE" >&3 || true
-    printf '<<<EDCLOUD_RUNNER_LOG_TAIL_END>>>\n' >&3
   fi
 
   cleanup
@@ -100,11 +97,12 @@ prepare_host() {
   require_bin python3
 
   cd "$ROOT_DIR"
-  mkdir -p build/vintage hugo/static
+  mkdir -p build/vintage
 
   # Clear all files owned by one run before creating new status or artifacts.
   rm -f \
     build/vintage/bio.vintage.yaml \
+    build/vintage/build.log.html \
     build/vintage/brad.bio.uu \
     build/vintage/brad.bio.txt \
     build/vintage/bradman.c \
@@ -273,38 +271,8 @@ print(json.dumps(status, indent=2))
 PY
 }
 
-emit_status_artifact() {
-  cd "$ROOT_DIR"
-  if [[ -s build/vintage/pipeline-status.json ]]; then
-    local status_b64
-    status_b64="$(base64 < build/vintage/pipeline-status.json | tr -d '\n')"
-    printf '<<<PIPELINE_STATUS_JSON_BASE64_BEGIN>>>\n%s\n<<<PIPELINE_STATUS_JSON_BASE64_END>>>\n' "$status_b64" >&3
-  fi
-}
-
-emit_artifact() {
-  stage "emit-artifact"
-  cd "$ROOT_DIR"
-
-  mkdir -p hugo/static
-
-  if [[ ! -s build/vintage/brad.bio.txt ]]; then
-    echo "emit-artifact: build/vintage/brad.bio.txt is missing or empty" >&2
-    return 1
-  fi
-
-  # GNU base64 wraps by default; BSD base64 has no -w option.
-  local bio_b64
-  bio_b64="$(base64 < build/vintage/brad.bio.txt | tr -d '\n')"
-  printf '<<<BRAD_BIO_TXT_BASE64_BEGIN>>>\n%s\n<<<BRAD_BIO_TXT_BASE64_END>>>\n' "$bio_b64" >&3
-
-  emit_status_artifact
-
-  printf 'LOG_FILE=%s\n' "$LOG_FILE" >&3
-}
-
-emit_build_log() {
-  stage "emit-build-log"
+write_build_log() {
+  stage "finalize-artifacts"
   cd "$ROOT_DIR"
 
   # The renderer reads console sections beside the host log.
@@ -312,14 +280,29 @@ emit_build_log() {
     cp build/vintage/sections.jsonl "$SECTIONS_LOG"
   fi
 
-  local build_log
-  build_log="$(.venv/bin/python -m resume_generator.build_log "$LOG_FILE" "$BUILD_ID" "$SECTIONS_LOG")"
+  .venv/bin/python -m resume_generator.build_log \
+    "$LOG_FILE" \
+    "$BUILD_ID" \
+    "$SECTIONS_LOG" \
+    > build/vintage/build.log.html
 
-  if [[ -n "$build_log" ]]; then
-    local log_b64
-    log_b64="$(printf '%s' "$build_log" | base64 | tr -d '\n')"
-    printf '<<<BUILD_LOG_BASE64_BEGIN>>>\n%s\n<<<BUILD_LOG_BASE64_END>>>\n' "$log_b64" >&3
+  if [[ ! -s build/vintage/build.log.html ]]; then
+    echo "write-build-log: build/vintage/build.log.html is missing or empty" >&2
+    return 1
   fi
+}
+
+verify_final_artifacts() {
+  stage "verify-final-artifacts"
+  cd "$ROOT_DIR"
+
+  local artifact
+  for artifact in brad.bio.txt build.log.html pipeline-status.json; do
+    if [[ ! -s "build/vintage/${artifact}" ]]; then
+      echo "Final artifact is missing or empty: build/vintage/${artifact}" >&2
+      return 1
+    fi
+  done
 }
 
 main() {
@@ -329,8 +312,13 @@ main() {
   stage_b_vax
   stage_a_pdp11
   emit_status_json 0
-  emit_artifact
-  emit_build_log
+  write_build_log
+  verify_final_artifacts
+  printf 'Vintage pipeline complete: build_id=%s artifacts=%s log=%s\n' \
+    "$BUILD_ID" \
+    "${ROOT_DIR}/build/vintage" \
+    "$LOG_FILE" \
+    >&3
 }
 
 main "$@"

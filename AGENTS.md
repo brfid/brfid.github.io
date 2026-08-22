@@ -58,6 +58,7 @@ Do not copy mutable state between these files.
 
 - Run Python through `.venv/bin/python`. Do not install packages globally or modify system Python.
 - Use the commands documented in `README.md` and `make help`.
+- Keep local and production provenance modes separate. `hugo-build`, `resume-pdf`, previews, and `verify-site` clear deployment-only bio, build-log, and status inputs; `resume-pdf-public` requires all three staged production inputs.
 - Preview design and theme changes through Hugo. Do not create a separate HTML mockup.
 - Extend PaperMod through `hugo/assets/css/extended/`, self-hosted fonts, and repository-owned partials. Do not edit the PaperMod submodule.
 - Restart the preview after changing `resume.yaml`, or after changing layout or CSS that affects the PDF.
@@ -99,7 +100,7 @@ Use `- None.` for an empty section. Record only current or forward-looking opera
 - Drive SIMH with pexpect over stdin and stdout. Do not restore screen, telnet, or fixed-delay state transitions. A short per-line transport throttle is permitted to protect the guest tty.
 - Keep VAX and PDP-11 boot, shell, and shutdown state machines separate.
 - Use the host to transfer the UUCP spool. The PDP-11 `unix` kernel has no working Ethernet.
-- Keep `scripts/edcloud-vintage-runner.sh` bind-mounting the checkout's pexpect scripts and `simh_session.py` over the cached image copies.
+- Keep `scripts/vintage-runner.sh` bind-mounting the checkout's pexpect scripts and `simh_session.py` over the cached image copies, and keep its final bio, build log, and status under `build/vintage/`.
 - Pin production to an explicit pair of immutable GHCR image digests and disable local image fallback in deployment and validation.
 - Promote image changes through the manual image-build workflow and vintage validation procedure in `docs/integration/INDEX.md`.
 

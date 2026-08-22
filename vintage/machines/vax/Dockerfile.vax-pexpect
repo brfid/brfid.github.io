@@ -1,7 +1,7 @@
 # VAX 11/780 with 4.3BSD and a pexpect-controlled local console.
 # Build with the repository root as context. Promote production images through
 # build-images.yml; the local runner may build this recipe as a fallback.
-FROM jguillaumes/simh-vaxbsd:latest
+FROM jguillaumes/simh-vaxbsd:latest@sha256:1bab805b25a793fd622c29d3e9b677b002cabbdc20d9c42afaeeed542cc42215
 
 RUN apt-get update && apt-get install -y python3 python3-pexpect \
     && rm -rf /var/lib/apt/lists/*

@@ -1,6 +1,6 @@
 # Retired pipeline approaches
 
-Use [the active pipeline guide](../integration/INDEX.md) and `scripts/edcloud-vintage-runner.sh` for current work.
+Use [the active pipeline guide](../integration/INDEX.md) and `scripts/vintage-runner.sh` for current work.
 
 | Approach | Status | Current constraint or replacement |
 |---|---|---|

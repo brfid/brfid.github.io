@@ -7,11 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_production_config_publishes_resume() -> None:
-    """The production Hugo build must include the resume and its navigation."""
-    config = tomllib.loads((ROOT / "hugo" / "hugo.toml").read_text(encoding="utf-8"))
+    """The production Hugo build must include the public resume content."""
     content = (ROOT / "hugo" / "content" / "resume.md").read_text(encoding="utf-8")
 
-    assert config["params"]["resumeEnabled"] is True
     assert "draft: false" in content
     assert "draft: true" not in content
 
@@ -57,6 +55,9 @@ def test_public_pdf_target_cannot_load_private_phone_overlay() -> None:
     assert "private_resume_path" not in default_target
     assert "resume.private.yaml" not in default_target
     assert "pdf_path=Path('site/resume.pdf')" in default_target
+    assert "hugo-build-production" in public_target
+    assert "pdf_path=Path('site/resume.pdf')" in public_target
+    assert "resume-pdf-application: resume-pdf" in makefile
     assert "private_resume_path=Path('resume.private.yaml')" in application_target
     assert "pdf_path=Path('local/bradley-fidler-resume.pdf')" in application_target
     assert "pdf_path=Path('site/resume.pdf')" not in application_target
@@ -73,21 +74,31 @@ def test_data_sync_bootstraps_generated_hugo_directory() -> None:
 
 
 def test_hugo_build_destinations_are_fixed_and_warnings_are_fatal() -> None:
-    """A Make override must not turn Hugo's clean destination into a destructive path."""
+    """Local and production builds must use fixed destinations and explicit provenance modes."""
+    config = tomllib.loads((ROOT / "hugo" / "hugo.toml").read_text(encoding="utf-8"))
     makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
     verify_target = makefile.split("verify-site:", maxsplit=1)[1].split("\n\n", maxsplit=1)[0]
     build_target = makefile.split("hugo-build:", maxsplit=1)[1].split("\n\n", maxsplit=1)[0]
+    production_target = makefile.split("hugo-build-production:", maxsplit=1)[1].split("\n\n", maxsplit=1)[0]
 
     assert "SITE_CHECK_DIR" not in makefile
+    assert config["publishDir"] == "../site"
     assert "$(abspath build/site-check)" in verify_target
+    assert "clear-local-provenance" in verify_target
+    assert "clear-local-provenance" in build_target
+    assert "require-production-provenance" in production_target
     assert "--panicOnWarning" in verify_target
     assert "--panicOnWarning" in build_target
+    assert "--panicOnWarning" in production_target
 
 
 def test_deploy_uses_the_shared_production_verifier() -> None:
-    """Deployment must build the public PDF and verify the rendered artifact tree."""
+    """Deployment must pass quality checks, build the public PDF, and verify the artifact tree."""
     workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
 
+    assert ".venv/bin/python -m pip install -e '.[dev]'" in workflow
+    assert "run: make check" in workflow
+    assert workflow.index("run: make check") < workflow.index("name: Run vintage pipeline")
     assert "make resume-pdf-public" in workflow
     assert "make sync-site-data sync-resume-data" not in workflow
     assert "PYTHON=python" not in workflow
@@ -104,8 +115,8 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     base = (ROOT / "hugo" / "layouts" / "baseof.html").read_text(encoding="utf-8")
     header = (ROOT / "hugo" / "layouts" / "_partials" / "header.html").read_text(encoding="utf-8")
     post_nav = (ROOT / "hugo" / "layouts" / "_partials" / "post_nav_links.html").read_text(encoding="utf-8")
-    footer = (ROOT / "hugo" / "layouts" / "partials" / "footer.html").read_text(encoding="utf-8")
-    extended_head = (ROOT / "hugo" / "layouts" / "partials" / "extend_head.html").read_text(encoding="utf-8")
+    footer = (ROOT / "hugo" / "layouts" / "_partials" / "footer.html").read_text(encoding="utf-8")
+    extended_head = (ROOT / "hugo" / "layouts" / "_partials" / "extend_head.html").read_text(encoding="utf-8")
     theme = (ROOT / "hugo" / "assets" / "css" / "extended" / "theme.css").read_text(encoding="utf-8")
     navigation = (ROOT / "hugo" / "assets" / "css" / "extended" / "navigation.css").read_text(encoding="utf-8")
     resume_css = (ROOT / "hugo" / "assets" / "css" / "extended" / "resume.css").read_text(encoding="utf-8")
@@ -122,7 +133,9 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     assert 'class="menu-utility-item"' in header
     assert "#menu .menu-utility-item" in theme
     assert "--interactive-hover:" in theme
-    assert "--interactive-hover: #b8f5c2;" in extended_head
+    assert ':root[data-theme="auto"]' in theme
+    assert "@media (prefers-color-scheme: dark)" in theme
+    assert "<noscript>" not in extended_head
     assert "--forest-strong" not in theme
     assert "--forest-strong" not in extended_head
     assert "--forest-strong" not in resume_css
@@ -142,13 +155,14 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
 def test_content_templates_preserve_clear_summaries_and_semantics() -> None:
     """Blog cards and dense content must keep their explicit, accessible structure."""
     list_template = (ROOT / "hugo" / "layouts" / "list.html").read_text(encoding="utf-8")
-    resume_template = (ROOT / "hugo" / "layouts" / "_default" / "resume.html").read_text(encoding="utf-8")
-    grid = (ROOT / "hugo" / "layouts" / "shortcodes" / "maintenance-grid.html").read_text(encoding="utf-8")
+    resume_template = (ROOT / "hugo" / "layouts" / "resume.html").read_text(encoding="utf-8")
+    grid = (ROOT / "hugo" / "layouts" / "_shortcodes" / "maintenance-grid.html").read_text(encoding="utf-8")
 
     assert "with .Description" in list_template
     assert ".Summary" in list_template
     assert 'class="section-feed-link"' in list_template
     assert 'href="/resume.pdf"' in resume_template
+    assert "$r.projects" not in resume_template
     assert '<h3 class="resume-item-title' in resume_template
     assert '<h4 class="resume-item-title resume-role-title"' in resume_template
     assert '<caption class="table-caption-sr">' in grid

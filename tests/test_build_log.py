@@ -20,7 +20,7 @@ Wrote: build/vintage/bio.vintage.yaml (5 lines)
 [2026-08-19 12:00:04] stage-a-pdp11
 [pdp11_pexpect] 2026-08-19 12:00:05  nroff complete
 Wrote: build/vintage/brad.bio.txt (5 lines) <unsafe>
-[2026-08-19 12:00:06] emit-artifact
+[2026-08-19 12:00:06] finalize-artifacts
 """
 
 
@@ -47,6 +47,8 @@ def test_render_build_log_combines_host_and_guest_records() -> None:
     assert "VAX boot &lt;ok&gt;" in rendered
     assert "Wrote: build/vintage/brad.bio.txt (5 lines) &lt;unsafe&gt;" in rendered
     assert "nroff &rarr; brad.bio.txt" in rendered
+    assert "artifact finalization" in rendered
+    assert "artifacts finalized" in rendered
 
 
 def test_render_build_log_includes_responsive_and_keyboard_styles() -> None:

@@ -132,7 +132,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
     yaml_timestamp = _find_timestamp(log_lines, rf"\[({_TIMESTAMP})\] generate-vintage-yaml")
     vax_timestamp = _find_timestamp(log_lines, rf"\[({_TIMESTAMP})\] stage-b-vax")
     pdp11_timestamp = _find_timestamp(log_lines, rf"\[({_TIMESTAMP})\] stage-a-pdp11")
-    artifact_timestamp = _find_timestamp(log_lines, rf"\[({_TIMESTAMP})\] emit-artifact")
+    artifact_timestamp = _find_timestamp(log_lines, rf"\[({_TIMESTAMP})\] finalize-artifacts")
     compile_timestamp = _find_timestamp(log_lines, rf"\[vax_pexpect\] ({_TIMESTAMP})\s+Compiling:")
     nroff_timestamp = _find_timestamp(log_lines, rf"\[pdp11_pexpect\] ({_TIMESTAMP})\s+nroff complete")
 
@@ -158,7 +158,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
 
     artifact_lines: list[str] = []
     if artifact_timestamp:
-        artifact_lines.append(f'{_timestamp_span(artifact_timestamp)}  <span class="ok">pipeline complete</span>')
+        artifact_lines.append(f'{_timestamp_span(artifact_timestamp)}  <span class="ok">artifacts finalized</span>')
     if bio_txt_line:
         artifact_lines.append(f"  {html.escape(bio_txt_line)}")
     artifact_content = "\n".join(artifact_lines) if artifact_lines else "<em>(no events)</em>"
@@ -220,7 +220,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
             open_by_default=True,
         )
     )
-    parts.append(_details("host", "artifact extraction", artifact_timestamp, artifact_content, open_by_default=True))
+    parts.append(_details("host", "artifact finalization", artifact_timestamp, artifact_content, open_by_default=True))
     parts.append("</main>\n</div>\n</body>\n</html>\n")
     return "".join(parts)
 

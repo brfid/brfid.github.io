@@ -1,0 +1,17 @@
+# The emulator images need only their recipes, guest configuration, and controllers.
+**
+!.dockerignore
+!scripts/
+!scripts/pdp11_pexpect.py
+!scripts/simh_session.py
+!scripts/vax_pexpect.py
+!vintage/
+!vintage/machines/
+!vintage/machines/pdp11/
+!vintage/machines/pdp11/Dockerfile.pdp11-pexpect
+!vintage/machines/pdp11/configs/
+!vintage/machines/pdp11/configs/pdp11-pexpect.ini
+!vintage/machines/vax/
+!vintage/machines/vax/Dockerfile.vax-pexpect
+!vintage/machines/vax/configs/
+!vintage/machines/vax/configs/vax780-pexpect.ini

@@ -65,4 +65,4 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Source SHA: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Pin both digests in \`scripts/edcloud-vintage-runner.sh\`, then run \`vintage-validate.yml\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "Pin both digests in \`scripts/vintage-runner.sh\`, then run \`vintage-validate.yml\`." >> "$GITHUB_STEP_SUMMARY"

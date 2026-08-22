@@ -87,10 +87,8 @@
             {{- end }}
         </div>
         {{- $currentPage := . }}
-        {{- $resume_enabled := site.Params.resumeEnabled }}
         <ul id="menu" class="menu">
             {{- range site.Menus.main }}
-            {{- if or (ne .Identifier "resume") $resume_enabled }}
             {{- $is_current := $currentPage.IsMenuCurrent .Menu . }}
             {{- $has_current := $currentPage.HasMenuCurrent .Menu . }}
             {{- $is_search := eq (site.GetPage .KeyName).Layout `search` }}
@@ -129,7 +127,6 @@
                 </a>
                 {{- end }}
             </li>
-            {{- end }}
             {{- end }}
         </ul>
     </nav>
