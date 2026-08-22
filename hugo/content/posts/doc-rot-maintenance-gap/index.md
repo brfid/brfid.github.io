@@ -6,11 +6,11 @@ description: "Documentation can pass every existing check while losing fit with 
 tags: ["documentation", "docs-as-code", "software-maintenance", "testing"]
 ---
 
-Documentation does not have to change to become stale. The product can move around it.
+Documentation does not have to change to become stale because the product (or the world) can move around it.
 
-Software-evolution research described this maintenance problem decades ago. Lehman showed that a static program can become less useful as the reality it reflects changes.[^lehman-1980] Parnas described software that had aged "even though nobody has touched it" and documentation that becomes "increasingly inaccurate" when updates are deferred.[^parnas-1994]
+Software research described this maintenance problem decades ago. Lehman showed that a static program can become less useful as the reality it reflects changes.[^lehman-1980] Parnas described software that had aged "even though nobody has touched it" and documentation that becomes "increasingly inaccurate" when updates are deferred.[^parnas-1994]
 
-A page can keep passing every existing check while losing that fit. The neglected failure is not that a check returns the wrong verdict. It is that the person or check able to answer is never called again after change.
+A page can keep passing every existing check while losing that fit with the product, or its fit with the product in the world. The neglected failure is not that a check returns the wrong verdict. It is that the person or check able to answer is never called again after change.
 
 ## Two questions
 
