@@ -33,11 +33,3 @@
 .paginav a:only-child {
   width: 100%;
 }
-
-.footer .footer-item {
-  white-space: nowrap;
-}
-
-.footer .footer-separator {
-  margin-inline: 0;
-}

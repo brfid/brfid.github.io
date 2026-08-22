@@ -1,18 +1,28 @@
 {{- if not (.Param "hideFooter") }}
 <footer class="footer">
-    {{- $show_copyright := not site.Params.footer.hideCopyright }}
-    {{- if $show_copyright }}
+    {{- if not site.Params.footer.hideCopyright }}
         {{- if site.Copyright }}
         <span>{{ site.Copyright | markdownify }}</span>
         {{- else }}
         <span>&copy; {{ now.Year }} <a href="{{ "" | absLangURL }}">{{ site.Title }}</a></span>
         {{- end }}
+        {{- print " · "}}
     {{- end }}
-    <span class="footer-item">{{ if $show_copyright }}<span class="footer-separator" aria-hidden="true"> · </span>{{ end }}<a href="https://github.com/brfid/brfid.github.io" target="_blank" rel="noopener noreferrer">Site source</a></span>
+
+    {{- with site.Params.footer.text }}
+        {{ . | markdownify }}
+        {{- print " · "}}
+    {{- end }}
+
+    <span>
+        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &amp;
+        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
+    </span>
 
     {{- $bio := hugo.Data.bio -}}
     {{- if or $bio.build_log $bio.build_run_url }}
-    <span class="footer-item"><span class="footer-separator" aria-hidden="true"> · </span>{{ if $bio.build_log }}<a href="{{ "build.log.html" | relURL }}"{{ with $bio.build_id }} title="Build {{ . }}"{{ end }}>VAX/PDP-11 build</a>{{ end }}{{ if and $bio.build_log $bio.build_run_url }}<span class="footer-separator" aria-hidden="true"> · </span>{{ end }}{{ with $bio.build_run_url }}<a href="{{ . | safeURL }}" target="_blank" rel="noopener noreferrer">Actions</a>{{ end }}</span>
+    {{- print " · "}}
+    <span>Build: {{ if $bio.build_log }}<a href="/build.log.html"{{ with $bio.build_id }} title="{{ . }}"{{ end }}>VAX/PDP-11 log</a>{{ end }}{{ if and $bio.build_log $bio.build_run_url }} &amp; {{ end }}{{ with $bio.build_run_url }}<a href="{{ . | safeURL }}" target="_blank" rel="noopener noreferrer">Actions run</a>{{ end }}</span>
     {{- end }}
 </footer>
 {{- end }}
