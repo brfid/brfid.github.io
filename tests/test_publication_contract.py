@@ -34,6 +34,7 @@ def test_production_config_publishes_blog_mechanics() -> None:
     assert menu_items["resume"]["url"] == "/resume/"
     assert menu_items["resume"]["params"]["companionurl"] == "/resume.pdf"
     assert menu_items["source"]["url"] == "https://github.com/brfid/brfid.github.io"
+    assert "params" not in menu_items["source"]
     assert config["params"]["author"] == "Bradley Fidler"
     assert config["params"]["hideAuthor"] is True
     assert 'title: "Blog"' in section
@@ -108,12 +109,17 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     header = (ROOT / "hugo" / "layouts" / "_partials" / "header.html").read_text(encoding="utf-8")
     post_nav = (ROOT / "hugo" / "layouts" / "_partials" / "post_nav_links.html").read_text(encoding="utf-8")
     footer = (ROOT / "hugo" / "layouts" / "partials" / "footer.html").read_text(encoding="utf-8")
+    theme = (ROOT / "hugo" / "assets" / "css" / "extended" / "theme.css").read_text(encoding="utf-8")
+    resume_css = (ROOT / "hugo" / "assets" / "css" / "extended" / "resume.css").read_text(encoding="utf-8")
 
     assert 'class="skip-link" href="#main-content"' in base
     assert 'id="main-content" tabindex="-1"' in base
     assert 'aria-label="Primary navigation"' in header
     assert 'aria-current="page"' in header
     assert 'class="menu-companion-link"' in header
+    assert 'class="menu-utility-item"' in header
+    assert "#menu .menu-utility-item" in theme
+    assert ".resume-download-link {\n  color: var(--forest);" not in resume_css
     assert 'aria-label="Post navigation"' in post_nav
     assert 'aria-label", `Switch to ${nextTheme} theme; ${currentTheme} theme is active`' in footer
     assert 'meta[name="theme-color"]' in footer

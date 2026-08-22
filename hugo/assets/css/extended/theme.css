@@ -167,6 +167,17 @@
   gap: 0.35rem;
 }
 
+#menu .menu-utility-item {
+  border-inline-start: 1px solid var(--border);
+  color: var(--secondary);
+  margin-inline-start: 0.2rem;
+  padding-inline-start: 0.8rem;
+}
+
+#menu .menu-utility-item a {
+  color: inherit;
+}
+
 #menu .menu-link-icon,
 #menu .menu-companion-link {
   align-items: center;
