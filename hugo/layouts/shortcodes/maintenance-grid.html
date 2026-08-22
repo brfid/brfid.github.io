@@ -1,0 +1,22 @@
+<table class="maintenance-grid">
+  <caption class="table-caption-sr">Documentation maintenance outcomes by whether a reviewer can answer the claim and whether the claim is asked again over time.</caption>
+  <thead>
+    <tr>
+      <th scope="col"><span class="table-caption-sr">Ability to answer the claim</span></th>
+      <th scope="col">Asked once</th>
+      <th scope="col">Asked again over time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th scope="row">Can answer the claim</th>
+      <td><strong>Orphaned knowledge.</strong> A writer sends the request while drafting, but nothing reconnects the page after <code>/foo</code> changes.</td>
+      <td><strong>Maintained.</strong> A contract test runs on a schedule and whenever the <code>/foo</code> handler or contract changes; its result routes to a named maintainer.</td>
+    </tr>
+    <tr>
+      <th scope="row">Cannot answer the claim</th>
+      <td><strong>Different question, once.</strong> A reviewer checks only the rendered layout.</td>
+      <td><strong>Different question, recurring.</strong> CI keeps checking Markdown form and OpenAPI structure.</td>
+    </tr>
+  </tbody>
+</table>

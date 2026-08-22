@@ -44,6 +44,12 @@
   --forest-strong: #97d1a4;
 }
 
+/* PaperMod uses the code background for list pages by default. Keep the site on
+   one paper color so the Blog cards retain their entry/canvas distinction. */
+.list {
+  background: var(--theme);
+}
+
 /* ============================================================
    Home article
    ============================================================ */
@@ -87,6 +93,7 @@
    machine provenance lives in the footer's VAX/PDP-11 build-log link, not in
    the letterforms. */
 .bio-summary {
+  color: var(--content);
   font-family: var(--serif);
   font-size: 1.15rem;
   line-height: 1.62;
@@ -110,6 +117,7 @@
   color: var(--secondary);
   display: inline-flex;
   gap: 0.45rem;
+  min-height: 2rem;
   transition: color 0.15s ease;
 }
 

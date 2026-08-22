@@ -117,6 +117,8 @@ def test_build_pdf_uses_playwright_and_writes_target_path(
     assert isinstance(pdf_kwargs, dict)
     assert pdf_kwargs["prefer_css_page_size"] is True
     assert pdf_kwargs["print_background"] is True
+    assert pdf_kwargs["tagged"] is True
+    assert pdf_kwargs["outline"] is True
     assert calls["launched"] is True
     assert calls["closed"] is True
     assert str(calls["url"]).startswith("http://127.0.0.1:")

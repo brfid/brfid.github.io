@@ -8,3 +8,25 @@
 {{- /* Keep every Hugo-rendered surface out of search indexes. This must stay
      crawlable in robots.txt so crawlers can observe the directive. */}}
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+{{- /* PaperMod's no-JavaScript fallback switches theme variables through the
+     OS preference. Restate this site's palette inside noscript so that path
+     keeps the same forest-and-phosphor art direction. */}}
+<noscript>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --theme: #141a15;
+        --entry: #1c231d;
+        --primary: #e7e3d4;
+        --secondary: #8a9c8c;
+        --tertiary: #2b342c;
+        --content: #e7e3d4;
+        --border: #2b342c;
+        --code-bg: #1c231d;
+        --code-block-bg: #171d18;
+        --forest: #7fbf8e;
+        --forest-strong: #97d1a4;
+      }
+    }
+  </style>
+</noscript>

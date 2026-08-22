@@ -32,16 +32,6 @@ disableAliases = false
     name = "Resume"
     url = "/resume/"
     weight = 5
-    [menu.main.params]
-      companionurl = "/resume.pdf"
-      companionlabel = "Download resume PDF"
-  [[menu.main]]
-    identifier = "source"
-    name = "Source"
-    url = "https://github.com/brfid/brfid.github.io"
-    weight = 10
-    [menu.main.params]
-      icon = "github"
 
 [params]
   env = "production"
@@ -60,6 +50,10 @@ disableAliases = false
   ShowRssButtonInSectionTermList = true
   ShowToc = true
   TocOpen = false
+
+  [params.assets]
+    theme_color = "#f4f1e6"
+    msapplication_TileColor = "#f4f1e6"
 
   [params.schema]
     publisherType = "Person"

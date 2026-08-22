@@ -8,6 +8,8 @@ import pytest
 
 from resume_generator.build_log import load_console_sections, main, render_build_log, render_build_log_files
 
+ROOT = Path(__file__).resolve().parents[1]
+
 SAMPLE_LOG = """\
 [2026-08-19 12:00:00] prepare-host
 [2026-08-19 12:00:01] generate-vintage-yaml
@@ -36,11 +38,25 @@ def test_render_build_log_combines_host_and_guest_records() -> None:
     )
 
     assert "<title>build-20260819-120000 — vintage pipeline log</title>" in rendered
+    assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in rendered
     assert '<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">' in rendered
+    assert '<main id="build-log" aria-labelledby="log-title">' in rendered
+    assert '<a href="/">Home</a>' in rendered
+    assert ">Site source</a>" in rendered
     assert "2026-08-19 12:00:03" in rendered
     assert "VAX boot &lt;ok&gt;" in rendered
     assert "Wrote: build/vintage/brad.bio.txt (5 lines) &lt;unsafe&gt;" in rendered
     assert "nroff &rarr; brad.bio.txt" in rendered
+
+
+def test_render_build_log_includes_responsive_and_keyboard_styles() -> None:
+    rendered = render_build_log(log_text="", build_id="build-empty", sections={})
+
+    assert "a:focus-visible" in rendered
+    assert "summary:focus-visible" in rendered
+    assert "@media (max-width: 620px)" in rendered
+    assert "overflow-wrap: anywhere" in rendered
+    assert "white-space: pre-wrap" in rendered
 
 
 def test_render_build_log_marks_missing_console_sections() -> None:
@@ -91,3 +107,14 @@ def test_main_renders_build_log_to_stdout(tmp_path: Path, capsys: pytest.Capture
 
     assert result == 0
     assert "<title>build-from-cli — vintage pipeline log</title>" in capsys.readouterr().out
+
+
+def test_404_template_provides_semantic_recovery_routes() -> None:
+    template = (ROOT / "hugo" / "layouts" / "404.html").read_text(encoding="utf-8")
+
+    assert '<section class="error-page" aria-labelledby="not-found-title">' in template
+    assert '<h1 id="not-found-title">Page not found</h1>' in template
+    assert '<nav aria-label="Continue on this site">' in template
+    assert ">Home</a>" in template
+    assert ">Blog</a>" in template
+    assert ">Resume</a>" in template

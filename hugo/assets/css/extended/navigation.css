@@ -1,0 +1,43 @@
+/* Global navigation and keyboard access. These rules extend PaperMod's chrome
+   without changing the Forest Terminal palette or type system. */
+
+.skip-link {
+  background: var(--theme);
+  border: 2px solid var(--forest);
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  inset-block-start: var(--gap);
+  inset-inline-start: var(--gap);
+  padding: 0.45rem 0.7rem;
+  position: fixed;
+  transform: translateY(calc(-100% - var(--gap) - 4px));
+  z-index: 1000;
+}
+
+.skip-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  transform: translateY(0);
+}
+
+.main:focus {
+  outline: none;
+}
+
+#menu a[aria-current="page"] {
+  color: var(--primary);
+  text-decoration-color: var(--forest);
+}
+
+.paginav a:only-child {
+  width: 100%;
+}
+
+.footer .footer-item {
+  white-space: nowrap;
+}
+
+.footer .footer-separator {
+  margin-inline: 0;
+}

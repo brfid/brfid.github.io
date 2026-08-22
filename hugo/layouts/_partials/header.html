@@ -1,8 +1,7 @@
-{{- /* Repo-owned PaperMod header override. Menu metadata can add a branded
-       icon to a primary link or a separate companion action such as the
-       resume PDF download. */ -}}
+{{- /* Repo-owned PaperMod header override with site-aware current states and
+       an accessible color-theme control. */ -}}
 <header class="header">
-    <nav class="header-nav">
+    <nav class="header-nav" aria-label="Primary navigation">
         <div class="logo">
             {{- $label_text := (site.Params.label.text | default site.Title) }}
             {{- if site.Title }}
@@ -39,7 +38,7 @@
             {{- if $lsenabled }}
             <div class="logo-switches">
                 {{- if (not site.Params.disableThemeToggle) }}
-                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="(Alt + T)" aria-label="Toggle theme">
+                <button id="theme-toggle" class="theme-toggle" accesskey="t" title="Change color theme (Alt + T)" aria-label="Change color theme">
                     <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -94,14 +93,15 @@
             {{- if or (ne .Identifier "resume") $resume_enabled }}
             {{- $menu_item_url := (cond (strings.HasSuffix .URL "/") .URL (printf "%s/" .URL) ) | absLangURL }}
             {{- $page_url := $currentPage.Permalink | absLangURL }}
-            {{- $is_current := eq $menu_item_url $page_url }}
+            {{- $is_section_current := and (eq .Identifier "posts") (eq $currentPage.Section "posts") }}
+            {{- $is_current := or (eq $menu_item_url $page_url) $is_section_current }}
             {{- $is_search := eq (site.GetPage .KeyName).Layout `search` }}
             {{- $icon := .Params.icon }}
             {{- $is_external := findRE "://" .URL }}
             {{- $companion_url := .Params.companionurl }}
             {{- $companion_label := .Params.companionlabel | default "Download" }}
             <li{{ with $companion_url }} class="menu-item-with-companion"{{ end }}>
-                <a class="menu-primary-link" href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }} {{- cond $is_search (" (Alt + /)" | safeHTMLAttr) ("" | safeHTMLAttr ) }}"
+                <a class="menu-primary-link{{ if $is_current }} active{{ end }}" href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }} {{- cond $is_search (" (Alt + /)" | safeHTMLAttr) ("" | safeHTMLAttr ) }}"
                 {{- cond $is_search (" accesskey=/" | safeHTMLAttr) ("" | safeHTMLAttr ) }}{{ if $is_current }} aria-current="page"{{ end }}>
                     <span>
                         {{- .Pre }}

@@ -1,5 +1,5 @@
 {{- define "main" }}
-{{- $r := .Site.Data.resume }}
+{{- $r := hugo.Data.resume }}
 {{- $basics := $r.basics }}
 
 <article class="post-single">
@@ -13,6 +13,16 @@
         {{- end }}
       </div>
       <div class="resume-header-right">
+        <a class="resume-contact-link resume-download-link" href="/resume.pdf" download>
+          <span class="resume-contact-icon" aria-hidden="true">
+            <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M12 3v12"></path>
+              <path d="m7 10 5 5 5-5"></path>
+              <path d="M5 21h14"></path>
+            </svg>
+          </span>
+          <span>Download PDF</span>
+        </a>
         {{- with $basics.email }}
         <a class="resume-contact-link" href="mailto:{{ . }}">
           <span class="resume-contact-icon" aria-hidden="true">{{ partial "svg.html" (dict "name" "email") }}</span>
@@ -54,7 +64,7 @@
       {{- if .positions }}
       <div class="listing-item resume-employer resume-employer--multi">
         <div class="listing-item-head resume-employer-head">
-          <strong>{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}</strong>
+          <h3 class="resume-item-title resume-employer-title">{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}</h3>
           <span class="listing-dates">
             {{ dateFormat "Jan 2006" (time .startDate) }} -
             {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
@@ -66,7 +76,7 @@
           {{- range (sort .positions "startDate" "desc") }}
           <div class="resume-role">
             <div class="listing-item-head resume-role-head">
-              <strong>{{ .position }}</strong>
+              <h4 class="resume-item-title resume-role-title">{{ .position }}</h4>
               <span class="listing-dates">
                 {{ dateFormat "Jan 2006" (time .startDate) }} -
                 {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
@@ -88,7 +98,7 @@
       {{- else }}
       <div class="listing-item">
         <div class="listing-item-head">
-          <strong>{{ .position }}</strong>
+          <h3 class="resume-item-title">{{ .position }}</h3>
           <span class="listing-dates">
             {{ dateFormat "Jan 2006" (time .startDate) }} -
             {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
@@ -119,7 +129,7 @@
       {{- range . }}
       <div class="listing-item">
         <div class="listing-item-head">
-          <strong>{{ .name }}</strong>
+          <h3 class="resume-item-title">{{ .name }}</h3>
         </div>
         {{- with .keywords }}
         <span class="listing-keywords">{{ delimit . " · " }}</span>
@@ -135,9 +145,9 @@
       {{- range . }}
       <div class="listing-item">
         <div class="listing-item-head">
-          <strong>
+          <h3 class="resume-item-title">
             {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
-          </strong>
+          </h3>
         </div>
         {{- with .description }}<p>{{ . }}</p>{{ end }}
         {{- with .keywords }}
@@ -154,7 +164,7 @@
       {{- range . }}
       <div class="listing-item">
         <div class="listing-item-head">
-          <strong>{{ .institution }}</strong>
+          <h3 class="resume-item-title">{{ .institution }}</h3>
           {{- if .endDate }}
           <span class="listing-dates">
             {{- if .startDate }}{{ dateFormat "2006" (time .startDate) }} - {{ end -}}
@@ -174,9 +184,9 @@
       {{- range . }}
       <div class="listing-item">
         <div class="listing-item-head">
-          <strong>
+          <h3 class="resume-item-title">
             {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
-          </strong>
+          </h3>
           {{- with .releaseDate }}
           <span class="listing-dates">{{ dateFormat "Jan 2006" (time .) }}</span>
           {{- end }}
@@ -194,7 +204,7 @@
       {{- range . }}
       <div class="listing-item">
         <div class="listing-item-head">
-          <strong>{{ .organization }}</strong>
+          <h3 class="resume-item-title">{{ .organization }}</h3>
           {{- if .endDate }}
           <span class="listing-dates">
             {{- if .startDate }}{{ dateFormat "2006" (time .startDate) }} - {{ end -}}

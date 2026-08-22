@@ -8,6 +8,7 @@ import yaml
 
 def test_site_yaml_is_the_complete_public_landing_source() -> None:
     site = yaml.safe_load(Path("site.yaml").read_text(encoding="utf-8"))
+    resume = yaml.safe_load(Path("resume.yaml").read_text(encoding="utf-8"))
 
     # The landing bio text lives in resume.yaml `basics.summary`; site.yaml owns the
     # public identity and links.
@@ -31,3 +32,6 @@ def test_site_yaml_is_the_complete_public_landing_source() -> None:
         labels.append(link["label"])
 
     assert len(labels) == len(set(labels))
+    assert site["name"] == resume["basics"]["name"]
+    assert site["headline"] == resume["basics"]["label"]
+    assert labels == ["LinkedIn", "GitHub", "GitLab", "ORCID", "Strava"]

@@ -23,6 +23,14 @@
   gap: 0.45rem;
   line-height: 1.3rem;
   margin: 0.1rem 0;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.resume-download-link {
+  color: var(--forest);
+  font-weight: 600;
 }
 
 .resume-contact-icon {
@@ -48,9 +56,12 @@
 }
 
 .resume-profile-links a {
+  align-items: center;
   color: var(--secondary);
   display: inline-flex;
-  padding: 0.15rem;
+  justify-content: center;
+  min-height: 2rem;
+  min-width: 2rem;
 }
 
 .resume-profile-links svg {
@@ -68,8 +79,22 @@
   margin: 0;
 }
 
-.resume-employer-head > strong {
+.resume-item-title {
+  font-size: inherit;
+  font-weight: 600;
+  letter-spacing: inherit;
+  line-height: inherit;
+  margin: 0;
+}
+
+.resume-employer-title {
   font-size: 1.05em;
+}
+
+.listing-section a:not(.resume-contact-link) {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 
 .resume-employer-location {
@@ -130,7 +155,9 @@
    regardless of the viewer's theme. */
 @media print {
   .header,
-  .footer {
+  .footer,
+  .skip-link,
+  .resume-download-link {
     display: none !important;
   }
 
