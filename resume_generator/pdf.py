@@ -1,8 +1,4 @@
-"""Generate a PDF from the rendered resume HTML using Playwright.
-
-We serve the output directory over an ephemeral localhost HTTP server so
-relative assets (CSS, images) resolve consistently in Playwright.
-"""
+"""Print rendered resume HTML to PDF with Playwright."""
 
 from __future__ import annotations
 
@@ -26,14 +22,7 @@ class _QuietHandler(SimpleHTTPRequestHandler):
 
 @contextmanager
 def _serve_directory(root: Path) -> Iterator[int]:
-    """Serve a directory on an ephemeral localhost port.
-
-    Args:
-        root: Directory to serve.
-
-    Yields:
-        The chosen port number.
-    """
+    """Serve a directory on localhost and yield its ephemeral port."""
     handler = partial(_QuietHandler, directory=str(root))
     server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     port = server.server_address[1]
@@ -50,8 +39,12 @@ def _serve_directory(root: Path) -> Iterator[int]:
 
 def load_private_phone(path: Path | None) -> str | None:
     """Load the phone number from an optional, untracked resume overlay."""
-    if path is None or not path.exists():
+    if path is None:
         return None
+    if not path.exists():
+        raise FileNotFoundError(f"private resume overlay does not exist: {path}")
+    if not path.is_file():
+        raise ValueError(f"private resume overlay must be a regular file: {path}")
 
     data: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
@@ -85,10 +78,20 @@ def build_pdf(
 
     Returns:
         Path to the generated PDF.
+
+    Raises:
+        FileNotFoundError: If an explicitly requested private resume overlay is
+            missing.
+        RuntimeError: If the resume page or its fonts do not load cleanly.
+        ValueError: If a private overlay is invalid or its PDF output path is
+            inside the public site directory.
     """
+    if private_resume_path is not None and pdf_path.resolve().is_relative_to(site_dir.resolve()):
+        raise ValueError(f"private resume PDF must be written outside the public site directory: {pdf_path}")
+
+    private_phone = load_private_phone(private_resume_path)
     site_dir.mkdir(parents=True, exist_ok=True)
     pdf_path.parent.mkdir(parents=True, exist_ok=True)
-    private_phone = load_private_phone(private_resume_path)
 
     # pylint: disable=import-outside-toplevel
     from playwright.sync_api import sync_playwright
@@ -97,52 +100,66 @@ def build_pdf(
         url = f"http://127.0.0.1:{port}{resume_url_path}"
         with sync_playwright() as p:
             browser = p.chromium.launch()
-            page = browser.new_page()
-            # Force light so the PDF never inherits a dark palette; the page's
-            # print CSS then finishes shaping it (white background, no chrome).
-            page.emulate_media(media="print", color_scheme="light")
-            # Wait for `load` (deterministic) rather than the flaky/soft-deprecated
-            # `networkidle`; the page is self-contained (vendored fonts, no external
-            # requests), so the only async work that moves line breaks is font swap.
-            response = page.goto(url, wait_until="load")
-            if response is None or not response.ok:
-                status = "no response" if response is None else response.status
-                raise RuntimeError(f"resume page did not load cleanly ({status}): {url}")
-            if private_phone:
-                page.evaluate(
-                    """phone => {
-                        const template = document.querySelector("#resume-private-phone-template");
-                        const container = document.querySelector(".resume-header-right");
-                        if (!(template instanceof HTMLTemplateElement) || !container) {
-                            throw new Error("private phone injection target is missing");
-                        }
-                        const contact = template.content.firstElementChild?.cloneNode(true);
-                        const text = contact?.querySelector("[data-resume-private-phone-text]");
-                        if (!(contact instanceof HTMLAnchorElement) || !text) {
-                            throw new Error("private phone template is invalid");
-                        }
-                        contact.href = `tel:${phone}`;
-                        text.textContent = phone;
-                        const profiles = container.querySelector(".resume-profile-links");
-                        container.insertBefore(contact, profiles);
-                    }""",
-                    private_phone,
+            try:
+                page = browser.new_page()
+                # Force the light palette before print CSS hides the site chrome.
+                page.emulate_media(media="print", color_scheme="light")
+                # Vendored font loading is the only asynchronous layout dependency.
+                response = page.goto(url, wait_until="load")
+                if response is None or not response.ok:
+                    status = "no response" if response is None else response.status
+                    raise RuntimeError(f"resume page did not load cleanly ({status}): {url}")
+                if private_phone:
+                    page.evaluate(
+                        """phone => {
+                            const template = document.querySelector("#resume-private-phone-template");
+                            const container = document.querySelector(".resume-header-right");
+                            if (!(template instanceof HTMLTemplateElement) || !container) {
+                                throw new Error("private phone injection target is missing");
+                            }
+                            const contact = template.content.firstElementChild?.cloneNode(true);
+                            const text = contact?.querySelector("[data-resume-private-phone-text]");
+                            if (!(contact instanceof HTMLAnchorElement) || !text) {
+                                throw new Error("private phone template is invalid");
+                            }
+                            contact.href = `tel:${phone}`;
+                            text.textContent = phone;
+                            const profiles = container.querySelector(".resume-profile-links");
+                            container.insertBefore(contact, profiles);
+                        }""",
+                        private_phone,
+                    )
+                # FontFaceSet status can be "loaded" even when a required face failed.
+                missing_fonts: list[str] = page.evaluate(
+                    """async () => {
+                        const requiredFamilies = ["Newsreader", "IBM Plex Mono"];
+                        const results = await Promise.all(requiredFamilies.map(async family => {
+                            const descriptor = `1em "${family}"`;
+                            try {
+                                const faces = await document.fonts.load(descriptor, "A");
+                                return faces.length > 0 && document.fonts.check(descriptor, "A")
+                                    ? null
+                                    : family;
+                            } catch {
+                                return family;
+                            }
+                        }));
+                        await document.fonts.ready;
+                        return results.filter(family => family !== null);
+                    }"""
                 )
-            # Block until web fonts are applied, so pagination reflects the final
-            # metrics instead of the fallback face.
-            page.evaluate("() => document.fonts.ready")
-            page.pdf(
-                path=str(pdf_path),
-                print_background=True,
-                # Preserve the page's semantic structure for assistive
-                # technology and expose its headings as PDF outline entries.
-                tagged=True,
-                outline=True,
-                # Page size and margins come from the page's own `@page` rule, so
-                # the résumé's CSS is the single source for print geometry and the
-                # PDF column matches the on-screen measure.
-                prefer_css_page_size=True,
-            )
-            browser.close()
+                if missing_fonts:
+                    raise RuntimeError(f"required resume fonts did not load: {', '.join(missing_fonts)}")
+                page.pdf(
+                    path=str(pdf_path),
+                    print_background=True,
+                    # Preserve document tags and expose headings in the PDF outline.
+                    tagged=True,
+                    outline=True,
+                    # The page's `@page` rule controls PDF size and margins.
+                    prefer_css_page_size=True,
+                )
+            finally:
+                browser.close()
 
     return pdf_path

@@ -1,31 +1,10 @@
 name: Build vintage pipeline images
 
-# Builds and pushes the VAX and PDP-11 SIMH Docker images to ghcr.io.
-# Images are consumed by edcloud-vintage-runner.sh via pull-or-build logic.
-#
-# Trigger: push to main that modifies Dockerfiles or pexpect scripts.
-# Manual trigger: workflow_dispatch (useful after SHA pin updates).
-#
-# Published images:
-#   ghcr.io/brfid/vax-pexpect:latest
-#   ghcr.io/brfid/pdp11-pexpect:latest
-#
-# NOTE: Both packages must remain public in:
-#   https://github.com/brfid?tab=packages
-# Public packages can be pulled by hosted and local Docker runners without credentials.
+# Publishes SHA-tagged amd64 images and reports their immutable digests.
+# Pin both digests in the runner and validate the pair before merging.
+# Keep both GitHub packages public so runners can pull them without credentials.
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "vintage/machines/vax/Dockerfile.vax-pexpect"
-      - "vintage/machines/vax/configs/vax780-pexpect.ini"
-      - "vintage/machines/pdp11/Dockerfile.pdp11-pexpect"
-      - "vintage/machines/pdp11/configs/pdp11-pexpect.ini"
-      - "scripts/vax_pexpect.py"
-      - "scripts/pdp11_pexpect.py"
-      - "scripts/simh_session.py"
   workflow_dispatch:
 
 permissions:
@@ -52,30 +31,38 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push vax-pexpect
+        id: vax
         uses: docker/build-push-action@v6
         with:
           context: .
           file: vintage/machines/vax/Dockerfile.vax-pexpect
+          platforms: linux/amd64
           push: true
-          tags: ghcr.io/brfid/vax-pexpect:latest
+          tags: ghcr.io/brfid/vax-pexpect:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=vax-pexpect
           cache-to: type=gha,mode=max,scope=vax-pexpect
 
       - name: Build and push pdp11-pexpect
+        id: pdp11
         uses: docker/build-push-action@v6
         with:
           context: .
           file: vintage/machines/pdp11/Dockerfile.pdp11-pexpect
+          platforms: linux/amd64
           push: true
-          tags: ghcr.io/brfid/pdp11-pexpect:latest
+          tags: ghcr.io/brfid/pdp11-pexpect:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=pdp11-pexpect
           cache-to: type=gha,mode=max,scope=pdp11-pexpect
 
       - name: Summary
         run: |
-          echo "## Images pushed" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Immutable images built" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`ghcr.io/brfid/vax-pexpect:latest\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`ghcr.io/brfid/pdp11-pexpect:latest\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`ghcr.io/brfid/vax-pexpect@${{ steps.vax.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- \`ghcr.io/brfid/pdp11-pexpect@${{ steps.pdp11.outputs.digest }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "SHA: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source SHA: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Pin both digests in \`scripts/edcloud-vintage-runner.sh\`, then run \`vintage-validate.yml\`." >> "$GITHUB_STEP_SUMMARY"

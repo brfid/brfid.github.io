@@ -9,11 +9,17 @@ __pycache__/
 .coverage
 .coverage.*
 
-# Generated files — Hugo builds site/ fresh in CI; do not commit
+# Generated output
 site/
 build/
 local/
 hugo/public/
+hugo/.hugo_build.lock
+hugo/data/bio.yaml
+hugo/data/resume.yaml
+hugo/data/site.yaml
+hugo/static/build.log.html
+hugo/static/pipeline-status.json
 
 # IDE
 *.code-workspace
@@ -25,8 +31,3 @@ hugo/public/
 .env.test.local
 .env.production.local
 resume.private.yaml
-
-hugo/.hugo_build.lock
-hugo/data/bio.yaml
-hugo/data/resume.yaml
-hugo/data/site.yaml

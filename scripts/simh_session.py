@@ -1,18 +1,11 @@
-"""Shared utilities for pexpect-driven SIMH console sessions.
-
-Both vax_pexpect.py (Stage B) and pdp11_pexpect.py (Stage A) use the
-same low-level patterns for logging, UUE validation, and batched heredoc
-injection. This module centralises those to avoid drift between scripts.
-
-Intentionally kept minimal: machine-specific boot sequences and file
-capture logic remain in each stage's own script.
-"""
+"""Shared logging, command, and transfer utilities for SIMH sessions."""
 
 from __future__ import annotations
 
 import json
 import os
 import re
+import shlex
 import sys
 import time
 from collections.abc import Callable
@@ -21,24 +14,21 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import pexpect
 
-# Delay between individual heredoc lines sent to the guest tty.
-# 5 ms is long enough to prevent PTY input buffer overrun on SIMH.
+# Protect the guest tty from a host-speed heredoc stream.
 LINE_DELAY: float = 0.005
 
-# Lines per heredoc batch for UUE injection.
-# Large batches cause PTY echo to stall; 10 lines keeps each heredoc short.
+# Larger UUE heredocs can stall while the guest echoes their input.
 UUE_CHUNK_SIZE: int = 10
+
+_COMMAND_STATUS_PATTERN = rb"__VINTAGE_RC_([0-9]+)__"
+
+
+class GuestCommandError(RuntimeError):
+    """Raised when a command inside a vintage guest returns nonzero."""
 
 
 def make_logger(prefix: str) -> Callable[[str], None]:
-    """Return a logger function that prefixes messages with a timestamp.
-
-    Args:
-        prefix: Short label prepended to every log line, e.g. "vax_pexpect".
-
-    Returns:
-        A callable ``log(msg: str) -> None`` that writes to stderr.
-    """
+    """Return a timestamped stderr logger with the given prefix."""
 
     def _log(msg: str) -> None:
         ts = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
@@ -48,20 +38,7 @@ def make_logger(prefix: str) -> Callable[[str], None]:
 
 
 def validate_uu_spool(text: str, label: str = "brad.bio.uu") -> None:
-    """Validate that UUE spool text has a well-formed begin/end structure.
-
-    Does not decode content — only checks structural markers.  Call this
-    before injecting a spool into a guest to catch corruption early (before
-    spending 5+ minutes in emulation).
-
-    Args:
-        text: Full UUE spool text.
-        label: Human-readable artifact name for error messages.
-
-    Raises:
-        ValueError: If the spool is empty, missing a begin header, missing
-            an end marker, or has no data lines.
-    """
+    """Require `begin`, an intervening encoded line, and a final `end` line."""
     lines = [ln for ln in text.splitlines() if ln.strip()]
     if not lines:
         raise ValueError(f"{label}: spool is empty")
@@ -74,40 +51,68 @@ def validate_uu_spool(text: str, label: str = "brad.bio.uu") -> None:
 
 
 def strip_console(raw: bytes) -> str:
-    """Decode PTY bytes and strip control codes for human-readable log display.
-
-    Preserves printable ASCII and newlines; removes ANSI escape sequences,
-    carriage returns, null bytes, and other non-printable control characters.
-
-    Args:
-        raw: Raw bytes from a pexpect ``child.before`` capture.
-
-    Returns:
-        Clean, human-readable string suitable for embedding in a log file.
-    """
+    """Decode ASCII with replacement and remove selected terminal controls."""
     text = raw.decode("ascii", errors="replace")
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    # Strip ANSI/VT escape sequences (cursor movement, color, erase, etc.)
+    # Remove ANSI and VT escape sequences.
     text = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", text)
     text = re.sub(r"\x1b[=>]", "", text)
-    # Strip remaining control characters except \n and \t
+    # Retain newlines and tabs while removing other control characters.
     text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", text)
-    # Collapse runs of blank lines to at most two
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
 
-def log_console_section(machine: str, section: str, content: str) -> None:
-    """Append a console snippet to the SECTIONS_LOG file if configured.
+def run_checked(
+    child: pexpect.spawn,
+    command: str,
+    prompt: str,
+    timeout: float,
+    *,
+    label: str | None = None,
+) -> bytes:
+    """Run one guest-shell command and require an explicit zero exit status.
 
-    Reads the ``SECTIONS_LOG`` environment variable for the destination path.
-    Does nothing if the variable is unset or empty — safe to call unconditionally.
+    Waiting for a prompt proves only that the shell is responsive. The command
+    is followed by an exit-status marker whose literal form is split by shell
+    quoting, so the tty's echoed command line cannot satisfy the marker match.
+    This uses only Bourne-shell syntax supported by both historical guests.
 
     Args:
-        machine: Short machine label, e.g. ``"vax"`` or ``"pdp11"``.
-        section: Section identifier, e.g. ``"vax-boot"`` or ``"pdp11-nroff"``.
-        content: Human-readable console text (already stripped of PTY codes).
+        child: Active pexpect session in bytes mode.
+        command: Bourne-shell command to execute inside the guest.
+        prompt: Distinctive shell prompt expected after the status marker.
+        timeout: Timeout in seconds for the command and following prompt.
+        label: Optional short operation name for failures.
+
+    Returns:
+        Console bytes emitted before the status marker.
+
+    Raises:
+        GuestCommandError: If the guest command returns nonzero or the marker
+            does not contain a numeric status.
+        pexpect.TIMEOUT: If the status marker or prompt does not arrive in time.
+        pexpect.EOF: If SIMH exits while the command is running.
     """
+    wrapped = f'{command}; vintage_rc=$?; echo __VINTAGE_RC_"${{vintage_rc}}__"'
+    child.sendline(wrapped)
+    child.expect(_COMMAND_STATUS_PATTERN, timeout=timeout)
+    output = child.before or b""
+    match = child.match
+    try:
+        status = int(match.group(1))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise GuestCommandError(f"{label or command}: guest returned an invalid status marker") from exc
+    child.expect(prompt, timeout=timeout)
+    if status != 0:
+        detail = strip_console(output)[-500:]
+        suffix = f": {detail}" if detail else ""
+        raise GuestCommandError(f"{label or command}: guest exit status {status}{suffix}")
+    return output
+
+
+def log_console_section(machine: str, section: str, content: str) -> None:
+    """Append one JSON Lines console record when SECTIONS_LOG is set."""
     sections_log = os.environ.get("SECTIONS_LOG", "")
     if not sections_log:
         return
@@ -124,22 +129,7 @@ def inject_batched_heredoc(
     prompt: str,
     timeout: float,
 ) -> None:
-    """Write text lines to a remote guest file via batched heredocs.
-
-    Splits ``lines`` into chunks of ``UUE_CHUNK_SIZE``, sending each chunk
-    as a separate ``cat >> file << 'HEREDOC_EOF'`` command.  The first chunk
-    uses ``>`` (create/truncate); subsequent chunks use ``>>`` (append).
-
-    This pattern avoids PTY echo stall that occurs with a single large heredoc.
-    Each line is sent with a ``LINE_DELAY`` pause to prevent tty buffer overrun.
-
-    Args:
-        child: Active pexpect.spawn session.
-        remote_path: Destination path on the guest filesystem.
-        lines: Text lines to write (must all be ≤62 chars for UUE content).
-        prompt: Shell prompt pattern to expect after each heredoc batch.
-        timeout: Timeout in seconds for each batch's expect() call.
-    """
+    """Write short text lines through throttled, fixed-size guest heredocs."""
     for batch_idx, batch_start in enumerate(range(0, len(lines), UUE_CHUNK_SIZE)):
         batch = lines[batch_start : batch_start + UUE_CHUNK_SIZE]
         redirect = ">" if batch_idx == 0 else ">>"
@@ -150,3 +140,11 @@ def inject_batched_heredoc(
                 time.sleep(LINE_DELAY)
         child.sendline("HEREDOC_EOF")
         child.expect(prompt, timeout=timeout)
+    if lines:
+        run_checked(
+            child,
+            f"test -s {shlex.quote(remote_path)}",
+            prompt,
+            timeout,
+            label=f"write {remote_path}",
+        )

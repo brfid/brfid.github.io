@@ -4,8 +4,7 @@ title = "Bradley Fidler"
 theme = "PaperMod"
 disableKinds = ["sitemap", "taxonomy", "term"]
 
-# robots.txt is a static file (hugo/static/robots.txt) we control directly.
-# Disable Hugo's generated robots.txt so there is a single source of truth.
+# Use only the static hugo/static/robots.txt file.
 enableRobotsTXT = false
 buildDrafts = false
 buildFuture = false
@@ -25,12 +24,12 @@ disableAliases = false
   [[menu.main]]
     identifier = "posts"
     name = "Blog"
-    url = "/posts/"
+    pageRef = "/posts"
     weight = 1
   [[menu.main]]
     identifier = "resume"
     name = "Resume"
-    url = "/resume/"
+    pageRef = "/resume"
     weight = 5
     [menu.main.params]
       companionurl = "/resume.pdf"
@@ -63,9 +62,6 @@ disableAliases = false
   [params.assets]
     theme_color = "#f4f1e6"
     msapplication_TileColor = "#f4f1e6"
-
-  [params.schema]
-    publisherType = "Person"
 
 [outputs]
   home = ["HTML", "RSS"]

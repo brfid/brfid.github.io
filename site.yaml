@@ -1,7 +1,6 @@
 name: Bradley Fidler
 headline: Principal Technical Writer | Documentation Platforms
-# The landing bio text lives in resume.yaml `basics.summary` (one bio source).
-# site.yaml owns the public identity and links.
+# Public identity and links; resume.yaml basics.summary supplies the bio text.
 links:
   - label: LinkedIn
     icon: linkedin

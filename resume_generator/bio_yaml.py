@@ -1,40 +1,18 @@
-"""Parse brad.bio.txt pipeline output into hugo/data/bio.yaml.
-
-brad.bio.txt is the nroff-rendered bio produced by the vintage pipeline
-(bradman.c on the VAX composes troff; the PDP-11 fills and justifies it). Its
-shape is three parts separated by a blank line::
-
-    Bradley Fidler
-    Principal Technical Writer
-
-    I  run  technical  documentation  at  a mid-sized B2B cybersecurity
-    company.  Before this, I wrote lessons learned analyses of distributed
-    systems, and taught technology history in college.
-
-The first two lines are the name and headline; the remaining lines are the
-prose. nroff filled and justified that prose to a fixed 60-column measure, but
-that column geometry is a rendering artifact, not content: the landing page
-sets the bio as humanist serif prose, so this parser collapses the fill back to
-flowing single-spaced sentences (blank lines still separate paragraphs).
-
-This module is the canonical parser. The deploy.yml "Generate bio data for Hugo"
-step calls this as a CLI::
-
-    python -m resume_generator.bio_yaml <src_bio_txt> <dst_bio_yaml> \
-        [<build_log_html>] [<build_run_url>]
-"""
+"""Convert the nroff-rendered bio to Hugo YAML data."""
 
 from __future__ import annotations
 
+import argparse
 import json
 import pathlib
 import re
 import sys
+from collections.abc import Sequence
 from typing import TypedDict
 
 
 class BioData(TypedDict, total=False):
-    """Typed dict for Hugo landing page bio data parsed from brad.bio.txt."""
+    """Fields consumed by the Hugo landing page."""
 
     name: str
     principal_headline: str
@@ -45,10 +23,7 @@ class BioData(TypedDict, total=False):
 
 
 def _split_paragraphs(lines: list[str]) -> list[list[str]]:
-    """Partition *lines* into paragraphs separated by blank lines.
-
-    Returns a list of non-empty groups; leading/trailing blank lines are ignored.
-    """
+    """Return nonempty line groups separated by blank lines."""
     paragraphs: list[list[str]] = []
     current: list[str] = []
     for line in lines:
@@ -63,27 +38,14 @@ def _split_paragraphs(lines: list[str]) -> list[list[str]]:
 
 
 def parse_bio_txt(text: str) -> BioData:
-    """Parse the nroff-rendered brad.bio.txt into a BioData dict.
-
-    Args:
-        text: Contents of brad.bio.txt.
-
-    Returns:
-        Dict with name, principal_headline, and about. The name/headline are
-        trimmed; the about prose is reflowed to flowing sentences (nroff's
-        fixed-width line breaks and justification padding are collapsed to
-        single-spaced prose, with blank lines preserved as paragraph breaks).
-        Build metadata is NOT set here — callers add it.
-    """
+    """Parse name, headline, and reflowed summary from nroff output."""
     paragraphs = _split_paragraphs(text.splitlines())
 
     header = paragraphs[0] if paragraphs else []
     name = header[0].strip() if header else ""
     principal_headline = header[1].strip() if len(header) > 1 else ""
 
-    # Collapse each prose paragraph's fill/justification (runs of spaces and
-    # hard line breaks at the 60-column measure) back into one flowing line;
-    # keep paragraph boundaries as a blank line between them.
+    # Remove nroff line filling and justification while retaining paragraphs.
     prose = [re.sub(r"\s+", " ", " ".join(group)).strip() for group in paragraphs[1:]]
     about = "\n\n".join(prose)
 
@@ -94,19 +56,19 @@ def parse_bio_txt(text: str) -> BioData:
     )
 
 
+def require_complete_bio(data: BioData) -> tuple[str, str, str]:
+    """Return required bio fields or raise when the rendered shape is incomplete."""
+    name = data.get("name", "").strip()
+    headline = data.get("principal_headline", "").strip()
+    about = data.get("about", "").strip()
+    missing = [label for label, value in (("name", name), ("headline", headline), ("about", about)) if not value]
+    if missing:
+        raise ValueError(f"rendered bio is missing required fields: {', '.join(missing)}")
+    return name, headline, about
+
+
 def bio_to_yaml(data: BioData) -> str:
-    r"""Serialise a BioData dict to YAML text for hugo/data/bio.yaml.
-
-    Uses json.dumps for quoting (a safe superset of YAML scalar quoting for
-    simple strings; also encodes embedded newlines in `about` as \n, which
-    Hugo's YAML reader restores). Avoids a PyYAML dependency.
-
-    Args:
-        data: BioData dict, may include optional build metadata.
-
-    Returns:
-        YAML string.
-    """
+    r"""Serialize bio data as YAML with JSON-compatible quoted scalars."""
     lines = [
         f"name: {json.dumps(data.get('name', ''))}",
         f"principal_headline: {json.dumps(data.get('principal_headline', ''))}",
@@ -121,72 +83,67 @@ def bio_to_yaml(data: BioData) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _read_build_id(build_log_path: pathlib.Path) -> str:
-    """Extract build_id from build.log.html.
-
-    Parses the ``<title>`` element: ``<title>build-ID — ...</title>``.
-
-    Args:
-        build_log_path: Path to hugo/static/build.log.html.
-
-    Returns:
-        Build ID string, or empty string if not found.
-    """
-    if not build_log_path.exists():
-        return ""
-    text = build_log_path.read_text(encoding="utf-8")
-    m = re.search(r"<title>(build-[^\s<]+)", text)
-    return m.group(1) if m else ""
+def _read_successful_build_id(status_path: pathlib.Path) -> str:
+    """Read a successful build ID from the structured pipeline status file."""
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    if not isinstance(status, dict):
+        raise ValueError("pipeline status must be a JSON object")
+    if status.get("result") != "success" or status.get("exit_code") != 0:
+        raise ValueError("pipeline status does not describe a successful build")
+    build_id = status.get("build_id")
+    if not isinstance(build_id, str) or not build_id.strip():
+        raise ValueError("pipeline status has no build_id")
+    return build_id
 
 
-def main(argv: list[str] | None = None) -> int:
-    """CLI entry point: parse bio txt, write bio yaml.
+def main(argv: Sequence[str] | None = None) -> int:
+    """Convert one rendered bio file and return the process exit code."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("src", type=pathlib.Path, help="Rendered brad.bio.txt")
+    parser.add_argument("dst", type=pathlib.Path, help="Destination hugo/data/bio.yaml")
+    parser.add_argument(
+        "--build-log",
+        type=pathlib.Path,
+        default=pathlib.Path("hugo/static/build.log.html"),
+        help="Published build-log HTML, when available",
+    )
+    parser.add_argument("--pipeline-status", type=pathlib.Path, help="Structured pipeline-status.json")
+    parser.add_argument("--build-run-url", default="", help="Enclosing GitHub Actions run URL")
+    arguments = list(argv) if argv is not None else sys.argv[1:]
+    if not arguments:
+        parser.print_usage(sys.stderr)
+        return 1
+    args = parser.parse_args(arguments)
 
-    Usage::
-
-        python -m resume_generator.bio_yaml <src_bio_txt> <dst_bio_yaml> \
-            [<build_log_html>] [<build_run_url>]
-
-    Args:
-        argv: Argument list (defaults to sys.argv[1:]).
-
-    Returns:
-        0 on success, 1 on error.
-    """
-    args = argv if argv is not None else sys.argv[1:]
-    if len(args) < 2:
-        print(
-            "Usage: bio_yaml <src_bio_txt> <dst_bio_yaml> [<build_log_html>] [<build_run_url>]",
-            file=sys.stderr,
-        )
+    if not args.src.exists() or args.src.stat().st_size == 0:
+        print(f"bio_yaml: {args.src} is missing or empty", file=sys.stderr)
         return 1
 
-    src = pathlib.Path(args[0])
-    dst = pathlib.Path(args[1])
-    default_log = pathlib.Path("hugo/static/build.log.html")
-    build_log = pathlib.Path(args[2]) if len(args) >= 3 else default_log
-    build_run_url = args[3] if len(args) >= 4 else ""
+    try:
+        text = args.src.read_text(encoding="utf-8")
+        data = parse_bio_txt(text)
+        require_complete_bio(data)
 
-    if not src.exists() or src.stat().st_size == 0:
-        print(f"bio_yaml: {src} is missing or empty — skipping", file=sys.stderr)
-        return 0
-
-    text = src.read_text(encoding="utf-8")
-    data = parse_bio_txt(text)
-
-    build_log_available = build_log.is_file() and build_log.stat().st_size > 0
-    build_id = ""
-    if build_log_available:
-        data["build_log"] = True
-        build_id = _read_build_id(build_log)
+        build_log_available = args.build_log.is_file() and args.build_log.stat().st_size > 0
+        build_id = ""
+        if args.pipeline_status is not None:
+            if not build_log_available:
+                raise ValueError("pipeline status was provided but the build log is missing or empty")
+            build_id = _read_successful_build_id(args.pipeline_status)
+        if build_log_available:
+            data["build_log"] = True
         if build_id:
             data["build_id"] = build_id
-    if build_run_url:
-        data["build_run_url"] = build_run_url
+        if args.build_run_url:
+            data["build_run_url"] = args.build_run_url
 
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    dst.write_text(bio_to_yaml(data), encoding="utf-8")
-    print(f"bio_yaml: wrote {dst} (build_id={build_id!r})")
+        args.dst.parent.mkdir(parents=True, exist_ok=True)
+        args.dst.write_text(bio_to_yaml(data), encoding="utf-8")
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+        print(f"bio_yaml: {exc}", file=sys.stderr)
+        return 1
+
+    print(f"bio_yaml: wrote {args.dst} (build_id={build_id!r})")
     return 0
 
 

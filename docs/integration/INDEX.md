@@ -1,66 +1,110 @@
-# Integration: VAX ↔ PDP-11 vintage pipeline
+# Operate the vintage pipeline
 
-Active pipeline reference. For implementation details and the as-built gotchas, see `operations/PEXPECT-PIPELINE-SPEC.md`.
+Use this page to run, validate, and promote the VAX and PDP-11 pipeline. For console behavior and failure diagnosis, see [the pexpect implementation reference](operations/PEXPECT-PIPELINE-SPEC.md).
 
-The pipeline's sole artifact is the landing-page bio. The resume does not pass through it; it is rendered separately by Hugo + Playwright.
+The pipeline's only page-content output is the landing-page bio. Hugo and Playwright render the resume separately.
 
-## System boundary
+## Run the pipeline locally
 
-> **Status (2026-07-25): the pipeline runs on GitHub-hosted `ubuntu-latest` runners.** The edcloud execution host was decommissioned along with its AWS account, and the pipeline was ported the same day — control and execution planes are now the same machine. Do not reintroduce a cloud dependency for the publish path.
+Install Git and Python 3.11 or newer, then start Docker. Run the command from the repository root:
 
-- **Control plane** (GitHub Actions): artifact extraction, Hugo deploy.
-- **Execution plane**: all VAX/PDP-11 orchestration in one script, `scripts/edcloud-vintage-runner.sh`, invoked directly on the same runner. The name is historical — the script has no AWS coupling and needs only `docker`, `git`, and `python3`, so any Linux (or arm64 macOS) host with Docker can execute it unchanged.
+```bash
+DOCKER_DEFAULT_PLATFORM=linux/amd64 \
+  ALLOW_LOCAL_IMAGE_BUILD=0 \
+  bash scripts/edcloud-vintage-runner.sh \
+  "local-$(date -u +%Y%m%d-%H%M%S)" \
+  > /tmp/vintage-stdout.txt
+```
 
-Runner uses `docker build`/`docker run` directly; no Compose. Orchestration uses **pexpect** driving SIMH emulators via stdin/stdout — no telnet ports, no screen sessions, no sleep-based timing.
+This command uses the immutable production image pair. Remove `ALLOW_LOCAL_IMAGE_BUILD=0` to let a failed pull build the checked-out Dockerfiles for local development.
 
-## Stages
+The runner writes intermediate artifacts to `build/vintage/`, detailed logs to `/tmp/edcloud-vintage/`, and base64 artifact markers to redirected stdout. It creates `.venv/` and installs the package only when the existing environment cannot import the pipeline dependencies.
 
-| Stage | Machine | Input | Process | Output |
-|-------|---------|-------|---------|--------|
-| B | VAX (4.3BSD) | `bio.vintage.yaml` | compile + run `bradman.c` → troff, then `uuencode` | `brad.bio.uu` (UUCP spool) |
-| A | PDP-11 (2.11BSD) | `brad.bio.uu` | `uudecode`, then `nroff` (no macro package) fills and justifies | `brad.bio.txt` |
-| A+B | VAX → host → PDP-11 | `bio.vintage.yaml` | B then A, host as courier | `brad.bio.txt` |
+Despite its name, the script makes no cloud calls.
 
-`bradman.c` has a single job: read the flat bio YAML and emit a small troff document (name and headline verbatim, blurb filled and justified to a 60-column measure). The PDP-11 runs `nroff` **without** `-man` — the bio is prose, not a man page.
+### Runner environment
 
-## Homepage data flow (the publish-critical path)
+| Variable | Default | Function |
+|---|---|---|
+| `ROOT_DIR` | Current directory | Repository root |
+| `LOG_DIR` | `/tmp/edcloud-vintage` | Host log directory |
+| `KEEP_IMAGES` | `0` | Keep local VAX and PDP-11 image tags after the run when set to `1` |
+| `ALLOW_LOCAL_IMAGE_BUILD` | `1` | Build checked-out image recipes after a pinned-image pull fails |
+| `GIT_SHA` | Current commit | Commit recorded in `pipeline-status.json` |
 
-`site.yaml` (`name`, `headline`) + `resume.yaml` (`blurb`) → `build/vintage/bio.vintage.yaml` (`bioName`, `bioHeadline`, `bioProfile`) → VAX composes troff → PDP-11 `nroff` → `brad.bio.txt` → `resume_generator/bio_yaml.py` (plus the enclosing GitHub Actions run URL) → `hugo/data/bio.yaml` → Hugo landing template. Icon links are read directly from `site.yaml` after it is copied to Hugo data. Only `resume.yaml`'s `blurb` enters the pipeline — the resume document itself does not.
+Production and the validation workflow set `ALLOW_LOCAL_IMAGE_BUILD=0`.
 
-The blurb reaches the page as prose: `bio_yaml.py` collapses nroff's fixed-width fill and justification back to flowing single-spaced sentences (blank lines stay as paragraph breaks), and the landing template sets `about` in the humanist serif. The vintage typesetting still runs on the machines; only its column geometry is dropped from the final type.
+## Data flow
 
-## Key artifacts
+`site.yaml` supplies `name` and `headline`. `resume.yaml` supplies `basics.summary`. `resume_generator/vintage_yaml.py` writes these values to `build/vintage/bio.vintage.yaml` as five ordered, quoted ASCII scalars: `schemaVersion`, `buildDate`, `bioName`, `bioHeadline`, and `bioProfile`.
 
-Input: `site.yaml`.
+| Stage | Machine | Operation | Output |
+|---|---|---|---|
+| B | VAX 4.3BSD | Compile and run `bradman.c`, then `uuencode` its troff output | `brad.bio.uu` |
+| A | PDP-11 2.11BSD | `uudecode` the spool, then run `nroff -Tlp` | `brad.bio.txt` |
+| Deployment workflow | GitHub runner | Validate source equivalence, add build metadata, and prepare Hugo data | `hugo/data/bio.yaml` |
 
-Generated (internal, `build/vintage/`):
-- `bio.vintage.yaml` — flat ASCII YAML from `site.yaml`, emitted by `resume_generator/vintage_yaml.py`
-- `brad.bio.uu` — UUE-encoded troff bio (UUCP spool from VAX)
-- `brad.bio.txt` — the nroff-rendered bio (internal; parsed into `bio.yaml`, not served as a file)
+The host transfers the spool between guests. The PDP-11 `unix` kernel has no working Ethernet.
 
-Consumed by Hugo:
-- `hugo/data/site.yaml` (generated copy of the public landing source)
-- `hugo/data/bio.yaml` (generated from `brad.bio.txt`)
-- `hugo/static/build.log.html` (rendered by `resume_generator/build_log.py` from the host log and named guest-console sections)
-- `hugo/static/pipeline-status.json` (machine-readable build identity, result, and per-stage line counts)
+`resume_generator/vintage_contract.py` requires nonempty, single-line, printable ASCII inputs. It compares the rendered name and headline exactly and compares the summary after whitespace normalization. `resume_generator/bio_yaml.py` removes the fixed-width fill and justification before Hugo renders the summary as flowing prose.
 
-## Key constraints
+## Artifacts
 
-- **PDP-11 networking**: the `unix` kernel (required — `netnix` crashes on `xq` init) has no working Ethernet. FTP from VAX to PDP-11 is not viable. Transfer is host-mediated: pexpect reads VAX output, injects into PDP-11.
-- **PDP-11 pexpect startup**: pexpect spawns SIMH directly (stdin/stdout, no telnet port). The script must process SIMH output from process start with no delays.
-- **PDP-11 `/usr` mount**: `mount /usr` required before `nroff` and `uudecode` are available.
-- **VAX console**: root login, no password on the 4.3BSD guest.
+| Path | Scope | Function |
+|---|---|---|
+| `build/vintage/bio.vintage.yaml` | Internal | Fixed guest input contract |
+| `build/vintage/brad.bio.uu` | Internal | VAX-generated UUCP spool |
+| `build/vintage/brad.bio.txt` | Internal | PDP-11-rendered bio |
+| `build/vintage/sections.jsonl` | Internal | Named guest-console sections |
+| `build/vintage/pipeline-status.json` | Internal | Current run result and stage counts |
+| `hugo/data/bio.yaml` | Deployment output | Flowing bio text and build provenance |
+| `hugo/static/build.log.html` | Published | Host and guest build log |
+| `hugo/static/pipeline-status.json` | Published | Build identity, result, commit, time, and stage counts |
 
-## Operational notes
+The runner removes the generated files it owns before every run. After environment setup, a failed stage writes `result: failure` with the current build ID and exit code, preventing a retry from reusing a prior success.
 
-- Shared session utilities: `scripts/simh_session.py` (`make_logger`, `validate_uu_spool`, `inject_batched_heredoc`); imported by both pexpect scripts.
-- Published build-log rendering: `resume_generator/build_log.py`; the shell runner owns orchestration and marker transport only.
-- Marker base64 uses `base64 | tr -d '\n'` (portable across GNU and BSD/macOS), not the GNU-only `base64 -w 0`.
-- Set `KEEP_IMAGES=1` in the runner environment to preserve Docker images between runs (avoids rebuild on retry).
+## Console contracts
 
-## Related
+- `pexpect` spawns SIMH directly through a pseudo-terminal. The pipeline opens no telnet port and uses no Compose service.
+- State transitions wait for explicit console output. A 5 ms delay between heredoc lines throttles transport into the guest tty; it does not determine state.
+- Artifact-producing guest commands use `run_checked()` and must return status `0` before the pipeline continues.
+- The checkout's VAX and PDP-11 scripts and `simh_session.py` are bind-mounted over the copies in cached images.
+- The VAX produces the UUCP spool. The host preserves it as text and injects it into the PDP-11 in short heredoc batches.
+- `base64 | tr -d '\n'` carries host artifact markers on GNU and BSD systems.
 
-- [`operations/PEXPECT-PIPELINE-SPEC.md`](operations/PEXPECT-PIPELINE-SPEC.md) — as-built implementation spec and gotchas
-- [`../../scripts/edcloud-vintage-runner.sh`](../../scripts/edcloud-vintage-runner.sh) — pipeline entrypoint
-- [`../vax/README.md`](../vax/README.md) — VAX stage reference (bradman.c, YAML subset)
-- [`../archive/DEAD-ENDS.md`](../archive/DEAD-ENDS.md) — retired paths (screen/telnet, FTP, ARPANET, PDP-10)
+## Validate without publishing
+
+Push the branch and authenticate the GitHub CLI with permission to run Actions workflows. Then run the manual validation workflow to exercise marker extraction, semantic comparison, status generation, and artifact upload:
+
+```bash
+BRANCH="$(git branch --show-current)"
+gh workflow run vintage-validate.yml --ref "$BRANCH"
+```
+
+To compare the rendered bio with a prior run, add `-f expected_sha256=EXPECTED_SHA256` and replace `EXPECTED_SHA256` with the recorded digest. Change the baseline when the public name, headline, or summary changes. With the same public input, orchestration, and pinned image pair, the rendered bio is byte-stable because it contains no build date.
+
+## Promote emulator images
+
+Use this procedure after changing an emulator Dockerfile, configuration, base image, dependency, or disk image:
+
+1. Push the branch and run the image workflow:
+
+   ```bash
+   BRANCH="$(git branch --show-current)"
+   gh workflow run build-images.yml --ref "$BRANCH"
+   ```
+
+2. Copy both image digests from the workflow summary.
+3. Update both `GHCR_VAX` and `GHCR_PDP11` in `scripts/edcloud-vintage-runner.sh` so the release records an explicit pair.
+4. Push the digest update and run `gh workflow run vintage-validate.yml --ref "$(git branch --show-current)"`.
+5. Inspect `pipeline-status.json`, `brad.bio.txt`, `build.log.html`, and the console-section artifact.
+6. Merge only after validation succeeds.
+
+`build-images.yml` publishes source-commit tags for discovery. Deployment uses only the pinned digests and never waits for an image build.
+
+## References
+
+- [`pexpect` implementation reference](operations/PEXPECT-PIPELINE-SPEC.md)
+- [VAX stage and guest input contract](../vax/README.md)
+- [Pipeline runner](../../scripts/edcloud-vintage-runner.sh)
+- [Retired approaches](../archive/DEAD-ENDS.md)

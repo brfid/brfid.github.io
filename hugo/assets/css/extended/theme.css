@@ -1,14 +1,7 @@
-/* Forest Terminal palette + landing composition.
-   Overrides PaperMod's core theme variables (theme-vars.css) for both themes,
-   then styles the home article and the nav/footer chrome on top of them.
-
-   Concept: the person is set like a book (Newsreader serif), the machine is set
-   like a terminal (IBM Plex Mono). Forest green is the single accent — it reads
-   as pine and as green-screen phosphor at once, which is what lets the humanist
-   and retro-computing halves share one page. */
+/* Site palette and shared layout. */
 
 :root {
-  /* Light "reading room, daylight" */
+  /* Light palette. */
   --theme: #f4f1e6;
   --entry: #eee9d8;
   --primary: #21281f;
@@ -20,16 +13,15 @@
   --code-block-bg: #e6e1d0;
 
   --forest: #2f6b43;
-  --forest-strong: #26583a;
   --interactive-hover: #176b35;
 
-  /* One unified column: nav, content, and footer share the same width. */
+  /* Align navigation, content, and footer widths. */
   --main-width: 640px;
   --nav-width: 640px;
 }
 
 :root[data-theme="dark"] {
-  /* Dark "phosphor at night" */
+  /* Dark palette. */
   --theme: #141a15;
   --entry: #1c231d;
   --primary: #e7e3d4;
@@ -41,22 +33,17 @@
   --code-block-bg: #171d18;
 
   --forest: #7fbf8e;
-  --forest-strong: #97d1a4;
   --interactive-hover: #b8f5c2;
 }
 
-/* PaperMod uses the code background for list pages by default. Keep the site on
-   one paper color so the Blog cards retain their entry/canvas distinction. */
+/* Keep list-page canvas color separate from entry cards. */
 .list {
   background: var(--theme);
 }
 
-/* ============================================================
-   Home article
-   ============================================================ */
+/* Landing page. */
 
-/* The home hero is a PaperMod .first-entry; drop its vertical centering and
-   line clamping so the composition reads top-down like a page. */
+/* Remove PaperMod's hero centering and title clamping. */
 .home-info.first-entry {
   min-height: auto;
   justify-content: flex-start;
@@ -78,7 +65,7 @@
   text-wrap: balance;
 }
 
-/* Role: the machine's one-line spec of the person, under the name. */
+/* Landing-page role. */
 .bio-role {
   font-family: var(--mono);
   font-size: 0.84rem;
@@ -88,12 +75,7 @@
   margin: 0.9rem 0 0;
 }
 
-/* Bio: the person set like a book — Newsreader serif prose. The vintage
-   machines still produce this text (VAX composes the troff, the PDP-11 fills it
-   with nroff), but that fixed-width justification is collapsed back to flowing
-   sentences upstream in bio_yaml.py, so the type reads as humanist prose. The
-   machine provenance lives in the footer's VAX/PDP-11 build-log link, not in
-   the letterforms. */
+/* Flowing landing-page summary. */
 .bio-summary {
   color: var(--content);
   font-family: var(--serif);
@@ -106,7 +88,7 @@
   margin-top: 0.7rem;
 }
 
-/* Social links: one row, icon + label, no chrome. */
+/* Profile links. */
 .bio-links {
   display: flex;
   flex-wrap: wrap;
@@ -137,11 +119,7 @@
   height: 0.95rem;
   width: 0.95rem;
 }
-
-
-/* ============================================================
-   Nav + footer chrome
-   ============================================================ */
+/* Navigation and footer. */
 
 .header .logo a {
   font-family: var(--mono);
@@ -197,7 +175,7 @@
   color: var(--secondary);
 }
 
-/* Single-document links: the resume now, and article pages when restored. */
+/* Resume and article links. */
 .post-single a {
   transition: color 0.12s ease;
 }
@@ -230,8 +208,7 @@
   background: transparent;
 }
 
-/* PaperMod gives heading anchors an !important hover color. Keep those future
-   article controls in the same interaction system. */
+/* Override PaperMod's !important heading-anchor hover color. */
 .post-single .anchor:hover,
 .post-single .anchor:focus-visible {
   color: var(--interactive-hover) !important;

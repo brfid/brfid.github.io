@@ -10,8 +10,6 @@ def test_site_yaml_is_the_complete_public_landing_source() -> None:
     site = yaml.safe_load(Path("site.yaml").read_text(encoding="utf-8"))
     resume = yaml.safe_load(Path("resume.yaml").read_text(encoding="utf-8"))
 
-    # The landing bio text lives in resume.yaml `basics.summary`; site.yaml owns the
-    # public identity and links.
     assert set(site) == {"name", "headline", "links"}
     for field in ("name", "headline"):
         assert isinstance(site[field], str)

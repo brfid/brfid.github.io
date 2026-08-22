@@ -1,5 +1,4 @@
-/* A missing route uses the site's core type distinction: machine status in
-   Plex Mono, then human-facing recovery copy in Newsreader. */
+/* Missing-route layout. */
 .error-page {
   align-content: center;
   display: grid;
