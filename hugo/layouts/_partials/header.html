@@ -99,7 +99,7 @@
             {{- $is_external := findRE "://" .URL }}
             {{- $companion_url := .Params.companionurl }}
             {{- $companion_label := .Params.companionlabel | default "Download" }}
-            <li{{ with $companion_url }} class="menu-item-with-companion"{{ end }}>
+            <li{{ if $companion_url }} class="menu-item-with-companion"{{ else if eq .Identifier "source" }} class="menu-utility-item"{{ end }}>
                 <a class="menu-primary-link" href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }} {{- cond $is_search (" (Alt + /)" | safeHTMLAttr) ("" | safeHTMLAttr ) }}"
                 {{- cond $is_search (" accesskey=/" | safeHTMLAttr) ("" | safeHTMLAttr ) }}{{ if $is_current }} aria-current="page"{{ end }}>
                     <span>

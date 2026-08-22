@@ -40,8 +40,6 @@ disableAliases = false
     name = "Source"
     url = "https://github.com/brfid/brfid.github.io"
     weight = 10
-    [menu.main.params]
-      icon = "github"
 
 [params]
   env = "production"

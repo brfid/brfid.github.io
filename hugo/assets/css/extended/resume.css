@@ -28,11 +28,6 @@
   text-underline-offset: 0.2em;
 }
 
-.resume-download-link {
-  color: var(--forest);
-  font-weight: 600;
-}
-
 .resume-contact-icon {
   align-items: center;
   display: inline-flex;
