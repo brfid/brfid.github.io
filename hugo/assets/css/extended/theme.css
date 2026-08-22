@@ -225,6 +225,21 @@
   text-decoration-thickness: 2px;
 }
 
+/* PaperMod gives header controls a full-height hit area. Keep that target while
+   constraining the visible wash to a compact band around the label or icon. */
+.header .logo a:hover,
+.header .logo a:focus-visible,
+#menu a:hover,
+#menu a:focus-visible,
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  background-color: transparent;
+  background-image: linear-gradient(var(--interactive-highlight), var(--interactive-highlight));
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 1.5rem;
+}
+
 /* PaperMod gives heading anchors an !important hover color. Keep those future
    article controls in the same interaction system. */
 .post-single .anchor:hover,
@@ -243,11 +258,6 @@
 .theme-toggle:hover svg,
 .theme-toggle:focus-visible svg {
   stroke: var(--interactive-hover);
-}
-
-.theme-toggle:hover,
-.theme-toggle:focus-visible {
-  background-color: var(--interactive-highlight);
 }
 
 .footer {

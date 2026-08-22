@@ -28,7 +28,7 @@ Mutable operational state for the site, pipeline, and resume surfaces. **Strateg
 
 ## Now
 
-- The site-wide clarity and accessibility pass is implemented, with the prior footer composition restored, Source retained as a high-visibility header utility, the contextual Resume PDF link quieted, stronger phosphor hover/focus feedback applied to links, and redundant Blog author bylines suppressed. Keep the approved resume, public HTML, tagged phone-free production PDF, and the two published Blog posts aligned. The verified pre-rewrite backup at `/Users/brf/src/brfid.github.io-pre-history-rewrite-20260821` must never be pushed.
+- The site-wide clarity and accessibility pass is implemented, with the prior footer composition restored, Source retained as a high-visibility header utility, the contextual Resume PDF link quieted, stronger phosphor hover/focus feedback applied to links without filling the header's full-height hit targets, and redundant Blog author bylines suppressed. Keep the approved resume, public HTML, tagged phone-free production PDF, and the two published Blog posts aligned. The verified pre-rewrite backup at `/Users/brf/src/brfid.github.io-pre-history-rewrite-20260821` must never be pushed.
 
 ## Next
 
