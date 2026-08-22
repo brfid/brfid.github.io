@@ -14,7 +14,7 @@ Use this reference to diagnose SIMH console and artifact failures. For commands,
 | `scripts/simh_session.py` | Provide logging, checked commands, spool checks, and batched heredocs |
 | `resume_generator/bio_yaml.py` | Convert the rendered bio to Hugo data |
 | `resume_generator/build_log.py` | Render the published build log |
-| `scripts/edcloud-vintage-runner.sh` | Orchestrate containers and emit artifact markers |
+| `scripts/vintage-runner.sh` | Orchestrate containers and write final host artifacts |
 
 ## Session behavior
 
@@ -73,7 +73,7 @@ nroff -Tlp /tmp/brad.bio.roff < /dev/null > /tmp/brad.bio.txt
 - `bradman.c` writes name and headline without fill, then fills and justifies the summary at a 60-column measure with no page offset or hyphenation.
 - The build date appears only in a troff comment. With unchanged public text, orchestration, and pinned images, `nroff` produces stable rendered bytes.
 - The runner clears its owned outputs before starting and records success or failure in `pipeline-status.json`.
-- Artifact markers use `base64 | tr -d '\n'` for GNU and BSD compatibility.
+- The runner writes the final bio, build log, and status under `build/vintage/`; workflows consume those files directly.
 - Production consumes one pinned pair of immutable image digests and disables local builds.
 
 ## Failure guide

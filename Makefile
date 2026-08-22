@@ -1,10 +1,11 @@
 PYTHON ?= .venv/bin/python
 PREVIEW_PORT ?= 1313
 
-.PHONY: help test check verify-site check_env clean \
-        sync-site-data sync-resume-data new-post hugo-build \
+.PHONY: help test check verify-site check_env clean clear-local-provenance \
+        require-production-provenance sync-site-data sync-resume-data new-post \
+        hugo-build hugo-build-production \
         resume-pdf resume-pdf-public resume-pdf-application \
-        preview preview-drafts preview-public
+        preview preview-drafts
 
 help:
 	@echo "brfid.github.io commands"
@@ -21,11 +22,10 @@ help:
 	@echo "  make new-post POST_SLUG=my-post  Scaffold a draft post bundle"
 	@echo "  make hugo-build        Build the public site, including resume HTML, into site/"
 	@echo "  make resume-pdf             Build the site and public phone-free PDF"
-	@echo "  make resume-pdf-public      CI-compatible alias for resume-pdf"
+	@echo "  make resume-pdf-public      Build the staged production site and public PDF"
 	@echo "  make resume-pdf-application Build a private application PDF outside the web root"
-	@echo "  make preview                Serve the production-equivalent site and phone-free PDF"
+	@echo "  make preview                Serve the local public site and phone-free PDF"
 	@echo "  make preview-drafts         Serve the site with draft blog posts"
-	@echo "  make preview-public         Compatibility alias for preview"
 
 test:
 	@echo "Running tests..."
@@ -39,7 +39,7 @@ check:
 	@$(PYTHON) -m pylint resume_generator scripts -sn
 	@$(PYTHON) -m vulture --config pyproject.toml resume_generator scripts
 
-verify-site: sync-site-data sync-resume-data
+verify-site: clear-local-provenance sync-site-data sync-resume-data
 	@hugo --source hugo --destination "$(abspath build/site-check)" --cleanDestinationDir --panicOnWarning
 	@$(PYTHON) scripts/verify_site.py build/site-check
 
@@ -51,10 +51,20 @@ check_env:
 
 clean:
 	@echo "Removing generated build artifacts..."
-	@rm -rf build/ site/ local/
+	@rm -rf build/ site/ local/ hugo/public/
+	@rm -f hugo/.hugo_build.lock
 	@rm -f hugo/data/bio.yaml hugo/data/resume.yaml hugo/data/site.yaml
 	@rm -f hugo/static/build.log.html hugo/static/pipeline-status.json
 	@echo "Cleanup complete"
+
+clear-local-provenance:
+	@rm -f hugo/data/bio.yaml
+	@rm -f hugo/static/build.log.html hugo/static/pipeline-status.json
+
+require-production-provenance:
+	@test -s hugo/data/bio.yaml || { echo "Missing production provenance: hugo/data/bio.yaml"; exit 1; }
+	@test -s hugo/static/build.log.html || { echo "Missing production provenance: hugo/static/build.log.html"; exit 1; }
+	@test -s hugo/static/pipeline-status.json || { echo "Missing production provenance: hugo/static/pipeline-status.json"; exit 1; }
 
 sync-site-data:
 	@mkdir -p hugo/data
@@ -70,16 +80,21 @@ new-post:
 	@test -n "$(POST_SLUG)" || { echo "Usage: make new-post POST_SLUG=my-post"; exit 2; }
 	@hugo new content --source hugo --kind posts "posts/$(POST_SLUG)"
 
-hugo-build: sync-site-data sync-resume-data
+hugo-build: clear-local-provenance sync-site-data sync-resume-data
+	@hugo --source hugo --destination ../site --cleanDestinationDir --panicOnWarning
+
+hugo-build-production: require-production-provenance sync-site-data sync-resume-data
 	@hugo --source hugo --destination ../site --cleanDestinationDir --panicOnWarning
 
 resume-pdf: hugo-build
 	@$(PYTHON) -c "from pathlib import Path; from resume_generator.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('site/resume.pdf'))"
 	@echo "Generated public site/resume.pdf"
 
-resume-pdf-public: resume-pdf
+resume-pdf-public: hugo-build-production
+	@$(PYTHON) -c "from pathlib import Path; from resume_generator.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('site/resume.pdf'))"
+	@echo "Generated production site/resume.pdf"
 
-resume-pdf-application: hugo-build
+resume-pdf-application: resume-pdf
 	@$(PYTHON) -c "from pathlib import Path; from resume_generator.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('local/bradley-fidler-resume.pdf'), private_resume_path=Path('resume.private.yaml'))"
 	@echo "Generated private local/bradley-fidler-resume.pdf"
 
@@ -88,6 +103,3 @@ preview: resume-pdf
 
 preview-drafts: resume-pdf
 	@hugo server --source hugo --destination ../site --buildDrafts --disableFastRender --port $(PREVIEW_PORT)
-
-preview-public: resume-pdf-public
-	@hugo server --source hugo --destination ../site --disableFastRender --port $(PREVIEW_PORT)

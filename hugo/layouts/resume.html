@@ -139,25 +139,6 @@
     </section>
     {{- end }}
 
-    {{- with $r.projects }}
-    <section class="listing-section">
-      <h2>Projects</h2>
-      {{- range . }}
-      <div class="listing-item">
-        <div class="listing-item-head">
-          <h3 class="resume-item-title">
-            {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
-          </h3>
-        </div>
-        {{- with .description }}<p>{{ . }}</p>{{ end }}
-        {{- with .keywords }}
-        <span class="listing-keywords">{{ delimit . " · " }}</span>
-        {{- end }}
-      </div>
-      {{- end }}
-    </section>
-    {{- end }}
-
     {{- with $r.education }}
     <section class="listing-section resume-education">
       <h2>Education</h2>

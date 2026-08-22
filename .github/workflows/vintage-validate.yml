@@ -1,6 +1,6 @@
 name: Validate vintage pipeline
 
-# Runs the pinned pipeline without publishing. Verifies marker transport,
+# Runs the pinned pipeline without publishing. Verifies direct artifacts,
 # source equivalence, and an optional rendered-bio SHA-256 baseline.
 
 on:
@@ -50,7 +50,7 @@ jobs:
 
           start="$(date -u +%s)"
           rc=0
-          bash scripts/edcloud-vintage-runner.sh "$BUILD_ID" > /tmp/vintage-stdout.txt || rc=$?
+          bash scripts/vintage-runner.sh "$BUILD_ID" || rc=$?
           elapsed=$(( $(date -u +%s) - start ))
 
           printf 'Pipeline wall clock: %dm%02ds (exit %d)\n' \
@@ -59,61 +59,30 @@ jobs:
 
           if (( rc != 0 )); then
             echo "::error::Vintage pipeline failed after ${elapsed}s"
-            cat /tmp/vintage-stdout.txt >&2
             exit "$rc"
           fi
 
-      - name: Extract artifacts and check bio
+      - name: Collect artifacts and check bio
         id: compare
         env:
           EXPECTED: ${{ inputs.expected_sha256 }}
         run: |
           set -euo pipefail
           mkdir -p out
-
-          extract() {
-            # Usage: extract MARKER_PREFIX DESTINATION
-            awk -v b="<<<${1}_BASE64_BEGIN>>>" -v e="<<<${1}_BASE64_END>>>" \
-              'index($0,b)==1{flag=1;next} index($0,e)==1{flag=0} flag' \
-              /tmp/vintage-stdout.txt | tr -d '\n' > /tmp/blob.b64
-            if [[ ! -s /tmp/blob.b64 ]]; then
-              return 1
+          sudo chown -R "$(id -u):$(id -g)" build/vintage
+          for artifact in brad.bio.txt build.log.html pipeline-status.json; do
+            if [[ ! -s "build/vintage/${artifact}" ]]; then
+              echo "::error::Final vintage artifact is missing or empty: build/vintage/${artifact}"
+              exit 1
             fi
-            base64 -d /tmp/blob.b64 > "$2"
-          }
-
-          if ! extract BRAD_BIO_TXT out/brad.bio.txt; then
-            echo "::error::brad.bio.txt marker block missing from runner stdout"
-            exit 1
-          fi
-          if ! extract BUILD_LOG out/build.log.html; then
-            echo "::error::build.log.html marker block missing from runner stdout"
-            exit 1
-          fi
-          if ! extract PIPELINE_STATUS_JSON out/pipeline-status.json; then
-            echo "::error::pipeline-status.json marker block missing from runner stdout"
-            exit 1
-          fi
+            cp "build/vintage/${artifact}" "out/${artifact}"
+          done
           .venv/bin/python -m json.tool out/pipeline-status.json >/dev/null
-
-          # Require marker transport to preserve the artifact bytes.
-          if ! cmp -s out/brad.bio.txt build/vintage/brad.bio.txt; then
-            echo "::error::base64 marker transport corrupted brad.bio.txt"
-            exit 1
-          fi
 
           .venv/bin/python -m resume_generator.vintage_contract \
             out/brad.bio.txt \
             site.yaml \
             resume.yaml
-
-          # Exercise deployment's rewrite of the root-owned bind-mount artifact.
-          sudo chown -R "$(id -u):$(id -g)" build/vintage
-          if ! cp out/brad.bio.txt build/vintage/brad.bio.txt; then
-            echo "::error::cannot write build/vintage/brad.bio.txt; deploy.yml would fail here"
-            ls -la build/vintage
-            exit 1
-          fi
 
           # The rendered bio contains no date, so compare its raw digest.
           sha="$(sha256sum out/brad.bio.txt | cut -d' ' -f1)"
@@ -156,10 +125,11 @@ jobs:
         run: |
           set -uo pipefail
           mkdir -p out
-          cp /tmp/vintage-stdout.txt out/runner-stdout.txt 2>/dev/null || true
           cp "${{ steps.vintage.outputs.log_file }}" out/pipeline.log 2>/dev/null || true
           cp build/vintage/sections.jsonl out/sections.jsonl 2>/dev/null || true
-          test -e out/pipeline-status.json || cp build/vintage/pipeline-status.json out/pipeline-status.json 2>/dev/null || true
+          for artifact in brad.bio.txt build.log.html pipeline-status.json; do
+            test -e "out/${artifact}" || cp "build/vintage/${artifact}" "out/${artifact}" 2>/dev/null || true
+          done
           ls -la out/
 
       # Preserve the inputs needed to diagnose a mismatch or failed stage.

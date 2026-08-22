@@ -29,7 +29,7 @@ The repository vendors PaperMod as a Git submodule and serves self-hosted Newsre
 make preview
 ```
 
-Open `http://localhost:1313/`. The command builds the public resume page and phone-free `site/resume.pdf`, then starts Hugo with live reload. Restart it after changing `resume.yaml`, or after changing resume layout or print CSS.
+Open `http://localhost:1313/`. The command clears deployment-only provenance inputs, builds the public resume page and phone-free `site/resume.pdf`, then starts Hugo with live reload. Restart it after changing `resume.yaml`, or after changing resume layout or print CSS.
 
 Use `make preview-drafts` to include draft posts. Set `PREVIEW_PORT` to change the port:
 
@@ -43,7 +43,7 @@ make preview PREVIEW_PORT=1314
 2. Replace the example `basics.phone` value.
 3. Run `make resume-pdf-application`.
 
-The command writes `local/bradley-fidler-resume.pdf`. It rejects a missing or invalid private overlay and any private PDF destination inside the public site tree. Run `make preview` afterward to restore `site/resume.pdf`.
+The command leaves a complete phone-free public build under `site/` and writes the private PDF to `local/bradley-fidler-resume.pdf`. It rejects a missing or invalid private overlay and any private PDF destination inside the public site tree.
 
 ## Run checks
 
@@ -52,7 +52,7 @@ make check
 make verify-site
 ```
 
-`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. `make verify-site` builds Hugo in a clean directory and checks routes, feeds, structured data, navigation state, and the site-wide indexing policy. CI runs both commands.
+`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. `make verify-site` clears deployment-only provenance inputs, builds Hugo in a clean directory, and checks routes, feeds, linked artifacts, structured data, navigation state, and the site-wide indexing policy. CI runs both commands.
 
 Use `make test` to run pytest without the other checks. Use `make help` to list all supported targets.
 
@@ -62,7 +62,7 @@ Use `make test` to run pytest without the other checks. Use `make help` to list 
 make hugo-build
 ```
 
-The command syncs the public YAML inputs and writes a clean build to `site/`. Use `make resume-pdf` to add the public PDF.
+The command clears deployment-only provenance inputs, syncs the public YAML inputs, and writes a clean build to `site/`. Use `make resume-pdf` to add the public PDF. Deployment uses the separate `resume-pdf-public` target, which fails unless the vintage bio, build log, and pipeline status have all been staged.
 
 Every rendered HTML page contains `noindex, nofollow, noarchive, nosnippet, noimageindex`. Hugo emits no sitemap. `robots.txt` leaves HTML crawlable so crawlers can read the page-level directive and blocks the PDF, feeds, and pipeline status.
 
@@ -90,7 +90,7 @@ For local execution, validation, implementation, and image promotion, see [the v
 
 A push to `main` runs the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitHub Pages. Add `[nopublish]` to the commit message to skip deployment. Run the Publish site workflow manually to repeat a deployment without a new commit.
 
-Production accepts only the immutable VAX and PDP-11 image digests pinned in `scripts/edcloud-vintage-runner.sh`. It does not build fallback images.
+Production accepts only the immutable VAX and PDP-11 image digests pinned in `scripts/vintage-runner.sh`. It does not build fallback images.
 
 ## Source files
 

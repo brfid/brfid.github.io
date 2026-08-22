@@ -49,11 +49,13 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install -e .
+          .venv/bin/python -m pip install -e '.[dev]'
           .venv/bin/python -m playwright install --with-deps chromium
           sudo apt-get install -y poppler-utils
 
-      # Artifact markers remain on stdout; verbose output goes to LOG_DIR.
+      - name: Quality checks
+        run: make check
+
       - name: Run vintage pipeline
         id: vintage
         env:
@@ -66,46 +68,27 @@ jobs:
           LOG_DIR=/tmp/edcloud-vintage
           echo "log_file=${LOG_DIR}/${BUILD_ID}.log" >> "$GITHUB_OUTPUT"
 
-          if ! bash scripts/edcloud-vintage-runner.sh "$BUILD_ID" > /tmp/vintage-stdout.txt; then
-            echo "::error::Vintage pipeline failed. Runner stdout follows (the runner emits its own log tail there)."
-            cat /tmp/vintage-stdout.txt >&2
+          if ! bash scripts/vintage-runner.sh "$BUILD_ID"; then
+            echo "::error::Vintage pipeline failed. The runner's log tail appears above."
             exit 1
           fi
 
-          # The root-owned bind-mount artifacts must be writable by this step.
+          # The bind-mounted guest artifact can be root-owned.
           sudo chown -R "$(id -u):$(id -g)" build/vintage
 
-          mkdir -p hugo/static build/vintage
+          mkdir -p hugo/static
+          for artifact in brad.bio.txt build.log.html pipeline-status.json; do
+            if [[ ! -s "build/vintage/${artifact}" ]]; then
+              echo "::error::Final vintage artifact is missing or empty: build/vintage/${artifact}"
+              exit 1
+            fi
+          done
 
-          # The rendered bio is the pipeline's only page-content input.
-          awk '/^<<<BRAD_BIO_TXT_BASE64_BEGIN>>>/{flag=1;next}/^<<<BRAD_BIO_TXT_BASE64_END>>>/{flag=0}flag' /tmp/vintage-stdout.txt \
-            | tr -d '\n' > /tmp/brad.bio.txt.b64
-          if [[ ! -s /tmp/brad.bio.txt.b64 ]]; then
-            echo "::error::brad.bio.txt marker block missing from runner stdout"
-            cat /tmp/vintage-stdout.txt >&2
-            exit 1
-          fi
-          base64 -d /tmp/brad.bio.txt.b64 > build/vintage/brad.bio.txt
           # Never serve the raw bio if a stale generated file exists.
           rm -f hugo/static/brad.bio.txt
-
           echo "brad.bio.txt sha256: $(sha256sum build/vintage/brad.bio.txt | cut -d' ' -f1)"
-
-          awk '/^<<<BUILD_LOG_BASE64_BEGIN>>>/{flag=1;next}/^<<<BUILD_LOG_BASE64_END>>>/{flag=0}flag' /tmp/vintage-stdout.txt \
-            | tr -d '\n' > /tmp/build.log.b64
-          if [[ ! -s /tmp/build.log.b64 ]]; then
-            echo "::error::build.log.html marker block missing from runner stdout"
-            exit 1
-          fi
-          base64 -d /tmp/build.log.b64 > hugo/static/build.log.html
-
-          awk '/^<<<PIPELINE_STATUS_JSON_BASE64_BEGIN>>>/{flag=1;next}/^<<<PIPELINE_STATUS_JSON_BASE64_END>>>/{flag=0}flag' /tmp/vintage-stdout.txt \
-            | tr -d '\n' > /tmp/pipeline-status.json.b64
-          if [[ ! -s /tmp/pipeline-status.json.b64 ]]; then
-            echo "::error::pipeline-status.json marker block missing from runner stdout"
-            exit 1
-          fi
-          base64 -d /tmp/pipeline-status.json.b64 > hugo/static/pipeline-status.json
+          cp build/vintage/build.log.html hugo/static/build.log.html
+          cp build/vintage/pipeline-status.json hugo/static/pipeline-status.json
           .venv/bin/python -m json.tool hugo/static/pipeline-status.json >/dev/null
 
           .venv/bin/python -m resume_generator.vintage_contract \
@@ -155,8 +138,8 @@ jobs:
         if: steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v5
 
-      # Preserve the full log when the runner's stdout tail is insufficient.
-      - name: Upload vintage pipeline log
+      # Preserve direct runner diagnostics when the stdout tail is insufficient.
+      - name: Upload vintage pipeline diagnostics
         if: failure() && steps.vintage.outputs.log_file != ''
         continue-on-error: true
         uses: actions/upload-artifact@v7
@@ -164,7 +147,8 @@ jobs:
           name: vintage-pipeline-log
           path: |
             ${{ steps.vintage.outputs.log_file }}
-            /tmp/vintage-stdout.txt
+            build/vintage/pipeline-status.json
+            build/vintage/sections.jsonl
           retention-days: 14
           if-no-files-found: warn
 

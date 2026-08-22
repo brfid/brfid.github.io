@@ -255,6 +255,20 @@ def verify_menu_state(site_dir: Path, errors: list[str]) -> None:
             )
 
 
+def verify_linked_artifacts(site_dir: Path, errors: list[str]) -> None:
+    """Require locally linked generated artifacts to exist in the rendered tree."""
+    homepage = site_dir / "index.html"
+    if not homepage.is_file():
+        return
+    parser = parse_html(homepage)
+    if any(anchor.get("href") == "/build.log.html" for anchor in parser.anchors):
+        record(
+            is_nonempty_file(site_dir / "build.log.html"),
+            errors,
+            "index.html: links to missing or empty build.log.html",
+        )
+
+
 def is_nonempty_file(path: Path) -> bool:
     """Return whether a path is a nonempty regular file."""
     return path.is_file() and path.stat().st_size > 0
@@ -427,6 +441,7 @@ def verify_site(site_dir: Path) -> list[str]:
     verify_feeds(site_dir, errors)
     verify_primary_links(site_dir, errors)
     verify_menu_state(site_dir, errors)
+    verify_linked_artifacts(site_dir, errors)
     return errors
 
 

@@ -54,10 +54,6 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = [
-  "unit: Fast unit tests with no external system dependencies",
-  "integration: Integration tests crossing module boundaries",
-]
 
 [tool.ruff]
 target-version = "py311"

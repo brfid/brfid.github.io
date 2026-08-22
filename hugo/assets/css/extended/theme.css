@@ -36,6 +36,25 @@
   --interactive-hover: #b8f5c2;
 }
 
+/* Apply the dark palette in auto mode when JavaScript is unavailable. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --theme: #141a15;
+    --entry: #1c231d;
+    --primary: #e7e3d4;
+    --secondary: #8a9c8c;
+    --tertiary: #2b342c;
+    --content: #e7e3d4;
+    --border: #2b342c;
+    --code-bg: #1c231d;
+    --code-block-bg: #171d18;
+    color-scheme: dark;
+
+    --forest: #7fbf8e;
+    --interactive-hover: #b8f5c2;
+  }
+}
+
 /* Keep list-page canvas color separate from entry cards. */
 .list {
   background: var(--theme);
