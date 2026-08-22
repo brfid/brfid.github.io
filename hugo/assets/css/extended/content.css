@@ -15,7 +15,7 @@
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.22em;
-  transition: background-color 0.12s ease, color 0.12s ease, text-decoration-color 0.12s ease;
+  transition: color 0.12s ease;
   vertical-align: 0.2em;
 }
 
@@ -36,7 +36,8 @@
 
 .post-entry:hover,
 .post-entry:focus-within {
-  border-color: var(--forest);
+  border-color: var(--border);
+  transform: none;
 }
 
 .post-entry:hover .entry-header h2,
