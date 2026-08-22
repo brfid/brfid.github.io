@@ -51,7 +51,7 @@
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.24em;
-  transition: color 0.15s ease;
+  transition: background-color 0.12s ease, color 0.12s ease, text-decoration-color 0.12s ease;
 }
 
 .error-links a:hover,

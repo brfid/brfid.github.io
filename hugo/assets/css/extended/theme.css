@@ -21,7 +21,8 @@
 
   --forest: #2f6b43;
   --forest-strong: #26583a;
-  --interactive-hover: var(--forest-strong);
+  --interactive-hover: #176b35;
+  --interactive-highlight: rgba(47, 107, 67, 0.13);
 
   /* One unified column: nav, content, and footer share the same width. */
   --main-width: 640px;
@@ -42,6 +43,8 @@
 
   --forest: #7fbf8e;
   --forest-strong: #97d1a4;
+  --interactive-hover: #b8f5c2;
+  --interactive-highlight: rgba(151, 209, 164, 0.14);
 }
 
 /* PaperMod uses the code background for list pages by default. Keep the site on
@@ -118,7 +121,7 @@
   display: inline-flex;
   gap: 0.45rem;
   min-height: 2rem;
-  transition: color 0.15s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 .bio-link span:last-child {
@@ -146,7 +149,7 @@
   font-size: 14px;
   font-weight: 400;
   letter-spacing: 0.01em;
-  transition: color 0.15s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 #menu a {
@@ -155,7 +158,7 @@
   font-family: var(--mono);
   font-size: 14px;
   gap: 0.35rem;
-  transition: color 0.15s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 #menu > li {
@@ -197,7 +200,7 @@
 
 /* Single-document links: the resume now, and article pages when restored. */
 .post-single a {
-  transition: color 0.15s ease;
+  transition: background-color 0.12s ease, color 0.12s ease, text-decoration-color 0.12s ease;
 }
 
 .header .logo a:hover,
@@ -209,8 +212,17 @@
 .post-single a:hover,
 .post-single a:focus-visible,
 .footer a:hover,
-.footer a:focus-visible {
+.footer a:focus-visible,
+.section-feed-link:hover,
+.section-feed-link:focus-visible,
+.error-links a:hover,
+.error-links a:focus-visible,
+.paginav a:hover,
+.paginav a:focus-visible {
+  background-color: var(--interactive-highlight);
   color: var(--interactive-hover);
+  text-decoration-color: var(--interactive-hover);
+  text-decoration-thickness: 2px;
 }
 
 /* PaperMod gives heading anchors an !important hover color. Keep those future
@@ -224,9 +236,18 @@
   transition: stroke 0.15s ease;
 }
 
+.theme-toggle {
+  transition: background-color 0.12s ease;
+}
+
 .theme-toggle:hover svg,
 .theme-toggle:focus-visible svg {
   stroke: var(--interactive-hover);
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  background-color: var(--interactive-highlight);
 }
 
 .footer {
@@ -237,5 +258,5 @@
 
 .footer a {
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
