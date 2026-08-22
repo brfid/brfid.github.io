@@ -29,10 +29,13 @@ def test_production_config_publishes_blog_mechanics() -> None:
     assert config["pagination"]["pagerSize"] == 10
     assert config["params"]["mainSections"] == ["posts"]
     assert config["params"]["ShowRssButtonInSectionTermList"] is True
-    assert set(menu_items) == {"posts", "resume"}
+    assert set(menu_items) == {"posts", "resume", "source"}
     assert menu_items["posts"]["url"] == "/posts/"
     assert menu_items["resume"]["url"] == "/resume/"
-    assert "params" not in menu_items["resume"]
+    assert menu_items["resume"]["params"]["companionurl"] == "/resume.pdf"
+    assert menu_items["source"]["url"] == "https://github.com/brfid/brfid.github.io"
+    assert config["params"]["author"] == "Bradley Fidler"
+    assert config["params"]["hideAuthor"] is True
     assert 'title: "Blog"' in section
     assert "draft: true" in archetype
     assert "preview-drafts:" in makefile
@@ -109,15 +112,16 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     assert 'class="skip-link" href="#main-content"' in base
     assert 'id="main-content" tabindex="-1"' in base
     assert 'aria-label="Primary navigation"' in header
-    assert '$currentPage.Section "posts"' in header
     assert 'aria-current="page"' in header
+    assert 'class="menu-companion-link"' in header
     assert 'aria-label="Post navigation"' in post_nav
     assert 'aria-label", `Switch to ${nextTheme} theme; ${currentTheme} theme is active`' in footer
     assert 'meta[name="theme-color"]' in footer
-    assert ">Site source</a>" in footer
-    assert ">VAX/PDP-11 build</a>" in footer
-    assert ">Hugo</a>" not in footer
-    assert ">PaperMod</a>" not in footer
+    assert ">Hugo</a>" in footer
+    assert ">PaperMod</a>" in footer
+    assert ">VAX/PDP-11 log</a>" in footer
+    assert ">Actions run</a>" in footer
+    assert ">Site source</a>" not in footer
 
 
 def test_content_templates_preserve_clear_summaries_and_semantics() -> None:
