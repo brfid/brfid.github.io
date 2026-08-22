@@ -15,30 +15,48 @@ _MISSING_CONSOLE_OUTPUT = "<em>(no console output captured)</em>"
 _CSS = """
 * { box-sizing: border-box; }
 body { font-family: ui-monospace, SFMono-Regular, Menlo, 'Courier New', monospace;
-       font-size: 12px; background: #0d1117; color: #e6edf3;
-       margin: 0; padding: 20px 24px; line-height: 1.6; }
-h1 { font-size: 13px; color: #8b949e; font-weight: normal; margin: 0 0 20px; }
-h1 a { color: #58a6ff; text-decoration: none; }
-h1 a:hover { text-decoration: underline; }
-details { margin: 0 0 4px; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; }
-summary { padding: 8px 14px; background: #161b22; cursor: pointer;
-          list-style: none; display: flex; align-items: baseline; gap: 10px;
-          user-select: none; }
+       font-size: 12px; background: #0e1510; color: #e7e3d4;
+       margin: 0; padding: clamp(12px, 3vw, 24px); line-height: 1.6; }
+a { color: #7fbf8e; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: #97d1a4; }
+a:focus-visible { outline: 2px solid #97d1a4; outline-offset: 3px; }
+summary:focus-visible { outline: 2px solid #97d1a4; outline-offset: -3px; }
+.log-shell { margin: 0 auto; max-width: 1100px; }
+.log-header { align-items: flex-start; border-bottom: 1px solid #334238; display: flex;
+              gap: 24px; justify-content: space-between; margin-bottom: 20px; padding-bottom: 18px; }
+.log-heading { min-width: 0; }
+h1 { color: #e7e3d4; font-size: 15px; font-weight: bold; line-height: 1.4; margin: 0; }
+.build-id { color: #9aa69b; font-size: 11.5px; margin: 4px 0 0; overflow-wrap: anywhere; }
+.log-intro { color: #a7b2a5; margin: 8px 0 0; max-width: 72ch; }
+.log-links { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 8px 16px; }
+details { margin: 0 0 4px; border: 1px solid #334238; border-radius: 6px; overflow: hidden; }
+summary { padding: 9px 14px; background: #172019; cursor: pointer;
+          list-style: none; display: grid; grid-template-columns: 10px max-content minmax(0, 1fr) max-content;
+          align-items: baseline; gap: 10px; min-height: 44px; user-select: none; }
 summary::-webkit-details-marker { display: none; }
-.arrow { color: #58a6ff; font-size: 10px; width: 10px; flex-shrink: 0; }
+.arrow { color: #7fbf8e; font-size: 10px; width: 10px; }
 details:not([open]) .arrow::after { content: "▶"; }
 details[open] .arrow::after { content: "▼"; }
-.step-name { color: #e6edf3; font-weight: bold; }
-.step-meta { color: #8b949e; flex: 1; }
-.step-ts   { color: #6e7681; font-size: 11px; }
+.step-name { color: #e7e3d4; font-weight: bold; }
+.step-meta { color: #a7b2a5; min-width: 0; overflow-wrap: anywhere; }
+.step-ts   { color: #9aa69b; font-size: 11.5px; white-space: nowrap; }
 pre { margin: 0; padding: 12px 16px; overflow-x: auto;
-      white-space: pre-wrap; word-break: break-all;
-      background: #0d1117; color: #c9d1d9;
-      border-top: 1px solid #30363d; font-size: 11.5px; line-height: 1.55; }
-.ts   { color: #6e7681; }
-.ok   { color: #3fb950; }
-.info { color: #58a6ff; }
-em { color: #6e7681; font-style: normal; }
+      white-space: pre; word-break: normal;
+      background: #0e1510; color: #d4d8cd;
+      border-top: 1px solid #334238; font-size: 11.5px; line-height: 1.55; }
+.ts   { color: #9aa69b; }
+.ok   { color: #97d1a4; }
+.info { color: #7fbf8e; }
+em { color: #9aa69b; font-style: normal; }
+@media (max-width: 620px) {
+  .log-header { display: block; }
+  .log-links { margin-top: 14px; }
+  summary { grid-template-columns: 10px minmax(0, 1fr); row-gap: 2px; }
+  .arrow { grid-row: 1 / span 3; margin-top: 3px; }
+  .step-name, .step-meta, .step-ts { grid-column: 2; }
+  .step-ts { white-space: normal; }
+  pre { overflow-wrap: anywhere; padding: 12px; white-space: pre-wrap; }
+}
 """
 
 
@@ -108,7 +126,7 @@ def _details(
     timestamp_html = f' <span class="step-ts">{html.escape(timestamp)}</span>' if timestamp else ""
     return (
         f"<details{open_attribute}>\n"
-        '  <summary><span class="arrow"></span>'
+        '  <summary><span class="arrow" aria-hidden="true"></span>'
         f'<span class="step-name">{title}</span>'
         f'<span class="step-meta">{meta}</span>{timestamp_html}</summary>\n'
         f"  <pre>{content_html}</pre>\n"
@@ -165,21 +183,29 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
     artifact_content = "\n".join(artifact_lines) if artifact_lines else "<em>(no events)</em>"
 
     escaped_build_id = html.escape(build_id)
-    heading = (
-        "vintage pipeline &middot; "
-        '<a href="https://github.com/brfid/brfid.github.io">brfid/brfid.github.io</a>'
-        f" &middot; {escaped_build_id}"
-    )
     parts = [
         f"""<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <title>{escaped_build_id} — vintage pipeline log</title>
 <style>{_CSS}</style>
 </head>
 <body>
-<h1>{heading}</h1>
+<div class="log-shell">
+<header class="log-header">
+  <div class="log-heading">
+    <h1 id="log-title">vintage pipeline</h1>
+    <p class="build-id">build {escaped_build_id}</p>
+    <p class="log-intro">Curated console output from the VAX and PDP-11 stages that produced this site's bio.</p>
+  </div>
+  <nav class="log-links" aria-label="Build log links">
+    <a href="/">Home</a>
+    <a href="https://github.com/brfid/brfid.github.io" rel="noopener noreferrer">Site source</a>
+  </nav>
+</header>
+<main id="build-log" aria-labelledby="log-title">
 """
     ]
     parts.append(_details("host", "pipeline setup", host_timestamp, host_content, open_by_default=True))
@@ -214,7 +240,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
         )
     )
     parts.append(_details("host", "artifact extraction", artifact_timestamp, artifact_content, open_by_default=True))
-    parts.append("</body>\n</html>\n")
+    parts.append("</main>\n</div>\n</body>\n</html>\n")
     return "".join(parts)
 
 

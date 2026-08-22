@@ -1,0 +1,80 @@
+/* A missing route uses the site's core type distinction: machine status in
+   Plex Mono, then human-facing recovery copy in Newsreader. */
+.error-page {
+  align-content: center;
+  display: grid;
+  gap: 0 2rem;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
+  min-height: clamp(20rem, 62vh, 34rem);
+}
+
+.error-code {
+  color: var(--forest);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  grid-row: 1;
+  letter-spacing: 0.08em;
+  margin: 0;
+  padding-top: 0.55rem;
+}
+
+.error-copy {
+  grid-column: 2;
+}
+
+.error-copy h1 {
+  font-size: clamp(2.3rem, 8vw, 3.4rem);
+  line-height: 1.05;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.error-copy > p {
+  color: var(--secondary);
+  margin: 1rem 0 0;
+  max-width: 34rem;
+}
+
+.error-links {
+  display: flex;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 0.84rem;
+  gap: 0.5rem 1.5rem;
+  list-style: none;
+  margin: 1.6rem 0 0;
+  padding: 0;
+}
+
+.error-links a {
+  color: var(--forest);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
+  transition: color 0.15s ease;
+}
+
+.error-links a:hover,
+.error-links a:focus-visible {
+  color: var(--interactive-hover);
+}
+
+.error-links a:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 0.25rem;
+}
+
+@media (max-width: 420px) {
+  .error-page {
+    display: block;
+    padding-top: 22vh;
+  }
+
+  .error-code {
+    padding: 0 0 0.75rem;
+  }
+
+  .error-copy {
+    display: block;
+  }
+}

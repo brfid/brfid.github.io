@@ -1,0 +1,16 @@
+{{- define "main" }}
+<section class="error-page" aria-labelledby="not-found-title">
+  <p class="error-code" aria-hidden="true">404</p>
+  <div class="error-copy">
+    <h1 id="not-found-title">Page not found</h1>
+    <p>That address does not point to a page on this site.</p>
+    <nav aria-label="Continue on this site">
+      <ul class="error-links">
+        <li><a href="{{ "" | relLangURL }}">Home</a></li>
+        <li><a href="{{ "posts/" | relLangURL }}">Blog</a></li>
+        <li><a href="{{ "resume/" | relLangURL }}">Resume</a></li>
+      </ul>
+    </nav>
+  </div>
+</section>
+{{- end }}{{/* end main */ -}}

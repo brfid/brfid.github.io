@@ -134,6 +134,10 @@ def build_pdf(
             page.pdf(
                 path=str(pdf_path),
                 print_background=True,
+                # Preserve the page's semantic structure for assistive
+                # technology and expose its headings as PDF outline entries.
+                tagged=True,
+                outline=True,
                 # Page size and margins come from the page's own `@page` rule, so
                 # the résumé's CSS is the single source for print geometry and the
                 # PDF column matches the on-screen measure.

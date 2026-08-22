@@ -1,0 +1,84 @@
+/* Article-list and long-form content affordances. */
+
+.section-feed-link {
+  align-items: center;
+  color: var(--secondary);
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  gap: 0.35rem;
+  letter-spacing: 0.02em;
+  margin-inline-start: 0.65rem;
+  min-height: 2rem;
+  padding-inline: 0.15rem;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  vertical-align: 0.2em;
+}
+
+.section-feed-link svg {
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+.section-feed-link:hover,
+.section-feed-link:focus-visible {
+  color: var(--interactive-hover);
+}
+
+.entry-link:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 3px;
+}
+
+.md-content .anchor {
+  color: var(--secondary);
+  display: inline-flex;
+  font-weight: 500;
+  margin-inline-start: 0.5em;
+  opacity: 0;
+}
+
+.md-content h1:hover .anchor,
+.md-content h2:hover .anchor,
+.md-content h3:hover .anchor,
+.md-content h4:hover .anchor,
+.md-content h5:hover .anchor,
+.md-content h6:hover .anchor,
+.md-content .anchor:focus-visible {
+  opacity: 1;
+}
+
+.md-content .anchor:focus-visible {
+  outline: 2px solid var(--forest);
+  outline-offset: 2px;
+}
+
+.maintenance-grid th[scope="row"] {
+  background: var(--entry);
+  font-weight: 600;
+  vertical-align: top;
+}
+
+.table-caption-sr {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 600px) {
+  .md-content .maintenance-grid th,
+  .md-content .maintenance-grid td {
+    min-width: 7.5rem;
+    padding: 0.35rem 0.5rem;
+  }
+}

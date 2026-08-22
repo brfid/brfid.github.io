@@ -147,7 +147,7 @@ jobs:
           test -s site/resume.pdf || { echo "::error::public resume PDF is missing"; exit 1; }
           test ! -e site/bradley-fidler-resume.pdf || { echo "::error::private application PDF was published"; exit 1; }
           grep -Fq '/resume/' site/index.html || { echo "::error::landing page is missing the Resume link"; exit 1; }
-          grep -Fq '/resume.pdf' site/index.html || { echo "::error::landing page is missing the PDF download link"; exit 1; }
+          grep -Fq '/resume.pdf' site/resume/index.html || { echo "::error::Resume page is missing the PDF download link"; exit 1; }
 
           if grep -Fq 'href="tel:' site/resume/index.html; then
             echo "::error::public resume HTML contains a telephone link"
@@ -158,6 +158,12 @@ jobs:
           grep -Fq 'brfid@icloud.com' /tmp/resume.txt
           if grep -Eq '\+1-[0-9]{3}-[0-9]{3}-[0-9]{4}' /tmp/resume.txt; then
             echo "::error::public resume PDF contains a telephone number"
+            exit 1
+          fi
+
+          pdfinfo site/resume.pdf > /tmp/resume-pdf-info.txt
+          if ! grep -Eq '^Tagged:[[:space:]]+yes$' /tmp/resume-pdf-info.txt; then
+            echo "::error::public resume PDF is not tagged for accessibility"
             exit 1
           fi
 

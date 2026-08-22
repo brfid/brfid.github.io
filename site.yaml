@@ -1,5 +1,5 @@
 name: Bradley Fidler
-headline: Principal Technical Writer
+headline: Principal Technical Writer | Documentation Platforms
 # The landing bio text lives in resume.yaml `basics.summary` (one bio source).
 # site.yaml owns the public identity and links.
 links:
@@ -18,6 +18,3 @@ links:
   - label: Strava
     icon: strava
     url: https://www.strava.com/athletes/brfid
-  - label: RSS
-    icon: rss
-    url: https://brfid.github.io/index.xml

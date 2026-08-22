@@ -29,10 +29,7 @@ The second question adds time. An engineer can verify behavior during launch and
 
 Carry one machine-testable claim through all four cells: "`GET /foo?mode=summary` returns HTTP `200` in the supported release environment."
 
-| | Asked once | Asked again over time |
-| --- | --- | --- |
-| **Can answer the claim** | **Orphaned knowledge.** A writer sends the request while drafting, but nothing reconnects the page after `/foo` changes. | **Maintained.** A contract test runs on a schedule and whenever the `/foo` handler or contract changes; its result routes to a named maintainer. |
-| **Cannot answer the claim** | **Different question, once.** A reviewer checks only the rendered layout. | **Different question, recurring.** CI keeps checking Markdown form and OpenAPI structure. |
+{{< maintenance-grid >}}
 
 The bottom row is useful when its scope is explicit. A recurring linter keeps reporting on form; it does not report the endpoint's current response. A change trigger also cannot answer the claim. It becomes useful by routing the page to a test or reviewer that can. The trigger and the reviewer together create the maintained path.
 

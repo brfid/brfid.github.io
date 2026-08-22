@@ -29,7 +29,10 @@ def test_production_config_publishes_blog_mechanics() -> None:
     assert config["pagination"]["pagerSize"] == 10
     assert config["params"]["mainSections"] == ["posts"]
     assert config["params"]["ShowRssButtonInSectionTermList"] is True
+    assert set(menu_items) == {"posts", "resume"}
     assert menu_items["posts"]["url"] == "/posts/"
+    assert menu_items["resume"]["url"] == "/resume/"
+    assert "params" not in menu_items["resume"]
     assert 'title: "Blog"' in section
     assert "draft: true" in archetype
     assert "preview-drafts:" in makefile
@@ -71,7 +74,12 @@ def test_deploy_requires_phone_free_resume_html_and_pdf() -> None:
     assert "make resume-pdf-public PYTHON=python" in workflow
     assert "test -s site/resume/index.html" in workflow
     assert "test -s site/resume.pdf" in workflow
+    assert "grep -Fq '/resume.pdf' site/resume/index.html" in workflow
+    assert "Resume page is missing the PDF download link" in workflow
     assert "pdftotext site/resume.pdf" in workflow
+    assert "pdfinfo site/resume.pdf" in workflow
+    assert "'^Tagged:[[:space:]]+yes$'" in workflow
+    assert "public resume PDF is not tagged for accessibility" in workflow
     assert "public resume PDF contains a telephone number" in workflow
     assert "test ! -e site/bradley-fidler-resume.pdf" in workflow
     assert "private_resume_path" not in workflow
@@ -89,3 +97,41 @@ def test_deploy_requires_blog_routes_and_feeds() -> None:
     assert "public RSS feed contains the resume" in workflow
     assert "Disallow: /index.xml" in robots
     assert "Disallow: /posts/index.xml" in robots
+
+
+def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
+    """Repo-owned chrome must retain its landmarks, current state, and skip path."""
+    base = (ROOT / "hugo" / "layouts" / "baseof.html").read_text(encoding="utf-8")
+    header = (ROOT / "hugo" / "layouts" / "_partials" / "header.html").read_text(encoding="utf-8")
+    post_nav = (ROOT / "hugo" / "layouts" / "_partials" / "post_nav_links.html").read_text(encoding="utf-8")
+    footer = (ROOT / "hugo" / "layouts" / "partials" / "footer.html").read_text(encoding="utf-8")
+
+    assert 'class="skip-link" href="#main-content"' in base
+    assert 'id="main-content" tabindex="-1"' in base
+    assert 'aria-label="Primary navigation"' in header
+    assert '$currentPage.Section "posts"' in header
+    assert 'aria-current="page"' in header
+    assert 'aria-label="Post navigation"' in post_nav
+    assert 'aria-label", `Switch to ${nextTheme} theme; ${currentTheme} theme is active`' in footer
+    assert 'meta[name="theme-color"]' in footer
+    assert ">Site source</a>" in footer
+    assert ">VAX/PDP-11 build</a>" in footer
+    assert ">Hugo</a>" not in footer
+    assert ">PaperMod</a>" not in footer
+
+
+def test_content_templates_preserve_clear_summaries_and_semantics() -> None:
+    """Blog cards and dense content must keep their explicit, accessible structure."""
+    list_template = (ROOT / "hugo" / "layouts" / "list.html").read_text(encoding="utf-8")
+    resume_template = (ROOT / "hugo" / "layouts" / "_default" / "resume.html").read_text(encoding="utf-8")
+    grid = (ROOT / "hugo" / "layouts" / "shortcodes" / "maintenance-grid.html").read_text(encoding="utf-8")
+
+    assert "with .Description" in list_template
+    assert ".Summary" in list_template
+    assert 'class="section-feed-link"' in list_template
+    assert 'href="/resume.pdf"' in resume_template
+    assert '<h3 class="resume-item-title' in resume_template
+    assert '<h4 class="resume-item-title resume-role-title"' in resume_template
+    assert '<caption class="table-caption-sr">' in grid
+    assert 'scope="col"' in grid
+    assert 'scope="row"' in grid

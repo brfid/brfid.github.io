@@ -1,28 +1,18 @@
 {{- if not (.Param "hideFooter") }}
 <footer class="footer">
-    {{- if not site.Params.footer.hideCopyright }}
+    {{- $show_copyright := not site.Params.footer.hideCopyright }}
+    {{- if $show_copyright }}
         {{- if site.Copyright }}
         <span>{{ site.Copyright | markdownify }}</span>
         {{- else }}
         <span>&copy; {{ now.Year }} <a href="{{ "" | absLangURL }}">{{ site.Title }}</a></span>
         {{- end }}
-        {{- print " · "}}
     {{- end }}
-
-    {{- with site.Params.footer.text }}
-        {{ . | markdownify }}
-        {{- print " · "}}
-    {{- end }}
-
-    <span>
-        <a href="https://gohugo.io/?utm_source=papermod" rel="noopener" target="_blank">Hugo</a> &amp;
-        <a href="https://github.com/adityatelange/hugo-PaperMod/" rel="noopener" target="_blank">PaperMod</a>
-    </span>
+    <span class="footer-item">{{ if $show_copyright }}<span class="footer-separator" aria-hidden="true"> · </span>{{ end }}<a href="https://github.com/brfid/brfid.github.io" target="_blank" rel="noopener noreferrer">Site source</a></span>
 
     {{- $bio := hugo.Data.bio -}}
     {{- if or $bio.build_log $bio.build_run_url }}
-    {{- print " · "}}
-    <span>Build: {{ if $bio.build_log }}<a href="/build.log.html"{{ with $bio.build_id }} title="{{ . }}"{{ end }}>VAX/PDP-11 log</a>{{ end }}{{ if and $bio.build_log $bio.build_run_url }} &amp; {{ end }}{{ with $bio.build_run_url }}<a href="{{ . | safeURL }}" target="_blank" rel="noopener noreferrer">Actions run</a>{{ end }}</span>
+    <span class="footer-item"><span class="footer-separator" aria-hidden="true"> · </span>{{ if $bio.build_log }}<a href="{{ "build.log.html" | relURL }}"{{ with $bio.build_id }} title="Build {{ . }}"{{ end }}>VAX/PDP-11 build</a>{{ end }}{{ if and $bio.build_log $bio.build_run_url }}<span class="footer-separator" aria-hidden="true"> · </span>{{ end }}{{ with $bio.build_run_url }}<a href="{{ . | safeURL }}" target="_blank" rel="noopener noreferrer">Actions</a>{{ end }}</span>
     {{- end }}
 </footer>
 {{- end }}
@@ -52,16 +42,20 @@
         }
     }
 
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    document.querySelectorAll('a[href^="#"]:not(.skip-link)').forEach(anchor => {
         anchor.addEventListener("click", function (e) {
+            const id = decodeURIComponent(this.getAttribute("href").substring(1));
+            const target = document.getElementById(id);
+            if (!target) {
+                return;
+            }
             e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
             if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                target.scrollIntoView({
                     behavior: "smooth"
                 });
             } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+                target.scrollIntoView();
             }
             if (id === "top") {
                 history.replaceState(null, null, " ");
@@ -88,16 +82,38 @@
 
 {{- if (not site.Params.disableThemeToggle) }}
 <script>
-    document.getElementById("theme-toggle").addEventListener("click", () => {
+    (() => {
         const html = document.querySelector("html");
-        if (html.dataset.theme === "dark") {
-            html.dataset.theme = 'light';
-            localStorage.setItem("pref-theme", 'light');
-        } else {
-            html.dataset.theme = 'dark';
-            localStorage.setItem("pref-theme", 'dark');
-        }
-    })
+        const toggle = document.getElementById("theme-toggle");
+        const themeColor = document.querySelector('meta[name="theme-color"]');
+
+        const syncThemeControl = () => {
+            const currentTheme = html.dataset.theme === "dark" ? "dark" : "light";
+            const nextTheme = currentTheme === "dark" ? "light" : "dark";
+            toggle.setAttribute("aria-label", `Switch to ${nextTheme} theme; ${currentTheme} theme is active`);
+            toggle.title = `Switch to ${nextTheme} theme (Alt + T)`;
+            if (themeColor) {
+                themeColor.content = getComputedStyle(html).getPropertyValue("--theme").trim();
+            }
+        };
+
+        syncThemeControl();
+
+        toggle.addEventListener("click", () => {
+            const nextTheme = html.dataset.theme === "dark" ? "light" : "dark";
+            html.dataset.theme = nextTheme;
+            localStorage.setItem("pref-theme", nextTheme);
+            syncThemeControl();
+        });
+
+        const colorScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        colorScheme.addEventListener("change", event => {
+            if (!localStorage.getItem("pref-theme")) {
+                html.dataset.theme = event.matches ? "dark" : "light";
+                syncThemeControl();
+            }
+        });
+    })();
 </script>
 {{- end }}
 
