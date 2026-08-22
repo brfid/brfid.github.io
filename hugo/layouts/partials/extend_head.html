@@ -1,16 +1,11 @@
-{{- /* Fonts are self-hosted (see assets/css/extended/typography.css). Preload the
-     two above-the-fold faces (serif body/name, mono metadata) so first paint
-     doesn't wait on the CSS to request them. */}}
+{{- /* Preload the two self-hosted fonts used above the fold. */}}
 <link rel="preload" href="/fonts/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/plex-mono-400-latin.woff2" as="font" type="font/woff2" crossorigin>
-{{- /* SVG favicon: modern browsers prefer this over the .ico PaperMod injects. */}}
+{{- /* Prefer the SVG favicon over PaperMod's ICO fallback. */}}
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-{{- /* Keep every Hugo-rendered surface out of search indexes. This must stay
-     crawlable in robots.txt so crawlers can observe the directive. */}}
+{{- /* Keep every Hugo-rendered page out of search indexes. */}}
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
-{{- /* PaperMod's no-JavaScript fallback switches theme variables through the
-     OS preference. Restate this site's palette inside noscript so that path
-     keeps the same forest-and-phosphor art direction. */}}
+{{- /* Apply the site palette when PaperMod's JavaScript theme switcher is absent. */}}
 <noscript>
   <style>
     @media (prefers-color-scheme: dark) {
@@ -25,7 +20,7 @@
         --code-bg: #1c231d;
         --code-block-bg: #171d18;
         --forest: #7fbf8e;
-        --forest-strong: #97d1a4;
+        --interactive-hover: #b8f5c2;
       }
     }
   </style>

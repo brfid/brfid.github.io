@@ -6,12 +6,7 @@ import pytest
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Apply default test markers by directory.
-
-    Marker policy:
-    - tests/integration/** -> integration
-    - everything else -> unit
-    """
+    """Mark tests under tests/integration and treat all others as unit tests."""
     for item in items:
         path = Path(str(item.fspath)).as_posix()
 

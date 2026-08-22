@@ -1,26 +1,14 @@
-# Dead Ends and Retired Paths
+# Retired pipeline approaches
 
-Purpose: explicitly mark archived approaches that are not part of the current pipeline so active work stays focused.
+Use [the active pipeline guide](../integration/INDEX.md) and `scripts/edcloud-vintage-runner.sh` for current work.
 
-Current active path:
-- `docs/integration/INDEX.md`
-- `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md`
-- `scripts/edcloud-vintage-runner.sh`
-
-## Dead Ends
-
-| Path | Status | Why retired |
-|------|--------|-------------|
-| screen + telnet + sleep orchestration | Retired | Timing-based heredoc injection with no handshake; inherently fragile. VAX login prompt unreliable after multiple rapid connections. Replaced by pexpect. Scripts deleted from `scripts/`. |
-| docker-compose.production.yml | Retired | Pre-pexpect compose file exposing telnet console ports. Replaced by `docker build`/`docker run` in `edcloud-vintage-runner.sh`. File removed from repo root. |
-| FTP (VAX guest → external FTP server) | Retired | VAX guest could not reliably reach the FTP server/container. Networking and routing inside the SIMH container were the issue. |
-| FTP (VAX → PDP-11 directly) | Not viable | PDP-11 2.11BSD `unix` kernel has no working Ethernet. `netnix` kernel crashes on `xq` init. Console-based (uuencode or pexpect heredoc) is the only viable file transfer path to PDP-11. |
-| uuencode/uudecode console transfer (screen/telnet era) | Retired | Screen/telnet implementation was unreliable. Revisited with pexpect and is now the active UUCP framing mechanism: VAX uuencodes `brad.bio.roff`; host captures `brad.bio.uu`; PDP-11 `uudecode`s to recover it. Not a dead end — this path is validated and in production. |
-| TS11 tape as primary transport | Retired | Technically validated, not selected; adds complexity and host-side extraction constraints. |
-| ARPANET IMP chain (VAX→IMP→IMP→PDP-10) | Retired | Emulator host-link framing mismatch (`bad magic`) and scope pivot to VAX↔PDP-11 artifact path. |
-| Chaosnet / ITS path | Retired | Did not clear blocker chain; not a pipeline dependency. |
-| PDP-10 KS10/TOPS-20 transfer path | Retired | Runtime and compatibility blockers; does not serve VAX↔PDP-11 objective. |
-
-## Archive navigation
-
-Historical experiment notes are in `docs/archive/` organized by host type. Use this file and `docs/integration/INDEX.md` as the navigation authority.
+| Approach | Status | Current constraint or replacement |
+|---|---|---|
+| GNU screen, telnet, and fixed-delay console control | Retired | `pexpect` drives SIMH through standard input and output and waits for explicit markers. |
+| `docker-compose.production.yml` | Retired | The runner uses direct `docker pull`, `docker build`, and `docker run` commands. |
+| VAX guest to external FTP server | Retired | The host captures the VAX-generated UUE spool from the console. |
+| Direct VAX to PDP-11 FTP | Unavailable | The PDP-11 `unix` kernel has no working Ethernet; `netnix` crashes during `xq` initialization. |
+| TS11 tape transfer | Retired | The host transfers the UUE spool between guest consoles. |
+| ARPANET IMP chain | Retired | The KS10 SIMH IMP device emits raw Ethernet-style frames, while the H316 simulator expects BBN 1822 leaders. |
+| Chaosnet and ITS path | Retired | The incomplete responder and topology do not provide a production transport. |
+| PDP-10 KS10 and TOPS-20 path | Retired | The active artifact path uses VAX 4.3BSD and PDP-11 2.11BSD. |

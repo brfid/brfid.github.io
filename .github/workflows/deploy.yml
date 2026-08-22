@@ -1,4 +1,4 @@
-name: Publish Site
+name: Publish site
 
 on:
   push:
@@ -6,14 +6,12 @@ on:
       - main
   workflow_dispatch:
 
-# Skip deploy when commit message contains [nopublish].
-# Example: git commit -m "wip: fix typo [nopublish]"
+# A commit message containing [nopublish] skips this workflow.
 
 permissions:
   contents: read
   pages: write
   id-token: write
-  deployments: write
 
 concurrency:
   group: "pages"
@@ -24,7 +22,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[nopublish]')"
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     timeout-minutes: 70
 
@@ -34,13 +32,13 @@ jobs:
         with:
           submodules: true
 
-      - name: Setup Hugo
+      - name: Set up Hugo
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: '0.163.3'
           extended: true
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -49,24 +47,18 @@ jobs:
 
       - name: Install PDF dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .
-          python -m playwright install --with-deps chromium
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -e .
+          .venv/bin/python -m playwright install --with-deps chromium
           sudo apt-get install -y poppler-utils
 
-      # The vintage pipeline runs directly on this runner. ubuntu-latest is
-      # amd64 (matching the ghcr.io images) and ships docker, git and python3,
-      # which is everything scripts/edcloud-vintage-runner.sh needs — there is
-      # no execution host to start or stop.
-      #
-      # The runner does `exec 3>&1` *before* redirecting its own stdout to a log
-      # file, so the base64 artifact markers land on our stdout while the
-      # verbose pipeline log stays in $LOG_DIR. That is what lets the
-      # marker-extraction awk below stay unchanged from the SSM era.
+      # Artifact markers remain on stdout; verbose output goes to LOG_DIR.
       - name: Run vintage pipeline
         id: vintage
         env:
           GIT_SHA: ${{ github.sha }}
+          ALLOW_LOCAL_IMAGE_BUILD: "0"
         run: |
           set -euo pipefail
 
@@ -80,18 +72,12 @@ jobs:
             exit 1
           fi
 
-          # The SIMH containers run as root and bind-mount build/vintage, so the
-          # artifacts they write land root-owned. This step runs as `runner`, and
-          # the extraction below redirects onto build/vintage/brad.bio.txt, which
-          # fails with EACCES against a root-owned file. Under SSM the whole
-          # pipeline ran as root, so this never surfaced until the port.
+          # The root-owned bind-mount artifacts must be writable by this step.
           sudo chown -R "$(id -u):$(id -g)" build/vintage
 
           mkdir -p hugo/static build/vintage
 
-          # brad.bio.txt (the nroff-rendered landing bio) is the pipeline's only
-          # published artifact. It is parsed into hugo/data/bio.yaml below; the
-          # raw text stays in build/vintage and is not itself served.
+          # The rendered bio is the pipeline's only page-content input.
           awk '/^<<<BRAD_BIO_TXT_BASE64_BEGIN>>>/{flag=1;next}/^<<<BRAD_BIO_TXT_BASE64_END>>>/{flag=0}flag' /tmp/vintage-stdout.txt \
             | tr -d '\n' > /tmp/brad.bio.txt.b64
           if [[ ! -s /tmp/brad.bio.txt.b64 ]]; then
@@ -100,7 +86,7 @@ jobs:
             exit 1
           fi
           base64 -d /tmp/brad.bio.txt.b64 > build/vintage/brad.bio.txt
-          # Defense in depth against a stale bio file being served directly.
+          # Never serve the raw bio if a stale generated file exists.
           rm -f hugo/static/brad.bio.txt
 
           echo "brad.bio.txt sha256: $(sha256sum build/vintage/brad.bio.txt | cut -d' ' -f1)"
@@ -113,7 +99,6 @@ jobs:
           fi
           base64 -d /tmp/build.log.b64 > hugo/static/build.log.html
 
-          # Extract machine-readable pipeline status JSON
           awk '/^<<<PIPELINE_STATUS_JSON_BASE64_BEGIN>>>/{flag=1;next}/^<<<PIPELINE_STATUS_JSON_BASE64_END>>>/{flag=0}flag' /tmp/vintage-stdout.txt \
             | tr -d '\n' > /tmp/pipeline-status.json.b64
           if [[ ! -s /tmp/pipeline-status.json.b64 ]]; then
@@ -121,105 +106,33 @@ jobs:
             exit 1
           fi
           base64 -d /tmp/pipeline-status.json.b64 > hugo/static/pipeline-status.json
-          python3 -m json.tool hugo/static/pipeline-status.json >/dev/null
+          .venv/bin/python -m json.tool hugo/static/pipeline-status.json >/dev/null
 
-      - name: Sync site and resume data for Hugo
-        run: |
-          make sync-site-data sync-resume-data
+          .venv/bin/python -m resume_generator.vintage_contract \
+            build/vintage/brad.bio.txt \
+            site.yaml \
+            resume.yaml
 
       - name: Generate bio data for Hugo
         run: |
-          python3 resume_generator/bio_yaml.py \
+          .venv/bin/python -m resume_generator.bio_yaml \
             build/vintage/brad.bio.txt \
             hugo/data/bio.yaml \
-            hugo/static/build.log.html \
-            "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            --build-log hugo/static/build.log.html \
+            --pipeline-status hugo/static/pipeline-status.json \
+            --build-run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Build Hugo site and public resume PDF
-        run: make resume-pdf-public PYTHON=python
+        run: make resume-pdf-public
 
-      - name: Verify public resume
-        run: |
-          set -euo pipefail
-
-          test -s site/resume/index.html || { echo "::error::public resume page is missing"; exit 1; }
-          test -s site/about/index.html || { echo "::error::resume alias is missing"; exit 1; }
-          test -s site/resume.pdf || { echo "::error::public resume PDF is missing"; exit 1; }
-          test ! -e site/bradley-fidler-resume.pdf || { echo "::error::private application PDF was published"; exit 1; }
-          grep -Fq '/resume/' site/index.html || { echo "::error::landing page is missing the Resume link"; exit 1; }
-          grep -Fq '/resume.pdf' site/resume/index.html || { echo "::error::Resume page is missing the PDF download link"; exit 1; }
-
-          if grep -Fq 'href="tel:' site/resume/index.html; then
-            echo "::error::public resume HTML contains a telephone link"
-            exit 1
-          fi
-
-          pdftotext site/resume.pdf /tmp/resume.txt
-          grep -Fq 'brfid@icloud.com' /tmp/resume.txt
-          if grep -Eq '\+1-[0-9]{3}-[0-9]{3}-[0-9]{4}' /tmp/resume.txt; then
-            echo "::error::public resume PDF contains a telephone number"
-            exit 1
-          fi
-
-          pdfinfo site/resume.pdf > /tmp/resume-pdf-info.txt
-          if ! grep -Eq '^Tagged:[[:space:]]+yes$' /tmp/resume-pdf-info.txt; then
-            echo "::error::public resume PDF is not tagged for accessibility"
-            exit 1
-          fi
-
-      - name: Verify blog surface
-        run: |
-          set -euo pipefail
-
-          test -s site/posts/index.html || { echo "::error::Blog index is missing"; exit 1; }
-          test -s site/index.xml || { echo "::error::public RSS feed is missing"; exit 1; }
-          test -s site/posts/index.xml || { echo "::error::Blog RSS feed is missing"; exit 1; }
-          grep -Fq '/posts/' site/index.html || { echo "::error::landing page is missing the Blog link"; exit 1; }
-          grep -Fq '/posts/index.xml' site/posts/index.html || { echo "::error::Blog index is missing its RSS link"; exit 1; }
-
-          if grep -Fq 'https://brfid.github.io/resume/' site/index.xml; then
-            echo "::error::public RSS feed contains the resume"
-            exit 1
-          fi
-
-      - name: Verify build provenance links
+      - name: Verify production output
         env:
           BUILD_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if ! grep -Fq 'href="/build.log.html"' site/index.html; then
-            echo "::error::rendered homepage is missing the published build-log link"
-            exit 1
-          fi
-          if ! grep -Fq "href=\"${BUILD_RUN_URL}\"" site/index.html; then
-            echo "::error::rendered homepage is missing the exact GitHub Actions run link"
-            exit 1
-          fi
-
-      - name: Verify indexing stays disabled
-        run: |
-          set -euo pipefail
-
-          test ! -e site/sitemap.xml || { echo "::error::production build published a sitemap"; exit 1; }
-          grep -Fxq 'Allow: /' site/robots.txt
-          grep -Fxq 'Disallow: /pipeline-status.json' site/robots.txt
-          grep -Fxq 'Disallow: /resume.pdf' site/robots.txt
-          grep -Fxq 'Disallow: /index.xml' site/robots.txt
-          grep -Fxq 'Disallow: /posts/index.xml' site/robots.txt
-          if grep -Fxq 'Disallow: /' site/robots.txt; then
-            echo "::error::robots.txt blocks crawlers from observing the HTML noindex directive"
-            exit 1
-          fi
-
-          while IFS= read -r page; do
-            if ! grep -Fq '<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">' "$page"; then
-              echo "::error::$page is missing the site-wide noindex directive"
-              exit 1
-            fi
-            if grep -Fq '<meta name="robots" content="index, follow">' "$page"; then
-              echo "::error::$page contains a conflicting index directive"
-              exit 1
-            fi
-          done < <(find site -type f -name '*.html' -print)
+          .venv/bin/python scripts/verify_site.py site \
+            --production \
+            --resume-yaml resume.yaml \
+            --build-run-url "$BUILD_RUN_URL"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -242,9 +155,7 @@ jobs:
         if: steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v4
 
-      # The full pipeline log stays on the runner, so on failure it has to be
-      # uploaded before the job ends. The runner only prints its last 80 lines
-      # to stdout, which is rarely enough to diagnose a SIMH console hang.
+      # Preserve the full log when the runner's stdout tail is insufficient.
       - name: Upload vintage pipeline log
         if: failure() && steps.vintage.outputs.log_file != ''
         continue-on-error: true
@@ -260,7 +171,7 @@ jobs:
       - name: Summary
         run: |
           PAGE_URL="${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url || 'https://brfid.github.io' }}"
-          echo "## Deployment Complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Deployment complete" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "URL: $PAGE_URL" >> "$GITHUB_STEP_SUMMARY"
           echo "SHA: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"

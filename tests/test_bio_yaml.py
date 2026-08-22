@@ -4,20 +4,19 @@ from __future__ import annotations
 
 import pathlib
 
+import pytest
 import yaml as _yaml
 
 from resume_generator.bio_yaml import (
     BioData,
-    _read_build_id,
+    _read_successful_build_id,
     bio_to_yaml,
     main,
     parse_bio_txt,
+    require_complete_bio,
 )
 
-# Representative nroff output: name, headline, blank line, then prose that
-# nroff filled and justified to a fixed measure. The double spaces and hard
-# line breaks are justification/fill artifacts (the pipeline runs `.nh`, so
-# there are no mid-word hyphen breaks); parse_bio_txt collapses them to prose.
+# Nroff-filled input with justification spacing and hard line breaks.
 SAMPLE_BIO = """\
 Bradley Fidler
 Principal Technical Writer
@@ -32,8 +31,6 @@ def test_parse_basic_fields() -> None:
     data = parse_bio_txt(SAMPLE_BIO)
     assert data["name"] == "Bradley Fidler"
     assert data["principal_headline"] == "Principal Technical Writer"
-    # The prose is reflowed: fill line breaks and justification double-spaces
-    # are collapsed back to a single flowing, single-spaced sentence.
     assert data["about"].startswith("I run technical documentation")
     assert "\n" not in data["about"]
     assert "  " not in data["about"]
@@ -53,7 +50,6 @@ def test_parse_about_reflows_multiple_paragraphs() -> None:
         "wrapped across lines.\n"
     )
     data = parse_bio_txt(text)
-    # Each paragraph collapses to one line; a blank line separates them.
     assert data["about"] == ("First paragraph wrapped across two lines.\n\nSecond paragraph also wrapped across lines.")
 
 
@@ -116,12 +112,11 @@ def test_bio_to_yaml_special_chars() -> None:
         "about": "Sum",
     }
     out = bio_to_yaml(data)
-    # json.dumps escapes double quotes; the result must remain valid YAML.
     assert _yaml.safe_load(out)["name"] == 'Name "Quoted"'
 
 
 def test_bio_to_yaml_about_round_trips_through_yaml() -> None:
-    """The reflowed prose must survive serialisation unchanged."""
+    """The reflowed prose must survive serialization unchanged."""
     data = parse_bio_txt(SAMPLE_BIO)
     out = bio_to_yaml(data)
     parsed = _yaml.safe_load(out)
@@ -129,14 +124,25 @@ def test_bio_to_yaml_about_round_trips_through_yaml() -> None:
     assert "I run technical" in parsed["about"]
 
 
-def test_read_build_id_present(tmp_path: pathlib.Path) -> None:
-    log = tmp_path / "build.log.html"
-    log.write_text("<title>build-20260301-120000 — vintage pipeline log</title>\n")
-    assert _read_build_id(log) == "build-20260301-120000"
+def test_require_complete_bio_rejects_incomplete_shape() -> None:
+    with pytest.raises(ValueError, match="headline, about"):
+        require_complete_bio(BioData(name="Only Name"))
 
 
-def test_read_build_id_missing(tmp_path: pathlib.Path) -> None:
-    assert _read_build_id(tmp_path / "nonexistent.html") == ""
+def test_read_build_id_from_success_status(tmp_path: pathlib.Path) -> None:
+    status = tmp_path / "pipeline-status.json"
+    status.write_text(
+        '{"build_id": "build-20260301-120000", "result": "success", "exit_code": 0}\n',
+        encoding="utf-8",
+    )
+    assert _read_successful_build_id(status) == "build-20260301-120000"
+
+
+def test_read_build_id_rejects_failure_status(tmp_path: pathlib.Path) -> None:
+    status = tmp_path / "pipeline-status.json"
+    status.write_text('{"build_id": "build-failed", "result": "failure", "exit_code": 1}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="successful"):
+        _read_successful_build_id(status)
 
 
 def test_main_writes_yaml(tmp_path: pathlib.Path) -> None:
@@ -144,13 +150,19 @@ def test_main_writes_yaml(tmp_path: pathlib.Path) -> None:
     src.write_text(SAMPLE_BIO, encoding="utf-8")
     dst = tmp_path / "bio.yaml"
     build_log = tmp_path / "build.log.html"
-    build_log.write_text("<title>build-test-123 — vintage pipeline log</title>\n")
+    build_log.write_text("<title>presentation wording is not metadata</title>\n")
+    status = tmp_path / "pipeline-status.json"
+    status.write_text('{"build_id": "build-test-123", "result": "success", "exit_code": 0}\n', encoding="utf-8")
 
     rc = main(
         [
             str(src),
             str(dst),
+            "--build-log",
             str(build_log),
+            "--pipeline-status",
+            str(status),
+            "--build-run-url",
             "https://github.com/example/site/actions/runs/123456",
         ]
     )
@@ -173,7 +185,9 @@ def test_main_omits_build_log_metadata_when_log_is_missing(tmp_path: pathlib.Pat
         [
             str(src),
             str(dst),
+            "--build-log",
             str(tmp_path / "missing-build.log.html"),
+            "--build-run-url",
             "https://github.com/example/site/actions/runs/123456",
         ]
     )
@@ -188,7 +202,16 @@ def test_main_omits_build_log_metadata_when_log_is_missing(tmp_path: pathlib.Pat
 def test_main_missing_src(tmp_path: pathlib.Path) -> None:
     dst = tmp_path / "bio.yaml"
     rc = main([str(tmp_path / "missing.txt"), str(dst)])
-    assert rc == 0
+    assert rc == 1
+    assert not dst.exists()
+
+
+def test_main_rejects_incomplete_bio(tmp_path: pathlib.Path) -> None:
+    src = tmp_path / "brad.bio.txt"
+    src.write_text("Only Name\n", encoding="utf-8")
+    dst = tmp_path / "bio.yaml"
+
+    assert main([str(src), str(dst)]) == 1
     assert not dst.exists()
 
 

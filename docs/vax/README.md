@@ -1,12 +1,26 @@
-# VAX stage (Stage B)
+# VAX stage B
 
-The VAX (4.3BSD on SIMH) is Stage B of the vintage pipeline. It compiles `bradman.c` and runs the binary to transform `bio.vintage.yaml` into `brad.bio.roff` (troff), then uuencodes it into `brad.bio.uu` for delivery to the PDP-11. For the end-to-end data flow see [`../integration/INDEX.md`](../integration/INDEX.md); for the as-built gotchas see [`../integration/operations/PEXPECT-PIPELINE-SPEC.md`](../integration/operations/PEXPECT-PIPELINE-SPEC.md).
+Stage B runs `bradman.c` on a SIMH VAX with 4.3BSD. It converts the public bio input to troff, encodes the troff as a UUCP spool, and returns the spool to the host.
 
-## Why a YAML subset?
+For the complete flow and operator commands, see [the pipeline operations guide](../integration/INDEX.md). For console behavior, see [the pexpect implementation reference](../integration/operations/PEXPECT-PIPELINE-SPEC.md).
 
-Full YAML is too complex to parse reliably with a portable C program on a 4.3BSD VAX. The host (`resume_generator/vintage_yaml.py`) flattens `site.yaml` into `build/vintage/bio.vintage.yaml`: a small, single-line-scalar, ASCII-only, versioned subset that `bradman.c` can parse with a hand-written scanner.
+## Guest input contract
 
-## Build and run (on the 4.3BSD VAX)
+`resume_generator/vintage_yaml.py` writes `build/vintage/bio.vintage.yaml` with these keys in order:
+
+1. `schemaVersion`
+2. `buildDate`
+3. `bioName`
+4. `bioHeadline`
+5. `bioProfile`
+
+Every value is a required, quoted, single-line, printable ASCII string. `bioName` and `bioHeadline` come from `site.yaml`; `bioProfile` comes from `resume.yaml` `basics.summary`.
+
+The generated mapping contains exactly these five keys. The host rejects missing, empty, multiline, nonprintable, or non-ASCII required values before starting SIMH.
+
+## Run the guest commands
+
+With `bradman.c` and `bio.vintage.yaml` in the current guest directory, run:
 
 ```sh
 cc -O -o bradman bradman.c
@@ -14,14 +28,12 @@ cc -O -o bradman bradman.c
 uuencode brad.bio.roff brad.bio.roff > brad.bio.uu
 ```
 
-Source: `vintage/machines/vax/bradman.c`.
+The host normally performs these commands through `scripts/vax_pexpect.py` and validates each artifact-producing command's exit status.
 
-## bradman contract
+## Output contract
 
-Input keys (all from `site.yaml`, via `bio.vintage.yaml`): `schemaVersion`, `buildDate`, `bioName`, `bioHeadline`, `bioProfile`. `bioProfile` is required.
+`brad.bio.roff` sets a 60-column measure, removes the page offset, disables hyphenation, writes the name and headline without fill, and fills and justifies the summary. It records the build date in a troff comment that `nroff` removes.
 
-Output (`brad.bio.roff`): a troff document that sets the measure (`.ll 60n`), disables the page offset (`.po 0`) and hyphenation (`.nh`), prints the name and headline verbatim (`.nf`/`.fi`), and fills-and-justifies the blurb (`.ad b`). The build date is emitted only as a `.\"` comment, which nroff strips — so the rendered bio carries no date, and its bytes change only when the copy changes.
+`brad.bio.uu` is the text spool delivered to the PDP-11. The spool header names the decoded file `brad.bio.roff`.
 
-## Orchestration
-
-`scripts/vax_pexpect.py` drives the SIMH VAX via stdin/stdout: it injects `bradman.c` via a plain heredoc and `bio.vintage.yaml` via a UUE batched heredoc (the blurb line can exceed the 256-byte CANBSIZ tty limit), compiles, runs `bradman`, uuencodes the output, and captures `brad.bio.uu`.
+Source: [`vintage/machines/vax/bradman.c`](../../vintage/machines/vax/bradman.c).

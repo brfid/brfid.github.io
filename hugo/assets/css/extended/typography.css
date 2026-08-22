@@ -1,14 +1,11 @@
-/* Typography: Newsreader (humanist serif) for people, IBM Plex Mono for machine
-   metadata. Self-hosted from hugo/static/fonts/ so the page makes no external
-   font requests. Newsreader's latin subset is a variable file covering 400-600
-   on the weight axis; Plex Mono ships one file per weight per subset. */
+/* Self-hosted serif and monospace font families. */
 
 :root {
   --serif: "Newsreader", Georgia, "Times New Roman", serif;
   --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-/* ---- Newsreader (variable, weights 400-600) ---- */
+/* Newsreader variable font, weights 400 through 600. */
 @font-face {
   font-family: "Newsreader";
   font-style: normal;
@@ -26,7 +23,7 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* ---- IBM Plex Mono 400 ---- */
+/* IBM Plex Mono 400. */
 @font-face {
   font-family: "IBM Plex Mono";
   font-style: normal;
@@ -44,7 +41,7 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* ---- IBM Plex Mono 500 ---- */
+/* IBM Plex Mono 500. */
 @font-face {
   font-family: "IBM Plex Mono";
   font-style: normal;

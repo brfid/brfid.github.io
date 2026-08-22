@@ -13,6 +13,7 @@ def _assert_optional_strings(item: dict[str, Any], fields: tuple[str, ...]) -> N
 def test_resume_human_authored_fields_remain_strings() -> None:
     resume: Any = yaml.safe_load(Path("resume.yaml").read_text(encoding="utf-8"))
     assert isinstance(resume, dict)
+    assert set(resume) == {"basics", "work", "volunteer", "education", "publications", "skills"}
 
     basics = resume["basics"]
     assert isinstance(basics, dict)

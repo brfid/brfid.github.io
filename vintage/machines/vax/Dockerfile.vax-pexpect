@@ -1,34 +1,12 @@
-# VAX 11/780 with 4.3BSD — pexpect mode
-#
-# Extends jguillaumes/simh-vaxbsd:latest with Python pexpect support.
-# At build time:
-#   1. Discovers the vax780.ini and vax780 binary inside the base image;
-#      writes their paths to /opt/vax-*.txt for use by vax_pexpect.py.
-#   2. Decompresses the RA81 disk images (shipped gzipped in the base image)
-#      so SIMH can attach them without error.
-#   3. Copies a clean pexpect-mode ini (stdin/stdout console, no network,
-#      no DZ terminal multiplexer) to /image/vax780-pexpect.ini.
-#
-# Build (repo root as context):
-#   docker build -f vintage/machines/vax/Dockerfile.vax-pexpect -t vax-pexpect .
-#
-# Run:
-#   docker run --rm \
-#     -v "$(pwd)/build/vintage:/build" \
-#     vax-pexpect \
-#     --bradman /build/bradman.c \
-#     --resume-yaml /build/resume.vintage.yaml \
-#     --output /build/brad.1
-
+# VAX 11/780 with 4.3BSD and a pexpect-controlled local console.
+# Build with the repository root as context. Promote production images through
+# build-images.yml; the local runner may build this recipe as a fallback.
 FROM jguillaumes/simh-vaxbsd:latest
 
-# Install Python pexpect.
 RUN apt-get update && apt-get install -y python3 python3-pexpect \
     && rm -rf /var/lib/apt/lists/*
 
-# Discover vax780.ini and binary; write path cache; decompress disk images.
-# The disk images in the base image are gzipped (RA81.000.gz, RA81VHD.001.gz).
-# SIMH cannot attach .gz files — decompress them at build time.
+# Cache paths discovered in the base image and expand disks before SIMH starts.
 RUN set -e; \
     ini=$(find / -name 'vax780.ini' -not -path '*/proc/*' 2>/dev/null | head -1); \
     if [ -z "$ini" ]; then \
@@ -40,7 +18,7 @@ RUN set -e; \
     echo "$ini"                         > /opt/vax-ini-path.txt; \
     echo "${dir}/vax780-pexpect.ini"    > /opt/vax-pexpect-ini-path.txt; \
     which vax780                        > /opt/vax-bin-path.txt 2>/dev/null || echo "vax780" > /opt/vax-bin-path.txt; \
-    echo "Decompressing disk images in $dir …"; \
+    echo "Decompressing disk images in $dir"; \
     for gz in "$dir"/*.gz; do \
         [ -f "$gz" ] && gunzip "$gz" && echo "  decompressed: $gz"; \
     done; \
@@ -49,14 +27,9 @@ RUN set -e; \
     echo "Disk images:"; \
     ls -lh "$dir"/RA81* 2>/dev/null || true
 
-# Copy clean pexpect-mode ini (no telnet console, no network, no DZ terminals).
-# Build context must be repo root for this path to resolve.
 COPY vintage/machines/vax/configs/vax780-pexpect.ini /image/vax780-pexpect.ini
 
-# Copy vax pexpect script and shared session utilities.
 COPY scripts/vax_pexpect.py /opt/vax_pexpect.py
 COPY scripts/simh_session.py /opt/simh_session.py
-
-# No telnet ports — console is stdin/stdout via pexpect pty.
 
 ENTRYPOINT ["python3", "/opt/vax_pexpect.py"]

@@ -1,24 +1,18 @@
 #!/usr/bin/env bash
-# Vintage artifact pipeline runner — pexpect edition.
-#
-# Orchestrates the VAX → PDP-11 pipeline using pexpect-driven SIMH containers.
-# Replaces the former screen/telnet/sleep approach entirely.
-#
-# Pipeline:
-#   1. prepare_host         — install deps, set up Python venv
-#   2. build_pexpect_images — docker build pdp11-pexpect and vax-pexpect images
-#   3. generate_vintage_yaml — Python: site.yaml → build/vintage/bio.vintage.yaml
-#   4. stage_b_vax          — docker run vax-pexpect → build/vintage/brad.bio.uu  (VAX spools via UUCP)
-#   5. stage_a_pdp11        — docker run pdp11-pexpect → build/vintage/brad.bio.txt  (PDP-11 nroff renders)
-#   6. emit_artifact        — emit internal artifacts as base64 markers on stdout
-#
 # Usage:
 #   ./scripts/edcloud-vintage-runner.sh <build-id>
 #
+# Outputs:
+#   build/vintage/          guest inputs, spool, bio, sections, and status
+#   LOG_DIR                 detailed host log and copied console sections
+#   stdout                  base64 markers consumed by workflows
+#
 # Environment:
-#   ROOT_DIR      repo root (default: cwd)
-#   LOG_DIR       log directory (default: /tmp/edcloud-vintage)
-#   KEEP_IMAGES   if 1, skip 'docker rmi' of built images on exit (default: 0)
+#   ROOT_DIR                repository root (default: current directory)
+#   LOG_DIR                 log directory (default: /tmp/edcloud-vintage)
+#   KEEP_IMAGES             retain local image tags when set to 1 (default: 0)
+#   ALLOW_LOCAL_IMAGE_BUILD build checked-out Dockerfiles after a pull failure
+#                            when set to 1 (default: 1; production sets 0)
 
 set -euo pipefail
 
@@ -33,19 +27,19 @@ LOG_DIR="${LOG_DIR:-/tmp/edcloud-vintage}"
 LOG_FILE="${LOG_DIR}/${BUILD_ID}.log"
 SECTIONS_LOG="${LOG_DIR}/${BUILD_ID}.sections.jsonl"
 KEEP_IMAGES="${KEEP_IMAGES:-0}"
+ALLOW_LOCAL_IMAGE_BUILD="${ALLOW_LOCAL_IMAGE_BUILD:-1}"
 GIT_SHA="${GIT_SHA:-$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || echo 'unknown')}"
 
 PDP11_IMAGE="pdp11-pexpect"
 VAX_IMAGE="vax-pexpect"
 
-# ghcr.io coordinates for pre-built cached images (set to Public in GitHub
-# package settings so hosted and local runners can pull without credentials).
-GHCR_VAX="ghcr.io/brfid/vax-pexpect:latest"
-GHCR_PDP11="ghcr.io/brfid/pdp11-pexpect:latest"
+# Production image digests. Promote and validate both as one pair.
+GHCR_VAX="ghcr.io/brfid/vax-pexpect@sha256:c576baf49fc69a1b4da53abd3e2b3d94541ebcb2fbf864619edcfcd76f4b14f7"
+GHCR_PDP11="ghcr.io/brfid/pdp11-pexpect@sha256:9e44185b9b128a7999292e5780413c46cad19f9af532273b0e739de9c3c8ad77"
 
 mkdir -p "$LOG_DIR"
 
-# Keep stdout clean for marker-based artifact extraction.
+# Reserve stdout for artifact markers.
 exec 3>&1
 exec >"$LOG_FILE" 2>&1
 
@@ -53,6 +47,12 @@ on_exit() {
   local code="$1"
 
   if (( code != 0 )); then
+    # Failures after environment setup overwrite status from an earlier run.
+    set +e
+    if [[ -x "${ROOT_DIR}/.venv/bin/python" ]]; then
+      emit_status_json "$code"
+      emit_status_artifact
+    fi
     printf '<<<EDCLOUD_RUNNER_FAILED>>> build_id=%s log=%s\n' "$BUILD_ID" "$LOG_FILE" >&3
     printf '<<<EDCLOUD_RUNNER_LOG_TAIL_BEGIN>>>\n' >&3
     tail -80 "$LOG_FILE" >&3 || true
@@ -80,25 +80,20 @@ require_bin() {
 cleanup() {
   stage "cleanup"
 
-  # Remove any containers from this run still running (docker run --rm handles
-  # the normal case; this is a safety net for interrupted runs).
-  docker ps -aq --filter "label=vintage-build-id=${BUILD_ID}" | xargs -r docker rm -f || true
+  # Remove containers left by an interrupted run.
+  if command -v docker >/dev/null 2>&1; then
+    docker ps -aq --filter "label=vintage-build-id=${BUILD_ID}" | xargs -r docker rm -f || true
 
-  if [[ "$KEEP_IMAGES" != "1" ]]; then
-    docker rmi "$PDP11_IMAGE" "$VAX_IMAGE" 2>/dev/null || true
+    if [[ "$KEEP_IMAGES" != "1" ]]; then
+      docker rmi "$PDP11_IMAGE" "$VAX_IMAGE" 2>/dev/null || true
+    fi
   fi
 
-  # Temporary copy of bradman.c in the build volume.
   rm -f "${ROOT_DIR}/build/vintage/bradman.c" || true
 }
 
 prepare_host() {
   stage "prepare-host"
-
-  if ! command -v docker >/dev/null 2>&1; then
-    apt-get update
-    apt-get install -y docker.io
-  fi
 
   require_bin docker
   require_bin git
@@ -107,17 +102,27 @@ prepare_host() {
   cd "$ROOT_DIR"
   mkdir -p build/vintage hugo/static
 
+  # Clear all files owned by one run before creating new status or artifacts.
+  rm -f \
+    build/vintage/bio.vintage.yaml \
+    build/vintage/brad.bio.uu \
+    build/vintage/brad.bio.txt \
+    build/vintage/bradman.c \
+    build/vintage/pipeline-status.json \
+    build/vintage/sections.jsonl
+
   if [[ ! -x .venv/bin/python ]]; then
     python3 -m venv .venv
   fi
 
-  .venv/bin/python -m pip install --quiet --upgrade pip
-  .venv/bin/python -m pip install --quiet -e .
+  # A standalone run installs only when the local environment is incomplete.
+  if ! .venv/bin/python -c 'import yaml; import resume_generator.vintage_yaml' >/dev/null 2>&1; then
+    .venv/bin/python -m pip install --quiet -e .
+  fi
 }
 
 _pull_or_build() {
-  # Pull a pre-built image from ghcr.io; fall back to local docker build.
-  # Args: <local-tag> <ghcr-ref> <dockerfile> [docker-build-args...]
+  # Usage: _pull_or_build LOCAL_TAG GHCR_REFERENCE DOCKERFILE [BUILD_ARGS]
   local local_tag="$1"; shift
   local ghcr_ref="$1"; shift
   local dockerfile="$1"; shift
@@ -126,7 +131,11 @@ _pull_or_build() {
     docker tag "$ghcr_ref" "$local_tag"
     echo "Pulled ${local_tag} from ${ghcr_ref}"
   else
-    echo "Pull failed for ${ghcr_ref}; building locally…"
+    if [[ "$ALLOW_LOCAL_IMAGE_BUILD" != "1" ]]; then
+      echo "Pull failed for pinned image ${ghcr_ref}; local fallback is disabled"
+      return 1
+    fi
+    echo "Pull failed for ${ghcr_ref}; building from the checked-out Dockerfile"
     docker build -f "$dockerfile" -t "$local_tag" "$@" .
     echo "Built ${local_tag} locally"
   fi
@@ -175,8 +184,7 @@ stage_b_vax() {
   stage "stage-b-vax"
   cd "$ROOT_DIR"
 
-  # bradman.c lives in the repo tree; copy it into the shared build volume
-  # so both inputs are accessible to the container at /build/*.
+  # Put both VAX inputs in the bind-mounted build directory.
   cp vintage/machines/vax/bradman.c build/vintage/bradman.c
 
   docker run --rm \
@@ -196,7 +204,7 @@ stage_b_vax() {
   fi
 
   echo "Stage B complete: build/vintage/brad.bio.uu  ($(wc -l < build/vintage/brad.bio.uu) encoded lines)"
-  echo "[uucp] brad.bio.uu spooled on VAX — routing via host to PDP-11"
+  echo "[uucp] brad.bio.uu spooled on VAX; routing via host to PDP-11"
 }
 
 stage_a_pdp11() {
@@ -224,8 +232,7 @@ stage_a_pdp11() {
 }
 
 emit_status_json() {
-  # Emit a machine-readable pipeline status artifact for CI triage.
-  # Called from main() after all stages complete (or from on_exit on failure).
+  # Write current-run status after success and again after any later failure.
   cd "$ROOT_DIR"
 
   local status_file="build/vintage/pipeline-status.json"
@@ -233,13 +240,12 @@ emit_status_json() {
   local now
   now="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 
-  # Collect stage-level stats
   local yaml_lines=0 spool_lines=0 bio_lines=0
   [[ -s build/vintage/bio.vintage.yaml ]] && yaml_lines=$(wc -l < build/vintage/bio.vintage.yaml)
   [[ -s build/vintage/brad.bio.uu ]] && spool_lines=$(wc -l < build/vintage/brad.bio.uu)
   [[ -s build/vintage/brad.bio.txt ]] && bio_lines=$(wc -l < build/vintage/brad.bio.txt)
 
-  python3 - "$exit_code" "$now" "$yaml_lines" "$spool_lines" "$bio_lines" "$BUILD_ID" "$GIT_SHA" > "$status_file" <<'PY'
+  .venv/bin/python - "$exit_code" "$now" "$yaml_lines" "$spool_lines" "$bio_lines" "$BUILD_ID" "$GIT_SHA" > "$status_file" <<'PY'
 import json, sys
 
 exit_code    = int(sys.argv[1])
@@ -267,6 +273,15 @@ print(json.dumps(status, indent=2))
 PY
 }
 
+emit_status_artifact() {
+  cd "$ROOT_DIR"
+  if [[ -s build/vintage/pipeline-status.json ]]; then
+    local status_b64
+    status_b64="$(base64 < build/vintage/pipeline-status.json | tr -d '\n')"
+    printf '<<<PIPELINE_STATUS_JSON_BASE64_BEGIN>>>\n%s\n<<<PIPELINE_STATUS_JSON_BASE64_END>>>\n' "$status_b64" >&3
+  fi
+}
+
 emit_artifact() {
   stage "emit-artifact"
   cd "$ROOT_DIR"
@@ -278,18 +293,12 @@ emit_artifact() {
     return 1
   fi
 
-  # `base64 | tr -d '\n'` is portable: GNU wraps at 76 and BSD/macOS has no
-  # -w flag, so strip newlines afterwards instead of asking base64 not to wrap.
+  # GNU base64 wraps by default; BSD base64 has no -w option.
   local bio_b64
   bio_b64="$(base64 < build/vintage/brad.bio.txt | tr -d '\n')"
   printf '<<<BRAD_BIO_TXT_BASE64_BEGIN>>>\n%s\n<<<BRAD_BIO_TXT_BASE64_END>>>\n' "$bio_b64" >&3
 
-  # Emit machine-readable pipeline status JSON (base64-encoded for safe transport)
-  if [[ -s build/vintage/pipeline-status.json ]]; then
-    local status_b64
-    status_b64="$(base64 < build/vintage/pipeline-status.json | tr -d '\n')"
-    printf '<<<PIPELINE_STATUS_JSON_BASE64_BEGIN>>>\n%s\n<<<PIPELINE_STATUS_JSON_BASE64_END>>>\n' "$status_b64" >&3
-  fi
+  emit_status_artifact
 
   printf 'LOG_FILE=%s\n' "$LOG_FILE" >&3
 }
@@ -298,7 +307,7 @@ emit_build_log() {
   stage "emit-build-log"
   cd "$ROOT_DIR"
 
-  # Copy sections.jsonl from the build volume into LOG_DIR for the renderer.
+  # The renderer reads console sections beside the host log.
   if [[ -s build/vintage/sections.jsonl ]]; then
     cp build/vintage/sections.jsonl "$SECTIONS_LOG"
   fi

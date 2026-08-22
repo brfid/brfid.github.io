@@ -5,25 +5,22 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "brfid-resume"
 version = "0.1.0"
-description = "Static resume generator (HTML + PDF) for GitHub Pages."
+description = "Hugo site tooling with Playwright-generated resume PDFs."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "PyYAML>=6.0",
-  # Pinned exactly: Playwright bundles a specific Chromium per release, and the
-  # résumé PDF's line breaks and pagination are only reproducible if that browser
-  # is fixed. Bump deliberately, then re-record the vintage bio baseline if needed.
+  # Each Playwright release selects a Chromium build that affects PDF pagination.
+  # Inspect the PDF output when updating this exact pin.
   "playwright==1.62.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "coverage[toml]>=7.6",
   "mypy>=1.8",
-  "pdoc>=14.0",
+  "pexpect>=4.9",
   "pylint>=3.0",
   "pytest>=8.0",
-  "pytest-cov>=5.0",
   "ruff>=0.6.0",
   "types-PyYAML",
   "vulture>=2.11",
@@ -35,7 +32,7 @@ include = ["resume_generator*"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["resume_generator", "tests"]
+files = ["resume_generator", "scripts", "tests"]
 mypy_path = "scripts"
 warn_unused_configs = true
 warn_return_any = true
@@ -60,16 +57,7 @@ testpaths = ["tests"]
 markers = [
   "unit: Fast unit tests with no external system dependencies",
   "integration: Integration tests crossing module boundaries",
-  "docker: Tests requiring Docker or containerized services",
-  "slow: Long-running tests excluded from default quality gate",
 ]
-
-[tool.coverage.run]
-branch = true
-
-[tool.coverage.report]
-skip_empty = true
-show_missing = true
 
 [tool.ruff]
 target-version = "py311"
@@ -109,9 +97,7 @@ jobs = 0
 max-line-length = 120
 
 [tool.pylint.messages_control]
-# Docstring policy: ruff `D` (pydocstyle, Google convention) enforces docstrings
-# on resume_generator and explicitly disables them for tests/** via per-file-ignores.
-# pylint is scoped to resume_generator only, so no per-file override needed here.
+# Ruff enforces Google-style docstrings in source; tests are exempt.
 disable = [
     "too-many-instance-attributes",  # R0902: Config classes need many attributes
     "too-many-locals",  # R0914: Parser functions need many variables

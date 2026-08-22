@@ -37,7 +37,7 @@ def test_render_build_log_combines_host_and_guest_records() -> None:
         },
     )
 
-    assert "<title>build-20260819-120000 — vintage pipeline log</title>" in rendered
+    assert "<title>build-20260819-120000: vintage pipeline log</title>" in rendered
     assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in rendered
     assert '<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">' in rendered
     assert '<main id="build-log" aria-labelledby="log-title">' in rendered
@@ -95,7 +95,7 @@ def test_render_build_log_files_reads_inputs(tmp_path: Path) -> None:
         sections_path=sections_path,
     )
 
-    assert "<title>build-from-files — vintage pipeline log</title>" in rendered
+    assert "<title>build-from-files: vintage pipeline log</title>" in rendered
     assert "booted" in rendered
 
 
@@ -106,7 +106,7 @@ def test_main_renders_build_log_to_stdout(tmp_path: Path, capsys: pytest.Capture
     result = main([str(log_path), "build-from-cli"])
 
     assert result == 0
-    assert "<title>build-from-cli — vintage pipeline log</title>" in capsys.readouterr().out
+    assert "<title>build-from-cli: vintage pipeline log</title>" in capsys.readouterr().out
 
 
 def test_404_template_provides_semantic_recovery_routes() -> None:

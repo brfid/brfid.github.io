@@ -30,8 +30,10 @@ def test_production_config_publishes_blog_mechanics() -> None:
     assert config["params"]["mainSections"] == ["posts"]
     assert config["params"]["ShowRssButtonInSectionTermList"] is True
     assert set(menu_items) == {"posts", "resume", "source"}
-    assert menu_items["posts"]["url"] == "/posts/"
-    assert menu_items["resume"]["url"] == "/resume/"
+    assert menu_items["posts"]["pageRef"] == "/posts"
+    assert "url" not in menu_items["posts"]
+    assert menu_items["resume"]["pageRef"] == "/resume"
+    assert "url" not in menu_items["resume"]
     assert menu_items["resume"]["params"]["companionurl"] == "/resume.pdf"
     assert menu_items["source"]["url"] == "https://github.com/brfid/brfid.github.io"
     assert "params" not in menu_items["source"]
@@ -70,37 +72,31 @@ def test_data_sync_bootstraps_generated_hugo_directory() -> None:
     assert "mkdir -p hugo/data" in resume_target
 
 
-def test_deploy_requires_phone_free_resume_html_and_pdf() -> None:
-    """Deployment must build and validate both public resume formats."""
+def test_hugo_build_destinations_are_fixed_and_warnings_are_fatal() -> None:
+    """A Make override must not turn Hugo's clean destination into a destructive path."""
+    makefile = (ROOT / "Makefile").read_text(encoding="utf-8")
+    verify_target = makefile.split("verify-site:", maxsplit=1)[1].split("\n\n", maxsplit=1)[0]
+    build_target = makefile.split("hugo-build:", maxsplit=1)[1].split("\n\n", maxsplit=1)[0]
+
+    assert "SITE_CHECK_DIR" not in makefile
+    assert "$(abspath build/site-check)" in verify_target
+    assert "--panicOnWarning" in verify_target
+    assert "--panicOnWarning" in build_target
+
+
+def test_deploy_uses_the_shared_production_verifier() -> None:
+    """Deployment must build the public PDF and verify the rendered artifact tree."""
     workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
 
-    assert "make sync-site-data sync-resume-data" in workflow
-    assert "make resume-pdf-public PYTHON=python" in workflow
-    assert "test -s site/resume/index.html" in workflow
-    assert "test -s site/resume.pdf" in workflow
-    assert "grep -Fq '/resume.pdf' site/resume/index.html" in workflow
-    assert "Resume page is missing the PDF download link" in workflow
-    assert "pdftotext site/resume.pdf" in workflow
-    assert "pdfinfo site/resume.pdf" in workflow
-    assert "'^Tagged:[[:space:]]+yes$'" in workflow
-    assert "public resume PDF is not tagged for accessibility" in workflow
-    assert "public resume PDF contains a telephone number" in workflow
-    assert "test ! -e site/bradley-fidler-resume.pdf" in workflow
+    assert "make resume-pdf-public" in workflow
+    assert "make sync-site-data sync-resume-data" not in workflow
+    assert "PYTHON=python" not in workflow
+    assert ".venv/bin/python scripts/verify_site.py site" in workflow
+    assert "--production" in workflow
+    assert "--resume-yaml resume.yaml" in workflow
+    assert '--build-run-url "$BUILD_RUN_URL"' in workflow
     assert "private_resume_path" not in workflow
-
-
-def test_deploy_requires_blog_routes_and_feeds() -> None:
-    """Deployment must fail if the restored blog surface disappears."""
-    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
-    robots = (ROOT / "hugo" / "static" / "robots.txt").read_text(encoding="utf-8")
-
-    assert "test -s site/posts/index.html" in workflow
-    assert "test -s site/index.xml" in workflow
-    assert "test -s site/posts/index.xml" in workflow
-    assert "landing page is missing the Blog link" in workflow
-    assert "public RSS feed contains the resume" in workflow
-    assert "Disallow: /index.xml" in robots
-    assert "Disallow: /posts/index.xml" in robots
+    assert "deployments: write" not in workflow
 
 
 def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
@@ -109,17 +105,27 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     header = (ROOT / "hugo" / "layouts" / "_partials" / "header.html").read_text(encoding="utf-8")
     post_nav = (ROOT / "hugo" / "layouts" / "_partials" / "post_nav_links.html").read_text(encoding="utf-8")
     footer = (ROOT / "hugo" / "layouts" / "partials" / "footer.html").read_text(encoding="utf-8")
+    extended_head = (ROOT / "hugo" / "layouts" / "partials" / "extend_head.html").read_text(encoding="utf-8")
     theme = (ROOT / "hugo" / "assets" / "css" / "extended" / "theme.css").read_text(encoding="utf-8")
+    navigation = (ROOT / "hugo" / "assets" / "css" / "extended" / "navigation.css").read_text(encoding="utf-8")
     resume_css = (ROOT / "hugo" / "assets" / "css" / "extended" / "resume.css").read_text(encoding="utf-8")
 
     assert 'class="skip-link" href="#main-content"' in base
     assert 'id="main-content" tabindex="-1"' in base
     assert 'aria-label="Primary navigation"' in header
     assert 'aria-current="page"' in header
+    assert "IsMenuCurrent" in header
+    assert "HasMenuCurrent" in header
+    assert 'aria-current="location"' in header
+    assert "#menu a[aria-current]" in navigation
     assert 'class="menu-companion-link"' in header
     assert 'class="menu-utility-item"' in header
     assert "#menu .menu-utility-item" in theme
     assert "--interactive-hover:" in theme
+    assert "--interactive-hover: #b8f5c2;" in extended_head
+    assert "--forest-strong" not in theme
+    assert "--forest-strong" not in extended_head
+    assert "--forest-strong" not in resume_css
     assert "--interactive-highlight" not in theme
     assert "color: var(--interactive-hover);" in theme
     assert ".resume-download-link {\n  color: var(--forest);" not in resume_css

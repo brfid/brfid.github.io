@@ -91,9 +91,8 @@
         <ul id="menu" class="menu">
             {{- range site.Menus.main }}
             {{- if or (ne .Identifier "resume") $resume_enabled }}
-            {{- $menu_item_url := (cond (strings.HasSuffix .URL "/") .URL (printf "%s/" .URL) ) | absLangURL }}
-            {{- $page_url := $currentPage.Permalink | absLangURL }}
-            {{- $is_current := eq $menu_item_url $page_url }}
+            {{- $is_current := $currentPage.IsMenuCurrent .Menu . }}
+            {{- $has_current := $currentPage.HasMenuCurrent .Menu . }}
             {{- $is_search := eq (site.GetPage .KeyName).Layout `search` }}
             {{- $icon := .Params.icon }}
             {{- $is_external := findRE "://" .URL }}
@@ -101,7 +100,7 @@
             {{- $companion_label := .Params.companionlabel | default "Download" }}
             <li{{ if $companion_url }} class="menu-item-with-companion"{{ else if eq .Identifier "source" }} class="menu-utility-item"{{ end }}>
                 <a class="menu-primary-link" href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }} {{- cond $is_search (" (Alt + /)" | safeHTMLAttr) ("" | safeHTMLAttr ) }}"
-                {{- cond $is_search (" accesskey=/" | safeHTMLAttr) ("" | safeHTMLAttr ) }}{{ if $is_current }} aria-current="page"{{ end }}>
+                {{- cond $is_search (" accesskey=/" | safeHTMLAttr) ("" | safeHTMLAttr ) }}{{ if $is_current }} aria-current="page"{{ else if $has_current }} aria-current="location"{{ end }}>
                     <span>
                         {{- .Pre }}
                         {{- .Name -}}

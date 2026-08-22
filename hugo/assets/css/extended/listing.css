@@ -1,7 +1,4 @@
-/* Shared list/section primitives for the resume and portfolio layouts.
-   Both _default/resume.html and _default/portfolio.html render the same
-   section > item structure, so the visual primitives live here under neutral
-   `listing-*` names. Page-specific chrome stays in resume.css / portfolio.css. */
+/* Resume section and item layout. */
 
 .listing-section {
   margin-bottom: 2rem;

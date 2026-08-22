@@ -46,16 +46,7 @@ void free();
 void exit();
 #endif
 
-/*
- * bradman - compose the landing-page bio as troff source on the 4.3BSD VAX.
- *
- * The bio is the sole vintage artifact: the resume is rendered by Hugo +
- * Playwright and never passes through this pipeline. bradman reads the flat
- * bio YAML emitted by resume_generator.vintage_yaml (schemaVersion, buildDate,
- * bioName, bioHeadline, bioProfile) and writes a small troff document. The
- * VAX uuencodes that document and spools it to the PDP-11, which runs nroff to
- * fill and justify it into the plain-text bio the landing page consumes.
- */
+/* Convert the fixed host-generated bio mapping to troff on 4.3BSD. */
 
 typedef struct {
   char *schemaVersion;
@@ -189,7 +180,7 @@ static char *parse_unquoted(s)
   BRADMAN_SIZE_T len;
   char *out;
   const char *end;
-  /* Parse an unquoted YAML scalar - read until special char or end of line */
+  /* Parse an unquoted YAML scalar through the next indicator or line end. */
   end = s;
   while (*end) {
     unsigned char c = (unsigned char)*end;
@@ -226,7 +217,7 @@ static int parse_key_value(line, key_out, val_out)
   char *key;
   const char *rest;
   char *val;
-  /* Parses: key: "value"  OR  key: value  OR  key:   (no value) */
+  /* Accept key: "value", key: value, or an empty value. */
   colon = strchr(line, ':');
   if (!colon) return 0;
 
@@ -309,7 +300,7 @@ static void parse_bio_yaml(in, b)
       if (!val) die("bioProfile must have a value");
       set_field(&b->bioProfile, val);
     } else {
-      /* Unknown top-level keys are ignored for forwards-compat. */
+      /* Host serialization rejects unknown keys; ignore them defensively here. */
       if (val) free(val);
     }
     free(key);
@@ -362,10 +353,8 @@ static void emit_bio_roff(out, b)
     fprintf(out, ".\\\" bradman bio, build %s\n", b->buildDate);
   }
 
-  /* Fixed measure, flush left, so the PDP-11 fills to a stable column width
-   * with no page offset (base nroff otherwise indents the whole block). No
-   * hyphenation: words stay whole, which keeps the render deterministic and
-   * lets the round-trip check compare word tokens against site.yaml. */
+  /* Use a stable 60-column measure with no default page offset or hyphenation.
+   * Whole words let the host compare the render with resume.yaml basics.summary. */
   fputs(".ll 60n\n", out);
   fputs(".po 0\n", out);
   fputs(".nh\n", out);
@@ -384,7 +373,7 @@ static void emit_bio_roff(out, b)
   }
   fputs(".fi\n", out);
 
-  /* Blurb: filled and justified to both margins for the typeset look. */
+  /* Fill and justify the summary. */
   fputs(".ad b\n", out);
   fputs(".sp\n", out);
   if (b->bioProfile && b->bioProfile[0]) {

@@ -61,17 +61,7 @@ em { color: #9aa69b; font-style: normal; }
 
 
 def load_console_sections(path: Path | None) -> dict[str, str]:
-    """Load named console sections from a JSON Lines file.
-
-    Malformed and incomplete entries are ignored so a partial diagnostic file
-    does not prevent the rest of the build log from rendering.
-
-    Args:
-        path: JSON Lines file emitted by the pexpect stages, or ``None``.
-
-    Returns:
-        Mapping from section identifier to captured console text.
-    """
+    """Return valid named console sections, ignoring malformed records."""
     if path is None or not path.is_file():
         return {}
 
@@ -135,16 +125,7 @@ def _details(
 
 
 def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str]) -> str:
-    """Render a complete HTML build log from host and guest console records.
-
-    Args:
-        log_text: Full host-side vintage runner log.
-        build_id: Public identifier for this build.
-        sections: Named VAX/PDP-11 console sections captured by pexpect.
-
-    Returns:
-        Standalone HTML document suitable for ``hugo/static/build.log.html``.
-    """
+    """Render host and guest console records as standalone HTML."""
     log_lines = log_text.splitlines()
 
     host_timestamp = _find_timestamp(log_lines, rf"\[({_TIMESTAMP})\] prepare-host")
@@ -163,7 +144,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
     if host_timestamp:
         host_lines.append(f'{_timestamp_span(host_timestamp)}  <span class="ok">pipeline started</span>')
     if yaml_timestamp:
-        host_lines.append(f"{_timestamp_span(yaml_timestamp)}  site.yaml → bio.vintage.yaml")
+        host_lines.append(f"{_timestamp_span(yaml_timestamp)}  site.yaml + resume.yaml → bio.vintage.yaml")
     if yaml_line:
         host_lines.append(f"  {html.escape(yaml_line)}")
     host_content = "\n".join(host_lines) if host_lines else "<em>(no events)</em>"
@@ -189,7 +170,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
 <head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
-<title>{escaped_build_id} — vintage pipeline log</title>
+<title>{escaped_build_id}: vintage pipeline log</title>
 <style>{_CSS}</style>
 </head>
 <body>
@@ -198,7 +179,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
   <div class="log-heading">
     <h1 id="log-title">vintage pipeline</h1>
     <p class="build-id">build {escaped_build_id}</p>
-    <p class="log-intro">Curated console output from the VAX and PDP-11 stages that produced this site's bio.</p>
+    <p class="log-intro">Console output from the VAX and PDP-11 stages.</p>
   </div>
   <nav class="log-links" aria-label="Build log links">
     <a href="/">Home</a>

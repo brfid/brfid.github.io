@@ -1,5 +1,4 @@
-/* Global navigation and keyboard access. These rules extend PaperMod's chrome
-   without changing the Forest Terminal palette or type system. */
+/* Navigation state and keyboard focus. */
 
 .skip-link {
   background: var(--theme);
@@ -25,7 +24,7 @@
   outline: none;
 }
 
-#menu a[aria-current="page"] {
+#menu a[aria-current] {
   color: var(--primary);
   text-decoration-color: var(--forest);
 }
