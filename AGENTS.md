@@ -103,6 +103,9 @@ Use `- None.` for an empty section. Record only current or forward-looking opera
 - Keep `scripts/vintage-runner.sh` bind-mounting the checkout's pexpect scripts and `simh_session.py` over the cached image copies, and keep its final bio, build log, and status under `build/vintage/`.
 - Pin production to an explicit pair of immutable GHCR image digests and disable local image fallback in deployment and validation.
 - Promote image changes through the manual image-build workflow and vintage validation procedure in `docs/integration/INDEX.md`.
+- Keep standard mode as the default. Explicit fast mode may reuse only the exact retained bio, build log, and status from a matching successful run in standard mode.
+- Include the three public bio strings and every implementation file that can affect vintage output or reuse validation in the reuse fingerprint. Keep unrelated site and resume fields eligible for fast mode.
+- Preserve reused vintage provenance: the status SHA, build ID, log, and Actions run link must continue to identify the source run. Fail closed rather than synthesizing current-run provenance or silently running the vintage pipeline.
 
 ## Commit and publish
 
@@ -112,6 +115,7 @@ Use `- None.` for an empty section. Record only current or forward-looking opera
 - Do not push unless the operator explicitly requests a push.
 - Before pushing, inspect changed files for private or secret material and run validation appropriate to the change.
 - Every push to `main` starts deployment unless the commit message contains `[nopublish]`.
+- A push whose commit message contains `[fast]` requests fail-closed fast mode. Use it only for changes that do not require a new landing-page bio result.
 
 ## Report implementation work
 

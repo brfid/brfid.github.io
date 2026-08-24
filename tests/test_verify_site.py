@@ -24,11 +24,12 @@ verifier = _load_verifier()
 
 
 RUN_URL = "https://github.com/example/site/actions/runs/123456"
+PRIOR_RUN_URL = "https://github.com/example/site/actions/runs/100001"
 BUILD_ID = "build-20260822-120000"
 PUBLIC_EMAIL = "public@example.com"
 
 
-def _write_production_tree(tmp_path: Path) -> tuple[Path, Path]:
+def _write_production_tree(tmp_path: Path, *, build_run_url: str = RUN_URL) -> tuple[Path, Path]:
     site_dir = tmp_path / "site"
     site_dir.mkdir()
     (site_dir / "resume.pdf").write_bytes(b"%PDF-1.7\n")
@@ -38,7 +39,7 @@ def _write_production_tree(tmp_path: Path) -> tuple[Path, Path]:
         encoding="utf-8",
     )
     (site_dir / "index.html").write_text(
-        f'<a href="/build.log.html" title="{BUILD_ID}">log</a><a href="{RUN_URL}">run</a>\n',
+        f'<a href="/build.log.html" title="{BUILD_ID}">log</a><a href="{build_run_url}">run</a>\n',
         encoding="utf-8",
     )
     (site_dir / "resume").mkdir()
@@ -177,6 +178,21 @@ def test_production_site_accepts_complete_public_artifacts(tmp_path: Path, monke
     monkeypatch.setattr(verifier, "run_external", _run_external)
 
     assert verifier.verify_production_site(site_dir, resume_yaml=resume_yaml, build_run_url=RUN_URL) == []
+
+
+def test_production_site_accepts_a_prior_vintage_run(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
+    """A new site deployment may identify the older run that produced its reused vintage result."""
+    site_dir, resume_yaml = _write_production_tree(tmp_path, build_run_url=PRIOR_RUN_URL)
+
+    def _run_external(command: str, arguments: Sequence[str], errors: list[str]) -> str:
+        del arguments, errors
+        if command == "pdftotext":
+            return f"Bradley Fidler\n{PUBLIC_EMAIL}\n"
+        return "Tagged:          yes\n"
+
+    monkeypatch.setattr(verifier, "run_external", _run_external)
+
+    assert verifier.verify_production_site(site_dir, resume_yaml=resume_yaml, build_run_url=PRIOR_RUN_URL) == []
 
 
 def test_production_site_collects_privacy_status_and_provenance_errors(

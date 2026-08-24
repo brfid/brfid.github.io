@@ -378,7 +378,7 @@ def verify_provenance_links(
     build_run_url: str,
     errors: list[str],
 ) -> None:
-    """Check that the homepage exposes the exact production build provenance."""
+    """Check that the homepage exposes the exact vintage provenance."""
     homepage = site_dir / "index.html"
     if not is_nonempty_file(homepage):
         return
@@ -453,7 +453,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--production", action="store_true", help="Verify production-only artifacts and privacy contracts"
     )
     parser.add_argument("--resume-yaml", type=Path, help="Public resume YAML used to build the production PDF")
-    parser.add_argument("--build-run-url", help="Exact GitHub Actions run URL rendered on the homepage")
+    parser.add_argument("--build-run-url", help="Exact vintage Actions run URL rendered on the homepage")
     args = parser.parse_args(argv)
 
     errors = verify_site(args.site_dir)

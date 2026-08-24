@@ -1,6 +1,6 @@
 # brfid.github.io
 
-Source and build tooling for [brfid.github.io](https://brfid.github.io/). Hugo renders the site, blog, and resume. A VAX and PDP-11 pipeline renders the landing-page bio before deployment.
+Source and build tooling for [brfid.github.io](https://brfid.github.io/). Hugo renders the site, blog, and resume. A VAX and PDP-11 pipeline renders the landing-page bio published by the site.
 
 ## Set up a checkout
 
@@ -88,9 +88,28 @@ For local execution, validation, implementation, and image promotion, see [the v
 
 ## Publish the site
 
-A push to `main` runs the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitHub Pages. Add `[nopublish]` to the commit message to skip deployment. Run the Publish site workflow manually to repeat a deployment without a new commit.
+A push to `main` uses standard mode: it runs the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitHub Pages. Add `[nopublish]` to the commit message to skip deployment. Run the Publish site workflow manually in `standard` mode to repeat the publication without a new commit.
 
-Production accepts only the immutable VAX and PDP-11 image digests pinned in `scripts/vintage-runner.sh`. It does not build fallback images.
+For any change that does not affect the landing-page bio, such as a post, layout, or resume field other than `basics.summary`, add `[fast]` to the commit message to select fast mode:
+
+```bash
+git commit -m "Publish site-only change [fast]"
+git push origin main
+```
+
+You can request the same path manually:
+
+```bash
+gh workflow run deploy.yml --ref main -f publish_mode=fast
+```
+
+Fast mode reuses the exact bio, build log, and pipeline status from the newest matching successful run in standard mode, and keeps the Actions link pointed at that run. GitHub Actions retains those three files as a workflow artifact for 90 days. Fast mode still rebuilds the public PDF and Hugo site, runs the production verifier, and deploys a new Pages artifact. It fails without deploying if the retained result has expired, its provenance is invalid, or a bio input or vintage implementation file has changed. Run standard mode to refresh the retained result:
+
+```bash
+gh workflow run deploy.yml --ref main -f publish_mode=standard
+```
+
+In standard mode, the vintage pipeline uses only the immutable VAX and PDP-11 image digests pinned in `scripts/vintage-runner.sh`. It does not build fallback images.
 
 ## Source files
 
@@ -100,7 +119,7 @@ Production accepts only the immutable VAX and PDP-11 image digests pinned in `sc
 | `resume.yaml` | Public resume data and shared bio summary |
 | `resume.private.yaml` | Optional local phone overlay; gitignored |
 | `hugo/` | Site content, templates, configuration, styles, and fonts |
-| `resume_generator/` | Bio, build-log, vintage-contract, and PDF generators |
+| `resume_generator/` | Bio, vintage validation and reuse, build-log, and PDF generators |
 | `scripts/` | Site verifier and SIMH orchestration |
 | `STATUS.md` | Current operational state and queue |
 | `docs/integration/INDEX.md` | Vintage pipeline operations |
