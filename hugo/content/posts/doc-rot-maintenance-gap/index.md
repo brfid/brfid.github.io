@@ -10,7 +10,7 @@ Documentation does not have to change to become stale because the product (or th
 
 Software research described this maintenance problem decades ago. Lehman showed that a static program can become less useful as the reality it reflects changes.[^lehman-1980] Parnas described software that had aged "even though nobody has touched it" and documentation that becomes "increasingly inaccurate" when updates are deferred.[^parnas-1994]
 
-A page can keep passing every existing check while losing that fit with the product, or its fit with the product in the world. The neglected failure is not that a check returns the wrong verdict. It is that the person or check able to answer is never called again after change.
+A page can keep passing every existing check while losing its fit with the product or with the conditions in which the product is used. Each check may still return the right verdict within its scope even though no process brings the relevant claim back to the person or check able to reassess it after change.
 
 ## Two questions
 
@@ -23,7 +23,7 @@ Two questions expose the difference:
 
 The end-to-end argument explains the first question. Saltzer, Reed, and Clark show that complete implementation depends on knowledge held by the application at the endpoints, although a partial lower-level version may still improve performance.[^saltzer-1984] Applied to documentation, the person or check must be able to reach the evidence the claim requires. A live contract test can answer a narrow question about endpoint behavior. A recommendation about when to use that endpoint needs current product and user evidence.
 
-The second question adds time. An engineer can verify behavior during launch and never be asked again after release. A linter can run on every release while checking only form. The first has an answer without a return path; the second returns without an answer. A maintained path needs both a reliable trigger or cadence and someone responsible for the result.
+The second question accounts for time: an engineer can verify behavior during launch and never be asked to revisit it after release, while a linter can run on every release and check only form. A maintained path connects the person or check able to answer with a reliable trigger or cadence and assigns responsibility for the result.
 
 ## The grid
 
@@ -59,7 +59,7 @@ Guidance needs a broader mapping. Give each page or feature a responsible mainta
 
 This routing creates maintenance and triage work. Use claim-level automation for material assertions a machine can check; page- or feature-level ownership can carry the rest. Event-driven triggers should fire only for changes that can plausibly affect the guidance.
 
-Run the two questions on each material page or claim. A missing first answer is a knowledge gap. A missing second answer is an ownership gap. The end-to-end argument shows where an answer can be found; maintenance gives it a return path. Knowledge becomes orphaned when the system could answer a claim but has no way to ask again.
+Run the two questions on each material page or claim: a missing answer to the first reveals a knowledge gap, and a missing answer to the second reveals an ownership gap. The end-to-end argument shows where an answer can be found, and maintenance supplies the return path that lets the system ask again after change.
 
 ## Notes
 

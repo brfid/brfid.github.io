@@ -40,19 +40,17 @@ Subroutines raised it, and so did macro systems. FORTRAN raised it loudly: John 
 
 ## What is different about LLMs
 
-So, the question is back: whether LLM-assisted code is real programming, whether text written with LLM help is real writing.
-
-The legitimacy debate will resolve itself, though not because history mandates it. It resolves because using the best available tool, and understanding its properties, is good engineering (and market distortions aside, it usually wins out over time). The most interesting question is what the layer actually is.
+Questions about whether LLM-assisted code is real programming, or text written with LLM help is real writing, have revived the legitimacy debate. History does not guarantee its outcome, although the debate will resolve in practice as practitioners use the best available tools and learn their properties; market distortions aside, that approach is good engineering and usually wins out over time. The more interesting question is what kind of abstraction an LLM provides.
 
 Every previous abstraction layer was deterministic and traceable. A macro expansion has a defined structure: given a name and the current state, you can compute the result by hand. A compiler's transformation of source to object code is, in principle, auditable. The failure modes are structural (unmatched brackets, undefined names) and they are reported precisely.
 
 LLMs are not like this. The binding between a prompt and its output is not a defined rule you can look up. It is distributed across a weight matrix, a large table of numerical values produced by training on text you did not write and cannot inspect. The output is not deterministic. The failure modes are not structural; they are probabilistic. The model can fail silently: the output looks plausible, reads as confident, and nothing flags it as wrong. There is no `Find` routine you can call to check the current state.
 
-This is not an argument against the layer! It is a description of the layer's properties. Strachey never stated it as a principle, but one can be distilled from what he built and decided: the power of an abstraction layer comes from committing to it entirely. Partial adoption breaks the model.
+Using the layer well begins with an accurate account of these properties. Strachey's design suggests a general principle he did not state directly: an abstraction layer derives its power from full commitment because partial adoption breaks the model.
 
 Strachey was not alone in finding it. Dijkstra hit the same constraint with structured programming: full commitment to provable control structures was the condition for formal reasoning, and its popular reduction to "abolish goto" lost that property entirely.[^4] Kay hit it with OOP: the real innovation was message-passing, not objects, and most languages adopted the lesser idea.
 
-The failure modes are real, and the discipline is learning what they are. The longer question is what that discipline evolves into. Strachey's commitment became infrastructure we now take for granted. The LLM equivalent is being designed now: verification practices, workflow conventions, the points where human judgment belongs.
+Strachey's commitment eventually became infrastructure we take for granted; for LLMs, the corresponding discipline begins with learning their failure modes and is now taking shape through verification practices, workflow conventions, and decisions about where human judgment belongs.
 
 [^1]: Wheeler, D.J. (1952). "The Use of Sub-Routines in Programmes." *Proceedings of the ACM national meeting*, Pittsburgh, pp. 235–236.
 
