@@ -105,9 +105,63 @@ def test_deploy_uses_the_shared_production_verifier() -> None:
     assert ".venv/bin/python scripts/verify_site.py site" in workflow
     assert "--production" in workflow
     assert "--resume-yaml resume.yaml" in workflow
-    assert '--build-run-url "$BUILD_RUN_URL"' in workflow
+    assert '--build-run-url "$VINTAGE_RUN_URL"' in workflow
     assert "private_resume_path" not in workflow
     assert "deployments: write" not in workflow
+
+
+def test_deploy_supports_fail_closed_vintage_reuse() -> None:
+    """Fast mode must reuse validated provenance while both modes share one deploy tail."""
+    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+    footer = (ROOT / "hugo" / "layouts" / "_partials" / "footer.html").read_text(encoding="utf-8")
+    mode_step = workflow.split("- name: Select publish mode", maxsplit=1)[1].split("- name: Set up Hugo", maxsplit=1)[0]
+    reuse_step = workflow.split("- name: Download reusable vintage result", maxsplit=1)[1].split(
+        "- name: Run vintage pipeline", maxsplit=1
+    )[0]
+    standard_step = workflow.split("- name: Run vintage pipeline", maxsplit=1)[1].split(
+        "- name: Select vintage provenance", maxsplit=1
+    )[0]
+    retention_step = workflow.split("- name: Retain reusable vintage result", maxsplit=1)[1].split(
+        "- name: Upload Pages artifact", maxsplit=1
+    )[0]
+
+    assert "publish_mode:" in workflow
+    assert "default: standard" in workflow
+    assert "[fast]" in workflow
+    assert "actions: read" in workflow
+    assert "mode=standard" in mode_step
+    assert '"$GITHUB_EVENT_NAME" == "workflow_dispatch"' in mode_step
+    assert '"$GITHUB_EVENT_NAME" == "push"' in mode_step
+    assert "if: steps.mode.outputs.mode == 'fast'" in reuse_step
+    assert "if: steps.mode.outputs.mode == 'standard'" in standard_step
+    assert "if: steps.mode.outputs.mode == 'standard'" in retention_step
+    assert "resume_generator.vintage_reuse fingerprint" in workflow
+    assert '[[ ! "$fingerprint" =~ ^[0-9a-f]{64}$ ]]' in workflow
+    assert "resume_generator.vintage_reuse validate" in workflow
+    assert "No reusable vintage result matches" in workflow
+    assert "source_run_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${source_run_id}" in workflow
+    assert "'.conclusion'" in reuse_step
+    assert "'.head_branch'" in reuse_step
+    assert "'.head_sha'" in reuse_step
+    assert "'.path'" in reuse_step
+    assert '".github/workflows/deploy.yml"' in reuse_step
+    assert "VINTAGE_SHA" in workflow
+    assert "VINTAGE_RUN_URL" in workflow
+    assert "vintage-production-${{ steps.vintage-fingerprint.outputs.value }}" in workflow
+    assert "retention-days: 90" in workflow
+    for artifact in ("brad.bio.txt", "build.log.html", "pipeline-status.json"):
+        assert f"build/vintage/{artifact}" in workflow
+
+    provenance = workflow.index("name: Select vintage provenance")
+    assert workflow.index("name: Download reusable vintage result") < provenance
+    assert workflow.index("name: Run vintage pipeline") < provenance
+    assert provenance < workflow.index("name: Generate bio data for Hugo")
+    assert workflow.index("name: Generate bio data for Hugo") < workflow.index("make resume-pdf-public")
+    assert workflow.index("make resume-pdf-public") < workflow.index("name: Verify production output")
+    assert workflow.index("name: Verify production output") < workflow.index("name: Retain reusable vintage result")
+    assert workflow.index("name: Retain reusable vintage result") < workflow.index("name: Upload Pages artifact")
+    assert "continue-on-error" not in retention_step
+    assert "<span>Build:" in footer
 
 
 def test_site_chrome_preserves_navigation_accessibility_contract() -> None:

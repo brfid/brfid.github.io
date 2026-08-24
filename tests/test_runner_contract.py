@@ -62,24 +62,33 @@ def test_image_build_workflow_is_manual_and_reports_both_digests() -> None:
 
 def test_publish_paths_use_the_shared_semantic_validator() -> None:
     """Manual validation and deployment must enforce one output contract."""
-    for name in ("deploy.yml", "vintage-validate.yml"):
-        workflow = (WORKFLOWS / name).read_text(encoding="utf-8")
-        assert ".venv/bin/python -m resume_generator.vintage_contract" in workflow
+    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
+    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+    reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
+
+    assert ".venv/bin/python -m resume_generator.vintage_reuse validate" in deploy
+    assert ".venv/bin/python -m resume_generator.vintage_contract" in validate
+    assert "validate_rendered_bio(rendered_bio, expected)" in reuse
 
 
 def test_workflows_consume_direct_runner_artifacts() -> None:
     """Deployment and validation must consume the runner's files without stdout transport."""
     runner = RUNNER.read_text(encoding="utf-8")
+    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
+    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+    reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
 
     assert "_BASE64_BEGIN" not in runner
     assert "base64 <" not in runner
-    for name in ("deploy.yml", "vintage-validate.yml"):
-        workflow = (WORKFLOWS / name).read_text(encoding="utf-8")
+    for workflow in (deploy, validate):
         assert "bash scripts/vintage-runner.sh" in workflow
         assert "/tmp/vintage-stdout.txt" not in workflow
         assert "_BASE64_BEGIN" not in workflow
-        assert "for artifact in brad.bio.txt build.log.html pipeline-status.json; do" in workflow
-        assert '"build/vintage/${artifact}"' in workflow
+    assert "for artifact in brad.bio.txt build.log.html pipeline-status.json; do" in validate
+    assert '"build/vintage/${artifact}"' in validate
+    for artifact in ("brad.bio.txt", "build.log.html", "pipeline-status.json"):
+        assert f'"{artifact}"' in reuse
+        assert f"build/vintage/{artifact}" in deploy
 
 
 def test_runner_preserves_public_status_and_log_identifiers() -> None:
