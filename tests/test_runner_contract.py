@@ -154,12 +154,57 @@ def test_image_recipes_pin_external_inputs() -> None:
     pdp11 = (ROOT / "vintage" / "machines" / "pdp11" / "Dockerfile.pdp11-pexpect").read_text(encoding="utf-8")
     vax = (ROOT / "vintage" / "machines" / "vax" / "Dockerfile.vax-pexpect").read_text(encoding="utf-8")
 
-    pdp11_from = next(line for line in pdp11.splitlines() if line.startswith("FROM "))
+    pdp11_from = [line for line in pdp11.splitlines() if line.startswith("FROM ")]
     vax_from = next(line for line in vax.splitlines() if line.startswith("FROM "))
-    assert pdp11_from.startswith("FROM debian:bookworm-slim@sha256:")
+    pdp11_base = "FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241"
+    assert pdp11_from == [f"{pdp11_base} AS simh-builder", f"{pdp11_base} AS runtime"]
     assert vax_from.startswith("FROM jguillaumes/simh-vaxbsd:latest@sha256:")
     assert "74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42" in pdp11
     assert "sha256sum -c -" in pdp11
+
+
+def test_pdp11_runtime_image_excludes_build_dependencies() -> None:
+    """The final PDP-11 stage must contain runtime dependencies, not its toolchain."""
+    dockerfile = (ROOT / "vintage" / "machines" / "pdp11" / "Dockerfile.pdp11-pexpect").read_text(encoding="utf-8")
+    builder, runtime = dockerfile.split(" AS runtime\n", maxsplit=1)
+    runtime_install = runtime.split("RUN apt-get update && apt-get install -y --no-install-recommends", maxsplit=1)[
+        1
+    ].split("    && rm -rf /var/lib/apt/lists/*", maxsplit=1)[0]
+
+    for package in ("build-essential", "libedit-dev", "libpcre3-dev", "wget", "ca-certificates", "git"):
+        assert package in builder
+        assert package not in runtime_install
+    for package in ("libedit2", "libpcre3", "python3", "python3-pexpect"):
+        assert package in runtime_install
+    assert "apt-get install -y --no-install-recommends" in runtime
+    assert "COPY --from=simh-builder /usr/local/bin/pdp11 /usr/local/bin/pdp11" in runtime
+    assert "COPY --from=simh-builder /opt/pdp11/211bsd_rpeth.dsk /opt/pdp11/211bsd_rpeth.dsk" in runtime
+    assert "pdp11 RegisterSanityCheck" in runtime
+    assert "python3 -c 'import pexpect'" in runtime
+    for command in ("cc", "git", "make", "wget"):
+        assert f"! command -v {command}" in runtime
+
+
+def test_vax_image_disables_unused_devices() -> None:
+    """The VAX image must not expose retired or unattached hardware."""
+    dockerfile = (ROOT / "vintage" / "machines" / "vax" / "Dockerfile.vax-pexpect").read_text(encoding="utf-8")
+    config = (ROOT / "vintage" / "machines" / "vax" / "configs" / "vax780-pexpect.ini").read_text(encoding="utf-8")
+    directives = {line.strip() for line in config.splitlines() if line.strip() and not line.lstrip().startswith(";")}
+
+    assert {
+        "set lpt disabled",
+        "set rp disabled",
+        "set rl disabled",
+        "set rq2 disabled",
+        "set rq3 disabled",
+        "set ts disabled",
+    } <= directives
+    assert "att rq0 RA81.000" in directives
+    assert "att rq1 RA81VHD.001" in directives
+    assert {line for line in directives if line.endswith(" enabled")} == {"set rq enabled"}
+    for prefix in ("attach lpt ", "set rp0 ", "set rp1 ", "set rp2 ", "set rp3 ", "set rl0 ", "set rl1 "):
+        assert not any(line.startswith(prefix) for line in directives)
+    assert "/opt/vax-ini-path.txt" not in dockerfile
 
 
 def test_docker_context_is_a_strict_allowlist() -> None:

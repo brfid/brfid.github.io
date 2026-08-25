@@ -28,7 +28,7 @@ Use this reference to diagnose SIMH console and artifact failures. For commands,
 
 ## Stage B: VAX 4.3BSD
 
-The VAX image records the SIMH binary and configuration paths under `/opt/`. Its build expands the base image's gzipped RA81 disks because SIMH cannot attach them directly. `vax780-pexpect.ini` disables networking, remote consoles, and DZ terminals.
+The VAX image records the SIMH binary and configuration paths under `/opt/`. Its build expands the base image's gzipped RA81 disks because SIMH cannot attach them directly. `vax780-pexpect.ini` leaves only the local console, time-of-day clock, and two attached MSCP disks enabled.
 
 The VAX script performs these operations:
 

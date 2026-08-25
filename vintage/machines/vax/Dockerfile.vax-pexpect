@@ -15,7 +15,6 @@ RUN set -e; \
     fi; \
     dir=$(dirname "$ini"); \
     echo "Found ini: $ini  (dir: $dir)"; \
-    echo "$ini"                         > /opt/vax-ini-path.txt; \
     echo "${dir}/vax780-pexpect.ini"    > /opt/vax-pexpect-ini-path.txt; \
     which vax780                        > /opt/vax-bin-path.txt 2>/dev/null || echo "vax780" > /opt/vax-bin-path.txt; \
     echo "Decompressing disk images in $dir"; \
@@ -23,7 +22,7 @@ RUN set -e; \
         [ -f "$gz" ] && gunzip "$gz" && echo "  decompressed: $gz"; \
     done; \
     echo "Cached paths:"; \
-    cat /opt/vax-ini-path.txt /opt/vax-pexpect-ini-path.txt /opt/vax-bin-path.txt; \
+    cat /opt/vax-pexpect-ini-path.txt /opt/vax-bin-path.txt; \
     echo "Disk images:"; \
     ls -lh "$dir"/RA81* 2>/dev/null || true
 
