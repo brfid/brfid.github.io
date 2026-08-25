@@ -1,17 +1,15 @@
 # PDP-11/73 with 2.11BSD and a pexpect-controlled local console.
 # Build with the repository root as context. Promote production images through
 # build-images.yml; the local runner may build this recipe as a fallback.
-FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241
+FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241 AS simh-builder
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libedit-dev \
     libpcre3-dev \
     wget \
     ca-certificates \
     git \
-    python3 \
-    python3-pexpect \
     && rm -rf /var/lib/apt/lists/*
 
 # Pin the SIMH source revision used to build the PDP-11 emulator.
@@ -33,6 +31,31 @@ RUN wget -q https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
     tar xzf 211bsd_rpethset.tgz && \
     chmod 644 211bsd_rpeth.dsk && \
     rm -f 211bsd_rpethset.tgz *.txt *.pdf
+
+FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241 AS runtime
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libedit2 \
+    libpcre3 \
+    python3 \
+    python3-pexpect \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=simh-builder /usr/local/bin/pdp11 /usr/local/bin/pdp11
+
+RUN set -eu; \
+    pdp11 RegisterSanityCheck </dev/null > /tmp/pdp11-smoke.log 2>&1; \
+    grep -Fq 'Good Registers in PDP-11 simulator.' /tmp/pdp11-smoke.log; \
+    rm /tmp/pdp11-smoke.log; \
+    python3 -c 'import pexpect'; \
+    ! command -v cc; \
+    ! command -v git; \
+    ! command -v make; \
+    ! command -v wget; \
+    test ! -e /usr/include/editline/readline.h; \
+    test ! -e /usr/include/pcre.h
+
+COPY --from=simh-builder /opt/pdp11/211bsd_rpeth.dsk /opt/pdp11/211bsd_rpeth.dsk
 
 COPY vintage/machines/pdp11/configs/pdp11-pexpect.ini /opt/pdp11/pdp11-pexpect.ini
 COPY scripts/pdp11_pexpect.py /opt/pdp11/pdp11_pexpect.py
