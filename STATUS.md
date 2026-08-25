@@ -25,7 +25,7 @@ This file records current operations and queued work. Use `git log` for complete
 
 ## Now
 
-- Slim the vintage image pair by disabling unused VAX devices and excluding the PDP-11 build toolchain from its runtime image, then promote and validate both immutable digests together.
+- None.
 
 ## Next
 
