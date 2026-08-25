@@ -9,7 +9,6 @@ import yaml as _yaml
 
 from resume_generator.bio_yaml import (
     BioData,
-    _read_successful_build_id,
     bio_to_yaml,
     main,
     parse_bio_txt,
@@ -127,22 +126,6 @@ def test_bio_to_yaml_about_round_trips_through_yaml() -> None:
 def test_require_complete_bio_rejects_incomplete_shape() -> None:
     with pytest.raises(ValueError, match="headline, about"):
         require_complete_bio(BioData(name="Only Name"))
-
-
-def test_read_build_id_from_success_status(tmp_path: pathlib.Path) -> None:
-    status = tmp_path / "pipeline-status.json"
-    status.write_text(
-        '{"build_id": "build-20260301-120000", "result": "success", "exit_code": 0}\n',
-        encoding="utf-8",
-    )
-    assert _read_successful_build_id(status) == "build-20260301-120000"
-
-
-def test_read_build_id_rejects_failure_status(tmp_path: pathlib.Path) -> None:
-    status = tmp_path / "pipeline-status.json"
-    status.write_text('{"build_id": "build-failed", "result": "failure", "exit_code": 1}\n', encoding="utf-8")
-    with pytest.raises(ValueError, match="successful"):
-        _read_successful_build_id(status)
 
 
 def test_main_writes_yaml(tmp_path: pathlib.Path) -> None:

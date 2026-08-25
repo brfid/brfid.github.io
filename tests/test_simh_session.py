@@ -12,10 +12,11 @@ import pytest
 # scripts/ is not a package; add it to the path so we can import simh_session.
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
+import vax_pexpect
 from pdp11_pexpect import _CAPTURE_BEGIN as PDP_CAPTURE_BEGIN
 from pdp11_pexpect import _CAPTURE_END as PDP_CAPTURE_END
 from simh_session import (
-    UUE_CHUNK_SIZE,
+    HEREDOC_CHUNK_SIZE,
     GuestCommandError,
     inject_batched_heredoc,
     make_logger,
@@ -116,13 +117,13 @@ def test_inject_multiple_batches() -> None:
     lines = [f"line{i}" for i in range(25)]
     inject_batched_heredoc(child, "/tmp/bar.uu", lines, "PDPsh> ", 60)
 
-    expected_batches = -(-25 // UUE_CHUNK_SIZE)  # ceil division
+    expected_batches = -(-25 // HEREDOC_CHUNK_SIZE)  # ceil division
     assert child.expect.call_count == expected_batches + 2
 
 
 def test_inject_first_batch_uses_create_redirect() -> None:
     child = _make_mock_child()
-    lines = [f"line{i}" for i in range(UUE_CHUNK_SIZE + 1)]
+    lines = [f"line{i}" for i in range(HEREDOC_CHUNK_SIZE + 1)]
     inject_batched_heredoc(child, "/tmp/x.uu", lines, "PDPsh> ", 60)
 
     cat_calls = [c[0][0] for c in child.sendline.call_args_list if c[0][0].startswith("cat ")]
@@ -135,6 +136,17 @@ def test_inject_empty_lines() -> None:
     inject_batched_heredoc(child, "/tmp/empty.uu", [], "PDPsh> ", 60)
     child.sendline.assert_not_called()
     child.expect.assert_not_called()
+
+
+def test_vax_source_injection_uses_shared_batched_heredoc(monkeypatch: pytest.MonkeyPatch) -> None:
+    child = _make_mock_child("VAXsh> ")
+    inject = MagicMock()
+    monkeypatch.setattr(vax_pexpect, "inject_batched_heredoc", inject)
+
+    vax_pexpect._inject_file(child, "/tmp/bradman.c", "line one\nline two\n")
+
+    inject.assert_called_once_with(child, "/tmp/bradman.c", ["line one", "line two"], "VAXsh> ", 60)
+    child.sendline.assert_not_called()
 
 
 @pytest.mark.parametrize(

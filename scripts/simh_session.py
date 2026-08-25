@@ -17,8 +17,8 @@ if TYPE_CHECKING:
 # Protect the guest tty from a host-speed heredoc stream.
 LINE_DELAY: float = 0.005
 
-# Larger UUE heredocs can stall while the guest echoes their input.
-UUE_CHUNK_SIZE: int = 10
+# Larger heredocs can stall while the guest echoes their input.
+HEREDOC_CHUNK_SIZE: int = 10
 
 _COMMAND_STATUS_PATTERN = rb"__VINTAGE_RC_([0-9]+)__"
 
@@ -130,8 +130,8 @@ def inject_batched_heredoc(
     timeout: float,
 ) -> None:
     """Write short text lines through throttled, fixed-size guest heredocs."""
-    for batch_idx, batch_start in enumerate(range(0, len(lines), UUE_CHUNK_SIZE)):
-        batch = lines[batch_start : batch_start + UUE_CHUNK_SIZE]
+    for batch_idx, batch_start in enumerate(range(0, len(lines), HEREDOC_CHUNK_SIZE)):
+        batch = lines[batch_start : batch_start + HEREDOC_CHUNK_SIZE]
         redirect = ">" if batch_idx == 0 else ">>"
         child.sendline(f"cat {redirect} {remote_path} << 'HEREDOC_EOF'")
         for line in batch:

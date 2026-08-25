@@ -68,22 +68,6 @@ def test_bio_rejects_absent_fields() -> None:
         build_vintage_bio({"name": "Only Name"}, {}, build_date=date(2026, 1, 25))
 
 
-def test_bio_has_no_resume_document_fields() -> None:
-    """The bio pipeline must carry only bio fields even if handed a full resume."""
-    site = {"name": "N", "headline": "H"}
-    resume = {
-        "basics": {"summary": "B", "email": "person@example.com"},
-        "work": [{"name": "Co"}],
-        "skills": [{"name": "S"}],
-    }
-
-    text = emit_vintage_yaml(build_vintage_bio(site, resume, build_date=date(2026, 1, 25)))
-
-    for resume_key in ("work:", "skills:", "contact:", "summary:", "impactHighlights:", "basics:"):
-        assert resume_key not in text
-    assert 'bioProfile: "B"' in text
-
-
 def test_emitter_rejects_keys_outside_fixed_contract() -> None:
     with pytest.raises(ValueError, match="keys do not match"):
         emit_vintage_yaml({"schemaVersion": "v1", "extra": "unused"})

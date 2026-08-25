@@ -10,6 +10,8 @@ import sys
 from collections.abc import Sequence
 from typing import TypedDict
 
+from .pipeline_status import require_successful_pipeline_status
+
 
 class BioData(TypedDict, total=False):
     """Fields consumed by the Hugo landing page."""
@@ -83,19 +85,6 @@ def bio_to_yaml(data: BioData) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _read_successful_build_id(status_path: pathlib.Path) -> str:
-    """Read a successful build ID from the structured pipeline status file."""
-    status = json.loads(status_path.read_text(encoding="utf-8"))
-    if not isinstance(status, dict):
-        raise ValueError("pipeline status must be a JSON object")
-    if status.get("result") != "success" or status.get("exit_code") != 0:
-        raise ValueError("pipeline status does not describe a successful build")
-    build_id = status.get("build_id")
-    if not isinstance(build_id, str) or not build_id.strip():
-        raise ValueError("pipeline status has no build_id")
-    return build_id
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     """Convert one rendered bio file and return the process exit code."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -129,7 +118,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.pipeline_status is not None:
             if not build_log_available:
                 raise ValueError("pipeline status was provided but the build log is missing or empty")
-            build_id = _read_successful_build_id(args.pipeline_status)
+            build_id = require_successful_pipeline_status(args.pipeline_status)
         if build_log_available:
             data["build_log"] = True
         if build_id:
@@ -139,7 +128,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         args.dst.parent.mkdir(parents=True, exist_ok=True)
         args.dst.write_text(bio_to_yaml(data), encoding="utf-8")
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+    except (OSError, UnicodeError, ValueError) as exc:
         print(f"bio_yaml: {exc}", file=sys.stderr)
         return 1
 

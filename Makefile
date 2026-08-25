@@ -16,6 +16,9 @@ help:
 	@echo "  make verify-site   Clean-build Hugo and verify rendered public contracts"
 	@echo "  make check_env     Verify local prerequisites"
 	@echo ""
+	@echo "Maintenance:"
+	@echo "  make clean         Remove generated build artifacts"
+	@echo ""
 	@echo "Build and preview:"
 	@echo "  make sync-site-data    Sync site.yaml -> hugo/data/site.yaml"
 	@echo "  make sync-resume-data  Sync resume.yaml -> hugo/data/resume.yaml"
@@ -51,7 +54,7 @@ check_env:
 
 clean:
 	@echo "Removing generated build artifacts..."
-	@rm -rf build/ site/ local/ hugo/public/
+	@rm -rf build/ site/ local/
 	@rm -f hugo/.hugo_build.lock
 	@rm -f hugo/data/bio.yaml hugo/data/resume.yaml hugo/data/site.yaml
 	@rm -f hugo/static/build.log.html hugo/static/pipeline-status.json

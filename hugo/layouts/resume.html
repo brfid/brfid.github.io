@@ -5,7 +5,7 @@
 <article class="post-single">
   <header class="post-header">
     <div class="resume-header">
-      <div class="resume-header-left">
+      <div>
         <h1 class="post-title">{{ $basics.name }}</h1>
         <p class="resume-label">{{ $basics.label }}</p>
         {{- with $basics.location }}
@@ -62,9 +62,9 @@
       <h2>Experience</h2>
       {{- range (sort . "startDate" "desc") }}
       {{- if .positions }}
-      <div class="listing-item resume-employer resume-employer--multi">
+      <div class="listing-item resume-employer">
         <div class="listing-item-head resume-employer-head">
-          <h3 class="resume-item-title resume-employer-title">{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}</h3>
+          <h3 class="resume-item-title">{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}</h3>
           <span class="listing-dates">
             {{ dateFormat "Jan 2006" (time .startDate) }} -
             {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
@@ -76,7 +76,7 @@
           {{- range (sort .positions "startDate" "desc") }}
           <div class="resume-role">
             <div class="listing-item-head resume-role-head">
-              <h4 class="resume-item-title resume-role-title">{{ .position }}</h4>
+              <h4 class="resume-item-title">{{ .position }}</h4>
               <span class="listing-dates">
                 {{ dateFormat "Jan 2006" (time .startDate) }} -
                 {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
