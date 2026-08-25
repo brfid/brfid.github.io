@@ -10,12 +10,14 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+pdf = [
   # Each Playwright release selects a Chromium build that affects PDF pagination.
   # Inspect the PDF output when updating this exact pin.
   "playwright==1.62.0",
 ]
-
-[project.optional-dependencies]
 dev = [
   "mypy>=1.8",
   "pexpect>=4.9",

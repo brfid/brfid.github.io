@@ -1,4 +1,4 @@
-"""Check local Hugo, Python, and Playwright prerequisites without installing them."""
+"""Check local Hugo, Python, and PDF-generation prerequisites without installing them."""
 
 from __future__ import annotations
 
@@ -60,13 +60,13 @@ def playwright_install_locations() -> list[Path]:
 def check_playwright_version() -> None:
     """Require the installed Playwright package to match the project pin."""
     project = tomllib.loads(PROJECT_FILE.read_text(encoding="utf-8"))
-    dependencies = project.get("project", {}).get("dependencies", [])
+    dependencies = project.get("project", {}).get("optional-dependencies", {}).get("pdf", [])
     expected = next(
         (match.group(1) for dependency in dependencies if (match := PLAYWRIGHT_PIN.fullmatch(dependency))),
         None,
     )
     if expected is None:
-        raise RuntimeError(f"could not find an exact Playwright pin in {PROJECT_FILE}")
+        raise RuntimeError(f"could not find an exact Playwright pin in the pdf extra in {PROJECT_FILE}")
     try:
         installed = metadata.version("playwright")
     except metadata.PackageNotFoundError as error:

@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import html
-import json
 import re
 import shutil
 import subprocess
@@ -17,6 +16,7 @@ from typing import Any, cast
 
 import yaml
 
+from .pipeline_status import PipelineStatusError, require_successful_pipeline_status
 from .vintage_contract import VintageContractError, validate_rendered_bio, vintage_input_from_mappings
 
 FINGERPRINT_FILES = (
@@ -25,6 +25,7 @@ FINGERPRINT_FILES = (
     Path("resume_generator/__init__.py"),
     Path("resume_generator/bio_yaml.py"),
     Path("resume_generator/build_log.py"),
+    Path("resume_generator/pipeline_status.py"),
     Path("resume_generator/vintage_contract.py"),
     Path("resume_generator/vintage_reuse.py"),
     Path("resume_generator/vintage_yaml.py"),
@@ -46,14 +47,10 @@ class VintageReuseError(ValueError):
 
 @dataclass(frozen=True)
 class ValidatedVintageBundle:
-    """Identity and paths from a validated reusable vintage bundle."""
+    """Identity consumed after validating a reusable vintage bundle."""
 
     build_id: str
-    source_sha: str
     source_run_url: str
-    bio_path: Path
-    build_log_path: Path
-    pipeline_status_path: Path
 
 
 def _load_mapping(path: Path, *, label: str) -> Mapping[str, Any]:
@@ -176,34 +173,6 @@ def _validate_source_run_url(source_run_url: str, repository: str) -> None:
         )
 
 
-def _read_status(path: Path) -> dict[str, object]:
-    try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-        raise VintageReuseError(f"pipeline status is not valid UTF-8 JSON: {path}: {exc}") from exc
-    if not isinstance(value, dict):
-        raise VintageReuseError(f"pipeline status must be a JSON object: {path}")
-    return cast(dict[str, object], value)
-
-
-def _validate_status(status: Mapping[str, object], *, source_sha: str) -> str:
-    if status.get("pipeline") != PIPELINE_NAME:
-        raise VintageReuseError(f"pipeline status must name {PIPELINE_NAME!r}")
-    if status.get("result") != "success":
-        raise VintageReuseError("pipeline status result must be 'success'")
-    exit_code = status.get("exit_code")
-    if not isinstance(exit_code, int) or isinstance(exit_code, bool) or exit_code != 0:
-        raise VintageReuseError("pipeline status exit_code must be the integer 0")
-    build_id = status.get("build_id")
-    if not isinstance(build_id, str) or not build_id.strip():
-        raise VintageReuseError("pipeline status build_id must be a nonempty string")
-    if status.get("git_sha") != source_sha:
-        raise VintageReuseError(
-            f"pipeline status git_sha does not match source SHA: {status.get('git_sha')!r} != {source_sha!r}"
-        )
-    return build_id
-
-
 def _validate_build_log(path: Path, *, build_id: str) -> None:
     try:
         text = path.read_text(encoding="utf-8")
@@ -234,8 +203,14 @@ def validate_bundle(  # pylint: disable=too-many-arguments
     for name, path in paths.items():
         _require_regular_file(path, label=f"reusable vintage artifact {name}", nonempty=True)
 
-    status = _read_status(paths["pipeline-status.json"])
-    build_id = _validate_status(status, source_sha=source_sha)
+    try:
+        build_id = require_successful_pipeline_status(
+            paths["pipeline-status.json"],
+            expected_pipeline=PIPELINE_NAME,
+            expected_git_sha=source_sha,
+        )
+    except PipelineStatusError as exc:
+        raise VintageReuseError(f"pipeline status {exc}") from exc
     _validate_build_log(paths["build.log.html"], build_id=build_id)
 
     site = _load_mapping(site_yaml, label="site YAML")
@@ -249,11 +224,7 @@ def validate_bundle(  # pylint: disable=too-many-arguments
 
     return ValidatedVintageBundle(
         build_id=build_id,
-        source_sha=source_sha,
         source_run_url=source_run_url,
-        bio_path=paths["brad.bio.txt"],
-        build_log_path=paths["build.log.html"],
-        pipeline_status_path=paths["pipeline-status.json"],
     )
 
 

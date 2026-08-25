@@ -1,5 +1,6 @@
 """Contracts for the containerized vintage runner."""
 
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -97,6 +98,40 @@ def test_runner_preserves_public_status_and_log_identifiers() -> None:
 
     assert 'LOG_DIR="${LOG_DIR:-/tmp/edcloud-vintage}"' in runner
     assert '"pipeline": "edcloud-vintage"' in runner
+
+
+def test_workflows_export_the_log_directory_consumed_by_the_runner() -> None:
+    """Diagnostic artifact paths must use the directory inherited by the runner."""
+    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
+    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+
+    for workflow in (deploy, validate):
+        runner_step = workflow.split("name: Run vintage pipeline", maxsplit=1)[1]
+        assert "LOG_DIR: /tmp/edcloud-vintage" in runner_step
+        assert 'echo "log_file=${LOG_DIR}/${BUILD_ID}.log"' in runner_step
+        assert "LOG_DIR=/tmp/edcloud-vintage" not in runner_step
+
+
+def test_validation_workflow_keeps_the_digest_local_to_its_summary() -> None:
+    """The digest has no downstream consumer and must not expose a dead step output."""
+    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+
+    assert "id: compare" not in validate
+    assert 'echo "sha256=${sha}" >> "$GITHUB_OUTPUT"' not in validate
+    assert r'echo "| SHA256 | \`${sha}\` |"' in validate
+
+
+def test_standalone_vintage_bootstrap_excludes_pdf_dependencies() -> None:
+    """A vintage-only run must not install Playwright or its browser runtime."""
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    runner = RUNNER.read_text(encoding="utf-8")
+
+    dependencies = project["project"]["dependencies"]
+    pdf_dependencies = project["project"]["optional-dependencies"]["pdf"]
+    assert not any(dependency.lower().startswith("playwright") for dependency in dependencies)
+    assert sum(dependency.lower().startswith("playwright==") for dependency in pdf_dependencies) == 1
+    assert ".venv/bin/python -m pip install --quiet -e ." in runner
+    assert ".[pdf]" not in runner
 
 
 def test_runner_clears_owned_generated_outputs_before_each_run() -> None:

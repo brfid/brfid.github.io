@@ -16,6 +16,8 @@ from urllib.parse import unquote, urlparse
 
 import yaml
 
+from resume_generator.pipeline_status import PipelineStatusIssueCode, validate_pipeline_status
+
 REQUIRED_FILES = (
     "404.html",
     "about/index.html",
@@ -296,27 +298,20 @@ def read_public_email(resume_yaml: Path, errors: list[str]) -> str | None:
 
 def read_build_id(status_path: Path, errors: list[str]) -> str | None:
     """Read and validate the production pipeline result, returning its build ID."""
-    try:
-        status = json.loads(status_path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        errors.append(f"pipeline-status.json: could not read valid JSON: {error}")
-        return None
-    if not isinstance(status, dict):
-        errors.append("pipeline-status.json: expected a JSON object")
-        return None
-
-    record(status.get("result") == "success", errors, "pipeline-status.json: result is not 'success'")
-    exit_code = status.get("exit_code")
-    record(
-        isinstance(exit_code, int) and not isinstance(exit_code, bool) and exit_code == 0,
-        errors,
-        "pipeline-status.json: exit_code is not 0",
-    )
-    build_id = status.get("build_id")
-    if not isinstance(build_id, str) or not build_id.strip():
-        errors.append("pipeline-status.json: build_id is missing or empty")
-        return None
-    return build_id
+    validation = validate_pipeline_status(status_path)
+    messages = {
+        PipelineStatusIssueCode.OBJECT: "expected a JSON object",
+        PipelineStatusIssueCode.RESULT: "result is not 'success'",
+        PipelineStatusIssueCode.EXIT_CODE: "exit_code is not 0",
+        PipelineStatusIssueCode.BUILD_ID: "build_id is missing or empty",
+    }
+    for issue in validation.issues:
+        if issue.code is PipelineStatusIssueCode.READ:
+            message = f"could not read valid JSON: {issue.detail}"
+        else:
+            message = messages.get(issue.code, issue.message)
+        errors.append(f"pipeline-status.json: {message}")
+    return validation.build_id
 
 
 def run_external(command: str, arguments: Sequence[str], errors: list[str]) -> str | None:

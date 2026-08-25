@@ -83,7 +83,7 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install -e '.[dev]'
+          .venv/bin/python -m pip install -e '.[dev,pdf]'
           .venv/bin/python -m playwright install --with-deps chromium
           sudo apt-get install -y poppler-utils
 
@@ -162,11 +162,11 @@ jobs:
         env:
           GIT_SHA: ${{ github.sha }}
           ALLOW_LOCAL_IMAGE_BUILD: "0"
+          LOG_DIR: /tmp/edcloud-vintage
         run: |
           set -euo pipefail
 
           BUILD_ID="build-$(date -u '+%Y%m%d-%H%M%S')"
-          LOG_DIR=/tmp/edcloud-vintage
           echo "log_file=${LOG_DIR}/${BUILD_ID}.log" >> "$GITHUB_OUTPUT"
 
           if ! bash scripts/vintage-runner.sh "$BUILD_ID"; then

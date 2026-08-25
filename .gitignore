@@ -13,7 +13,6 @@ __pycache__/
 site/
 build/
 local/
-hugo/public/
 hugo/.hugo_build.lock
 hugo/data/bio.yaml
 hugo/data/resume.yaml

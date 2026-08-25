@@ -213,15 +213,11 @@
 .section-feed-link:focus-visible,
 .error-links a:hover,
 .error-links a:focus-visible,
-.post-tags a:hover,
-.post-tags a:focus-visible,
 .paginav a:hover,
 .paginav a:focus-visible {
   color: var(--interactive-hover);
 }
 
-.post-tags a:hover,
-.post-tags a:focus-visible,
 .paginav a:hover,
 .paginav a:focus-visible {
   background: transparent;

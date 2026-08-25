@@ -1,15 +1,11 @@
 {{- define "main" }}
 
-{{- if (and site.Params.profileMode.enabled .IsHome) }}
-{{- partial "index_profile.html" . }}
-{{- else }}
-
-{{- if not .IsHome | and .Title }}
+{{- if .Title }}
 <header class="page-header">
   {{- partial "breadcrumbs.html" . }}
   <h1>
     {{ .Title }}
-    {{- if and (or (eq .Kind `term`) (eq .Kind `section`)) (.Param "ShowRssButtonInSectionTermList") }}
+    {{- if and (eq .Kind `section`) (.Param "ShowRssButtonInSectionTermList") }}
     {{- with .OutputFormats.Get "rss" }}
     <a class="section-feed-link" href="{{ .RelPermalink }}" title="Subscribe to {{ $.Title }} via RSS" aria-label="Subscribe to {{ $.Title }} via RSS">
       <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -40,30 +36,11 @@
 
 {{- $pages := union .RegularPages .Sections }}
 
-{{- if .IsHome }}
-{{- $pages = where site.RegularPages "Type" "in" site.Params.mainSections }}
-{{- $pages = where $pages "Params.hiddenInHomeList" "!=" "true"  }}
-{{- end }}
-
 {{- $paginator := .Paginate $pages }}
 
-{{- if and .IsHome site.Params.homeInfoParams (eq $paginator.PageNumber 1) }}
-{{- partial "home_info.html" . }}
-{{- end }}
+{{- range $paginator.Pages }}
 
-{{- $term := .Data.Term }}
-{{- range $index, $page := $paginator.Pages }}
-
-{{- $class := "post-entry" }}
-
-{{- $user_preferred := or site.Params.disableSpecial1stPost site.Params.homeInfoParams }}
-{{- if (and $.IsHome (eq $paginator.PageNumber 1) (eq $index 0) (not $user_preferred)) }}
-{{- $class = "first-entry" }}
-{{- else if $term }}
-{{- $class = "post-entry tag-entry" }}
-{{- end }}
-
-<article class="{{ $class }}">
+<article class="post-entry">
   {{- $isHidden := (.Param "cover.hiddenInList") | default (.Param "cover.hidden") | default false }}
   {{- partial "cover.html" (dict "cxt" . "IsSingle" false "isHidden" $isHidden) }}
   <header class="entry-header">
@@ -117,8 +94,6 @@
     {{- end }}
   </nav>
 </footer>
-{{- end }}
-
 {{- end }}
 
 {{- end }}

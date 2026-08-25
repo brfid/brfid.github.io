@@ -24,11 +24,6 @@
   width: 0.9rem;
 }
 
-.section-feed-link:hover,
-.section-feed-link:focus-visible {
-  color: var(--interactive-hover);
-}
-
 .entry-link:focus-visible {
   outline: 2px solid var(--forest);
   outline-offset: 3px;

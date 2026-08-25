@@ -215,9 +215,7 @@ def test_validate_bundle_accepts_matching_successful_artifacts(tmp_path: Path) -
     )
 
     assert validated.build_id == BUILD_ID
-    assert validated.source_sha == SOURCE_SHA
     assert validated.source_run_url == SOURCE_RUN_URL
-    assert validated.bio_path == bundle_dir / "brad.bio.txt"
 
 
 @pytest.mark.parametrize("artifact", BUNDLE_FILES)

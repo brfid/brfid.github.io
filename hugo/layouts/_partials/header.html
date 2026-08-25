@@ -4,40 +4,8 @@
     <nav class="header-nav" aria-label="Primary navigation">
         <div class="logo">
             {{- $label_text := (site.Params.label.text | default site.Title) }}
-            {{- if site.Title }}
-            <a href="{{ "" | absLangURL }}" accesskey="h" title="{{ $label_text }} (Alt + H)"{{ if .IsHome }} aria-current="page"{{ end }}>
-                {{- if site.Params.label.icon }}
-                {{- $img := resources.Get site.Params.label.icon }}
-                {{- if $img }}
-                    {{- $processableFormats := (slice "jpg" "jpeg" "png" "tif" "bmp" "gif") -}}
-                    {{- if hugo.IsExtended -}}
-                        {{- $processableFormats = $processableFormats | append "webp" -}}
-                    {{- end -}}
-                    {{- $prod := (hugo.IsProduction | or (eq site.Params.env "production")) }}
-                    {{- if and (in $processableFormats $img.MediaType.SubType) (eq $prod true)}}
-                        {{- if site.Params.label.iconHeight }}
-                            {{- $img = $img.Resize (printf "x%d" site.Params.label.iconHeight) }}
-                        {{ else }}
-                            {{- $img = $img.Resize "x30" }}
-                        {{- end }}
-                    {{- end }}
-                    <img src="{{ $img.Permalink }}" alt="" aria-label="logo"
-                        height="{{- site.Params.label.iconHeight | default "30" -}}">
-                {{- else }}
-                <img src="{{- site.Params.label.icon | absURL -}}" alt="" aria-label="logo"
-                    height="{{- site.Params.label.iconHeight | default "30" -}}">
-                {{- end -}}
-                {{- else if hasPrefix site.Params.label.iconSVG "<svg" }}
-                    {{ site.Params.label.iconSVG | safeHTML }}
-                {{- end -}}
-                {{- $label_text -}}
-            </a>
-            {{- end }}
-
-            {{- $lsenabled := (or (not site.Params.disableThemeToggle) (and (not site.Params.disableLangToggle) (hugo.IsMultilingual))) }}
-            {{- if $lsenabled }}
+            <a href="{{ "" | absLangURL }}" accesskey="h" title="{{ $label_text }} (Alt + H)"{{ if .IsHome }} aria-current="page"{{ end }}>{{ $label_text }}</a>
             <div class="logo-switches">
-                {{- if (not site.Params.disableThemeToggle) }}
                 <button id="theme-toggle" class="theme-toggle" accesskey="t" title="Change color theme (Alt + T)" aria-label="Change color theme">
                     <svg class="moon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -58,55 +26,20 @@
                         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
                     </svg>
                 </button>
-                {{- end }}
-
-                {{- if (not site.Params.disableLangToggle) }}
-                    {{- $lang := .Lang}}
-                    {{- with site.Home.Translations }}
-                    {{- $separator := or $label_text (not site.Params.disableThemeToggle)}}
-                    {{- if $separator }}<span class="nav-sep">|</span>{{ end }}
-                    <ul class="lang-menu">
-                        {{- range . -}}
-                        {{- if ne $lang .Lang }}
-                        <li>
-                            <a href="{{- .Permalink -}}" title="{{ .Language.Params.languageAltTitle | default (.Language.LanguageName | emojify) | default (.Lang | title) }}"
-                                aria-label="{{ .Language.LanguageName | default (.Lang | title) }}">
-                                {{- if (and site.Params.displayFullLangName (.Language.LanguageName)) }}
-                                {{- .Language.LanguageName | emojify -}}
-                                {{- else }}
-                                {{- .Lang | title -}}
-                                {{- end }}
-                            </a>
-                        </li>
-                        {{- end -}}
-                        {{- end}}
-                    </ul>
-                    {{- end }}
-                {{- end }}
             </div>
-            {{- end }}
         </div>
         {{- $currentPage := . }}
         <ul id="menu" class="menu">
             {{- range site.Menus.main }}
             {{- $is_current := $currentPage.IsMenuCurrent .Menu . }}
             {{- $has_current := $currentPage.HasMenuCurrent .Menu . }}
-            {{- $is_search := eq (site.GetPage .KeyName).Layout `search` }}
-            {{- $icon := .Params.icon }}
             {{- $is_external := findRE "://" .URL }}
             {{- $companion_url := .Params.companionurl }}
             {{- $companion_label := .Params.companionlabel | default "Download" }}
             <li{{ if $companion_url }} class="menu-item-with-companion"{{ else if eq .Identifier "source" }} class="menu-utility-item"{{ end }}>
-                <a class="menu-primary-link" href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }} {{- cond $is_search (" (Alt + /)" | safeHTMLAttr) ("" | safeHTMLAttr ) }}"
-                {{- cond $is_search (" accesskey=/" | safeHTMLAttr) ("" | safeHTMLAttr ) }}{{ if $is_current }} aria-current="page"{{ else if $has_current }} aria-current="location"{{ end }}>
-                    <span>
-                        {{- .Pre }}
-                        {{- .Name -}}
-                        {{ .Post -}}
-                    </span>
-                    {{- if $icon }}
-                    <span class="menu-link-icon" aria-hidden="true">{{ partial "svg.html" (dict "name" $icon) }}</span>
-                    {{- else if $is_external }}
+                <a class="menu-primary-link" href="{{ .URL | absLangURL }}" title="{{ .Title | default .Name }}"{{ if $is_current }} aria-current="page"{{ else if $has_current }} aria-current="location"{{ end }}>
+                    <span>{{ .Name }}</span>
+                    {{- if $is_external }}
                     <span class="menu-link-icon" aria-hidden="true">
                         <svg fill="none" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round"
                             stroke-linejoin="round" stroke-width="2.5" viewBox="0 0 24 24">

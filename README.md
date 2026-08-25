@@ -16,7 +16,7 @@ Initialize the checkout and its local Python environment:
 ```bash
 git submodule update --init
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
+.venv/bin/python -m pip install -e '.[dev,pdf]'
 .venv/bin/python -m playwright install chromium
 make check_env
 ```

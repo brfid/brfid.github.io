@@ -53,11 +53,6 @@
   transition: color 0.12s ease;
 }
 
-.error-links a:hover,
-.error-links a:focus-visible {
-  color: var(--interactive-hover);
-}
-
 .error-links a:focus-visible {
   outline: 2px solid var(--forest);
   outline-offset: 0.25rem;

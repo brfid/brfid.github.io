@@ -40,11 +40,11 @@ jobs:
         env:
           GIT_SHA: ${{ github.sha }}
           ALLOW_LOCAL_IMAGE_BUILD: "0"
+          LOG_DIR: /tmp/edcloud-vintage
         run: |
           set -euo pipefail
 
           BUILD_ID="validate-$(date -u '+%Y%m%d-%H%M%S')"
-          LOG_DIR=/tmp/edcloud-vintage
           echo "build_id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
           echo "log_file=${LOG_DIR}/${BUILD_ID}.log" >> "$GITHUB_OUTPUT"
 
@@ -63,7 +63,6 @@ jobs:
           fi
 
       - name: Collect artifacts and check bio
-        id: compare
         env:
           EXPECTED: ${{ inputs.expected_sha256 }}
         run: |
@@ -86,7 +85,6 @@ jobs:
 
           # The rendered bio contains no date, so compare its raw digest.
           sha="$(sha256sum out/brad.bio.txt | cut -d' ' -f1)"
-          echo "sha256=${sha}" >> "$GITHUB_OUTPUT"
           echo "brad.bio.txt: $(wc -l < out/brad.bio.txt) lines, $(wc -c < out/brad.bio.txt) bytes"
           echo "sha256: ${sha}"
 

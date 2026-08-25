@@ -8,7 +8,6 @@ import binascii
 import re
 import shlex
 import sys
-import time
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -162,19 +161,7 @@ def _inject_file(child: pexpect.spawn, remote_path: str, content: str) -> None:
     """Write text lines of at most 200 characters through a quoted heredoc."""
     lines = content.splitlines()
     _log(f"Injecting {len(lines)} lines → {remote_path}")
-    child.sendline(f"cat > {remote_path} << 'HEREDOC_EOF'")
-    for line in lines:
-        child.sendline(line)
-        time.sleep(0.005)
-    child.sendline("HEREDOC_EOF")
-    child.expect(_PROMPT, timeout=_CMD_TIMEOUT)
-    run_checked(
-        child,
-        f"test -s {shlex.quote(remote_path)}",
-        _PROMPT,
-        _CMD_TIMEOUT,
-        label=f"write {remote_path}",
-    )
+    inject_batched_heredoc(child, remote_path, lines, _PROMPT, _CMD_TIMEOUT)
     _log(f"Injected {remote_path}")
 
 
