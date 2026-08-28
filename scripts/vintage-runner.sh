@@ -34,8 +34,8 @@ PDP11_IMAGE="pdp11-pexpect"
 VAX_IMAGE="vax-pexpect"
 
 # Production image digests. Promote and validate both as one pair.
-PINNED_VAX="ghcr.io/brfid/vax-pexpect@sha256:fd9e9e035d7421a181d8708038ed4eeaf66a97446e8c910f33533ab0c705c136"
-PINNED_PDP11="ghcr.io/brfid/pdp11-pexpect@sha256:19ea0d90169c1704135d281d4f9c6eea660303dc0c25241d6566b55fe8c906cf"
+PINNED_VAX="registry.gitlab.com/brfid/brfid.gitlab.io/vax-pexpect@sha256:00038ee9451a1da6cbee453f2aeba986cdb3ceb94738dff293ced909f35308d4"
+PINNED_PDP11="registry.gitlab.com/brfid/brfid.gitlab.io/pdp11-pexpect@sha256:4c566d778d6ef3ca6f6a788f2e6a1aaba1c360912edb9d15043a10cacaa2a38f"
 
 mkdir -p "$LOG_DIR"
 
