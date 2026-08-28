@@ -60,6 +60,8 @@ The PDP-11 script performs these operations:
 6. Capture the result between explicit markers with tty echo disabled.
 7. Normalize line endings and remove terminal control characters, overstrikes, form feeds, trailing whitespace, and boundary blank lines.
 
+The root-prompt wait has a five-minute safety bound for CPU contention on shared hosted runners. State transitions still depend on explicit guest output rather than fixed delays.
+
 The render command is:
 
 ```sh
