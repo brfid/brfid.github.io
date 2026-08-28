@@ -1,0 +1,3 @@
+# HTML remains crawlable so crawlers can observe its noindex directive.
+User-agent: *
+Allow: /

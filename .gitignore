@@ -14,6 +14,7 @@ site/
 build/
 local/
 hugo/.hugo_build.lock
+redirect/.hugo_build.lock
 hugo/data/bio.yaml
 hugo/data/resume.yaml
 hugo/data/site.yaml

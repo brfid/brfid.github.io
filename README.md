@@ -1,126 +1,66 @@
 # brfid.github.io
 
-Source and build tooling for [brfid.github.io](https://brfid.github.io/). Hugo renders the site, blog, and resume. A VAX and PDP-11 pipeline renders the landing-page bio published by the site.
+This public repository retains the history and implementation of the former `brfid.github.io` site, including its Hugo resume and VAX/PDP-11 bio pipeline. The active source is [brfid/brfid.gitlab.io](https://gitlab.com/brfid/brfid.gitlab.io), and the active site is [brfid.gitlab.io](https://brfid.gitlab.io/).
 
-## Set up a checkout
+GitHub Pages now publishes only a path-preserving redirect from `https://brfid.github.io/` to the GitLab site. It does not publish the retained site, resume PDF, feeds, or vintage provenance artifacts.
 
-Install these prerequisites:
+## Build and verify the redirect
 
-- Git
-- Python 3.11 or newer
-- Hugo extended 0.156.0 or newer
-- Docker, only for the vintage pipeline
+Install Git, Python 3.11 or newer, and Hugo extended 0.163.3 or newer. Then create the local Python environment and verify a clean redirect build:
 
-Initialize the checkout and its local Python environment:
+```bash
+python3 -m venv .venv
+make verify-redirect
+```
+
+The command builds `redirect/` into the ignored `site/` directory and runs `scripts/verify_redirect.py`. The verifier accepts only the intended HTML redirects and `robots.txt`; it rejects the former site artifacts and any unexpected output.
+
+Preview the redirect locally when changing its presentation:
+
+```bash
+make redirect-preview
+```
+
+Open `http://localhost:1313/`. The JavaScript redirect will immediately send your browser to the GitLab site, so disable JavaScript temporarily if you need to inspect the fallback page.
+
+## Redirect behavior
+
+Hugo renders explicit redirects for `/`, `/resume/`, `/about/`, `/posts/`, and the two formerly published post routes. It also renders `404.html`, which lets an unknown GitHub Pages path carry its pathname, query, and fragment to the same path on `brfid.gitlab.io` in a browser.
+
+GitHub Pages cannot return a server-side redirect from this repository. Known routes therefore use both JavaScript and a meta refresh. Unknown routes first receive GitHub Pages’ HTTP 404 response, then JavaScript performs the path-preserving transfer; without JavaScript, the 404 page’s fallback leads to the GitLab root.
+
+Every rendered HTML page retains `noindex, nofollow, noarchive, nosnippet, noimageindex`. Hugo emits no feeds, sitemap, taxonomy, PDF, or provenance files. `robots.txt` leaves the HTML crawlable so crawlers can observe the page-level directive.
+
+## Publish the redirect
+
+A push to `main` runs `.github/workflows/deploy.yml`. The workflow checks out without submodules, builds only `redirect/`, verifies the exact artifact tree, and deploys it to GitHub Pages. It never invokes the retained full-site, PDF, or vintage build paths.
+
+## Work with the retained implementation
+
+The former implementation remains available for inspection and historical validation. It is not the production source for the current site.
+
+To run its checks, initialize the PaperMod submodule and install the development and PDF dependencies:
 
 ```bash
 git submodule update --init
-python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev,pdf]'
 .venv/bin/python -m playwright install chromium
-make check_env
-```
-
-The repository vendors PaperMod as a Git submodule and serves self-hosted Newsreader and IBM Plex Mono fonts. It has no front-end package install or build step.
-
-## Preview the site
-
-```bash
-make preview
-```
-
-Open `http://localhost:1313/`. The command clears deployment-only provenance inputs, builds the public resume page and phone-free `site/resume.pdf`, then starts Hugo with live reload. Restart it after changing `resume.yaml`, or after changing resume layout or print CSS.
-
-Use `make preview-drafts` to include draft posts. Set `PREVIEW_PORT` to change the port:
-
-```bash
-make preview PREVIEW_PORT=1314
-```
-
-## Build an application PDF
-
-1. Copy `resume.private.example.yaml` to the gitignored `resume.private.yaml`.
-2. Replace the example `basics.phone` value.
-3. Run `make resume-pdf-application`.
-
-The command leaves a complete phone-free public build under `site/` and writes the private PDF to `local/bradley-fidler-resume.pdf`. It rejects a missing or invalid private overlay and any private PDF destination inside the public site tree.
-
-## Run checks
-
-```bash
 make check
 make verify-site
 ```
 
-`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. `make verify-site` clears deployment-only provenance inputs, builds Hugo in a clean directory, and checks routes, feeds, linked artifacts, structured data, navigation state, and the site-wide indexing policy. CI runs both commands.
-
-Use `make test` to run pytest without the other checks. Use `make help` to list all supported targets.
-
-## Build the public site
-
-```bash
-make hugo-build
-```
-
-The command clears deployment-only provenance inputs, syncs the public YAML inputs, and writes a clean build to `site/`. Use `make resume-pdf` to add the public PDF. Deployment uses the separate `resume-pdf-public` target, which fails unless the vintage bio, build log, and pipeline status have all been staged.
-
-Every rendered HTML page contains `noindex, nofollow, noarchive, nosnippet, noimageindex`. Hugo emits no sitemap. `robots.txt` leaves HTML crawlable so crawlers can read the page-level directive and blocks the PDF, feeds, and pipeline status.
-
-## Add a blog post
-
-Create a draft page bundle:
-
-```bash
-make new-post POST_SLUG=maintenance-window
-```
-
-Edit `hugo/content/posts/maintenance-window/index.md` and place referenced assets beside it. Production publishes the post only after its front matter sets `draft: false`.
-
-Working drafts stay outside this public repository. Add only approved copy and public assets.
-
-## Vintage pipeline
-
-The pipeline transforms three public strings into the landing bio:
-
-`site.yaml` name and headline plus `resume.yaml` `basics.summary` -> VAX troff -> PDP-11 `nroff` -> `brad.bio.txt` -> Hugo data
-
-For local execution, validation, implementation, and image promotion, see [the vintage pipeline operations guide](docs/integration/INDEX.md).
-
-## Publish the site
-
-A push to `main` uses standard mode: it runs the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitHub Pages. Add `[nopublish]` to the commit message to skip deployment. Run the Publish site workflow manually in `standard` mode to repeat the publication without a new commit.
-
-For any change that does not affect the landing-page bio, such as a post, layout, or resume field other than `basics.summary`, add `[fast]` to the commit message to select fast mode:
-
-```bash
-git commit -m "Publish site-only change [fast]"
-git push origin main
-```
-
-You can request the same path manually:
-
-```bash
-gh workflow run deploy.yml --ref main -f publish_mode=fast
-```
-
-Fast mode reuses the exact bio, build log, and pipeline status from the newest matching successful run in standard mode, and keeps the Actions link pointed at that run. GitHub Actions retains those three files as a workflow artifact for 90 days. Fast mode still rebuilds the public PDF and Hugo site, runs the production verifier, and deploys a new Pages artifact. It fails without deploying if the retained result has expired, its provenance is invalid, or a bio input or vintage implementation file has changed. Run standard mode to refresh the retained result:
-
-```bash
-gh workflow run deploy.yml --ref main -f publish_mode=standard
-```
-
-In standard mode, the vintage pipeline uses only the immutable VAX and PDP-11 image digests pinned in `scripts/vintage-runner.sh`. It does not build fallback images.
+For the VAX and PDP-11 implementation, see [the vintage pipeline operations guide](docs/integration/INDEX.md). The manual image-build and vintage-validation workflows remain available, but neither workflow publishes GitHub Pages.
 
 ## Source files
 
 | Path | Function |
 |---|---|
-| `site.yaml` | Public name, headline, and profile links |
-| `resume.yaml` | Public resume data and shared bio summary |
-| `resume.private.yaml` | Optional local phone overlay; gitignored |
-| `hugo/` | Site content, templates, configuration, styles, and fonts |
-| `resume_generator/` | Bio, vintage validation and reuse, build-log, and PDF generators |
-| `scripts/` | Site verifier and SIMH orchestration |
-| `STATUS.md` | Current operational state and queue |
+| `redirect/` | Hugo source for the GitHub Pages redirect |
+| `scripts/verify_redirect.py` | Redirect artifact allowlist and contract verifier |
+| `.github/workflows/deploy.yml` | Redirect-only GitHub Pages deployment |
+| `hugo/` | Retained former site source |
+| `resume_generator/` | Retained bio, provenance, and PDF tooling |
+| `scripts/` | Redirect verifier plus retained site and SIMH orchestration |
+| `vintage/` | Retained VAX and PDP-11 image definitions and guest inputs |
 | `docs/integration/INDEX.md` | Vintage pipeline operations |
-| `docs/archive/` | Retired-path registry; not operating guidance |
+| `STATUS.md` | Current repository posture and queue |

@@ -1,34 +1,35 @@
 PYTHON ?= .venv/bin/python
 PREVIEW_PORT ?= 1313
 
-.PHONY: help test check verify-site check_env clean clear-local-provenance \
-        require-production-provenance sync-site-data sync-resume-data new-post \
-        hugo-build hugo-build-production \
-        resume-pdf resume-pdf-public resume-pdf-application \
-        preview preview-drafts
+.PHONY: help test check redirect-build verify-redirect redirect-preview verify-site \
+        check_env clean clear-local-provenance require-production-provenance \
+        sync-site-data sync-resume-data new-post hugo-build hugo-build-production \
+        resume-pdf resume-pdf-public resume-pdf-application preview preview-drafts
 
 help:
 	@echo "brfid.github.io commands"
 	@echo ""
-	@echo "Checks:"
+	@echo "GitHub Pages redirect:"
+	@echo "  make verify-redirect  Clean-build and verify the redirect artifact"
+	@echo "  make redirect-preview Preview the redirect through Hugo"
+	@echo ""
+	@echo "Checks and maintenance:"
 	@echo "  make test          Run tests"
 	@echo "  make check         Run lint, format, type, test, and dead-code checks"
-	@echo "  make verify-site   Clean-build Hugo and verify rendered public contracts"
-	@echo "  make check_env     Verify local prerequisites"
-	@echo ""
-	@echo "Maintenance:"
 	@echo "  make clean         Remove generated build artifacts"
 	@echo ""
-	@echo "Build and preview:"
-	@echo "  make sync-site-data    Sync site.yaml -> hugo/data/site.yaml"
-	@echo "  make sync-resume-data  Sync resume.yaml -> hugo/data/resume.yaml"
+	@echo "Retained full-site tooling:"
+	@echo "  make verify-site            Verify the former rendered-site contracts"
+	@echo "  make check_env              Verify former full-site prerequisites"
+	@echo "  make sync-site-data         Sync site.yaml -> hugo/data/site.yaml"
+	@echo "  make sync-resume-data       Sync resume.yaml -> hugo/data/resume.yaml"
 	@echo "  make new-post POST_SLUG=my-post  Scaffold a draft post bundle"
-	@echo "  make hugo-build        Build the public site, including resume HTML, into site/"
-	@echo "  make resume-pdf             Build the site and public phone-free PDF"
-	@echo "  make resume-pdf-public      Build the staged production site and public PDF"
+	@echo "  make hugo-build             Build the former full site into site/"
+	@echo "  make resume-pdf             Build the former site and public PDF"
+	@echo "  make resume-pdf-public      Build the staged former production site and PDF"
 	@echo "  make resume-pdf-application Build a private application PDF outside the web root"
-	@echo "  make preview                Serve the local public site and phone-free PDF"
-	@echo "  make preview-drafts         Serve the site with draft blog posts"
+	@echo "  make preview                Preview the former full site and PDF"
+	@echo "  make preview-drafts         Preview the former full site with drafts"
 
 test:
 	@echo "Running tests..."
@@ -41,6 +42,15 @@ check:
 	@$(PYTHON) -m pytest -q
 	@$(PYTHON) -m pylint resume_generator scripts -sn
 	@$(PYTHON) -m vulture --config pyproject.toml resume_generator scripts
+
+redirect-build:
+	@hugo --source redirect --destination ../site --cleanDestinationDir --panicOnWarning
+
+verify-redirect: redirect-build
+	@$(PYTHON) scripts/verify_redirect.py site
+
+redirect-preview:
+	@hugo server --source redirect --destination ../site --disableFastRender --port $(PREVIEW_PORT)
 
 verify-site: clear-local-provenance sync-site-data sync-resume-data
 	@hugo --source hugo --destination "$(abspath build/site-check)" --cleanDestinationDir --panicOnWarning
@@ -55,7 +65,7 @@ check_env:
 clean:
 	@echo "Removing generated build artifacts..."
 	@rm -rf build/ site/ local/
-	@rm -f hugo/.hugo_build.lock
+	@rm -f hugo/.hugo_build.lock redirect/.hugo_build.lock
 	@rm -f hugo/data/bio.yaml hugo/data/resume.yaml hugo/data/site.yaml
 	@rm -f hugo/static/build.log.html hugo/static/pipeline-status.json
 	@echo "Cleanup complete"

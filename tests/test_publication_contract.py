@@ -91,76 +91,77 @@ def test_hugo_build_destinations_are_fixed_and_warnings_are_fatal() -> None:
     assert "--panicOnWarning" in production_target
 
 
-def test_deploy_uses_the_shared_production_verifier() -> None:
-    """Deployment must pass quality checks, build the public PDF, and verify the artifact tree."""
+def test_pages_deploy_publishes_only_the_verified_redirect() -> None:
+    """Pages must deploy the dedicated redirect without legacy build dependencies."""
     workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+    build = "hugo --source redirect --destination ../site --cleanDestinationDir --panicOnWarning"
+    verify = "python3 scripts/verify_redirect.py site"
 
-    assert ".venv/bin/python -m pip install -e '.[dev,pdf]'" in workflow
-    assert "run: make check" in workflow
-    assert workflow.index("run: make check") < workflow.index("name: Run vintage pipeline")
-    assert "make resume-pdf-public" in workflow
-    assert "make sync-site-data sync-resume-data" not in workflow
-    assert "PYTHON=python" not in workflow
-    assert ".venv/bin/python scripts/verify_site.py site" in workflow
-    assert "--production" in workflow
-    assert "--resume-yaml resume.yaml" in workflow
-    assert '--build-run-url "$VINTAGE_RUN_URL"' in workflow
-    assert "private_resume_path" not in workflow
-    assert "deployments: write" not in workflow
+    assert "name: Publish redirect" in workflow
+    assert "actions/checkout@v7" in workflow
+    assert 'hugo-version: "0.163.3"' in workflow
+    assert "actions/configure-pages@v5" in workflow
+    assert "if: github.ref == 'refs/heads/main'" in workflow
+    assert build in workflow
+    assert verify in workflow
+    assert "actions/upload-pages-artifact@v5" in workflow
+    assert "with:\n          path: site" in workflow
+    assert workflow.count("actions/deploy-pages@v5") == 3
+    assert "pages: write" in workflow
+    assert "id-token: write" in workflow
+    assert workflow.index(build) < workflow.index(verify)
+    assert workflow.index(verify) < workflow.index("actions/upload-pages-artifact@v5")
+    assert workflow.index("actions/upload-pages-artifact@v5") < workflow.index("actions/deploy-pages@v5")
+
+    for retired_dependency in (
+        "submodules:",
+        "pip install",
+        "playwright",
+        "make check",
+        "resume-pdf",
+        "vintage",
+        "pipeline-status",
+        "build.log",
+        "[fast]",
+        "[nopublish]",
+    ):
+        assert retired_dependency not in workflow.lower()
 
 
-def test_deploy_supports_fail_closed_vintage_reuse() -> None:
-    """Fast mode must reuse validated provenance while both modes share one deploy tail."""
-    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
-    footer = (ROOT / "hugo" / "layouts" / "_partials" / "footer.html").read_text(encoding="utf-8")
-    mode_step = workflow.split("- name: Select publish mode", maxsplit=1)[1].split("- name: Set up Hugo", maxsplit=1)[0]
-    reuse_step = workflow.split("- name: Download reusable vintage result", maxsplit=1)[1].split(
-        "- name: Run vintage pipeline", maxsplit=1
-    )[0]
-    standard_step = workflow.split("- name: Run vintage pipeline", maxsplit=1)[1].split(
-        "- name: Select vintage provenance", maxsplit=1
-    )[0]
-    retention_step = workflow.split("- name: Retain reusable vintage result", maxsplit=1)[1].split(
-        "- name: Upload Pages artifact", maxsplit=1
-    )[0]
+def test_redirect_source_fixes_the_destination_and_disables_legacy_outputs() -> None:
+    """The redirect must preserve locations without accepting a visitor-controlled host."""
+    config = tomllib.loads((ROOT / "redirect" / "hugo.toml").read_text(encoding="utf-8"))
+    partial = (ROOT / "redirect" / "layouts" / "partials" / "redirect.html").read_text(encoding="utf-8")
+    fallback = (ROOT / "redirect" / "layouts" / "404.html").read_text(encoding="utf-8")
+    robots = (ROOT / "redirect" / "static" / "robots.txt").read_text(encoding="utf-8")
 
-    assert "publish_mode:" in workflow
-    assert "default: standard" in workflow
-    assert "[fast]" in workflow
-    assert "actions: read" in workflow
-    assert "mode=standard" in mode_step
-    assert '"$GITHUB_EVENT_NAME" == "workflow_dispatch"' in mode_step
-    assert '"$GITHUB_EVENT_NAME" == "push"' in mode_step
-    assert "if: steps.mode.outputs.mode == 'fast'" in reuse_step
-    assert "if: steps.mode.outputs.mode == 'standard'" in standard_step
-    assert "if: steps.mode.outputs.mode == 'standard'" in retention_step
-    assert "resume_generator.vintage_reuse fingerprint" in workflow
-    assert '[[ ! "$fingerprint" =~ ^[0-9a-f]{64}$ ]]' in workflow
-    assert "resume_generator.vintage_reuse validate" in workflow
-    assert "No reusable vintage result matches" in workflow
-    assert "source_run_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${source_run_id}" in workflow
-    assert "'.conclusion'" in reuse_step
-    assert "'.head_branch'" in reuse_step
-    assert "'.head_sha'" in reuse_step
-    assert "'.path'" in reuse_step
-    assert '".github/workflows/deploy.yml"' in reuse_step
-    assert "VINTAGE_SHA" in workflow
-    assert "VINTAGE_RUN_URL" in workflow
-    assert "vintage-production-${{ steps.vintage-fingerprint.outputs.value }}" in workflow
-    assert "retention-days: 90" in workflow
-    for artifact in ("brad.bio.txt", "build.log.html", "pipeline-status.json"):
-        assert f"build/vintage/{artifact}" in workflow
+    assert config["baseURL"] == "https://brfid.github.io/"
+    assert config["locale"] == "en-US"
+    assert set(config["disableKinds"]) == {"RSS", "sitemap", "taxonomy", "term"}
+    assert config["params"]["destinationBaseURL"] == "https://brfid.gitlab.io"
+    assert '{{ partial "redirect.html" (dict "TargetPath" "/") }}' in fallback
+    assert "new URL({{ site.Params.destinationBaseURL" in partial
+    assert "destination.pathname = window.location.pathname" in partial
+    assert "destination.search = window.location.search" in partial
+    assert "destination.hash = window.location.hash" in partial
+    assert "window.location.replace(destination.href)" in partial
+    assert "noindex, nofollow, noarchive, nosnippet, noimageindex" in partial
+    assert (
+        robots == "# HTML remains crawlable so crawlers can observe its noindex directive.\nUser-agent: *\nAllow: /\n"
+    )
 
-    provenance = workflow.index("name: Select vintage provenance")
-    assert workflow.index("name: Download reusable vintage result") < provenance
-    assert workflow.index("name: Run vintage pipeline") < provenance
-    assert provenance < workflow.index("name: Generate bio data for Hugo")
-    assert workflow.index("name: Generate bio data for Hugo") < workflow.index("make resume-pdf-public")
-    assert workflow.index("make resume-pdf-public") < workflow.index("name: Verify production output")
-    assert workflow.index("name: Verify production output") < workflow.index("name: Retain reusable vintage result")
-    assert workflow.index("name: Retain reusable vintage result") < workflow.index("name: Upload Pages artifact")
-    assert "continue-on-error" not in retention_step
-    assert "<span>Build:" in footer
+
+def test_deploy_is_the_only_workflow_allowed_to_publish_pages() -> None:
+    """Manual vintage maintenance must remain disconnected from GitHub Pages."""
+    workflows = ROOT / ".github" / "workflows"
+    publishers = [
+        path.name
+        for pattern in ("*.yml", "*.yaml")
+        for path in workflows.glob(pattern)
+        if "actions/deploy-pages" in path.read_text(encoding="utf-8")
+    ]
+
+    assert publishers == ["deploy.yml"]
 
 
 def test_site_chrome_preserves_navigation_accessibility_contract() -> None:

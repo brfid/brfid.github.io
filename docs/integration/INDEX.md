@@ -1,8 +1,8 @@
 # Operate the vintage pipeline
 
-Use this page to run, validate, and promote the VAX and PDP-11 pipeline. For console behavior and failure diagnosis, see [the pexpect implementation reference](operations/PEXPECT-PIPELINE-SPEC.md).
+Use this page to run, validate, and promote the VAX and PDP-11 pipeline retained in this GitHub repository. For current production operations, use [the active GitLab repository’s guide](https://gitlab.com/brfid/brfid.gitlab.io/-/blob/main/docs/integration/INDEX.md). For console behavior and failure diagnosis, see [the pexpect implementation reference](operations/PEXPECT-PIPELINE-SPEC.md).
 
-The pipeline's only page-content output is the landing-page bio. Hugo and Playwright render the resume separately.
+The pipeline’s former page-content output was the landing-page bio. Hugo and Playwright rendered the resume separately.
 
 ## Run the pipeline locally
 
@@ -29,7 +29,7 @@ The runner writes intermediate and final artifacts to `build/vintage/`, detailed
 | `ALLOW_LOCAL_IMAGE_BUILD` | `1` | Build checked-out image recipes after a pinned-image pull fails |
 | `GIT_SHA` | Current commit | Commit recorded in `pipeline-status.json` |
 
-Production and the validation workflow set `ALLOW_LOCAL_IMAGE_BUILD=0`.
+The hosted validation workflow sets `ALLOW_LOCAL_IMAGE_BUILD=0`.
 
 ## Data flow
 
@@ -40,7 +40,7 @@ Production and the validation workflow set `ALLOW_LOCAL_IMAGE_BUILD=0`.
 | B | VAX 4.3BSD | Compile and run `bradman.c`, then `uuencode` its troff output | `brad.bio.uu` |
 | A | PDP-11 2.11BSD | `uudecode` the spool, then run `nroff -Tlp` | `brad.bio.txt` |
 | Runner finalization | Local or GitHub runner | Record status and render the host and guest log | `pipeline-status.json`, `build.log.html` |
-| Deployment workflow | GitHub runner | Produce or retrieve a matching result, validate it, and stage the three final artifacts for Hugo | `hugo/data/bio.yaml`, published log and status |
+| Former deployment integration | Retained code | Validate a result and stage the three final artifacts for Hugo | `hugo/data/bio.yaml`, build log, and status |
 
 The host transfers the spool between guests. The PDP-11 `unix` kernel has no working Ethernet.
 
@@ -56,21 +56,17 @@ The host transfers the spool between guests. The PDP-11 `unix` kernel has no wor
 | `build/vintage/build.log.html` | Final | Host and guest build log |
 | `build/vintage/sections.jsonl` | Internal | Named guest-console sections |
 | `build/vintage/pipeline-status.json` | Final | Vintage pipeline result and stage counts |
-| `hugo/data/bio.yaml` | Deployment output | Flowing bio text and build provenance |
-| `hugo/static/build.log.html` | Deployment output | Published copy of the final build log |
-| `hugo/static/pipeline-status.json` | Deployment output | Published copy of the final status |
+| `hugo/data/bio.yaml` | Former deployment output | Flowing bio text and build provenance |
+| `hugo/static/build.log.html` | Former deployment output | Copy of the final build log |
+| `hugo/static/pipeline-status.json` | Former deployment output | Copy of the final status |
 
-The runner removes the generated files it owns before every run. After environment setup, a failed stage writes `result: failure` with the current build ID and exit code, preventing a retry from reusing a prior success. Deployment copies only a successful run's final artifacts into Hugo.
+The runner removes the generated files it owns before every run. After environment setup, a failed stage writes `result: failure` with the current build ID and exit code, preventing a retry from reusing a prior success. The former deployment copied only a successful run’s final artifacts into Hugo.
 
-## Reuse a successful production result
+## Production boundary
 
-Standard mode uploads `brad.bio.txt`, `build.log.html`, and `pipeline-status.json` as a GitHub Actions workflow artifact retained for 90 days. This reusable bundle is separate from the Pages artifact deployed to the site. Its name includes a fingerprint of the three public bio strings and the implementation that produces and validates them.
+This GitHub repository no longer produces or reuses vintage results during Pages deployment. Its Pages workflow builds only the redirect under `redirect/`; the former standard and fast publication modes are retired here.
 
-Fast mode, selected by `[fast]` in a pushed commit or `publish_mode=fast` in a manual workflow run, retrieves the newest matching artifact. It verifies that the artifact came from a successful `main` run of the publication workflow, that the status records that source run's commit, that the log and status name the same build, and that the rendered bio still matches the current public source strings.
-
-The deployment preserves the result's log, status, and build ID, and keeps the Actions run link pointed at its source run. Hugo and the public PDF are rebuilt from the current commit and deployed through the normal production verifier. The raw `brad.bio.txt` remains an internal input and is never published.
-
-Fast mode fails closed when no valid matching artifact is available. Run the workflow in standard mode to produce and retain a fresh result; fast mode never invents new provenance or silently runs the vintage pipeline.
+Use the active GitLab repository for current site publication and vintage-result reuse. The GitHub `vintage-validate.yml` workflow remains a manual, non-publishing way to exercise this retained implementation.
 
 ## Console contracts
 
@@ -109,12 +105,12 @@ Use this procedure after changing an emulator Dockerfile, configuration, base im
 5. Inspect `pipeline-status.json`, `brad.bio.txt`, `build.log.html`, and the console-section artifact.
 6. Merge only after validation succeeds.
 
-`build-images.yml` publishes source-commit tags for discovery. Deployment uses only the pinned digests and never waits for an image build. The Dockerfiles pin their base images by digest, and the PDP-11 recipe verifies the downloaded disk archive before extraction.
+`build-images.yml` publishes source-commit tags for discovery. Hosted validation uses only the pinned digests and never waits for an image build. The Dockerfiles pin their base images by digest, and the PDP-11 recipe verifies the downloaded disk archive before extraction.
 
 ## References
 
 - [`pexpect` implementation reference](operations/PEXPECT-PIPELINE-SPEC.md)
 - [VAX stage and guest input contract](../vax/README.md)
-- [Reuse fingerprint and bundle validator](../../resume_generator/vintage_reuse.py)
+- [Retained reuse fingerprint and bundle validator](../../resume_generator/vintage_reuse.py)
 - [Pipeline runner](../../scripts/vintage-runner.sh)
 - [Retired approaches](../archive/DEAD-ENDS.md)

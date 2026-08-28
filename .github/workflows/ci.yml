@@ -40,5 +40,8 @@ jobs:
       - name: Quality checks
         run: make check
 
-      - name: Verify rendered site
+      - name: Verify GitHub Pages redirect
+        run: make verify-redirect
+
+      - name: Verify retained full site
         run: make verify-site
