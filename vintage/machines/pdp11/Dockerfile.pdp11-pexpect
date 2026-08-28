@@ -1,6 +1,6 @@
 # PDP-11/73 with 2.11BSD and a pexpect-controlled local console.
 # Build with the repository root as context. Promote production images through
-# build-images.yml; the local runner may build this recipe as a fallback.
+# the GitLab image-build pipeline; the local runner may build this recipe as a fallback.
 FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241 AS simh-builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -24,7 +24,8 @@ RUN git clone https://github.com/simh/simh.git && \
 
 # The disk archive contains both kernels; the script selects the default `unix` kernel.
 WORKDIR /opt/pdp11
-RUN wget -q https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
+RUN wget --inet4-only --timeout=60 --tries=3 --progress=dot:giga \
+      https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz && \
     printf '%s  %s\n' \
       '74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42' \
       '211bsd_rpethset.tgz' | sha256sum -c - && \
