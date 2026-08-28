@@ -1,7 +1,7 @@
 {
   "image_inputs_sha256": "8c00d86c8fd119ef8bc31194557760e85b6384a522111996a4a34b7e7e033ca4",
-  "pdp11": "registry.gitlab.com/brfid/brfid.gitlab.io/pdp11-pexpect@sha256:4c566d778d6ef3ca6f6a788f2e6a1aaba1c360912edb9d15043a10cacaa2a38f",
+  "pdp11": "registry.gitlab.com/brfid/brfid.gitlab.io/pdp11-pexpect@sha256:239f0f8a4da44c236e05dc351e0775de78c11bb6edaf48d0af8965fcc22f7759",
   "schema_version": 1,
-  "source_sha": "af9de038b7c9a9759108b79b2a97ffb897cc2936",
-  "vax": "registry.gitlab.com/brfid/brfid.gitlab.io/vax-pexpect@sha256:00038ee9451a1da6cbee453f2aeba986cdb3ceb94738dff293ced909f35308d4"
+  "source_sha": "f19f93ab57639cf2f168a33d8888f5e32c703040",
+  "vax": "registry.gitlab.com/brfid/brfid.gitlab.io/vax-pexpect@sha256:aace291158b43ee425ba0f7ce1e83a705dd75f6a922b18926266752e0c23cfc9"
 }
