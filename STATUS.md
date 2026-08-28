@@ -38,7 +38,7 @@ This file records current operations and queued work. Use `git log` for complete
 
 ## Blocked
 
-- Standard publication is blocked because two hosted validations stalled at the same PDP-11 device-probe point before the root prompt; see `HARDENING-TODO.md`.
+- Standard publication is blocked because three hosted validations, including the internal-bridge isolation experiment, stalled at the same PDP-11 device-probe point before the root prompt; see `HARDENING-TODO.md`.
 
 ## Open decisions
 
