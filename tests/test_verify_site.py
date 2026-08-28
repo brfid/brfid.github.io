@@ -23,8 +23,8 @@ def _load_verifier() -> ModuleType:
 verifier = _load_verifier()
 
 
-RUN_URL = "https://github.com/example/site/actions/runs/123456"
-PRIOR_RUN_URL = "https://github.com/example/site/actions/runs/100001"
+RUN_URL = "https://gitlab.com/example/site/-/pipelines/123456"
+PRIOR_RUN_URL = "https://gitlab.com/example/site/-/pipelines/100001"
 BUILD_ID = "build-20260822-120000"
 PUBLIC_EMAIL = "public@example.com"
 
@@ -98,7 +98,9 @@ def test_linked_build_log_must_exist_in_rendered_tree(tmp_path: Path) -> None:
     assert errors == []
 
 
-def test_feed_check_allows_literal_entities_but_rejects_double_escaped_quotes(tmp_path: Path) -> None:
+def test_feed_check_allows_literal_entities_but_rejects_double_escaped_quotes(
+    tmp_path: Path,
+) -> None:
     site_dir = tmp_path / "site"
     post = site_dir / "posts" / "example" / "index.html"
     post.parent.mkdir(parents=True)

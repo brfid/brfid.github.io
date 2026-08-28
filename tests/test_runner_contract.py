@@ -5,7 +5,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts" / "vintage-runner.sh"
-WORKFLOWS = ROOT / ".github" / "workflows"
+PIPELINE = ROOT / ".gitlab-ci.yml"
+GITLAB_SCRIPTS = ROOT / "scripts" / "gitlab"
+PUBLISH = GITLAB_SCRIPTS / "publish.py"
+VALIDATE = GITLAB_SCRIPTS / "validate_vintage.py"
+BUILD_IMAGES = GITLAB_SCRIPTS / "build_images.py"
 PEXPECT_SCRIPTS = (
     RUNNER.parent / "vax_pexpect.py",
     RUNNER.parent / "pdp11_pexpect.py",
@@ -38,58 +42,61 @@ def test_mounted_pexpect_scripts_defer_annotation_evaluation() -> None:
 def test_production_images_are_immutable_and_fallback_is_disabled() -> None:
     """Production must fail closed instead of building a different checkout."""
     runner = RUNNER.read_text(encoding="utf-8")
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
-    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+    publish = PUBLISH.read_text(encoding="utf-8")
+    validate = VALIDATE.read_text(encoding="utf-8")
 
-    image_lines = [line for line in runner.splitlines() if line.startswith("GHCR_")]
+    image_lines = [line for line in runner.splitlines() if line.startswith("PINNED_")]
     assert len(image_lines) == 2
     assert all("@sha256:" in line for line in image_lines)
     assert all(":latest" not in line for line in image_lines)
-    assert 'ALLOW_LOCAL_IMAGE_BUILD: "0"' in deploy
-    assert 'ALLOW_LOCAL_IMAGE_BUILD: "0"' in validate
+    assert '"ALLOW_LOCAL_IMAGE_BUILD": "0"' in publish
+    assert '"ALLOW_LOCAL_IMAGE_BUILD": "0"' in validate
 
 
-def test_image_build_workflow_is_manual_and_reports_both_digests() -> None:
+def test_image_build_job_is_manual_and_reports_both_digests() -> None:
     """Image releases are explicit promotions, separate from site pushes."""
-    workflow = (WORKFLOWS / "build-images.yml").read_text(encoding="utf-8")
+    pipeline = PIPELINE.read_text(encoding="utf-8")
+    build = BUILD_IMAGES.read_text(encoding="utf-8")
 
-    trigger = workflow.split("permissions:", maxsplit=1)[0]
-    assert "workflow_dispatch:" in trigger
-    assert "push:" not in trigger
-    assert ":latest" not in workflow
-    assert "steps.vax.outputs.digest" in workflow
-    assert "steps.pdp11.outputs.digest" in workflow
+    assert 'RUN_OPERATION == "image-build"' in pipeline
+    assert "python3 -m scripts.gitlab.build_images" in pipeline
+    assert ":latest" not in build
+    assert '"containerimage.digest"' in build
+    assert 'f"{vax_path}@{vax_digest}"' in build
+    assert 'f"{pdp11_path}@{pdp11_digest}"' in build
 
 
 def test_publish_paths_use_the_shared_semantic_validator() -> None:
     """Manual validation and deployment must enforce one output contract."""
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
-    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+    pipeline = PIPELINE.read_text(encoding="utf-8")
+    publish = PUBLISH.read_text(encoding="utf-8")
+    validate = VALIDATE.read_text(encoding="utf-8")
     reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
 
-    assert ".venv/bin/python -m resume_generator.vintage_reuse validate" in deploy
-    assert ".venv/bin/python -m resume_generator.vintage_contract" in validate
+    assert ".venv/bin/python -m scripts.gitlab.validate_vintage" in pipeline
+    assert "validate_bundle(" in publish
+    assert "validate_vintage_contract(" in validate
     assert "validate_rendered_bio(rendered_bio, expected)" in reuse
 
 
-def test_workflows_consume_direct_runner_artifacts() -> None:
+def test_gitlab_jobs_consume_direct_runner_artifacts() -> None:
     """Deployment and validation must consume the runner's files without stdout transport."""
     runner = RUNNER.read_text(encoding="utf-8")
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
-    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+    publish = PUBLISH.read_text(encoding="utf-8")
+    validate = VALIDATE.read_text(encoding="utf-8")
     reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
 
     assert "_BASE64_BEGIN" not in runner
     assert "base64 <" not in runner
-    for workflow in (deploy, validate):
-        assert "bash scripts/vintage-runner.sh" in workflow
-        assert "/tmp/vintage-stdout.txt" not in workflow
-        assert "_BASE64_BEGIN" not in workflow
-    assert "for artifact in brad.bio.txt build.log.html pipeline-status.json; do" in validate
-    assert '"build/vintage/${artifact}"' in validate
+    for job_script in (publish, validate):
+        assert "scripts/vintage-runner.sh" in job_script
+        assert "/tmp/vintage-stdout.txt" not in job_script
+        assert "_BASE64_BEGIN" not in job_script
+    assert "for name in BUNDLE_FILES:" in validate
+    assert 'ROOT / "build" / "vintage" / name' in validate
     for artifact in ("brad.bio.txt", "build.log.html", "pipeline-status.json"):
         assert f'"{artifact}"' in reuse
-        assert f"build/vintage/{artifact}" in deploy
+        assert f'"{artifact}"' in publish
 
 
 def test_runner_preserves_public_status_and_log_identifiers() -> None:
@@ -100,25 +107,22 @@ def test_runner_preserves_public_status_and_log_identifiers() -> None:
     assert '"pipeline": "edcloud-vintage"' in runner
 
 
-def test_workflows_export_the_log_directory_consumed_by_the_runner() -> None:
+def test_gitlab_jobs_export_the_log_directory_consumed_by_the_runner() -> None:
     """Diagnostic artifact paths must use the directory inherited by the runner."""
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
-    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+    publish = PUBLISH.read_text(encoding="utf-8")
+    validate = VALIDATE.read_text(encoding="utf-8")
 
-    for workflow in (deploy, validate):
-        runner_step = workflow.split("name: Run vintage pipeline", maxsplit=1)[1]
-        assert "LOG_DIR: /tmp/edcloud-vintage" in runner_step
-        assert 'echo "log_file=${LOG_DIR}/${BUILD_ID}.log"' in runner_step
-        assert "LOG_DIR=/tmp/edcloud-vintage" not in runner_step
+    for job_script in (publish, validate):
+        assert 'LOG_DIR = Path("/tmp/edcloud-vintage")' in job_script
+        assert '"LOG_DIR": str(LOG_DIR)' in job_script
 
 
-def test_validation_workflow_keeps_the_digest_local_to_its_summary() -> None:
-    """The digest has no downstream consumer and must not expose a dead step output."""
-    validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+def test_validation_job_keeps_the_digest_local_to_its_log() -> None:
+    """The digest has no downstream consumer and must not create dead metadata."""
+    validate = VALIDATE.read_text(encoding="utf-8")
 
-    assert "id: compare" not in validate
-    assert 'echo "sha256=${sha}" >> "$GITHUB_OUTPUT"' not in validate
-    assert r'echo "| SHA256 | \`${sha}\` |"' in validate
+    assert "GITHUB_OUTPUT" not in validate
+    assert 'print(f"sha256: {digest}")' in validate
 
 
 def test_standalone_vintage_bootstrap_excludes_pdf_dependencies() -> None:
@@ -171,7 +175,14 @@ def test_pdp11_runtime_image_excludes_build_dependencies() -> None:
         1
     ].split("    && rm -rf /var/lib/apt/lists/*", maxsplit=1)[0]
 
-    for package in ("build-essential", "libedit-dev", "libpcre3-dev", "wget", "ca-certificates", "git"):
+    for package in (
+        "build-essential",
+        "libedit-dev",
+        "libpcre3-dev",
+        "wget",
+        "ca-certificates",
+        "git",
+    ):
         assert package in builder
         assert package not in runtime_install
     for package in ("libedit2", "libpcre3", "python3", "python3-pexpect"):
@@ -202,7 +213,15 @@ def test_vax_image_disables_unused_devices() -> None:
     assert "att rq0 RA81.000" in directives
     assert "att rq1 RA81VHD.001" in directives
     assert {line for line in directives if line.endswith(" enabled")} == {"set rq enabled"}
-    for prefix in ("attach lpt ", "set rp0 ", "set rp1 ", "set rp2 ", "set rp3 ", "set rl0 ", "set rl1 "):
+    for prefix in (
+        "attach lpt ",
+        "set rp0 ",
+        "set rp1 ",
+        "set rp2 ",
+        "set rp3 ",
+        "set rl0 ",
+        "set rl1 ",
+    ):
         assert not any(line.startswith(prefix) for line in directives)
     assert "/opt/vax-ini-path.txt" not in dockerfile
 

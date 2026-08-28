@@ -25,8 +25,8 @@ HEADLINE = "Principal Technical Writer"
 SUMMARY = "Keeps documentation true as products change."
 BUILD_ID = "build-20260824-120000"
 SOURCE_SHA = "a" * 40
-REPOSITORY = "example/site"
-SOURCE_RUN_URL = "https://github.com/example/site/actions/runs/123456"
+PROJECT_URL = "https://gitlab.com/example/site"
+SOURCE_RUN_URL = "https://gitlab.com/example/site/-/pipelines/123456"
 BIO_TEXT = f"{NAME}\n{HEADLINE}\n\n{SUMMARY}\n"
 
 
@@ -103,7 +103,7 @@ def _validate(bundle_dir: Path, site_yaml: Path, resume_yaml: Path) -> None:
         resume_yaml,
         source_sha=SOURCE_SHA,
         source_run_url=SOURCE_RUN_URL,
-        repository=REPOSITORY,
+        project_url=PROJECT_URL,
     )
 
 
@@ -211,7 +211,7 @@ def test_validate_bundle_accepts_matching_successful_artifacts(tmp_path: Path) -
         resume_yaml,
         source_sha=SOURCE_SHA,
         source_run_url=SOURCE_RUN_URL,
-        repository=REPOSITORY,
+        project_url=PROJECT_URL,
     )
 
     assert validated.build_id == BUILD_ID
@@ -270,31 +270,31 @@ def test_validate_bundle_rejects_source_sha_mismatch(tmp_path: Path) -> None:
             resume_yaml,
             source_sha="b" * 40,
             source_run_url=SOURCE_RUN_URL,
-            repository=REPOSITORY,
+            project_url=PROJECT_URL,
         )
 
 
 @pytest.mark.parametrize(
     "source_run_url",
     (
-        "http://github.com/example/site/actions/runs/123456",
-        "https://github.com/another/site/actions/runs/123456",
-        "https://github.com/example/site/actions/runs/not-a-number",
-        "https://github.com/example/site/actions/runs/123456/",
-        "https://github.com/example/site/actions/runs/123456?attempt=2",
+        "http://gitlab.com/example/site/-/pipelines/123456",
+        "https://gitlab.com/another/site/-/pipelines/123456",
+        "https://gitlab.com/example/site/-/pipelines/not-a-number",
+        "https://gitlab.com/example/site/-/pipelines/123456/",
+        "https://gitlab.com/example/site/-/pipelines/123456?attempt=2",
     ),
 )
 def test_validate_bundle_rejects_nonexact_source_run_url(tmp_path: Path, source_run_url: str) -> None:
     bundle_dir, site_yaml, resume_yaml = _write_bundle(tmp_path)
 
-    with pytest.raises(VintageReuseError, match="source Actions run URL must exactly match"):
+    with pytest.raises(VintageReuseError, match="source GitLab pipeline URL must exactly match"):
         validate_bundle(
             bundle_dir,
             site_yaml,
             resume_yaml,
             source_sha=SOURCE_SHA,
             source_run_url=source_run_url,
-            repository=REPOSITORY,
+            project_url=PROJECT_URL,
         )
 
 
@@ -337,8 +337,8 @@ def test_cli_defaults_fingerprint_and_validate_from_repository_root(
                 SOURCE_SHA,
                 "--source-run-url",
                 SOURCE_RUN_URL,
-                "--repository",
-                REPOSITORY,
+                "--project-url",
+                PROJECT_URL,
             ]
         )
         == 0
@@ -361,8 +361,8 @@ def test_validate_cli_returns_nonzero_with_clear_missing_artifact_error(
             SOURCE_SHA,
             "--source-run-url",
             SOURCE_RUN_URL,
-            "--repository",
-            REPOSITORY,
+            "--project-url",
+            PROJECT_URL,
         ]
     )
 

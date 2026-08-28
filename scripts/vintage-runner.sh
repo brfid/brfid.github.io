@@ -34,8 +34,8 @@ PDP11_IMAGE="pdp11-pexpect"
 VAX_IMAGE="vax-pexpect"
 
 # Production image digests. Promote and validate both as one pair.
-GHCR_VAX="ghcr.io/brfid/vax-pexpect@sha256:fd9e9e035d7421a181d8708038ed4eeaf66a97446e8c910f33533ab0c705c136"
-GHCR_PDP11="ghcr.io/brfid/pdp11-pexpect@sha256:19ea0d90169c1704135d281d4f9c6eea660303dc0c25241d6566b55fe8c906cf"
+PINNED_VAX="ghcr.io/brfid/vax-pexpect@sha256:fd9e9e035d7421a181d8708038ed4eeaf66a97446e8c910f33533ab0c705c136"
+PINNED_PDP11="ghcr.io/brfid/pdp11-pexpect@sha256:19ea0d90169c1704135d281d4f9c6eea660303dc0c25241d6566b55fe8c906cf"
 
 mkdir -p "$LOG_DIR"
 
@@ -120,20 +120,20 @@ prepare_host() {
 }
 
 _pull_or_build() {
-  # Usage: _pull_or_build LOCAL_TAG GHCR_REFERENCE DOCKERFILE [BUILD_ARGS]
+  # Usage: _pull_or_build LOCAL_TAG PINNED_REFERENCE DOCKERFILE [BUILD_ARGS]
   local local_tag="$1"; shift
-  local ghcr_ref="$1"; shift
+  local pinned_ref="$1"; shift
   local dockerfile="$1"; shift
 
-  if docker pull "$ghcr_ref" 2>/dev/null; then
-    docker tag "$ghcr_ref" "$local_tag"
-    echo "Pulled ${local_tag} from ${ghcr_ref}"
+  if docker pull "$pinned_ref" 2>/dev/null; then
+    docker tag "$pinned_ref" "$local_tag"
+    echo "Pulled ${local_tag} from ${pinned_ref}"
   else
     if [[ "$ALLOW_LOCAL_IMAGE_BUILD" != "1" ]]; then
-      echo "Pull failed for pinned image ${ghcr_ref}; local fallback is disabled"
+      echo "Pull failed for pinned image ${pinned_ref}; local fallback is disabled"
       return 1
     fi
-    echo "Pull failed for ${ghcr_ref}; building from the checked-out Dockerfile"
+    echo "Pull failed for ${pinned_ref}; building from the checked-out Dockerfile"
     docker build -f "$dockerfile" -t "$local_tag" "$@" .
     echo "Built ${local_tag} locally"
   fi
@@ -145,12 +145,12 @@ build_pexpect_images() {
 
   _pull_or_build \
     "$PDP11_IMAGE" \
-    "$GHCR_PDP11" \
+    "$PINNED_PDP11" \
     vintage/machines/pdp11/Dockerfile.pdp11-pexpect
 
   _pull_or_build \
     "$VAX_IMAGE" \
-    "$GHCR_VAX" \
+    "$PINNED_VAX" \
     vintage/machines/vax/Dockerfile.vax-pexpect
 
   echo "Images ready: ${PDP11_IMAGE}  ${VAX_IMAGE}"

@@ -4,11 +4,11 @@ Use this file for stable repository constraints. Put setup and operator commands
 
 ## Repository scope
 
-- Build and publish the Hugo site at `brfid.github.io`.
+- Build and publish the Hugo site at `brfid.gitlab.io`.
 - Use Hugo for every published page. The VAX and PDP-11 pipeline generates the landing-page bio and provenance artifacts for Hugo; it does not generate the site.
 - Treat the repository, its history, commit messages, workflow logs, and generated site as public.
 - Keep private career strategy, draft positioning, salary data, confidential employer information, and rejected copy outside this repository.
-- Run the publish path on GitHub-hosted runners or local Docker. Do not add an external execution host or cloud account.
+- Run the publish path on GitLab-hosted runners or local Docker. Do not add an external execution host or cloud account.
 
 ## Read order
 
@@ -93,6 +93,8 @@ Use `- None.` for an empty section. Record only current or forward-looking opera
 - Publish `/posts/`, `/index.xml`, `/posts/index.xml`, `/resume/`, `/about/`, and `/resume.pdf`.
 - Publish a post only when its front matter sets `draft: false`.
 - Fail deployment if a required route, feed, navigation link, indexing directive, provenance artifact, or public-PDF contract is missing.
+- Keep the GitLab project, Pages site, CI job logs, and reusable standard-publication artifacts publicly readable so fast mode needs no private API token.
+- Keep GitLab's indefinite retention of the latest successful artifact disabled; the reusable vintage bundle expires after 90 days.
 - Keep all telephone numbers out of public HTML and PDFs. Deployment rejects `tel:` links, plausible US telephone-number text, and any PDF other than `resume.pdf` under `site/`.
 
 ## Preserve vintage pipeline contracts
@@ -101,11 +103,11 @@ Use `- None.` for an empty section. Record only current or forward-looking opera
 - Keep VAX and PDP-11 boot, shell, and shutdown state machines separate.
 - Use the host to transfer the UUCP spool. The PDP-11 `unix` kernel has no working Ethernet.
 - Keep `scripts/vintage-runner.sh` bind-mounting the checkout's pexpect scripts and `simh_session.py` over the cached image copies, and keep its final bio, build log, and status under `build/vintage/`.
-- Pin production to an explicit pair of immutable GHCR image digests and disable local image fallback in deployment and validation.
+- Pin production to an explicit pair of immutable container image digests and disable local image fallback in deployment and validation.
 - Promote image changes through the manual image-build workflow and vintage validation procedure in `docs/integration/INDEX.md`.
 - Keep standard mode as the default. Explicit fast mode may reuse only the exact retained bio, build log, and status from a matching successful run in standard mode.
 - Include the three public bio strings and every implementation file that can affect vintage output or reuse validation in the reuse fingerprint. Keep unrelated site and resume fields eligible for fast mode.
-- Preserve reused vintage provenance: the status SHA, build ID, log, and Actions run link must continue to identify the source run. Fail closed rather than synthesizing current-run provenance or silently running the vintage pipeline.
+- Preserve reused vintage provenance: the status SHA, build ID, log, and GitLab pipeline link must continue to identify the source run. Fail closed rather than synthesizing current-run provenance or silently running the vintage pipeline.
 
 ## Commit and publish
 

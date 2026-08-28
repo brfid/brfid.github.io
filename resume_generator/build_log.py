@@ -183,7 +183,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
   </div>
   <nav class="log-links" aria-label="Build log links">
     <a href="/">Home</a>
-    <a href="https://github.com/brfid/brfid.github.io" rel="noopener noreferrer">Site source</a>
+    <a href="https://gitlab.com/brfid/brfid.gitlab.io" rel="noopener noreferrer">Site source</a>
   </nav>
 </header>
 <main id="build-log" aria-labelledby="log-title">
@@ -191,7 +191,12 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
     ]
     parts.append(_details("host", "pipeline setup", host_timestamp, host_content, open_by_default=True))
     parts.append(
-        _details("VAX 4.3BSD", "SIMH vax780 &middot; boot", vax_timestamp, _console_section(sections, "vax-boot"))
+        _details(
+            "VAX 4.3BSD",
+            "SIMH vax780 &middot; boot",
+            vax_timestamp,
+            _console_section(sections, "vax-boot"),
+        )
     )
     parts.append(
         _details(
@@ -220,7 +225,15 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
             open_by_default=True,
         )
     )
-    parts.append(_details("host", "artifact finalization", artifact_timestamp, artifact_content, open_by_default=True))
+    parts.append(
+        _details(
+            "host",
+            "artifact finalization",
+            artifact_timestamp,
+            artifact_content,
+            open_by_default=True,
+        )
+    )
     parts.append("</main>\n</div>\n</body>\n</html>\n")
     return "".join(parts)
 

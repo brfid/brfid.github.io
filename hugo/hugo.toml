@@ -1,4 +1,4 @@
-baseURL = "https://brfid.github.io/"
+baseURL = "https://brfid.gitlab.io/"
 locale = "en-US"
 title = "Bradley Fidler"
 theme = "PaperMod"
@@ -19,7 +19,7 @@ disableAliases = false
     robotsNoIndex = true
 
 [params.label]
-  text = "brfid.github.io"
+  text = "brfid.gitlab.io"
 
 [menu]
   [[menu.main]]
@@ -38,7 +38,7 @@ disableAliases = false
   [[menu.main]]
     identifier = "source"
     name = "Source"
-    url = "https://github.com/brfid/brfid.github.io"
+    url = "https://gitlab.com/brfid/brfid.gitlab.io"
     weight = 10
 
 [params]

@@ -39,8 +39,8 @@ Production and the validation workflow set `ALLOW_LOCAL_IMAGE_BUILD=0`.
 |---|---|---|---|
 | B | VAX 4.3BSD | Compile and run `bradman.c`, then `uuencode` its troff output | `brad.bio.uu` |
 | A | PDP-11 2.11BSD | `uudecode` the spool, then run `nroff -Tlp` | `brad.bio.txt` |
-| Runner finalization | Local or GitHub runner | Record status and render the host and guest log | `pipeline-status.json`, `build.log.html` |
-| Deployment workflow | GitHub runner | Produce or retrieve a matching result, validate it, and stage the three final artifacts for Hugo | `hugo/data/bio.yaml`, published log and status |
+| Runner finalization | Local or GitLab runner | Record status and render the host and guest log | `pipeline-status.json`, `build.log.html` |
+| Deployment job | GitLab runner | Produce or retrieve a matching result, validate it, and stage the three final artifacts for Hugo | `hugo/data/bio.yaml`, published log and status |
 
 The host transfers the spool between guests. The PDP-11 `unix` kernel has no working Ethernet.
 
@@ -64,13 +64,13 @@ The runner removes the generated files it owns before every run. After environme
 
 ## Reuse a successful production result
 
-Standard mode uploads `brad.bio.txt`, `build.log.html`, and `pipeline-status.json` as a GitHub Actions workflow artifact retained for 90 days. This reusable bundle is separate from the Pages artifact deployed to the site. Its name includes a fingerprint of the three public bio strings and the implementation that produces and validates them.
+Standard mode uploads `brad.bio.txt`, `build.log.html`, and `pipeline-status.json` under `reusable-vintage/FINGERPRINT/` in the successful `publish-standard` job artifact. A manifest binds their checksums to the source commit, pipeline, ref, project, and reuse fingerprint. GitLab retains that artifact for 90 days, and the project disables indefinite retention of the latest successful artifact.
 
-Fast mode, selected by `[fast]` in a pushed commit or `publish_mode=fast` in a manual workflow run, retrieves the newest matching artifact. It verifies that the artifact came from a successful `main` run of the publication workflow, that the status records that source run's commit, that the log and status name the same build, and that the rendered bio still matches the current public source strings.
+Fast mode, selected by `[fast]` in a pushed commit or `PUBLISH_MODE=fast` in a manual pipeline, searches successful standard publications on `main` through GitLab's public API. It selects the newest artifact whose path matches the current fingerprint, validates the manifest and all three checksums, then verifies that the status records the source commit, that the log and status name the same build, and that the rendered bio still matches the current public source strings.
 
-The deployment preserves the result's log, status, and build ID, and keeps the Actions run link pointed at its source run. Hugo and the public PDF are rebuilt from the current commit and deployed through the normal production verifier. The raw `brad.bio.txt` remains an internal input and is never published.
+The deployment preserves the result's log, status, and build ID, and keeps the GitLab pipeline link pointed at its source pipeline. Hugo and the public PDF are rebuilt from the current commit and deployed through the normal production verifier. The raw `brad.bio.txt` remains an internal Pages input; GitLab retains it only in the public CI artifact.
 
-Fast mode fails closed when no valid matching artifact is available. Run the workflow in standard mode to produce and retain a fresh result; fast mode never invents new provenance or silently runs the vintage pipeline.
+Fast mode fails closed when no valid matching artifact is available. Run a standard publication to produce and retain a fresh result; fast mode never invents new provenance or silently runs the vintage pipeline.
 
 ## Console contracts
 
@@ -83,33 +83,35 @@ Fast mode fails closed when no valid matching artifact is available. Run the wor
 
 ## Validate without publishing
 
-Push the branch and authenticate the GitHub CLI with permission to run Actions workflows. Then run the manual validation workflow to exercise direct artifact collection, semantic comparison, status generation, and artifact upload:
+Push the branch and authenticate `glab`, then start a manual vintage-validation pipeline to exercise direct artifact collection, semantic comparison, status generation, and artifact upload:
 
 ```bash
 BRANCH="$(git branch --show-current)"
-gh workflow run vintage-validate.yml --ref "$BRANCH"
+glab ci run --branch "$BRANCH" \
+  --variables-env OPERATION:vintage-validation
 ```
 
-To compare the rendered bio with a prior run, add `-f expected_sha256=EXPECTED_SHA256` and replace `EXPECTED_SHA256` with the recorded digest. Change the baseline when the public name, headline, or summary changes. With the same public input, orchestration, and pinned image pair, the rendered bio is byte-stable because it contains no build date.
+To compare the rendered bio with a prior run, add `--variables-env EXPECTED_VINTAGE_SHA256:EXPECTED_SHA256` and replace `EXPECTED_SHA256` with the recorded digest. Change the baseline when the public name, headline, or summary changes. With the same public input, orchestration, and pinned image pair, the rendered bio is byte-stable because it contains no build date.
 
 ## Promote emulator images
 
 Use this procedure after changing an emulator Dockerfile, configuration, base image, dependency, or disk image:
 
-1. Push the branch and run the image workflow:
+1. Push the branch and run the image-build pipeline:
 
    ```bash
    BRANCH="$(git branch --show-current)"
-   gh workflow run build-images.yml --ref "$BRANCH"
+   glab ci run --branch "$BRANCH" \
+     --variables-env OPERATION:image-build
    ```
 
-2. Copy both image digests from the workflow summary.
-3. Update both `GHCR_VAX` and `GHCR_PDP11` in `scripts/vintage-runner.sh` so the release records an explicit pair.
-4. Push the digest update and run `gh workflow run vintage-validate.yml --ref "$(git branch --show-current)"`.
+2. Copy both immutable references from `out/image-pair.json` in the successful `image-build` job artifact.
+3. Update both `PINNED_VAX` and `PINNED_PDP11` in `scripts/vintage-runner.sh` so the release records an explicit pair.
+4. Push the digest update and run the vintage-validation command above.
 5. Inspect `pipeline-status.json`, `brad.bio.txt`, `build.log.html`, and the console-section artifact.
 6. Merge only after validation succeeds.
 
-`build-images.yml` publishes source-commit tags for discovery. Deployment uses only the pinned digests and never waits for an image build. The Dockerfiles pin their base images by digest, and the PDP-11 recipe verifies the downloaded disk archive before extraction.
+The image-build job publishes source-commit tags under `registry.gitlab.com/brfid/brfid.gitlab.io/` for discovery. Deployment uses only the pinned digests and never waits for an image build. The Dockerfiles pin their base images by digest, and the PDP-11 recipe verifies the downloaded disk archive before extraction.
 
 ## References
 

@@ -17,11 +17,17 @@ from typing import Any, cast
 import yaml
 
 from .pipeline_status import PipelineStatusError, require_successful_pipeline_status
-from .vintage_contract import VintageContractError, validate_rendered_bio, vintage_input_from_mappings
+from .vintage_contract import (
+    VintageContractError,
+    validate_rendered_bio,
+    vintage_input_from_mappings,
+)
 
 FINGERPRINT_FILES = (
-    Path(".github/workflows/deploy.yml"),
+    Path(".gitlab-ci.yml"),
     Path("pyproject.toml"),
+    Path("resume_generator/gitlab_artifacts.py"),
+    Path("resume_generator/gitlab_ci.py"),
     Path("resume_generator/__init__.py"),
     Path("resume_generator/bio_yaml.py"),
     Path("resume_generator/build_log.py"),
@@ -29,6 +35,10 @@ FINGERPRINT_FILES = (
     Path("resume_generator/vintage_contract.py"),
     Path("resume_generator/vintage_reuse.py"),
     Path("resume_generator/vintage_yaml.py"),
+    Path("scripts/gitlab/build_images.py"),
+    Path("scripts/gitlab/publish.py"),
+    Path("scripts/gitlab/setup.sh"),
+    Path("scripts/gitlab/validate_vintage.py"),
     Path("scripts/pdp11_pexpect.py"),
     Path("scripts/simh_session.py"),
     Path("scripts/vax_pexpect.py"),
@@ -38,7 +48,7 @@ VINTAGE_DIRECTORY = Path("vintage")
 BUNDLE_FILES = ("brad.bio.txt", "build.log.html", "pipeline-status.json")
 PIPELINE_NAME = "edcloud-vintage"
 _FINGERPRINT_DOMAIN = b"brfid-vintage-reuse-v1"
-_REPOSITORY = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
+_PROJECT_URL = re.compile(r"https://gitlab\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+")
 
 
 class VintageReuseError(ValueError):
@@ -162,14 +172,14 @@ def compute_fingerprint(root: Path, site_yaml: Path, resume_yaml: Path) -> str:
     return digest.hexdigest()
 
 
-def _validate_source_run_url(source_run_url: str, repository: str) -> None:
-    if _REPOSITORY.fullmatch(repository) is None:
-        raise VintageReuseError(f"repository must have the form owner/name: {repository!r}")
-    pattern = rf"https://github\.com/{re.escape(repository)}/actions/runs/[1-9][0-9]*"
+def validate_source_run_url(source_run_url: str, project_url: str) -> None:
+    """Require an exact pipeline URL under the configured GitLab project."""
+    if _PROJECT_URL.fullmatch(project_url) is None:
+        raise VintageReuseError(f"project URL must identify a GitLab.com project: {project_url!r}")
+    pattern = rf"{re.escape(project_url)}/-/pipelines/[1-9][0-9]*"
     if re.fullmatch(pattern, source_run_url) is None:
         raise VintageReuseError(
-            "source Actions run URL must exactly match "
-            f"https://github.com/{repository}/actions/runs/<digits>: {source_run_url!r}"
+            f"source GitLab pipeline URL must exactly match {project_url}/-/pipelines/<digits>: {source_run_url!r}"
         )
 
 
@@ -192,12 +202,12 @@ def validate_bundle(  # pylint: disable=too-many-arguments
     *,
     source_sha: str,
     source_run_url: str,
-    repository: str,
+    project_url: str,
 ) -> ValidatedVintageBundle:
     """Validate one prior vintage bundle against its source run and current public bio inputs."""
     if not source_sha or source_sha != source_sha.strip():
         raise VintageReuseError("source SHA must be a nonempty string with no surrounding whitespace")
-    _validate_source_run_url(source_run_url, repository)
+    validate_source_run_url(source_run_url, project_url)
 
     paths = {name: bundle_dir / name for name in BUNDLE_FILES}
     for name, path in paths.items():
@@ -248,7 +258,7 @@ def _build_parser() -> argparse.ArgumentParser:
     validate_parser.add_argument("--resume-yaml", type=Path, default=Path("resume.yaml"))
     validate_parser.add_argument("--source-sha", required=True)
     validate_parser.add_argument("--source-run-url", required=True)
-    validate_parser.add_argument("--repository", required=True)
+    validate_parser.add_argument("--project-url", required=True)
     return parser
 
 
@@ -272,7 +282,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             _root_relative(root, args.resume_yaml),
             source_sha=args.source_sha,
             source_run_url=args.source_run_url,
-            repository=args.repository,
+            project_url=args.project_url,
         )
     except VintageReuseError as exc:
         print(f"vintage reuse: {exc}", file=sys.stderr)

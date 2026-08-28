@@ -140,7 +140,11 @@ def verify_robots_file(site_dir: Path, errors: list[str]) -> None:
         errors,
         f"robots.txt: unexpected directives: {lines!r}",
     )
-    record("Disallow: /" not in lines, errors, "robots.txt: blanket crawl block hides the HTML no-index policy")
+    record(
+        "Disallow: /" not in lines,
+        errors,
+        "robots.txt: blanket crawl block hides the HTML no-index policy",
+    )
 
 
 def verify_homepage_schema(site_dir: Path, errors: list[str]) -> None:
@@ -188,11 +192,19 @@ def verify_feeds(site_dir: Path, errors: list[str]) -> None:
                 errors,
                 f"{relative_path}: description contains a double-escaped entity: {description!r}",
             )
-            record("/resume/" not in urlparse(link).path, errors, f"{relative_path}: resume leaked into feed")
+            record(
+                "/resume/" not in urlparse(link).path,
+                errors,
+                f"{relative_path}: resume leaked into feed",
+            )
             record(bool(link), errors, f"{relative_path}: item has no link")
             if link:
                 target = rendered_path_for_url(site_dir, link)
-                record(target.is_file(), errors, f"{relative_path}: item link has no rendered page: {link}")
+                record(
+                    target.is_file(),
+                    errors,
+                    f"{relative_path}: item link has no rendered page: {link}",
+                )
 
 
 def find_menu_link(parser: RenderedPageParser, path: str) -> dict[str, str] | None:
@@ -218,7 +230,11 @@ def verify_primary_links(site_dir: Path, errors: list[str]) -> None:
     """Check primary routes and contextual feed/PDF actions."""
     homepage = parse_html(site_dir / "index.html")
     for path in ("/posts/", "/resume/"):
-        record(find_menu_link(homepage, path) is not None, errors, f"index.html: missing primary link to {path}")
+        record(
+            find_menu_link(homepage, path) is not None,
+            errors,
+            f"index.html: missing primary link to {path}",
+        )
 
     posts = parse_html(site_dir / "posts/index.html")
     record(
@@ -359,7 +375,11 @@ def verify_resume_pdf(site_dir: Path, public_email: str | None, errors: list[str
     if text is not None:
         if public_email is not None:
             record(public_email in text, errors, "resume.pdf: missing the public basics.email")
-        record(PLAUSIBLE_US_PHONE.search(text) is None, errors, "resume.pdf: contains a plausible US phone number")
+        record(
+            PLAUSIBLE_US_PHONE.search(text) is None,
+            errors,
+            "resume.pdf: contains a plausible US phone number",
+        )
 
     info = run_external("pdfinfo", [str(pdf_path.resolve())], errors)
     if info is not None:
@@ -405,7 +425,11 @@ def verify_production_site(site_dir: Path, *, resume_yaml: Path, build_run_url: 
     pdfs = sorted(
         path.relative_to(site_dir) for path in site_dir.rglob("*") if path.is_file() and path.suffix.lower() == ".pdf"
     )
-    record(pdfs == [Path("resume.pdf")], errors, f"production site PDFs must be exactly ['resume.pdf']; found {pdfs!r}")
+    record(
+        pdfs == [Path("resume.pdf")],
+        errors,
+        f"production site PDFs must be exactly ['resume.pdf']; found {pdfs!r}",
+    )
 
     raw_bios = sorted(path.relative_to(site_dir) for path in site_dir.rglob("brad.bio.txt"))
     record(not raw_bios, errors, f"raw brad.bio.txt was published: {raw_bios!r}")
@@ -445,10 +469,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("site_dir", type=Path, help="Hugo destination directory")
     parser.add_argument(
-        "--production", action="store_true", help="Verify production-only artifacts and privacy contracts"
+        "--production",
+        action="store_true",
+        help="Verify production-only artifacts and privacy contracts",
     )
     parser.add_argument("--resume-yaml", type=Path, help="Public resume YAML used to build the production PDF")
-    parser.add_argument("--build-run-url", help="Exact vintage Actions run URL rendered on the homepage")
+    parser.add_argument("--build-run-url", help="Exact vintage GitLab pipeline URL rendered on the homepage")
     args = parser.parse_args(argv)
 
     errors = verify_site(args.site_dir)
