@@ -36,6 +36,8 @@ ALLOW_ENVIRONMENT_BOOTSTRAP="${ALLOW_ENVIRONMENT_BOOTSTRAP:-1}"
 BUILD_LOCAL_IMAGE_PAIR="${BUILD_LOCAL_IMAGE_PAIR:-0}"
 GIT_SHA="${GIT_SHA:-$(git -C "$ROOT_DIR" rev-parse HEAD 2>/dev/null || echo 'unknown')}"
 HOST_OUTPUT_READY=0
+CONTAINER_NETWORK_ID=""
+CONTAINER_NETWORK_NAME="vintage-${BUILD_ID}"
 
 PDP11_IMAGE="pdp11-pexpect"
 VAX_IMAGE="vax-pexpect"
@@ -43,7 +45,6 @@ PINNED_VAX=""
 PINNED_PDP11=""
 CONTAINER_SECURITY_ARGS=(
   --rm
-  --network none
   --cap-drop ALL
   --security-opt no-new-privileges
   --pids-limit 256
@@ -102,11 +103,32 @@ cleanup() {
   if command -v docker >/dev/null 2>&1; then
     docker ps -aq --filter "label=vintage-build-id=${BUILD_ID}" | xargs -r docker rm -f || true
 
+    if [[ -n "$CONTAINER_NETWORK_ID" ]]; then
+      docker network rm "$CONTAINER_NETWORK_ID" >/dev/null 2>&1 || true
+    fi
+
     if [[ "$KEEP_IMAGES" != "1" ]]; then
       docker rmi "$PDP11_IMAGE" "$VAX_IMAGE" 2>/dev/null || true
     fi
   fi
 
+}
+
+create_container_network() {
+  stage "create-container-network"
+
+  CONTAINER_NETWORK_ID="$(
+    docker network create \
+      --driver bridge \
+      --internal \
+      --label "vintage-build-id=${BUILD_ID}" \
+      "$CONTAINER_NETWORK_NAME"
+  )"
+  if [[ -z "$CONTAINER_NETWORK_ID" ]]; then
+    echo "Docker did not return an ID for internal network: $CONTAINER_NETWORK_NAME"
+    return 1
+  fi
+  echo "Created internal guest network: $CONTAINER_NETWORK_NAME"
 }
 
 prepare_host() {
@@ -274,6 +296,7 @@ stage_b_vax() {
   done
 
   docker run "${CONTAINER_SECURITY_ARGS[@]}" \
+    --network "$CONTAINER_NETWORK_ID" \
     --label "vintage-build-id=${BUILD_ID}" \
     --mount "type=bind,src=${source},dst=/inputs/bradman.c,readonly" \
     --mount "type=bind,src=${yaml_input},dst=/inputs/bio.vintage.yaml,readonly" \
@@ -316,6 +339,7 @@ stage_a_pdp11() {
 
   echo "[uucp] Delivering brad.bio.uu spool to PDP-11…"
   docker run "${CONTAINER_SECURITY_ARGS[@]}" \
+    --network "$CONTAINER_NETWORK_ID" \
     --label "vintage-build-id=${BUILD_ID}" \
     --mount "type=bind,src=${spool},dst=/inputs/brad.bio.uu,readonly" \
     --mount "type=bind,src=${output_dir},dst=/output" \
@@ -424,6 +448,7 @@ main() {
   load_image_pair
   build_pexpect_images
   generate_vintage_yaml
+  create_container_network
   stage_b_vax
   stage_a_pdp11
   emit_status_json 0

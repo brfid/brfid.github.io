@@ -24,14 +24,14 @@ Do not start a standard publication yet. The promoted PDP-11 image does not reac
 - The old and new PDP-11 images contain byte-identical `211bsd_rpeth.dsk` files and INI configuration, and their installed runtime package versions match.
 - Both SIMH binaries report source commit `627e6a6b135261f9dcb46dc1a8665c7fe67d3f7c` and GCC 12.2. Their ELF files differ, but the only unique printable strings are build times. This does not establish the rebuilt executable as the cause.
 - The last successful standard publication, pipeline `2798436161`, job `16160800424`, used the old image and the pre-hardening Docker invocation on the same `saas-linux-small-amd64` runner class.
-- The hardening changed the guest invocation to stage-only mounts plus `--network none`, `--cap-drop ALL`, `--security-opt no-new-privileges`, `--pids-limit 256`, and `--memory 2g`. The failure occurs before the output mount is used.
+- The first hardened invocation changed the guest runtime to stage-only mounts plus `--network none`, `--cap-drop ALL`, `--security-opt no-new-privileges`, `--pids-limit 256`, and `--memory 2g`. The failure occurred before the output mount was used.
 - Local Docker Desktop tests are inconclusive because nested amd64-on-arm64 emulation does not boot even the known-good old image within 15 minutes, with or without the restrictions. Do not treat that result as evidence against a particular hosted restriction.
 - The old and new PDP-11 images were pulled into local Docker only for read-only comparison. Remove them later if desired; they do not affect the Git working tree.
 
 ## Next safe investigation
 
 1. Keep publication stopped and preserve the current fail-closed manifest.
-2. Isolate the Docker invocation change on a native amd64 runner. Test `--network none` first because it is the restriction most likely to alter runtime behavior. A per-run Docker bridge created with `docker network create --internal` is the preferred next experiment because it supplies a network namespace interface without an external route. Give each job a build-ID-derived network name, attach only one guest at a time, and remove it in `cleanup()`.
+2. Validate the candidate Docker correction on a native amd64 runner. The runner now replaces `--network none` with a build-ID-derived bridge created by `docker network create --internal`, attaches only one guest at a time, and removes the bridge in `cleanup()`. It preserves every other hardened restriction.
 3. Do not permanently weaken the other restrictions or restore the shared `/build` mount without evidence. If the internal network does not fix the boot, test one remaining restriction at a time in a non-publishing diagnostic path.
 4. After a repository correction, run `make check`, `make verify-site`, image-manifest validation, `git diff --check`, and a redacted secret scan. Push the correction with `[nopublish]` and require both gates to pass.
 5. Retry typed vintage validation with `glab ci run --branch main --input operation:vintage-validation --input expected_vintage_sha256:a929edcd7fcf3e245f968291438328687dff9ddc1ee74d3f73464ca5083936b5`.

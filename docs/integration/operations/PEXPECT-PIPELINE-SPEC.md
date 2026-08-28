@@ -77,7 +77,7 @@ nroff -Tlp /tmp/brad.bio.roff < /dev/null > /tmp/brad.bio.txt
 - The build date appears only in a troff comment. With unchanged public text, orchestration, and pinned images, `nroff` produces stable rendered bytes.
 - The runner clears its owned outputs before starting and records success or failure in `pipeline-status.json`.
 - The runner gives each guest only read-only inputs and a separate output mount, then copies validated final artifacts under `build/vintage/`; workflows consume those host-owned files directly.
-- Guest containers have no network, drop all capabilities, disallow privilege gain, and use process and memory limits.
+- Guest containers run one at a time on a build-specific internal bridge with no external route, drop all capabilities, disallow privilege gain, and use process and memory limits. The runner removes the bridge during cleanup.
 - Production validates one source-bound manifest of immutable image digests and disables local builds and environment bootstrap.
 
 ## Failure guide
