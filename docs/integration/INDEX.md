@@ -116,7 +116,7 @@ Use this procedure after changing an emulator Dockerfile, configuration, base im
 5. Inspect `pipeline-status.json`, `brad.bio.txt`, `build.log.html`, and the console-section artifact.
 6. Merge only after validation succeeds.
 
-The image-build job accepts only a typed manual pipeline on protected `main`. It uses a digest-pinned BuildKit backend, publishes source-commit tags under `registry.gitlab.com/brfid/brfid.gitlab.io/` for discovery, and labels both images with the source commit and image-input digest. Deployment pulls only manifest digests, requires the revision label to match, and requires the image-input label on every newly promoted pair. The exact pair currently recorded in `vintage/image-pair.json` predates the input label and is the only accepted exception. The Dockerfiles pin their base images by digest. The PDP-11 recipe downloads the versioned `211bsd-rpethset` package from this project's public GitLab Generic Package Registry and verifies checksum `74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42` before extraction.
+The image-build job accepts only a typed manual pipeline on protected `main`. It uses a digest-pinned BuildKit backend, publishes source-commit tags under `registry.gitlab.com/brfid/brfid.gitlab.io/` for discovery, and labels both images with the source commit and image-input digest. Deployment pulls only manifest digests and requires both labels to match the promoted manifest. The Dockerfiles pin their base images by digest. The PDP-11 recipe downloads the versioned `211bsd-rpethset` package from this project's public GitLab Generic Package Registry and verifies checksum `74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42` before extraction.
 
 ### Restore the PDP-11 disk package
 

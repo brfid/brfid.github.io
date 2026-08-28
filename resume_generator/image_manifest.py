@@ -44,20 +44,6 @@ class ImagePair:
     pdp11: str
 
 
-_LEGACY_UNLABELED_PAIR = ImagePair(
-    source_sha="af9de038b7c9a9759108b79b2a97ffb897cc2936",
-    image_inputs_sha256="8c00d86c8fd119ef8bc31194557760e85b6384a522111996a4a34b7e7e033ca4",
-    vax=(
-        "registry.gitlab.com/brfid/brfid.gitlab.io/vax-pexpect@"
-        "sha256:00038ee9451a1da6cbee453f2aeba986cdb3ceb94738dff293ced909f35308d4"
-    ),
-    pdp11=(
-        "registry.gitlab.com/brfid/brfid.gitlab.io/pdp11-pexpect@"
-        "sha256:4c566d778d6ef3ca6f6a788f2e6a1aaba1c360912edb9d15043a10cacaa2a38f"
-    ),
-)
-
-
 def _add_record(digest: Any, label: str, contents: bytes) -> None:
     label_bytes = label.encode("utf-8")
     digest.update(len(label_bytes).to_bytes(8, byteorder="big"))
@@ -214,12 +200,10 @@ def validate_image_labels(
         raise ImageManifestError(f"unsupported vintage machine: {machine!r}")
     if revision != pair.source_sha:
         raise ImageManifestError(f"{machine} image revision label does not match the promoted source commit")
-    if image_inputs_sha256 is not None:
-        if image_inputs_sha256 != pair.image_inputs_sha256:
-            raise ImageManifestError(f"{machine} image input label does not match the promoted source digest")
-        return
-    if pair != _LEGACY_UNLABELED_PAIR:
+    if image_inputs_sha256 is None:
         raise ImageManifestError(f"{machine} image is missing the required {IMAGE_INPUTS_LABEL} label")
+    if image_inputs_sha256 != pair.image_inputs_sha256:
+        raise ImageManifestError(f"{machine} image input label does not match the promoted source digest")
 
 
 def _build_parser() -> argparse.ArgumentParser:

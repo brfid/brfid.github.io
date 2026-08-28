@@ -75,9 +75,9 @@ def test_repository_image_pair_matches_image_owned_source() -> None:
     pair = load_image_pair(ROOT)
     verify_image_source_commit(ROOT, pair)
 
-    assert pair.source_sha == "af9de038b7c9a9759108b79b2a97ffb897cc2936"
-    assert pair.vax.endswith("@sha256:00038ee9451a1da6cbee453f2aeba986cdb3ceb94738dff293ced909f35308d4")
-    assert pair.pdp11.endswith("@sha256:4c566d778d6ef3ca6f6a788f2e6a1aaba1c360912edb9d15043a10cacaa2a38f")
+    assert pair.source_sha == "f19f93ab57639cf2f168a33d8888f5e32c703040"
+    assert pair.vax.endswith("@sha256:aace291158b43ee425ba0f7ce1e83a705dd75f6a922b18926266752e0c23cfc9")
+    assert pair.pdp11.endswith("@sha256:239f0f8a4da44c236e05dc351e0775de78c11bb6edaf48d0af8965fcc22f7759")
 
 
 def test_image_input_digest_is_deterministic_and_covers_every_owned_input(tmp_path: Path) -> None:
@@ -138,7 +138,7 @@ def test_manifest_cli_prints_only_the_validated_requested_reference(
     assert capsys.readouterr().out == f"{PDP11_REF}\n"
 
 
-def test_current_legacy_pair_requires_revision_but_allows_the_missing_input_label() -> None:
+def test_repository_image_pair_requires_both_provenance_labels() -> None:
     pair = load_image_pair(ROOT)
 
     for machine in ("vax", "pdp11"):
@@ -146,18 +146,25 @@ def test_current_legacy_pair_requires_revision_but_allows_the_missing_input_labe
             pair,
             machine=machine,
             revision=pair.source_sha,
-            image_inputs_sha256=None,
+            image_inputs_sha256=pair.image_inputs_sha256,
         )
+        with pytest.raises(ImageManifestError, match="missing the required"):
+            validate_image_labels(
+                pair,
+                machine=machine,
+                revision=pair.source_sha,
+                image_inputs_sha256=None,
+            )
     with pytest.raises(ImageManifestError, match="revision label does not match"):
         validate_image_labels(
             pair,
             machine="vax",
             revision="b" * 40,
-            image_inputs_sha256=None,
+            image_inputs_sha256=pair.image_inputs_sha256,
         )
 
 
-def test_future_image_pairs_require_the_input_digest_label(tmp_path: Path) -> None:
+def test_image_pairs_require_the_input_digest_label(tmp_path: Path) -> None:
     _write_inputs(tmp_path)
     _write_manifest(tmp_path)
     pair = load_image_pair(tmp_path)
