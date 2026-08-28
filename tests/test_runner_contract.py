@@ -206,17 +206,27 @@ def test_standalone_vintage_bootstrap_excludes_pdf_dependencies() -> None:
 
 
 def test_runner_isolates_each_guest_and_validates_host_handoffs() -> None:
-    """Guests receive only stage inputs and outputs, with no network or ambient capabilities."""
+    """Guests run alone without external access or ambient capabilities."""
     runner = RUNNER.read_text(encoding="utf-8")
 
+    assert "--network none" not in runner
     for option in (
-        "--network none",
         "--cap-drop ALL",
         "--security-opt no-new-privileges",
         "--pids-limit 256",
         "--memory 2g",
     ):
         assert option in runner
+    for network_contract in (
+        'CONTAINER_NETWORK_NAME="vintage-${BUILD_ID}"',
+        "docker network create",
+        "--internal",
+        'docker network rm "$CONTAINER_NETWORK_ID"',
+    ):
+        assert network_contract in runner
+    assert runner.count('--network "$CONTAINER_NETWORK_ID"') == 2
+    main = runner.split("main() {", maxsplit=1)[1].split("\n}", maxsplit=1)[0]
+    assert main.index("create_container_network") < main.index("stage_b_vax")
     assert "build/vintage:/build" not in runner
     assert "dst=/inputs/bradman.c,readonly" in runner
     assert "dst=/inputs/bio.vintage.yaml,readonly" in runner

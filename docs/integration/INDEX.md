@@ -83,7 +83,7 @@ Fast mode fails closed when no valid matching artifact is available. Run a stand
 - State transitions wait for explicit console output. A 5 ms delay between heredoc lines throttles transport into the guest tty; it does not determine state.
 - Artifact-producing guest commands use `run_checked()` and must return status `0` before the pipeline continues.
 - The checkout's VAX and PDP-11 scripts and `simh_session.py` are mounted read-only over the inert copies in cached images. Those scripts belong to the runtime fingerprint rather than the image-input digest.
-- Each guest has no network, receives only read-only inputs plus its own output directory, drops all Linux capabilities, and runs with no-new-privileges, process, and memory limits.
+- Each guest runs alone on a build-specific internal bridge with no external route, receives only read-only inputs plus its own output directory, drops all Linux capabilities, and runs with no-new-privileges, process, and memory limits. The runner removes the bridge during cleanup.
 - The VAX produces the UUCP spool in its output mount. The host rejects links and special or empty files, copies the spool into the PDP-11's read-only input mount, then combines the two validated console-section logs.
 - The runner and workflows hand off only host-validated final files under `build/vintage/`; stdout is diagnostic only.
 
