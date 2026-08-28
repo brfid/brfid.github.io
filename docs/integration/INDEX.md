@@ -111,7 +111,27 @@ Use this procedure after changing an emulator Dockerfile, configuration, base im
 5. Inspect `pipeline-status.json`, `brad.bio.txt`, `build.log.html`, and the console-section artifact.
 6. Merge only after validation succeeds.
 
-The image-build job publishes source-commit tags under `registry.gitlab.com/brfid/brfid.gitlab.io/` for discovery. Deployment uses only the pinned digests and never waits for an image build. The Dockerfiles pin their base images by digest, and the PDP-11 recipe verifies the downloaded disk archive before extraction.
+The image-build job publishes source-commit tags under `registry.gitlab.com/brfid/brfid.gitlab.io/` for discovery. Deployment uses only the pinned digests and never waits for an image build. The Dockerfiles pin their base images by digest. The PDP-11 recipe downloads the versioned `211bsd-rpethset` package from this project's public GitLab Generic Package Registry and verifies checksum `74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42` before extraction.
+
+### Restore the PDP-11 disk package
+
+If the `211bsd-rpethset` package is missing from GitLab, download the original archive, verify it, and upload the verified bytes:
+
+```bash
+curl --fail --location --show-error \
+  --output 211bsd_rpethset.tgz \
+  https://www.retro11.de/data/oc_w11/oskits/211bsd_rpethset.tgz
+printf '%s  %s\n' \
+  '74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42' \
+  '211bsd_rpethset.tgz' | shasum --algorithm 256 --check
+glab api --method PUT \
+  --header 'Content-Type: application/octet-stream' \
+  --input 211bsd_rpethset.tgz \
+  --silent \
+  projects/85834009/packages/generic/211bsd-rpethset/2019-05-30/211bsd_rpethset.tgz
+```
+
+Delete the local archive after the upload. Confirm that the package remains anonymously downloadable before starting `image-build`; the Docker build does not use GitLab credentials to retrieve it.
 
 ## References
 
