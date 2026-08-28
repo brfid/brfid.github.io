@@ -100,7 +100,7 @@ def test_pages_deploy_publishes_only_the_verified_redirect() -> None:
     assert "name: Publish redirect" in workflow
     assert "actions/checkout@v7" in workflow
     assert 'hugo-version: "0.163.3"' in workflow
-    assert "actions/configure-pages@v5" in workflow
+    assert "actions/configure-pages@v6" in workflow
     assert "if: github.ref == 'refs/heads/main'" in workflow
     assert build in workflow
     assert verify in workflow
