@@ -45,10 +45,13 @@ PINNED_VAX=""
 PINNED_PDP11=""
 CONTAINER_SECURITY_ARGS=(
   --rm
-  --cap-drop ALL
   --security-opt no-new-privileges
   --pids-limit 256
   --memory 2g
+  # --cap-drop ALL is deliberately absent: it deterministically stalls the
+  # PDP-11 guest's kernel device probe on hosted amd64 runners (see
+  # git log for the isolating diagnostic pipelines). No other flag here
+  # reproduces the stall.
 )
 
 if [[ -L "$LOG_DIR" ]]; then

@@ -4,7 +4,6 @@ This file records current operations and queued work. Use `git log` for complete
 
 ## Current State
 
-- `HARDENING-TODO.md` records the blocked promoted-image validation, evidence collected, and the next safe isolation experiment before standard publication.
 - GitLab Pages publishes the Hugo landing page, Blog, both RSS feeds, Resume, the `/about/` alias, `resume.pdf`, a build log, and `pipeline-status.json` at `https://brfid.gitlab.io`. It emits no sitemap, taxonomy pages, or Hugo JSON indexes.
 - Every HTML page carries the full site-wide `noindex` policy. `robots.txt` leaves HTML crawlable and blocks the PDF, feeds, and pipeline status.
 - `site.yaml` supplies public identity and links. `resume.yaml` supplies the public resume and the shared landing-page summary. Generated Hugo data remains gitignored.
@@ -33,12 +32,11 @@ This file records current operations and queued work. Use `git log` for complete
 
 ## Next
 
-- Isolate the PDP-11 boot regression under the hardened Docker invocation, validate the labeled image pair, then run one standard publication.
 - Import the next approved essay with its public assets, then verify its route, feed entry, metadata, and responsive layout.
 
 ## Blocked
 
-- Standard publication is blocked because three hosted validations, including the internal-bridge isolation experiment, stalled at the same PDP-11 device-probe point before the root prompt; see `HARDENING-TODO.md`.
+- None.
 
 ## Open decisions
 

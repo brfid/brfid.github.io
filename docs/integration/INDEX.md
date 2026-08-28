@@ -140,7 +140,6 @@ Delete the local archive after the upload. Confirm that the package remains anon
 
 ## References
 
-- [Current hardening handoff](../../HARDENING-TODO.md)
 - [`pexpect` implementation reference](operations/PEXPECT-PIPELINE-SPEC.md)
 - [VAX stage and guest input contract](../vax/README.md)
 - [Promoted image manifest validator](../../resume_generator/image_manifest.py)
