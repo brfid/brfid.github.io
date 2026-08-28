@@ -8,6 +8,7 @@ This temporary handoff covers the remaining hosted validation and publication fo
 - GitLab now disables pipeline-variable overrides, uses fast-forward merges, requires a successful merge pipeline, protects `main` and the `production` environment, limits production deployment to Maintainers, and does not retain the latest successful artifact indefinitely.
 - Image-build pipeline `2800537896` used the digest-pinned BuildKit backend on protected `main` and emitted a canonical, source-bound VAX/PDP-11 manifest. The current change promotes that complete manifest and removes the temporary unlabeled-image exception.
 - Local quality, rendered-site, shell-syntax, CI-lint, clean dependency-bootstrap, image-manifest, and redacted secret checks pass.
+- The first hosted validation accepted both images and completed the VAX stage, then a progressing PDP-11 boot reached the old 180-second safety bound. The current change raises that output-driven boot bound to five minutes before retrying.
 
 ## 1. Validate the promoted vintage pair
 

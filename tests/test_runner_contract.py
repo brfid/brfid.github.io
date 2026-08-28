@@ -62,6 +62,14 @@ def test_mounted_pexpect_scripts_defer_annotation_evaluation() -> None:
         assert "from __future__ import annotations" in source
 
 
+def test_pdp11_boot_timeout_allows_for_hosted_runner_contention() -> None:
+    """A progressing 2.11BSD boot must not fail at the old three-minute boundary."""
+    source = (ROOT / "scripts" / "pdp11_pexpect.py").read_text(encoding="utf-8")
+
+    assert "_BOOT_TIMEOUT = 300" in source
+    assert "timeout=_BOOT_TIMEOUT" in source
+
+
 def test_production_images_are_immutable_and_fallback_is_disabled() -> None:
     """Production must consume one source-bound image manifest and disable fallback."""
     runner = RUNNER.read_text(encoding="utf-8")

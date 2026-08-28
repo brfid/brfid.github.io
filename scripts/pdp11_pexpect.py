@@ -30,7 +30,7 @@ _PROMPT = "PDPsh> "
 _CAPTURE_BEGIN = re.compile(rb"(?m)^__BRAD_BIO_TXT_BEGIN__\r?$")
 _CAPTURE_END = re.compile(rb"(?m)^__BRAD_BIO_TXT_END__\r?$")
 
-_BOOT_TIMEOUT = 180  # 2.11BSD on PDP-11 boots slowly (~90-120s under SIMH)
+_BOOT_TIMEOUT = 300  # Allow for CPU contention on shared hosted runners.
 _CMD_TIMEOUT = 60
 _NROFF_TIMEOUT = 600  # nroff on PDP-11 can take 5+ min on emulated hardware
 _UUE_TIMEOUT = 120  # per-batch UUE heredoc + cat timeout
@@ -78,7 +78,7 @@ def _boot(child: pexpect.spawn) -> None:
     boot_pre = child.before or b""
     child.sendline("")
 
-    _log("Waiting for root # prompt (this takes up to 2 minutes)…")
+    _log("Waiting for root # prompt (this can take up to 5 minutes)…")
     child.expect(["# ", "\\$ "], timeout=_BOOT_TIMEOUT)
     _log("Reached root shell")
     kernel_boot = child.before or b""
