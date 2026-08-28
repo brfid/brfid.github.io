@@ -11,9 +11,15 @@ from pathlib import Path
 import pytest
 from pytest import MonkeyPatch
 
+from resume_generator.image_manifest import (
+    IMAGE_INPUT_PATHS,
+    compute_image_inputs_sha256,
+    render_image_manifest,
+)
 from resume_generator.vintage_reuse import (
     BUNDLE_FILES,
-    FINGERPRINT_FILES,
+    FINGERPRINT_EXCLUDED,
+    FINGERPRINT_ROOTS,
     VintageReuseError,
     compute_fingerprint,
     main,
@@ -53,13 +59,31 @@ def _write_public_inputs(
 
 
 def _write_fingerprint_tree(root: Path) -> tuple[Path, Path]:
-    for relative_path in FINGERPRINT_FILES:
+    for relative_path in FINGERPRINT_ROOTS:
         path = root / relative_path
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(f"fixture for {relative_path.as_posix()}\n", encoding="utf-8")
-    vintage_file = root / "vintage" / "machines" / "fixture.txt"
-    vintage_file.parent.mkdir(parents=True)
-    vintage_file.write_text("vintage fixture\n", encoding="utf-8")
+        if path.suffix or path.name.startswith("."):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(f"fixture for {relative_path.as_posix()}\n", encoding="utf-8")
+        else:
+            path.mkdir(parents=True, exist_ok=True)
+            (path / "guarded-source.txt").write_text(
+                f"fixture for {relative_path.as_posix()}\n",
+                encoding="utf-8",
+            )
+    for relative_path in IMAGE_INPUT_PATHS:
+        image_input = root / relative_path
+        image_input.parent.mkdir(parents=True, exist_ok=True)
+        image_input.write_text(f"image input {relative_path.as_posix()}\n", encoding="utf-8")
+    image_digest = compute_image_inputs_sha256(root)
+    (root / "vintage" / "image-pair.json").write_text(
+        render_image_manifest(
+            source_sha=SOURCE_SHA,
+            image_inputs_sha256=image_digest,
+            vax=f"registry.gitlab.com/brfid/brfid.gitlab.io/vax-pexpect@sha256:{'1' * 64}",
+            pdp11=f"registry.gitlab.com/brfid/brfid.gitlab.io/pdp11-pexpect@sha256:{'2' * 64}",
+        ),
+        encoding="utf-8",
+    )
     return _write_public_inputs(root)
 
 
@@ -145,8 +169,18 @@ def test_each_public_vintage_field_changes_fingerprint(tmp_path: Path, changed_f
     assert compute_fingerprint(tmp_path, site_yaml, resume_yaml) != original
 
 
-@pytest.mark.parametrize("relative_path", FINGERPRINT_FILES, ids=lambda path: path.as_posix())
-def test_each_guarded_file_changes_fingerprint(tmp_path: Path, relative_path: Path) -> None:
+@pytest.mark.parametrize(
+    "relative_path",
+    (
+        Path(".gitlab-ci.yml"),
+        Path("requirements/runtime.lock"),
+        Path("resume_generator/guarded-source.txt"),
+        Path("scripts/guarded-source.txt"),
+        Path("vintage/guarded-source.txt"),
+    ),
+    ids=lambda path: path.as_posix(),
+)
+def test_guarded_implementation_files_change_fingerprint(tmp_path: Path, relative_path: Path) -> None:
     site_yaml, resume_yaml = _write_fingerprint_tree(tmp_path)
     original = compute_fingerprint(tmp_path, site_yaml, resume_yaml)
     path = tmp_path / relative_path
@@ -154,6 +188,32 @@ def test_each_guarded_file_changes_fingerprint(tmp_path: Path, relative_path: Pa
     path.write_bytes(path.read_bytes() + b"changed\n")
 
     assert compute_fingerprint(tmp_path, site_yaml, resume_yaml) != original
+
+
+@pytest.mark.parametrize(
+    "guarded_root",
+    (Path("resume_generator"), Path("scripts"), Path("vintage")),
+    ids=lambda path: path.as_posix(),
+)
+def test_new_helpers_under_guarded_roots_change_fingerprint(tmp_path: Path, guarded_root: Path) -> None:
+    site_yaml, resume_yaml = _write_fingerprint_tree(tmp_path)
+    original = compute_fingerprint(tmp_path, site_yaml, resume_yaml)
+
+    (tmp_path / guarded_root / "new-helper.py").write_text("new helper\n", encoding="utf-8")
+
+    assert compute_fingerprint(tmp_path, site_yaml, resume_yaml) != original
+
+
+def test_site_only_files_are_excluded_from_fingerprint(tmp_path: Path) -> None:
+    site_yaml, resume_yaml = _write_fingerprint_tree(tmp_path)
+    original = compute_fingerprint(tmp_path, site_yaml, resume_yaml)
+
+    for relative_path in FINGERPRINT_EXCLUDED:
+        excluded = tmp_path / relative_path
+        excluded.parent.mkdir(parents=True, exist_ok=True)
+        excluded.write_text("site-only implementation\n", encoding="utf-8")
+
+    assert compute_fingerprint(tmp_path, site_yaml, resume_yaml) == original
 
 
 def test_every_file_under_vintage_is_guarded(tmp_path: Path) -> None:
@@ -195,10 +255,10 @@ def test_ignored_vintage_files_do_not_change_fingerprint(tmp_path: Path) -> None
 
 def test_fingerprint_reports_a_missing_guarded_file(tmp_path: Path) -> None:
     site_yaml, resume_yaml = _write_fingerprint_tree(tmp_path)
-    missing = tmp_path / FINGERPRINT_FILES[0]
+    missing = tmp_path / FINGERPRINT_ROOTS[0]
     missing.unlink()
 
-    with pytest.raises(VintageReuseError, match="fingerprint input is missing"):
+    with pytest.raises(VintageReuseError, match="fingerprint root is missing"):
         compute_fingerprint(tmp_path, site_yaml, resume_yaml)
 
 

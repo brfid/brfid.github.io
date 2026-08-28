@@ -13,23 +13,34 @@ from typing import Any
 
 from resume_generator.gitlab_ci import (
     JOB_ERRORS,
+    PUBLICATION_BRANCH,
+    GitLabJobIdentity,
     executable,
     required_environment,
     reset_directory,
     run,
 )
+from resume_generator.image_manifest import (
+    IMAGE_INPUTS_LABEL,
+    IMAGE_REGISTRY_PREFIX,
+    compute_image_inputs_sha256,
+    render_image_manifest,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = ROOT / "out"
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+EXPECTED_REGISTRY = "registry.gitlab.com"
+EXPECTED_REGISTRY_USER = "gitlab-ci-token"
+BUILDKIT_IMAGE = "docker.io/moby/buildkit@sha256:040d34121c27906c4ff9ac152a30d52bf2c5d328d3bb748916bb3d2743c02528"
 
 
 @dataclass(frozen=True)
 class RegistryContext:
-    """Validated GitLab registry variables used by the image builder."""
+    """Validated GitLab identity and registry credentials used by the image builder."""
 
     commit_sha: str
-    pipeline_id: str
+    pipeline_id: int
     registry: str
     image_prefix: str
     username: str
@@ -37,19 +48,26 @@ class RegistryContext:
 
     @classmethod
     def from_environment(cls) -> RegistryContext:
-        """Load required nonempty registry credentials and image identity."""
-        names = (
-            "CI_COMMIT_SHA",
-            "CI_PIPELINE_ID",
-            "CI_REGISTRY",
-            "CI_REGISTRY_IMAGE",
-            "CI_REGISTRY_USER",
-            "CI_REGISTRY_PASSWORD",
+        """Reject identity overrides before sending credentials to the fixed registry."""
+        identity = GitLabJobIdentity.from_environment(
+            ROOT,
+            expected_branch=PUBLICATION_BRANCH,
+            expected_jobs=("image-build",),
+            expected_sources=("web", "api"),
+            require_protected=True,
         )
-        values = required_environment(names)
+        values = required_environment(("CI_REGISTRY", "CI_REGISTRY_IMAGE", "CI_REGISTRY_USER", "CI_REGISTRY_PASSWORD"))
+        expected = {
+            "CI_REGISTRY": EXPECTED_REGISTRY,
+            "CI_REGISTRY_IMAGE": IMAGE_REGISTRY_PREFIX,
+            "CI_REGISTRY_USER": EXPECTED_REGISTRY_USER,
+        }
+        for name, expected_value in expected.items():
+            if values[name] != expected_value:
+                raise ValueError(f"{name} must be {expected_value!r}, got {values[name]!r}")
         return cls(
-            commit_sha=values["CI_COMMIT_SHA"],
-            pipeline_id=values["CI_PIPELINE_ID"],
+            commit_sha=identity.commit_sha,
+            pipeline_id=identity.pipeline_id,
             registry=values["CI_REGISTRY"],
             image_prefix=values["CI_REGISTRY_IMAGE"],
             username=values["CI_REGISTRY_USER"],
@@ -58,6 +76,8 @@ class RegistryContext:
 
 
 def _read_digest(metadata_path: Path) -> str:
+    if metadata_path.is_symlink() or not metadata_path.is_file():
+        raise RuntimeError(f"Buildx metadata is missing or is not a regular file: {metadata_path}")
     value: Any = json.loads(metadata_path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
         raise RuntimeError(f"Buildx metadata must be a JSON object: {metadata_path}")
@@ -67,11 +87,12 @@ def _read_digest(metadata_path: Path) -> str:
     return digest
 
 
-def _build_image(
+def _build_image(  # pylint: disable=too-many-arguments
     docker: str,
     *,
     tag: str,
     commit_sha: str,
+    image_inputs_sha256: str,
     dockerfile: str,
     metadata_path: Path,
 ) -> str:
@@ -87,6 +108,8 @@ def _build_image(
             tag,
             "--label",
             f"org.opencontainers.image.revision={commit_sha}",
+            "--label",
+            f"{IMAGE_INPUTS_LABEL}={image_inputs_sha256}",
             "--metadata-file",
             str(metadata_path),
             "--file",
@@ -99,14 +122,17 @@ def _build_image(
 
 
 def build_images(context: RegistryContext) -> None:
-    """Build both images, publish them, and record their immutable references."""
+    """Build both images, publish them, and emit the manifest used for promotion."""
     reset_directory(OUTPUT_DIR, create=True)
+    image_inputs_sha256 = compute_image_inputs_sha256(ROOT)
     docker = executable("docker")
+    logged_in = False
     run(
         [docker, "login", context.registry, "--username", context.username, "--password-stdin"],
         cwd=ROOT,
         input_text=context.password,
     )
+    logged_in = True
 
     builder = f"vintage-{context.pipeline_id}"
     created = False
@@ -120,6 +146,8 @@ def build_images(context: RegistryContext) -> None:
                 builder,
                 "--driver",
                 "docker-container",
+                "--driver-opt",
+                f"image={BUILDKIT_IMAGE}",
                 "--use",
             ],
             cwd=ROOT,
@@ -133,6 +161,7 @@ def build_images(context: RegistryContext) -> None:
             docker,
             tag=f"{vax_path}:{context.commit_sha}",
             commit_sha=context.commit_sha,
+            image_inputs_sha256=image_inputs_sha256,
             dockerfile="vintage/machines/vax/Dockerfile.vax-pexpect",
             metadata_path=OUTPUT_DIR / "vax-metadata.json",
         )
@@ -140,6 +169,7 @@ def build_images(context: RegistryContext) -> None:
             docker,
             tag=f"{pdp11_path}:{context.commit_sha}",
             commit_sha=context.commit_sha,
+            image_inputs_sha256=image_inputs_sha256,
             dockerfile="vintage/machines/pdp11/Dockerfile.pdp11-pexpect",
             metadata_path=OUTPUT_DIR / "pdp11-metadata.json",
         )
@@ -151,16 +181,18 @@ def build_images(context: RegistryContext) -> None:
                 cwd=ROOT,
                 quiet=True,
             )
+        if logged_in:
+            run([docker, "logout", context.registry], check=False, cwd=ROOT, quiet=True)
 
-    report = {
-        "source_sha": context.commit_sha,
-        "vax": f"{vax_path}@{vax_digest}",
-        "pdp11": f"{pdp11_path}@{pdp11_digest}",
-    }
-    rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
+    rendered = render_image_manifest(
+        source_sha=context.commit_sha,
+        image_inputs_sha256=image_inputs_sha256,
+        vax=f"{vax_path}@{vax_digest}",
+        pdp11=f"{pdp11_path}@{pdp11_digest}",
+    )
     (OUTPUT_DIR / "image-pair.json").write_text(rendered, encoding="utf-8")
     print(rendered, end="")
-    print("Pin both references in scripts/vintage-runner.sh, then run a vintage-validation pipeline.")
+    print("Promote out/image-pair.json to vintage/image-pair.json, then run vintage validation.")
 
 
 def main(argv: Sequence[str] | None = None) -> int:

@@ -110,7 +110,7 @@ def test_feed_check_allows_literal_entities_but_rejects_double_escaped_quotes(
         feed = (
             "<rss><channel><item>"
             f"<description>{description}</description>"
-            "<link>https://example.com/posts/example/</link>"
+            f"<link>{verifier.PUBLIC_ORIGIN}/posts/example/</link>"
             "</item></channel></rss>\n"
         )
         (site_dir / "index.xml").write_text(feed, encoding="utf-8")
@@ -289,3 +289,285 @@ def test_run_external_reports_a_missing_command(monkeypatch: MonkeyPatch) -> Non
 
     assert verifier.run_external("pdfinfo", ["resume.pdf"], errors) is None
     assert errors == ["required external command not found: pdfinfo"]
+
+
+def _write_post_source(tmp_path: Path, slug: str = "published-post", *, draft: bool = False) -> Path:
+    posts = tmp_path / "content" / "posts"
+    bundle = posts / slug
+    bundle.mkdir(parents=True, exist_ok=True)
+    (bundle / "index.md").write_text(
+        f"---\ntitle: Test post\ndraft: {'true' if draft else 'false'}\n---\n\nBody.\n",
+        encoding="utf-8",
+    )
+    return posts
+
+
+def _write_stylesheet(site_dir: Path) -> None:
+    stylesheet = site_dir / "assets" / "css" / f"stylesheet.{'a' * 64}.css"
+    stylesheet.parent.mkdir(parents=True, exist_ok=True)
+    stylesheet.write_text("body {}\n", encoding="utf-8")
+
+
+def test_output_policy_accepts_only_contract_paths_and_source_backed_resources(tmp_path: Path) -> None:
+    posts_source = _write_post_source(tmp_path)
+    source_resource = posts_source / "published-post" / "figure.svg"
+    source_resource.write_text("<svg></svg>\n", encoding="utf-8")
+    site_dir = tmp_path / "site"
+    (site_dir / "posts" / "published-post").mkdir(parents=True)
+    (site_dir / "posts" / "published-post" / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    (site_dir / "posts" / "published-post" / "figure.svg").write_text("<svg></svg>\n", encoding="utf-8")
+    (site_dir / "posts" / "page" / "1").mkdir(parents=True)
+    (site_dir / "posts" / "page" / "1" / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    (site_dir / "favicon.svg").write_text("<svg></svg>\n", encoding="utf-8")
+    _write_stylesheet(site_dir)
+    errors: list[str] = []
+
+    verifier.verify_output_policy(site_dir, posts_source, errors)
+
+    assert errors == []
+
+
+def test_output_policy_rejects_drafts_archives_metadata_and_symlinks(tmp_path: Path) -> None:
+    posts_source = _write_post_source(tmp_path, slug="draft-post", draft=True)
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    _write_stylesheet(site_dir)
+    rejected = (
+        "draft.yaml",
+        "source.tar.gz",
+        "UPPER.HTML",
+        "diagnostics/pipeline.log",
+        "posts/draft-post/index.html",
+        "posts/page/999/index.html",
+    )
+    for relative_path in rejected:
+        path = site_dir / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("not public\n", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside\n", encoding="utf-8")
+    (site_dir / "linked.txt").symlink_to(outside)
+    errors: list[str] = []
+
+    verifier.verify_output_policy(site_dir, posts_source, errors)
+
+    for relative_path in rejected:
+        assert any(relative_path in error for error in errors)
+    assert any("symbolic link or special entry: linked.txt" in error for error in errors)
+
+
+def test_output_policy_rejects_unbacked_and_unapproved_post_resources(tmp_path: Path) -> None:
+    posts_source = _write_post_source(tmp_path)
+    (posts_source / "published-post" / "private.yaml").write_text("private: true\n", encoding="utf-8")
+    site_dir = tmp_path / "site"
+    (site_dir / "posts" / "published-post").mkdir(parents=True)
+    (site_dir / "posts" / "published-post" / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    (site_dir / "posts" / "published-post" / "unbacked.png").write_bytes(b"png")
+    _write_stylesheet(site_dir)
+    errors: list[str] = []
+
+    verifier.verify_output_policy(site_dir, posts_source, errors)
+
+    assert any("published post resource type is not allowed" in error for error in errors)
+    assert any("posts/published-post/unbacked.png" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "link",
+    (
+        "https://example.com/posts/example/",
+        "http://brfid.gitlab.io/posts/example/",
+        "https://brfid.gitlab.io/%2e%2e/private/",
+        "https://brfid.gitlab.io/posts/../../private/",
+        "https://brfid.gitlab.io/posts/example/?preview=true",
+    ),
+)
+def test_feed_check_rejects_cross_origin_or_escaping_links(tmp_path: Path, link: str) -> None:
+    site_dir = tmp_path / "site"
+    target = site_dir / "posts" / "example" / "index.html"
+    target.parent.mkdir(parents=True)
+    target.write_text("<html></html>\n", encoding="utf-8")
+    feed = f"<rss><channel><item><description>Post</description><link>{link}</link></item></channel></rss>\n"
+    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
+    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_feeds(site_dir, errors)
+
+    assert len(errors) == 2
+    assert all("unsafe item link" in error for error in errors)
+
+
+def test_feed_check_rejects_a_symlink_escape(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    (site_dir / "posts").mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    (site_dir / "posts" / "escape").symlink_to(outside, target_is_directory=True)
+    link = f"{verifier.PUBLIC_ORIGIN}/posts/escape/"
+    feed = f"<rss><channel><item><description>Post</description><link>{link}</link></item></channel></rss>\n"
+    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
+    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_feeds(site_dir, errors)
+
+    assert len(errors) == 2
+    assert all("escapes the rendered site root" in error for error in errors)
+
+
+def test_text_scan_redacts_international_phones_and_secrets(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    token = "gl" + "pat-" + "A" * 24
+    (site_dir / "index.html").write_text(
+        f"<p>Call +44 20 7946 0958</p><p>{token}</p>\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+
+    verifier.verify_public_text(site_dir, errors)
+
+    assert "index.html: contains a plausible international phone number" in errors
+    assert "index.html: contains possible GitLab access token" in errors
+    assert all(token not in error for error in errors)
+
+
+def test_html_privacy_scan_decodes_entities_and_adjacent_text_nodes(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / "index.html").write_text(
+        "<p>+1&#32;<span>415</span>&nbsp;<span>555</span>&#32;2671</p>\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+
+    verifier.verify_html_privacy(site_dir, errors)
+
+    assert any("decoded HTML: contains a plausible US phone number" in error for error in errors)
+    assert all("415" not in error for error in errors)
+
+
+def test_output_policy_rejects_nested_post_resource_directory_symlink(tmp_path: Path) -> None:
+    posts_source = _write_post_source(tmp_path)
+    outside = tmp_path / "outside-resources"
+    outside.mkdir()
+    (outside / "image.png").write_bytes(b"png")
+    (posts_source / "published-post" / "linked-assets").symlink_to(outside, target_is_directory=True)
+    site_dir = tmp_path / "site"
+    (site_dir / "posts" / "published-post").mkdir(parents=True)
+    (site_dir / "posts" / "published-post" / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    (site_dir / "posts" / "page" / "1").mkdir(parents=True)
+    (site_dir / "posts" / "page" / "1" / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    _write_stylesheet(site_dir)
+    errors: list[str] = []
+
+    verifier.verify_output_policy(site_dir, posts_source, errors)
+
+    assert any("published post resource is a symbolic link" in error for error in errors)
+
+
+def test_feed_errors_never_echo_a_rejected_secret_value(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    (site_dir / "posts").mkdir(parents=True)
+    token = "github" + "_pat_" + "A" * 30
+    link = f"{verifier.PUBLIC_ORIGIN}/posts/missing/?token={token}"
+    feed = f"<rss><channel><item><description>{token}</description><link>{link}</link></item></channel></rss>\n"
+    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
+    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_feeds(site_dir, errors)
+
+    assert errors
+    assert all(token not in error for error in errors)
+
+
+def test_text_scan_recognizes_fine_grained_github_tokens_without_echoing_them(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    token = "github" + "_pat_" + "A" * 30
+    (site_dir / "index.html").write_text(f"<p>{token}</p>\n", encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_public_text(site_dir, errors)
+
+    assert "index.html: contains possible GitHub access token" in errors
+    assert all(token not in error for error in errors)
+
+
+def test_structured_scan_decodes_json_escaped_secrets(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    token = "github" + "_pat_" + "A" * 30
+    escaped = "".join(f"\\u{ord(character):04x}" for character in token)
+    (site_dir / "pipeline-status.json").write_text(f'{{"value": "{escaped}"}}\n', encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_public_text(site_dir, errors)
+
+    assert "pipeline-status.json: decoded data: contains possible GitHub access token" in errors
+    assert all(token not in error for error in errors)
+
+
+def test_structured_scan_decodes_xml_entity_phones(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    phone = "00 49 30 901820"
+    encoded = "".join(f"&#{ord(character)};" for character in phone)
+    (site_dir / "index.xml").write_text(f"<root>{encoded}</root>\n", encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_public_text(site_dir, errors)
+
+    assert "index.xml: decoded data: contains a plausible international phone number" in errors
+    assert all(phone not in error for error in errors)
+
+
+def test_html_privacy_scan_decodes_sensitive_attribute_values(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / "index.html").write_text(
+        '<meta name="description" content="Call &amp;#43;44 20 7946 0958">\n',
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+
+    verifier.verify_html_privacy(site_dir, errors)
+
+    assert any("decoded HTML: contains a plausible international phone number" in error for error in errors)
+    assert all("7946" not in error for error in errors)
+
+
+def test_structured_scan_concatenates_split_xml_text(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / "icon.svg").write_text(
+        "<svg><text>+44 </text><tspan>20 </tspan><tspan>7946 0958</tspan></svg>\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+
+    verifier.verify_public_text(site_dir, errors)
+
+    assert "icon.svg: decoded data: contains a plausible international phone number" in errors
+
+
+def test_feed_scan_decodes_html_description_attributes(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    target = site_dir / "posts" / "example" / "index.html"
+    target.parent.mkdir(parents=True)
+    target.write_text("<html></html>\n", encoding="utf-8")
+    description = "&lt;span title=&quot;&amp;#43;44 20 7946 0958&quot;&gt;Post&lt;/span&gt;"
+    link = f"{verifier.PUBLIC_ORIGIN}/posts/example/"
+    feed = f"<rss><channel><item><description>{description}</description><link>{link}</link></item></channel></rss>\n"
+    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
+    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_feeds(site_dir, errors)
+
+    assert len(errors) == 2
+    assert all("decoded content: contains a plausible international phone number" in error for error in errors)
+    assert all("7946" not in error for error in errors)

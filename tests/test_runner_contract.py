@@ -1,5 +1,8 @@
 """Contracts for the containerized vintage runner."""
 
+import json
+import shutil
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -10,6 +13,7 @@ GITLAB_SCRIPTS = ROOT / "scripts" / "gitlab"
 PUBLISH = GITLAB_SCRIPTS / "publish.py"
 VALIDATE = GITLAB_SCRIPTS / "validate_vintage.py"
 BUILD_IMAGES = GITLAB_SCRIPTS / "build_images.py"
+IMAGE_MANIFEST = ROOT / "vintage" / "image-pair.json"
 PEXPECT_SCRIPTS = (
     RUNNER.parent / "vax_pexpect.py",
     RUNNER.parent / "pdp11_pexpect.py",
@@ -17,15 +21,34 @@ PEXPECT_SCRIPTS = (
 )
 
 
+def test_runner_rejects_unsafe_build_id_before_host_setup(tmp_path: Path) -> None:
+    """A caller-controlled build ID must not escape the fixed log and output paths."""
+    bash = shutil.which("bash")
+    if bash is None:
+        raise RuntimeError("bash is required for the runner contract")
+
+    result = subprocess.run(  # noqa: S603 - bash is resolved and the malicious value is a fixed test input
+        [bash, str(RUNNER), "../escape"],
+        check=False,
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 1
+    assert "<safe-build-id>" in result.stderr
+    assert list(tmp_path.iterdir()) == []
+
+
 def test_runner_mounts_current_pexpect_sources_into_cached_images() -> None:
-    """Cached emulator images must execute the scripts from the checkout."""
+    """Cached emulator images must execute read-only scripts from the checkout."""
     runner = RUNNER.read_text(encoding="utf-8")
 
     expected_mounts = (
-        "scripts/vax_pexpect.py:/opt/vax_pexpect.py:ro",
-        "scripts/pdp11_pexpect.py:/opt/pdp11/pdp11_pexpect.py:ro",
-        "scripts/simh_session.py:/opt/simh_session.py:ro",
-        "scripts/simh_session.py:/opt/pdp11/simh_session.py:ro",
+        "src=${ROOT_DIR}/scripts/vax_pexpect.py,dst=/opt/vax_pexpect.py,readonly",
+        "src=${ROOT_DIR}/scripts/pdp11_pexpect.py,dst=/opt/pdp11/pdp11_pexpect.py,readonly",
+        "src=${ROOT_DIR}/scripts/simh_session.py,dst=/opt/simh_session.py,readonly",
+        "src=${ROOT_DIR}/scripts/simh_session.py,dst=/opt/pdp11/simh_session.py,readonly",
     )
 
     for mount in expected_mounts:
@@ -40,30 +63,64 @@ def test_mounted_pexpect_scripts_defer_annotation_evaluation() -> None:
 
 
 def test_production_images_are_immutable_and_fallback_is_disabled() -> None:
-    """Production must fail closed instead of building a different checkout."""
+    """Production must consume one source-bound image manifest and disable fallback."""
     runner = RUNNER.read_text(encoding="utf-8")
     publish = PUBLISH.read_text(encoding="utf-8")
     validate = VALIDATE.read_text(encoding="utf-8")
+    manifest = json.loads(IMAGE_MANIFEST.read_text(encoding="utf-8"))
 
-    image_lines = [line for line in runner.splitlines() if line.startswith("PINNED_")]
-    assert len(image_lines) == 2
-    assert all("@sha256:" in line for line in image_lines)
-    assert all(":latest" not in line for line in image_lines)
+    assert manifest["schema_version"] == 1
+    assert len(manifest["image_inputs_sha256"]) == 64
+    for machine in ("vax", "pdp11"):
+        reference = manifest[machine]
+        assert reference.startswith(f"registry.gitlab.com/brfid/brfid.gitlab.io/{machine}-pexpect@sha256:")
+        assert ":latest" not in reference
+    assert "resume_generator.image_manifest" in runner
     assert '"ALLOW_LOCAL_IMAGE_BUILD": "0"' in publish
     assert '"ALLOW_LOCAL_IMAGE_BUILD": "0"' in validate
+    assert '"ALLOW_ENVIRONMENT_BOOTSTRAP": "0"' in publish
+    assert '"ALLOW_ENVIRONMENT_BOOTSTRAP": "0"' in validate
+    assert '"BUILD_LOCAL_IMAGE_PAIR": "0"' in publish
+    assert '"BUILD_LOCAL_IMAGE_PAIR": "0"' in validate
+    assert "validate-labels" in runner
+    assert "org.opencontainers.image.revision" in runner
+    assert "io.brfid.vintage.image-inputs-sha256" in runner
 
 
 def test_image_build_job_is_manual_and_reports_both_digests() -> None:
-    """Image releases are explicit promotions, separate from site pushes."""
+    """Image releases are typed manual operations that emit one promotable manifest."""
     pipeline = PIPELINE.read_text(encoding="utf-8")
     build = BUILD_IMAGES.read_text(encoding="utf-8")
 
-    assert 'RUN_OPERATION == "image-build"' in pipeline
+    assert '"$[[ inputs.operation ]]" == "image-build"' in pipeline
+    assert '$CI_COMMIT_BRANCH == "main"' in pipeline
+    assert '$CI_COMMIT_REF_PROTECTED == "true"' in pipeline
     assert "python3 -m scripts.gitlab.build_images" in pipeline
+    assert "expected_branch=PUBLICATION_BRANCH" in build
+    assert "require_protected=True" in build
     assert ":latest" not in build
     assert '"containerimage.digest"' in build
-    assert 'f"{vax_path}@{vax_digest}"' in build
-    assert 'f"{pdp11_path}@{pdp11_digest}"' in build
+    assert "compute_image_inputs_sha256(ROOT)" in build
+    assert "IMAGE_INPUTS_LABEL" in build
+    assert "render_image_manifest(" in build
+    assert "docker.io/moby/buildkit@sha256:" in build
+    assert 'f"image={BUILDKIT_IMAGE}"' in build
+    assert "buildx-stable-1" not in build
+
+
+def test_local_image_fallback_builds_an_explicit_complete_pair() -> None:
+    """A pull failure or development override must build both images, never mix sources."""
+    runner = RUNNER.read_text(encoding="utf-8")
+
+    assert 'BUILD_LOCAL_IMAGE_PAIR="${BUILD_LOCAL_IMAGE_PAIR:-0}"' in runner
+    assert 'if [[ "$BUILD_LOCAL_IMAGE_PAIR" == "1" ]]' in runner
+    assert 'elif docker pull "$PINNED_PDP11" && docker pull "$PINNED_VAX"; then' in runner
+    assert 'elif [[ "$ALLOW_LOCAL_IMAGE_BUILD" == "1" ]]; then' in runner
+    assert "A promoted image pull failed; rebuilding both images" in runner
+    local_builder = runner.split("build_local_images() {", maxsplit=1)[1].split("\n}\n", maxsplit=1)[0]
+    assert local_builder.count("docker build") == 2
+    assert "Dockerfile.pdp11-pexpect" in local_builder
+    assert "Dockerfile.vax-pexpect" in local_builder
 
 
 def test_publish_paths_use_the_shared_semantic_validator() -> None:
@@ -126,7 +183,7 @@ def test_validation_job_keeps_the_digest_local_to_its_log() -> None:
 
 
 def test_standalone_vintage_bootstrap_excludes_pdf_dependencies() -> None:
-    """A vintage-only run must not install Playwright or its browser runtime."""
+    """A local vintage bootstrap uses only the hash-locked runtime environment."""
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     runner = RUNNER.read_text(encoding="utf-8")
 
@@ -134,8 +191,32 @@ def test_standalone_vintage_bootstrap_excludes_pdf_dependencies() -> None:
     pdf_dependencies = project["project"]["optional-dependencies"]["pdf"]
     assert not any(dependency.lower().startswith("playwright") for dependency in dependencies)
     assert sum(dependency.lower().startswith("playwright==") for dependency in pdf_dependencies) == 1
-    assert ".venv/bin/python -m pip install --quiet -e ." in runner
+    assert "--require-hashes -r requirements/runtime.lock" in runner
+    assert "--no-deps --no-build-isolation -e ." in runner
+    assert "Prepared Python environment is required; hosted bootstrap is disabled" in runner
     assert ".[pdf]" not in runner
+
+
+def test_runner_isolates_each_guest_and_validates_host_handoffs() -> None:
+    """Guests receive only stage inputs and outputs, with no network or ambient capabilities."""
+    runner = RUNNER.read_text(encoding="utf-8")
+
+    for option in (
+        "--network none",
+        "--cap-drop ALL",
+        "--security-opt no-new-privileges",
+        "--pids-limit 256",
+        "--memory 2g",
+    ):
+        assert option in runner
+    assert "build/vintage:/build" not in runner
+    assert "dst=/inputs/bradman.c,readonly" in runner
+    assert "dst=/inputs/bio.vintage.yaml,readonly" in runner
+    assert "dst=/inputs/brad.bio.uu,readonly" in runner
+    assert "build/vintage/stages/vax" in runner
+    assert "build/vintage/stages/pdp11" in runner
+    assert '[[ -L "$output" || ! -f "$output" || ! -s "$output" ]]' in runner
+    assert "cat -- build/vintage/stages/vax/sections.jsonl build/vintage/stages/pdp11/sections.jsonl" in runner
 
 
 def test_runner_clears_owned_generated_outputs_before_each_run() -> None:
