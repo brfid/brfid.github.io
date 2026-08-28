@@ -96,12 +96,12 @@ def test_bio_to_yaml_with_build_log() -> None:
         "about": "Profile statement.",
         "build_log": True,
         "build_id": "build-20260301-120000",
-        "build_run_url": "https://github.com/example/site/actions/runs/123456",
+        "build_run_url": "https://gitlab.com/example/site/-/pipelines/123456",
     }
     out = bio_to_yaml(data)
     assert "build_log: true" in out
     assert '"build-20260301-120000"' in out
-    assert 'build_run_url: "https://github.com/example/site/actions/runs/123456"' in out
+    assert 'build_run_url: "https://gitlab.com/example/site/-/pipelines/123456"' in out
 
 
 def test_bio_to_yaml_special_chars() -> None:
@@ -146,7 +146,7 @@ def test_main_writes_yaml(tmp_path: pathlib.Path) -> None:
             "--pipeline-status",
             str(status),
             "--build-run-url",
-            "https://github.com/example/site/actions/runs/123456",
+            "https://gitlab.com/example/site/-/pipelines/123456",
         ]
     )
 
@@ -156,7 +156,7 @@ def test_main_writes_yaml(tmp_path: pathlib.Path) -> None:
     assert "Bradley Fidler" in content
     assert "build_log: true" in content
     assert "build-test-123" in content
-    assert "https://github.com/example/site/actions/runs/123456" in content
+    assert "https://gitlab.com/example/site/-/pipelines/123456" in content
 
 
 def test_main_omits_build_log_metadata_when_log_is_missing(tmp_path: pathlib.Path) -> None:
@@ -171,7 +171,7 @@ def test_main_omits_build_log_metadata_when_log_is_missing(tmp_path: pathlib.Pat
             "--build-log",
             str(tmp_path / "missing-build.log.html"),
             "--build-run-url",
-            "https://github.com/example/site/actions/runs/123456",
+            "https://gitlab.com/example/site/-/pipelines/123456",
         ]
     )
 
@@ -179,7 +179,7 @@ def test_main_omits_build_log_metadata_when_log_is_missing(tmp_path: pathlib.Pat
     content = dst.read_text(encoding="utf-8")
     assert "build_log:" not in content
     assert "build_id:" not in content
-    assert 'build_run_url: "https://github.com/example/site/actions/runs/123456"' in content
+    assert 'build_run_url: "https://gitlab.com/example/site/-/pipelines/123456"' in content
 
 
 def test_main_missing_src(tmp_path: pathlib.Path) -> None:

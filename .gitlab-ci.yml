@@ -1,0 +1,237 @@
+variables:
+  OPERATION:
+    value: "publish"
+    options:
+      - "publish"
+      - "checks"
+      - "vintage-validation"
+      - "image-build"
+    description: "Operation for a manually started pipeline. Push pipelines select their operation from the ref and commit message."
+  PUBLISH_MODE:
+    value: "standard"
+    options:
+      - "standard"
+      - "fast"
+    description: "Publication mode for a manual publish pipeline."
+  EXPECTED_VINTAGE_SHA256:
+    value: ""
+    description: "Optional lowercase SHA-256 baseline for a manual vintage-validation pipeline."
+  HUGO_VERSION: "0.163.3"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
+  PIPELINE_NAME: "checks"
+  RUN_OPERATION: "none"
+  RUN_PUBLISH_MODE: "none"
+
+workflow:
+  name: "$PIPELINE_NAME"
+  auto_cancel:
+    on_new_commit: none
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /\[nopublish\]/'
+      variables:
+        PIPELINE_NAME: "checks-nopublish"
+        RUN_OPERATION: "checks"
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_MESSAGE =~ /\[fast\]/'
+      variables:
+        PIPELINE_NAME: "publish-fast"
+        RUN_OPERATION: "publish"
+        RUN_PUBLISH_MODE: "fast"
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      variables:
+        PIPELINE_NAME: "publish-standard"
+        RUN_OPERATION: "publish"
+        RUN_PUBLISH_MODE: "standard"
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+      variables:
+        PIPELINE_NAME: "checks"
+        RUN_OPERATION: "checks"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      variables:
+        PIPELINE_NAME: "checks"
+        RUN_OPERATION: "checks"
+    - if: '$CI_PIPELINE_SOURCE =~ /^(web|api)$/ && $OPERATION == "image-build"'
+      variables:
+        PIPELINE_NAME: "image-build"
+        RUN_OPERATION: "image-build"
+    - if: '$CI_PIPELINE_SOURCE =~ /^(web|api)$/ && $OPERATION == "vintage-validation"'
+      variables:
+        PIPELINE_NAME: "vintage-validation"
+        RUN_OPERATION: "vintage-validation"
+    - if: '$CI_PIPELINE_SOURCE =~ /^(web|api)$/ && $OPERATION == "checks"'
+      variables:
+        PIPELINE_NAME: "checks"
+        RUN_OPERATION: "checks"
+    - if: '$CI_PIPELINE_SOURCE =~ /^(web|api)$/ && $OPERATION == "publish" && $PUBLISH_MODE == "fast"'
+      variables:
+        PIPELINE_NAME: "publish-fast"
+        RUN_OPERATION: "publish"
+        RUN_PUBLISH_MODE: "fast"
+    - if: '$CI_PIPELINE_SOURCE =~ /^(web|api)$/ && $OPERATION == "publish"'
+      variables:
+        PIPELINE_NAME: "publish-standard"
+        RUN_OPERATION: "publish"
+        RUN_PUBLISH_MODE: "standard"
+    - when: never
+
+stages:
+  - test
+  - build
+  - deploy
+
+.default-python:
+  image: python:3.11-bookworm
+  tags:
+    - saas-linux-small-amd64
+  cache:
+    key:
+      files:
+        - pyproject.toml
+      prefix: python-3.11
+    paths:
+      - .cache/pip/
+
+.docker-service:
+  services:
+    - name: docker:27.5.1-dind
+      alias: docker
+      command:
+        - "--tls=false"
+  variables:
+    DOCKER_HOST: "tcp://docker:2375"
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: "overlay2"
+    DOCKER_DEFAULT_PLATFORM: "linux/amd64"
+
+checks:
+  extends: .default-python
+  stage: test
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+  before_script:
+    - bash scripts/gitlab/setup.sh checks
+  script:
+    - make check
+    - make verify-site
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$RUN_OPERATION == "checks"'
+
+secret-scan:
+  image:
+    name: zricethezav/gitleaks:v8.28.0
+    entrypoint:
+      - ""
+  tags:
+    - saas-linux-small-amd64
+  stage: test
+  variables:
+    GIT_DEPTH: "0"
+  script:
+    - gitleaks git --redact --no-banner --log-opts="--all --no-merges" .
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$RUN_OPERATION == "checks"'
+
+.publish:
+  extends:
+    - .default-python
+    - .docker-service
+  stage: deploy
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    RUNNER_SCRIPT_TIMEOUT: 65m
+    RUNNER_AFTER_SCRIPT_TIMEOUT: 5m
+  cache:
+    key:
+      files:
+        - pyproject.toml
+      prefix: publish-python-3.11
+    paths:
+      - .cache/pip/
+      - .cache/ms-playwright/
+  before_script:
+    - bash scripts/gitlab/setup.sh publish
+  interruptible: false
+  resource_group: pages-production
+  timeout: 70m
+  environment:
+    name: production
+    url: https://brfid.gitlab.io
+  pages:
+    publish: site
+
+publish-standard:
+  extends: .publish
+  script:
+    - .venv/bin/python -m scripts.gitlab.publish standard
+  artifacts:
+    when: always
+    access: all
+    expire_in: 90 days
+    paths:
+      - reusable-vintage/
+      - diagnostics/
+      - build/vintage/pipeline-status.json
+      - build/vintage/sections.jsonl
+  rules:
+    - if: '$RUN_OPERATION == "publish" && $RUN_PUBLISH_MODE == "standard" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+publish-fast:
+  extends: .publish
+  script:
+    - .venv/bin/python -m scripts.gitlab.publish fast
+  artifacts:
+    when: always
+    access: all
+    expire_in: 14 days
+    paths:
+      - diagnostics/
+  rules:
+    - if: '$RUN_OPERATION == "publish" && $RUN_PUBLISH_MODE == "fast" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+vintage-validation:
+  extends:
+    - .default-python
+    - .docker-service
+  stage: build
+  variables:
+    RUNNER_SCRIPT_TIMEOUT: 175m
+    RUNNER_AFTER_SCRIPT_TIMEOUT: 5m
+  before_script:
+    - bash scripts/gitlab/setup.sh vintage
+  script:
+    - .venv/bin/python -m scripts.gitlab.validate_vintage
+  timeout: 180m
+  artifacts:
+    when: always
+    access: all
+    expire_in: 14 days
+    paths:
+      - out/
+  rules:
+    - if: '$RUN_OPERATION == "vintage-validation"'
+
+image-build:
+  image: docker:27.5.1-cli
+  extends: .docker-service
+  tags:
+    - saas-linux-small-amd64
+  stage: build
+  variables:
+    GIT_SUBMODULE_STRATEGY: none
+  before_script:
+    - apk add --no-cache python3
+  script:
+    - python3 -m scripts.gitlab.build_images
+  timeout: 60m
+  artifacts:
+    when: always
+    access: all
+    expire_in: 14 days
+    paths:
+      - out/
+  rules:
+    - if: '$RUN_OPERATION == "image-build"'

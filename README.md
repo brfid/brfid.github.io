@@ -1,12 +1,13 @@
-# brfid.github.io
+# brfid.gitlab.io
 
-Source and build tooling for [brfid.github.io](https://brfid.github.io/). Hugo renders the site, blog, and resume. A VAX and PDP-11 pipeline renders the landing-page bio published by the site.
+Source and build tooling for [brfid.gitlab.io](https://brfid.gitlab.io/). Hugo renders the site, blog, and resume. A VAX and PDP-11 pipeline renders the landing-page bio published by the site.
 
 ## Set up a checkout
 
 Install these prerequisites:
 
 - Git
+- GitLab CLI (`glab`), only for starting manual pipelines
 - Python 3.11 or newer
 - Hugo extended 0.156.0 or newer
 - Docker, only for the vintage pipeline
@@ -88,7 +89,9 @@ For local execution, validation, implementation, and image promotion, see [the v
 
 ## Publish the site
 
-A push to `main` uses standard mode: it runs the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitHub Pages. Add `[nopublish]` to the commit message to skip deployment. Run the Publish site workflow manually in `standard` mode to repeat the publication without a new commit.
+Before starting a manual pipeline, authenticate `glab` with `glab auth login --hostname gitlab.com` and verify it with `glab auth status`.
+
+A push to `main` uses standard mode: GitLab CI runs the checks and secret scan, executes the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitLab Pages. Add `[nopublish]` to the commit message to run checks without publishing.
 
 For any change that does not affect the landing-page bio, such as a post, layout, or resume field other than `basics.summary`, add `[fast]` to the commit message to select fast mode:
 
@@ -100,13 +103,19 @@ git push origin main
 You can request the same path manually:
 
 ```bash
-gh workflow run deploy.yml --ref main -f publish_mode=fast
+glab ci run --branch main \
+  --variables-env OPERATION:publish \
+  --variables-env PUBLISH_MODE:fast
 ```
 
-Fast mode reuses the exact bio, build log, and pipeline status from the newest matching successful run in standard mode, and keeps the Actions link pointed at that run. GitHub Actions retains those three files as a workflow artifact for 90 days. Fast mode still rebuilds the public PDF and Hugo site, runs the production verifier, and deploys a new Pages artifact. It fails without deploying if the retained result has expired, its provenance is invalid, or a bio input or vintage implementation file has changed. Run standard mode to refresh the retained result:
+Fast mode reuses the exact bio, build log, and pipeline status from the newest matching successful standard publication, and keeps the GitLab pipeline link pointed at that source. GitLab retains the fingerprinted bundle for 90 days. Fast mode still rebuilds the public PDF and Hugo site, runs the production verifier, and deploys a new Pages artifact. It fails without deploying if the retained result has expired, its manifest or provenance is invalid, or a bio input or vintage implementation file has changed.
+
+Run standard mode to produce a fresh retained result:
 
 ```bash
-gh workflow run deploy.yml --ref main -f publish_mode=standard
+glab ci run --branch main \
+  --variables-env OPERATION:publish \
+  --variables-env PUBLISH_MODE:standard
 ```
 
 In standard mode, the vintage pipeline uses only the immutable VAX and PDP-11 image digests pinned in `scripts/vintage-runner.sh`. It does not build fallback images.
@@ -120,7 +129,8 @@ In standard mode, the vintage pipeline uses only the immutable VAX and PDP-11 im
 | `resume.private.yaml` | Optional local phone overlay; gitignored |
 | `hugo/` | Site content, templates, configuration, styles, and fonts |
 | `resume_generator/` | Bio, vintage validation and reuse, build-log, and PDF generators |
-| `scripts/` | Site verifier and SIMH orchestration |
+| `.gitlab-ci.yml` | GitLab checks, publication, validation, and image-build jobs |
+| `scripts/` | Site verifier, GitLab job scripts, and SIMH orchestration |
 | `STATUS.md` | Current operational state and queue |
 | `docs/integration/INDEX.md` | Vintage pipeline operations |
 | `docs/archive/` | Retired-path registry; not operating guidance |

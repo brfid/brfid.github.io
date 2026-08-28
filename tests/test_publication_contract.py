@@ -32,7 +32,7 @@ def test_production_config_publishes_blog_mechanics() -> None:
     assert menu_items["resume"]["pageRef"] == "/resume"
     assert "url" not in menu_items["resume"]
     assert menu_items["resume"]["params"]["companionurl"] == "/resume.pdf"
-    assert menu_items["source"]["url"] == "https://github.com/brfid/brfid.github.io"
+    assert menu_items["source"]["url"] == "https://gitlab.com/brfid/brfid.gitlab.io"
     assert "params" not in menu_items["source"]
     assert config["params"]["author"] == "Bradley Fidler"
     assert config["params"]["hideAuthor"] is True
@@ -91,75 +91,80 @@ def test_hugo_build_destinations_are_fixed_and_warnings_are_fatal() -> None:
     assert "--panicOnWarning" in production_target
 
 
-def test_deploy_uses_the_shared_production_verifier() -> None:
-    """Deployment must pass quality checks, build the public PDF, and verify the artifact tree."""
-    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+def test_gitlab_publish_uses_the_shared_production_verifier() -> None:
+    """Publication must pass quality checks, build the public PDF, and verify the artifact tree."""
+    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
+    setup = (ROOT / "scripts" / "gitlab" / "setup.sh").read_text(encoding="utf-8")
+    publish = (ROOT / "scripts" / "gitlab" / "publish.py").read_text(encoding="utf-8")
 
-    assert ".venv/bin/python -m pip install -e '.[dev,pdf]'" in workflow
-    assert "run: make check" in workflow
-    assert workflow.index("run: make check") < workflow.index("name: Run vintage pipeline")
-    assert "make resume-pdf-public" in workflow
-    assert "make sync-site-data sync-resume-data" not in workflow
-    assert "PYTHON=python" not in workflow
-    assert ".venv/bin/python scripts/verify_site.py site" in workflow
-    assert "--production" in workflow
-    assert "--resume-yaml resume.yaml" in workflow
-    assert '--build-run-url "$VINTAGE_RUN_URL"' in workflow
-    assert "private_resume_path" not in workflow
-    assert "deployments: write" not in workflow
+    assert ".venv/bin/python -m pip install -e '.[dev,pdf]'" in setup
+    assert "bash scripts/gitlab/setup.sh publish" in pipeline
+    assert ".venv/bin/python -m scripts.gitlab.publish" in pipeline
+    assert 'run([make, "check"], cwd=ROOT)' in publish
+    assert publish.index('run([make, "check"], cwd=ROOT)') < publish.index("compute_fingerprint(")
+    assert 'run([make, "resume-pdf-public"], cwd=ROOT)' in publish
+    assert "make sync-site-data sync-resume-data" not in publish
+    assert "PYTHON=python" not in publish
+    assert '"scripts/verify_site.py"' in publish
+    assert '"--production"' in publish
+    assert '"--resume-yaml"' in publish
+    assert '"--build-run-url"' in publish
+    assert "private_resume_path" not in pipeline
+    assert "private_resume_path" not in publish
+    assert "pages:\n    publish: site" in pipeline
 
 
-def test_deploy_supports_fail_closed_vintage_reuse() -> None:
-    """Fast mode must reuse validated provenance while both modes share one deploy tail."""
-    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+def test_gitlab_publish_supports_fail_closed_vintage_reuse() -> None:
+    """Fast mode must reuse validated provenance while both modes share one publication tail."""
+    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
+    publish = (ROOT / "scripts" / "gitlab" / "publish.py").read_text(encoding="utf-8")
+    artifacts = (ROOT / "resume_generator" / "gitlab_artifacts.py").read_text(encoding="utf-8")
+    reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
     footer = (ROOT / "hugo" / "layouts" / "_partials" / "footer.html").read_text(encoding="utf-8")
-    mode_step = workflow.split("- name: Select publish mode", maxsplit=1)[1].split("- name: Set up Hugo", maxsplit=1)[0]
-    reuse_step = workflow.split("- name: Download reusable vintage result", maxsplit=1)[1].split(
-        "- name: Run vintage pipeline", maxsplit=1
-    )[0]
-    standard_step = workflow.split("- name: Run vintage pipeline", maxsplit=1)[1].split(
-        "- name: Select vintage provenance", maxsplit=1
-    )[0]
-    retention_step = workflow.split("- name: Retain reusable vintage result", maxsplit=1)[1].split(
-        "- name: Upload Pages artifact", maxsplit=1
-    )[0]
 
-    assert "publish_mode:" in workflow
-    assert "default: standard" in workflow
-    assert "[fast]" in workflow
-    assert "actions: read" in workflow
-    assert "mode=standard" in mode_step
-    assert '"$GITHUB_EVENT_NAME" == "workflow_dispatch"' in mode_step
-    assert '"$GITHUB_EVENT_NAME" == "push"' in mode_step
-    assert "if: steps.mode.outputs.mode == 'fast'" in reuse_step
-    assert "if: steps.mode.outputs.mode == 'standard'" in standard_step
-    assert "if: steps.mode.outputs.mode == 'standard'" in retention_step
-    assert "resume_generator.vintage_reuse fingerprint" in workflow
-    assert '[[ ! "$fingerprint" =~ ^[0-9a-f]{64}$ ]]' in workflow
-    assert "resume_generator.vintage_reuse validate" in workflow
-    assert "No reusable vintage result matches" in workflow
-    assert "source_run_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${source_run_id}" in workflow
-    assert "'.conclusion'" in reuse_step
-    assert "'.head_branch'" in reuse_step
-    assert "'.head_sha'" in reuse_step
-    assert "'.path'" in reuse_step
-    assert '".github/workflows/deploy.yml"' in reuse_step
-    assert "VINTAGE_SHA" in workflow
-    assert "VINTAGE_RUN_URL" in workflow
-    assert "vintage-production-${{ steps.vintage-fingerprint.outputs.value }}" in workflow
-    assert "retention-days: 90" in workflow
+    assert r"\[nopublish\]" in pipeline
+    assert r"\[fast\]" in pipeline
+    assert 'RUN_PUBLISH_MODE: "standard"' in pipeline
+    assert 'RUN_PUBLISH_MODE: "fast"' in pipeline
+    assert "resource_group: pages-production" in pipeline
+    assert "on_new_commit: none" in pipeline
+    assert "interruptible: false" in pipeline
+    assert "expire_in: 90 days" in pipeline
+    assert "access: all" in pipeline
+
+    assert 'if mode == "standard":' in publish
+    assert "download_latest_matching(" in publish
+    assert "compute_fingerprint(" in publish
+    assert "validate_bundle(" in publish
+    assert "create_bundle(" in publish
+    assert '"ALLOW_LOCAL_IMAGE_BUILD": "0"' in publish
+    assert "vintage-source.env" not in publish
+
+    assert 'STANDARD_PIPELINE_NAME = "publish-standard"' in artifacts
+    assert 'STANDARD_JOB_NAME = "publish-standard"' in artifacts
+    assert "manifest sha256" in artifacts
+    assert "checksum does not match" in artifacts
+    assert "no reusable vintage result matches" in artifacts
+    assert 'Path(".gitlab-ci.yml")' in reuse
+    for implementation in (
+        "resume_generator/gitlab_artifacts.py",
+        "resume_generator/gitlab_ci.py",
+        "scripts/gitlab/publish.py",
+        "scripts/gitlab/setup.sh",
+    ):
+        assert f'Path("{implementation}")' in reuse
     for artifact in ("brad.bio.txt", "build.log.html", "pipeline-status.json"):
-        assert f"build/vintage/{artifact}" in workflow
+        assert f'"{artifact}"' in reuse
+        assert f'"{artifact}"' in publish
 
-    provenance = workflow.index("name: Select vintage provenance")
-    assert workflow.index("name: Download reusable vintage result") < provenance
-    assert workflow.index("name: Run vintage pipeline") < provenance
-    assert provenance < workflow.index("name: Generate bio data for Hugo")
-    assert workflow.index("name: Generate bio data for Hugo") < workflow.index("make resume-pdf-public")
-    assert workflow.index("make resume-pdf-public") < workflow.index("name: Verify production output")
-    assert workflow.index("name: Verify production output") < workflow.index("name: Retain reusable vintage result")
-    assert workflow.index("name: Retain reusable vintage result") < workflow.index("name: Upload Pages artifact")
-    assert "continue-on-error" not in retention_step
+    publish_body = publish.split("def publish(", maxsplit=1)[1].split("def main(", maxsplit=1)[0]
+    validate_index = publish_body.index("validate_bundle(")
+    stage_index = publish_body.index("_stage_vintage_for_hugo(")
+    pdf_index = publish_body.index('"resume-pdf-public"')
+    verify_index = publish_body.index('"scripts/verify_site.py"')
+    retain_index = publish_body.index("create_bundle(")
+    assert validate_index < stage_index < pdf_index < verify_index < retain_index
+    assert "build_bio_yaml(" in publish
     assert "<span>Build:" in footer
 
 
@@ -195,7 +200,7 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     assert ">Hugo</a>" in footer
     assert ">PaperMod</a>" in footer
     assert ">VAX/PDP-11 log</a>" in footer
-    assert ">Actions run</a>" in footer
+    assert ">GitLab pipeline</a>" in footer
     assert ">Site source</a>" not in footer
 
 

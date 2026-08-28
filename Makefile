@@ -8,7 +8,7 @@ PREVIEW_PORT ?= 1313
         preview preview-drafts
 
 help:
-	@echo "brfid.github.io commands"
+	@echo "brfid.gitlab.io commands"
 	@echo ""
 	@echo "Checks:"
 	@echo "  make test          Run tests"

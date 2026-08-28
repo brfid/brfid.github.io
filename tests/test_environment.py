@@ -57,14 +57,14 @@ def test_environment_check_rejects_a_non_exact_pdf_extra_pin(monkeypatch: pytest
         check_environment.check_playwright_version()
 
 
-def test_full_checkout_and_workflows_install_the_pdf_extra() -> None:
+def test_full_checkout_and_gitlab_jobs_install_the_pdf_extra() -> None:
     """Interactive PDF targets and automation must install their optional runtime."""
     expected = ".venv/bin/python -m pip install -e '.[dev,pdf]'"
-    files = (
-        ROOT / "README.md",
-        ROOT / ".github" / "workflows" / "ci.yml",
-        ROOT / ".github" / "workflows" / "deploy.yml",
-    )
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    setup = (ROOT / "scripts" / "gitlab" / "setup.sh").read_text(encoding="utf-8")
+    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
 
-    for path in files:
-        assert expected in path.read_text(encoding="utf-8")
+    assert expected in readme
+    assert expected in setup
+    assert "bash scripts/gitlab/setup.sh checks" in pipeline
+    assert "bash scripts/gitlab/setup.sh publish" in pipeline
