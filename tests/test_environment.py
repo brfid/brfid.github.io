@@ -57,14 +57,17 @@ def test_environment_check_rejects_a_non_exact_pdf_extra_pin(monkeypatch: pytest
         check_environment.check_playwright_version()
 
 
-def test_full_checkout_and_workflows_install_the_pdf_extra() -> None:
-    """Interactive PDF targets and automation must install their optional runtime."""
+def test_full_checkout_and_retained_ci_install_the_pdf_extra() -> None:
+    """Historical PDF checks install their optional runtime without burdening Pages."""
     expected = ".venv/bin/python -m pip install -e '.[dev,pdf]'"
     files = (
         ROOT / "README.md",
         ROOT / ".github" / "workflows" / "ci.yml",
-        ROOT / ".github" / "workflows" / "deploy.yml",
     )
 
     for path in files:
         assert expected in path.read_text(encoding="utf-8")
+
+    deploy = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+    assert expected not in deploy
+    assert "playwright" not in deploy.lower()

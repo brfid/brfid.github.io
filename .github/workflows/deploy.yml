@@ -1,25 +1,12 @@
-name: Publish site
+name: Publish redirect
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      publish_mode:
-        description: Choose standard mode or fast mode
-        required: true
-        default: standard
-        type: choice
-        options:
-          - standard
-          - fast
-
-# A commit message containing [nopublish] skips this workflow. A message
-# containing [fast] selects fast mode.
 
 permissions:
-  actions: read
   contents: read
   pages: write
   id-token: write
@@ -30,223 +17,31 @@ concurrency:
 
 jobs:
   deploy:
-    if: "!contains(github.event.head_commit.message, '[nopublish]')"
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    timeout-minutes: 70
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        with:
-          submodules: true
-
-      - name: Select publish mode
-        id: mode
-        env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          DISPATCH_MODE: ${{ inputs.publish_mode }}
-        run: |
-          set -euo pipefail
-
-          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "::error::Site publication is allowed only from main."
-            exit 1
-          fi
-
-          mode=standard
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$DISPATCH_MODE" == "fast" ]]; then
-            mode=fast
-          elif [[ "$GITHUB_EVENT_NAME" == "push" && "$COMMIT_MESSAGE" == *"[fast]"* ]]; then
-            mode=fast
-          fi
-
-          echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          echo "Publication mode: $mode"
 
       - name: Set up Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: '0.163.3'
+          hugo-version: "0.163.3"
           extended: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.11"
-          cache: "pip"
-          cache-dependency-path: "pyproject.toml"
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-      - name: Install PDF dependencies
-        run: |
-          python -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install -e '.[dev,pdf]'
-          .venv/bin/python -m playwright install --with-deps chromium
-          sudo apt-get install -y poppler-utils
+      - name: Build redirect
+        run: hugo --source redirect --destination ../site --cleanDestinationDir --panicOnWarning
 
-      - name: Quality checks
-        run: make check
-
-      - name: Fingerprint vintage inputs
-        id: vintage-fingerprint
-        run: |
-          set -euo pipefail
-
-          fingerprint="$(.venv/bin/python -m resume_generator.vintage_reuse fingerprint)"
-          if [[ ! "$fingerprint" =~ ^[0-9a-f]{64}$ ]]; then
-            echo "::error::Vintage fingerprint is not a SHA-256 digest."
-            exit 1
-          fi
-          echo "value=$fingerprint" >> "$GITHUB_OUTPUT"
-
-      - name: Download reusable vintage result
-        id: reused-vintage
-        if: steps.mode.outputs.mode == 'fast'
-        env:
-          ARTIFACT_NAME: vintage-production-${{ steps.vintage-fingerprint.outputs.value }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-
-          response="$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=${ARTIFACT_NAME}&per_page=100")"
-          artifact_id=""
-          source_run_id=""
-          source_sha=""
-
-          while IFS=$'\t' read -r candidate_artifact_id candidate_run_id candidate_sha; do
-            if [[ -z "$candidate_artifact_id" || -z "$candidate_run_id" || -z "$candidate_sha" ]]; then
-              continue
-            fi
-            if ! candidate_run="$(gh api \
-              -H "Accept: application/vnd.github+json" \
-              "/repos/${GITHUB_REPOSITORY}/actions/runs/${candidate_run_id}")"; then
-              continue
-            fi
-            if [[ "$(jq -r '.conclusion' <<< "$candidate_run")" == "success" && \
-                  "$(jq -r '.head_branch' <<< "$candidate_run")" == "main" && \
-                  "$(jq -r '.head_sha' <<< "$candidate_run")" == "$candidate_sha" && \
-                  "$(jq -r '.path' <<< "$candidate_run")" == ".github/workflows/deploy.yml" ]]; then
-              artifact_id="$candidate_artifact_id"
-              source_run_id="$candidate_run_id"
-              source_sha="$candidate_sha"
-              break
-            fi
-          done < <(jq -r \
-            '[.artifacts[] | select(.expired == false and .workflow_run.head_branch == "main")] | sort_by(.created_at) | reverse | .[] | [.id, .workflow_run.id, .workflow_run.head_sha] | @tsv' \
-            <<< "$response")
-
-          if [[ -z "$artifact_id" || -z "$source_run_id" || -z "$source_sha" ]]; then
-            echo "::error::No reusable vintage result matches the current bio inputs and a successful main deployment. Run standard mode first."
-            exit 1
-          fi
-
-          archive="$RUNNER_TEMP/reused-vintage.zip"
-          rm -rf build/vintage
-          mkdir -p build/vintage
-          gh api \
-            -H "Accept: application/vnd.github+json" \
-            "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "$archive"
-          unzip -q "$archive" -d build/vintage
-
-          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
-          echo "source_run_url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${source_run_id}" >> "$GITHUB_OUTPUT"
-
-      - name: Run vintage pipeline
-        id: vintage
-        if: steps.mode.outputs.mode == 'standard'
-        env:
-          GIT_SHA: ${{ github.sha }}
-          ALLOW_LOCAL_IMAGE_BUILD: "0"
-          LOG_DIR: /tmp/edcloud-vintage
-        run: |
-          set -euo pipefail
-
-          BUILD_ID="build-$(date -u '+%Y%m%d-%H%M%S')"
-          echo "log_file=${LOG_DIR}/${BUILD_ID}.log" >> "$GITHUB_OUTPUT"
-
-          if ! bash scripts/vintage-runner.sh "$BUILD_ID"; then
-            echo "::error::Vintage pipeline failed. The runner's log tail appears above."
-            exit 1
-          fi
-
-          # The bind-mounted guest artifact can be root-owned.
-          sudo chown -R "$(id -u):$(id -g)" build/vintage
-
-      - name: Select vintage provenance
-        id: vintage-provenance
-        env:
-          MODE: ${{ steps.mode.outputs.mode }}
-          REUSED_SHA: ${{ steps.reused-vintage.outputs.source_sha }}
-          REUSED_RUN_URL: ${{ steps.reused-vintage.outputs.source_run_url }}
-        run: |
-          set -euo pipefail
-
-          if [[ "$MODE" == "fast" ]]; then
-            source_sha="$REUSED_SHA"
-            source_run_url="$REUSED_RUN_URL"
-          else
-            source_sha="$GITHUB_SHA"
-            source_run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          fi
-
-          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
-          echo "source_run_url=$source_run_url" >> "$GITHUB_OUTPUT"
-
-      - name: Validate and stage vintage result
-        env:
-          VINTAGE_RUN_URL: ${{ steps.vintage-provenance.outputs.source_run_url }}
-          VINTAGE_SHA: ${{ steps.vintage-provenance.outputs.source_sha }}
-        run: |
-          set -euo pipefail
-
-          .venv/bin/python -m resume_generator.vintage_reuse validate \
-            --source-sha "$VINTAGE_SHA" \
-            --source-run-url "$VINTAGE_RUN_URL" \
-            --repository "$GITHUB_REPOSITORY"
-
-          mkdir -p hugo/static
-          rm -f hugo/static/brad.bio.txt
-          echo "brad.bio.txt sha256: $(sha256sum build/vintage/brad.bio.txt | cut -d' ' -f1)"
-          cp build/vintage/build.log.html hugo/static/build.log.html
-          cp build/vintage/pipeline-status.json hugo/static/pipeline-status.json
-
-      - name: Generate bio data for Hugo
-        run: |
-          .venv/bin/python -m resume_generator.bio_yaml \
-            build/vintage/brad.bio.txt \
-            hugo/data/bio.yaml \
-            --build-log hugo/static/build.log.html \
-            --pipeline-status hugo/static/pipeline-status.json \
-            --build-run-url "${{ steps.vintage-provenance.outputs.source_run_url }}"
-
-      - name: Build Hugo site and public resume PDF
-        run: make resume-pdf-public
-
-      - name: Verify production output
-        env:
-          VINTAGE_RUN_URL: ${{ steps.vintage-provenance.outputs.source_run_url }}
-        run: |
-          .venv/bin/python scripts/verify_site.py site \
-            --production \
-            --resume-yaml resume.yaml \
-            --build-run-url "$VINTAGE_RUN_URL"
-
-      - name: Retain reusable vintage result
-        if: steps.mode.outputs.mode == 'standard'
-        uses: actions/upload-artifact@v7
-        with:
-          name: vintage-production-${{ steps.vintage-fingerprint.outputs.value }}
-          path: |
-            build/vintage/brad.bio.txt
-            build/vintage/build.log.html
-            build/vintage/pipeline-status.json
-          retention-days: 90
-          if-no-files-found: error
+      - name: Verify redirect output
+        run: python3 scripts/verify_redirect.py site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
@@ -268,27 +63,3 @@ jobs:
         id: deployment
         if: steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v5
-
-      # Preserve direct runner diagnostics when the stdout tail is insufficient.
-      - name: Upload vintage pipeline diagnostics
-        if: failure() && steps.vintage.outputs.log_file != ''
-        continue-on-error: true
-        uses: actions/upload-artifact@v7
-        with:
-          name: vintage-pipeline-log
-          path: |
-            ${{ steps.vintage.outputs.log_file }}
-            build/vintage/pipeline-status.json
-            build/vintage/sections.jsonl
-          retention-days: 14
-          if-no-files-found: warn
-
-      - name: Summary
-        run: |
-          PAGE_URL="${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url || 'https://brfid.github.io' }}"
-          echo "## Deployment complete" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "URL: $PAGE_URL" >> "$GITHUB_STEP_SUMMARY"
-          echo "SHA: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Mode: ${{ steps.mode.outputs.mode }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Vintage run: ${{ steps.vintage-provenance.outputs.source_run_url }}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,8 @@
+baseURL = "https://brfid.github.io/"
+locale = "en-US"
+title = "Bradley Fidler"
+disableKinds = ["RSS", "sitemap", "taxonomy", "term"]
+disableHugoGeneratorInject = true
+
+[params]
+destinationBaseURL = "https://brfid.gitlab.io"

@@ -35,17 +35,15 @@ def test_mounted_pexpect_scripts_defer_annotation_evaluation() -> None:
         assert "from __future__ import annotations" in source
 
 
-def test_production_images_are_immutable_and_fallback_is_disabled() -> None:
-    """Production must fail closed instead of building a different checkout."""
+def test_hosted_validation_images_are_immutable_and_fallback_is_disabled() -> None:
+    """Hosted validation must fail closed instead of building a different checkout."""
     runner = RUNNER.read_text(encoding="utf-8")
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
     validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
 
     image_lines = [line for line in runner.splitlines() if line.startswith("GHCR_")]
     assert len(image_lines) == 2
     assert all("@sha256:" in line for line in image_lines)
     assert all(":latest" not in line for line in image_lines)
-    assert 'ALLOW_LOCAL_IMAGE_BUILD: "0"' in deploy
     assert 'ALLOW_LOCAL_IMAGE_BUILD: "0"' in validate
 
 
@@ -61,35 +59,27 @@ def test_image_build_workflow_is_manual_and_reports_both_digests() -> None:
     assert "steps.pdp11.outputs.digest" in workflow
 
 
-def test_publish_paths_use_the_shared_semantic_validator() -> None:
-    """Manual validation and deployment must enforce one output contract."""
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
+def test_retained_validation_paths_use_the_semantic_validator() -> None:
+    """Manual validation and retained reuse code must enforce the output contract."""
     validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
     reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
 
-    assert ".venv/bin/python -m resume_generator.vintage_reuse validate" in deploy
     assert ".venv/bin/python -m resume_generator.vintage_contract" in validate
     assert "validate_rendered_bio(rendered_bio, expected)" in reuse
 
 
-def test_workflows_consume_direct_runner_artifacts() -> None:
-    """Deployment and validation must consume the runner's files without stdout transport."""
+def test_validation_workflow_consumes_direct_runner_artifacts() -> None:
+    """Manual validation must consume the runner's files without stdout transport."""
     runner = RUNNER.read_text(encoding="utf-8")
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
     validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
-    reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
 
     assert "_BASE64_BEGIN" not in runner
     assert "base64 <" not in runner
-    for workflow in (deploy, validate):
-        assert "bash scripts/vintage-runner.sh" in workflow
-        assert "/tmp/vintage-stdout.txt" not in workflow
-        assert "_BASE64_BEGIN" not in workflow
+    assert "bash scripts/vintage-runner.sh" in validate
+    assert "/tmp/vintage-stdout.txt" not in validate
+    assert "_BASE64_BEGIN" not in validate
     assert "for artifact in brad.bio.txt build.log.html pipeline-status.json; do" in validate
     assert '"build/vintage/${artifact}"' in validate
-    for artifact in ("brad.bio.txt", "build.log.html", "pipeline-status.json"):
-        assert f'"{artifact}"' in reuse
-        assert f"build/vintage/{artifact}" in deploy
 
 
 def test_runner_preserves_public_status_and_log_identifiers() -> None:
@@ -100,16 +90,14 @@ def test_runner_preserves_public_status_and_log_identifiers() -> None:
     assert '"pipeline": "edcloud-vintage"' in runner
 
 
-def test_workflows_export_the_log_directory_consumed_by_the_runner() -> None:
+def test_validation_workflow_exports_the_log_directory_consumed_by_the_runner() -> None:
     """Diagnostic artifact paths must use the directory inherited by the runner."""
-    deploy = (WORKFLOWS / "deploy.yml").read_text(encoding="utf-8")
     validate = (WORKFLOWS / "vintage-validate.yml").read_text(encoding="utf-8")
+    runner_step = validate.split("name: Run vintage pipeline", maxsplit=1)[1]
 
-    for workflow in (deploy, validate):
-        runner_step = workflow.split("name: Run vintage pipeline", maxsplit=1)[1]
-        assert "LOG_DIR: /tmp/edcloud-vintage" in runner_step
-        assert 'echo "log_file=${LOG_DIR}/${BUILD_ID}.log"' in runner_step
-        assert "LOG_DIR=/tmp/edcloud-vintage" not in runner_step
+    assert "LOG_DIR: /tmp/edcloud-vintage" in runner_step
+    assert 'echo "log_file=${LOG_DIR}/${BUILD_ID}.log"' in runner_step
+    assert "LOG_DIR=/tmp/edcloud-vintage" not in runner_step
 
 
 def test_validation_workflow_keeps_the_digest_local_to_its_summary() -> None:
@@ -171,7 +159,14 @@ def test_pdp11_runtime_image_excludes_build_dependencies() -> None:
         1
     ].split("    && rm -rf /var/lib/apt/lists/*", maxsplit=1)[0]
 
-    for package in ("build-essential", "libedit-dev", "libpcre3-dev", "wget", "ca-certificates", "git"):
+    for package in (
+        "build-essential",
+        "libedit-dev",
+        "libpcre3-dev",
+        "wget",
+        "ca-certificates",
+        "git",
+    ):
         assert package in builder
         assert package not in runtime_install
     for package in ("libedit2", "libpcre3", "python3", "python3-pexpect"):
@@ -202,7 +197,15 @@ def test_vax_image_disables_unused_devices() -> None:
     assert "att rq0 RA81.000" in directives
     assert "att rq1 RA81VHD.001" in directives
     assert {line for line in directives if line.endswith(" enabled")} == {"set rq enabled"}
-    for prefix in ("attach lpt ", "set rp0 ", "set rp1 ", "set rp2 ", "set rp3 ", "set rl0 ", "set rl1 "):
+    for prefix in (
+        "attach lpt ",
+        "set rp0 ",
+        "set rp1 ",
+        "set rp2 ",
+        "set rp3 ",
+        "set rl0 ",
+        "set rl1 ",
+    ):
         assert not any(line.startswith(prefix) for line in directives)
     assert "/opt/vax-ini-path.txt" not in dockerfile
 
