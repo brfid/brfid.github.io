@@ -10,7 +10,6 @@ import re
 import shutil
 import sys
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -18,8 +17,9 @@ from resume_generator.bio_yaml import main as build_bio_yaml
 from resume_generator.gitlab_artifacts import create_bundle, download_latest_matching
 from resume_generator.gitlab_ci import (
     JOB_ERRORS,
+    PUBLICATION_BRANCH,
+    GitLabJobIdentity,
     executable,
-    required_environment,
     reset_directory,
     run,
 )
@@ -32,68 +32,7 @@ BUNDLE_DIR = ROOT / "build" / "vintage"
 REUSABLE_ROOT = ROOT / "reusable-vintage"
 
 
-@dataclass(frozen=True)
-class GitLabContext:
-    """Validated GitLab variables needed by one publication."""
-
-    branch: str
-    default_branch: str
-    commit_sha: str
-    pipeline_id: int
-    pipeline_url: str
-    project_id: int
-    project_url: str
-
-    @classmethod
-    def from_environment(cls) -> GitLabContext:
-        """Load required nonempty GitLab CI variables."""
-        names = (
-            "CI_COMMIT_BRANCH",
-            "CI_DEFAULT_BRANCH",
-            "CI_COMMIT_SHA",
-            "CI_PIPELINE_ID",
-            "CI_PIPELINE_URL",
-            "CI_PROJECT_ID",
-            "CI_PROJECT_URL",
-        )
-        values = required_environment(names)
-        try:
-            pipeline_id = int(values["CI_PIPELINE_ID"])
-            project_id = int(values["CI_PROJECT_ID"])
-        except ValueError as exc:
-            raise ValueError("GitLab pipeline and project IDs must be integers") from exc
-        if pipeline_id <= 0 or project_id <= 0:
-            raise ValueError("GitLab pipeline and project IDs must be positive")
-        return cls(
-            branch=values["CI_COMMIT_BRANCH"],
-            default_branch=values["CI_DEFAULT_BRANCH"],
-            commit_sha=values["CI_COMMIT_SHA"],
-            pipeline_id=pipeline_id,
-            pipeline_url=values["CI_PIPELINE_URL"],
-            project_id=project_id,
-            project_url=values["CI_PROJECT_URL"],
-        )
-
-
-def _copy_if_regular(source: Path, destination: Path) -> None:
-    if source.is_symlink() or not source.is_file():
-        return
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(source, destination)
-
-
-def collect_failure_diagnostics() -> None:
-    """Copy available runner diagnostics into the GitLab artifact tree."""
-    diagnostics = ROOT / "diagnostics"
-    diagnostics.mkdir(parents=True, exist_ok=True)
-    if LOG_DIR.is_dir() and not LOG_DIR.is_symlink():
-        for source in LOG_DIR.iterdir():
-            _copy_if_regular(source, diagnostics / source.name)
-    for name in ("pipeline-status.json", "sections.jsonl"):
-        _copy_if_regular(BUNDLE_DIR / name, diagnostics / name)
-
-
-def _run_standard(context: GitLabContext, bash: str) -> tuple[str, str]:
+def _run_standard(context: GitLabJobIdentity, bash: str) -> tuple[str, str]:
     reset_directory(BUNDLE_DIR, create=False)
     reset_directory(REUSABLE_ROOT, create=False)
     build_id = f"build-{datetime.now(UTC):%Y%m%d-%H%M%S}"
@@ -103,20 +42,23 @@ def _run_standard(context: GitLabContext, bash: str) -> tuple[str, str]:
             "GIT_SHA": context.commit_sha,
             "ALLOW_LOCAL_IMAGE_BUILD": "0",
             "LOG_DIR": str(LOG_DIR),
+            "ROOT_DIR": str(ROOT),
+            "ALLOW_ENVIRONMENT_BOOTSTRAP": "0",
+            "BUILD_LOCAL_IMAGE_PAIR": "0",
         }
     )
     run([bash, "scripts/vintage-runner.sh", build_id], cwd=ROOT, env=runner_environment)
     return context.commit_sha, context.pipeline_url
 
 
-def _run_fast(context: GitLabContext, fingerprint: str) -> tuple[str, str]:
+def _run_fast(context: GitLabJobIdentity, fingerprint: str) -> tuple[str, str]:
     reset_directory(BUNDLE_DIR, create=False)
     source = download_latest_matching(
         BUNDLE_DIR,
         fingerprint=fingerprint,
         project_id=context.project_id,
         project_url=context.project_url,
-        ref=context.default_branch,
+        ref=PUBLICATION_BRANCH,
         max_age_days=90,
     )
     return source.source_sha, source.source_pipeline_url
@@ -149,14 +91,13 @@ def _stage_vintage_for_hugo(source_run_url: str) -> None:
         raise RuntimeError("could not generate Hugo bio data")
 
 
-def publish(mode: str, context: GitLabContext) -> None:
+def publish(mode: str, context: GitLabJobIdentity) -> None:
     """Run one complete publication and raise on any failed contract."""
-    if context.branch != context.default_branch:
-        raise ValueError(f"site publication is allowed only from {context.default_branch}")
+    if context.branch != PUBLICATION_BRANCH:
+        raise ValueError(f"site publication is allowed only from {PUBLICATION_BRANCH}")
 
     make = executable("make")
     bash = executable("bash")
-    run([make, "check"], cwd=ROOT)
 
     fingerprint = compute_fingerprint(ROOT, ROOT / "site.yaml", ROOT / "resume.yaml")
     if FINGERPRINT.fullmatch(fingerprint) is None:
@@ -200,7 +141,7 @@ def publish(mode: str, context: GitLabContext) -> None:
             fingerprint=fingerprint,
             project_id=context.project_id,
             project_url=context.project_url,
-            ref=context.default_branch,
+            ref=PUBLICATION_BRANCH,
             source_sha=context.commit_sha,
             source_pipeline_id=context.pipeline_id,
             source_pipeline_url=context.pipeline_url,
@@ -218,16 +159,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("mode", choices=("standard", "fast"))
     args = parser.parse_args(argv)
 
-    success = False
     try:
-        publish(args.mode, GitLabContext.from_environment())
-        success = True
+        context = GitLabJobIdentity.from_environment(
+            ROOT,
+            expected_branch=PUBLICATION_BRANCH,
+            expected_jobs=("publish-standard", "publish-fast"),
+            require_protected=True,
+        )
+        if context.job_name != f"publish-{args.mode}":
+            raise ValueError(f"publication mode {args.mode!r} does not match CI_JOB_NAME {context.job_name!r}")
+        publish(args.mode, context)
     except JOB_ERRORS as exc:
         print(f"GitLab publication: {exc}", file=sys.stderr)
         return 1
-    finally:
-        if not success:
-            collect_failure_diagnostics()
     return 0
 
 

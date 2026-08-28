@@ -8,6 +8,7 @@ Use this reference to diagnose SIMH console and artifact failures. For commands,
 |---|---|
 | `resume_generator/vintage_yaml.py` | Emit the fixed five-scalar guest input |
 | `resume_generator/vintage_contract.py` | Validate public inputs and the rendered bio |
+| `resume_generator/image_manifest.py` | Bind the promoted image pair to image-owned source |
 | `vintage/machines/vax/bradman.c` | Convert guest input to troff on VAX 4.3BSD |
 | `scripts/vax_pexpect.py` | Boot the VAX, run `bradman`, and capture a UUCP spool |
 | `scripts/pdp11_pexpect.py` | Boot the PDP-11, decode the spool, and run `nroff` |
@@ -43,7 +44,7 @@ For the equivalent guest commands, see [the VAX stage reference](../../vax/READM
 
 ## UUCP spool transfer
 
-The VAX produces the spool. The host stores it as `build/vintage/brad.bio.uu`, checks that it has a `begin` line, at least one encoded line, and a final `end` line, then injects it into the PDP-11 in ten-line heredoc batches.
+The VAX produces the spool in its stage-only output mount. The host rejects links, special files, and empty output, copies the spool to `build/vintage/brad.bio.uu`, and exposes that copy to the PDP-11 as a read-only input. The PDP-11 script checks that it has a `begin` line, at least one encoded line, and a final `end` line, then injects it in ten-line heredoc batches.
 
 This transfer uses printable UUE lines no longer than 62 characters. The host does not decode or rewrite the troff payload.
 
@@ -73,8 +74,9 @@ nroff -Tlp /tmp/brad.bio.roff < /dev/null > /tmp/brad.bio.txt
 - `bradman.c` writes name and headline without fill, then fills and justifies the summary at a 60-column measure with no page offset or hyphenation.
 - The build date appears only in a troff comment. With unchanged public text, orchestration, and pinned images, `nroff` produces stable rendered bytes.
 - The runner clears its owned outputs before starting and records success or failure in `pipeline-status.json`.
-- The runner writes the final bio, build log, and status under `build/vintage/`; workflows consume those files directly.
-- Production consumes one pinned pair of immutable image digests and disables local builds.
+- The runner gives each guest only read-only inputs and a separate output mount, then copies validated final artifacts under `build/vintage/`; workflows consume those host-owned files directly.
+- Guest containers have no network, drop all capabilities, disallow privilege gain, and use process and memory limits.
+- Production validates one source-bound manifest of immutable image digests and disables local builds and environment bootstrap.
 
 ## Failure guide
 

@@ -16,6 +16,7 @@ from typing import Any, cast
 
 import yaml
 
+from .image_manifest import ImageManifestError, load_image_pair
 from .pipeline_status import PipelineStatusError, require_successful_pipeline_status
 from .vintage_contract import (
     VintageContractError,
@@ -23,28 +24,23 @@ from .vintage_contract import (
     vintage_input_from_mappings,
 )
 
-FINGERPRINT_FILES = (
+FINGERPRINT_ROOTS = (
     Path(".gitlab-ci.yml"),
     Path("pyproject.toml"),
-    Path("resume_generator/gitlab_artifacts.py"),
-    Path("resume_generator/gitlab_ci.py"),
-    Path("resume_generator/__init__.py"),
-    Path("resume_generator/bio_yaml.py"),
-    Path("resume_generator/build_log.py"),
-    Path("resume_generator/pipeline_status.py"),
-    Path("resume_generator/vintage_contract.py"),
-    Path("resume_generator/vintage_reuse.py"),
-    Path("resume_generator/vintage_yaml.py"),
-    Path("scripts/gitlab/build_images.py"),
-    Path("scripts/gitlab/publish.py"),
-    Path("scripts/gitlab/setup.sh"),
-    Path("scripts/gitlab/validate_vintage.py"),
-    Path("scripts/pdp11_pexpect.py"),
-    Path("scripts/simh_session.py"),
-    Path("scripts/vax_pexpect.py"),
-    Path("scripts/vintage-runner.sh"),
+    Path("requirements/build.lock"),
+    Path("requirements/publish.lock"),
+    Path("requirements/runtime.lock"),
+    Path("resume_generator"),
+    Path("scripts"),
+    Path("vintage"),
 )
-VINTAGE_DIRECTORY = Path("vintage")
+FINGERPRINT_EXCLUDED = frozenset(
+    {
+        Path("resume_generator/pdf.py"),
+        Path("scripts/check_environment.py"),
+        Path("scripts/verify_site.py"),
+    }
+)
 BUNDLE_FILES = ("brad.bio.txt", "build.log.html", "pipeline-status.json")
 PIPELINE_NAME = "edcloud-vintage"
 _FINGERPRINT_DOMAIN = b"brfid-vintage-reuse-v1"
@@ -81,21 +77,18 @@ def _require_regular_file(path: Path, *, label: str, nonempty: bool) -> None:
 
 
 def _fingerprinted_files(root: Path) -> list[Path]:
-    files: list[Path] = []
-    for relative_path in FINGERPRINT_FILES:
+    for relative_path in FINGERPRINT_ROOTS:
         path = root / relative_path
-        _require_regular_file(path, label="fingerprint input", nonempty=False)
-        files.append(path)
-
-    vintage_dir = root / VINTAGE_DIRECTORY
-    if vintage_dir.is_symlink() or not vintage_dir.is_dir():
-        raise VintageReuseError(f"vintage source directory is missing or is not a directory: {vintage_dir}")
+        if path.is_symlink() or not path.exists():
+            raise VintageReuseError(f"fingerprint root is missing or unsafe: {path}")
+        if not path.is_file() and not path.is_dir():
+            raise VintageReuseError(f"fingerprint root is not a regular file or directory: {path}")
 
     git_dir = root / ".git"
     if git_dir.exists():
         git = shutil.which("git")
         if git is None:
-            raise VintageReuseError("git is required to enumerate nonignored vintage source files")
+            raise VintageReuseError("git is required to enumerate nonignored fingerprint inputs")
         result = subprocess.run(  # noqa: S603 - executable is resolved and arguments are not passed to a shell
             [
                 git,
@@ -107,7 +100,7 @@ def _fingerprinted_files(root: Path) -> list[Path]:
                 "--others",
                 "--exclude-standard",
                 "--",
-                VINTAGE_DIRECTORY.as_posix(),
+                *(path.as_posix() for path in FINGERPRINT_ROOTS),
             ],
             check=False,
             capture_output=True,
@@ -115,20 +108,27 @@ def _fingerprinted_files(root: Path) -> list[Path]:
         )
         if result.returncode:
             detail = result.stderr.strip() or "no output"
-            raise VintageReuseError(f"could not enumerate vintage source files with git: {detail}")
+            raise VintageReuseError(f"could not enumerate fingerprint inputs with git: {detail}")
         candidates = [root / value for value in result.stdout.split("\0") if value]
     else:
-        candidates = list(vintage_dir.rglob("*"))
+        candidates = []
+        for relative_path in FINGERPRINT_ROOTS:
+            path = root / relative_path
+            candidates.extend([path] if path.is_file() else path.rglob("*"))
 
-    vintage_files: list[Path] = []
+    files: list[Path] = []
     for path in candidates:
+        relative_path = path.relative_to(root)
+        if relative_path in FINGERPRINT_EXCLUDED:
+            continue
         if path.is_symlink():
-            raise VintageReuseError(f"vintage source must not be a symbolic link: {path}")
+            raise VintageReuseError(f"fingerprint input must not be a symbolic link: {path}")
         if path.is_file():
-            vintage_files.append(path)
-    if not vintage_files:
-        raise VintageReuseError(f"vintage source directory contains no files: {vintage_dir}")
-    files.extend(vintage_files)
+            files.append(path)
+        elif not path.is_dir():
+            raise VintageReuseError(f"fingerprint input is not a regular file: {path}")
+    if not files:
+        raise VintageReuseError("fingerprint roots contain no source files")
     return sorted(files, key=lambda path: path.relative_to(root).as_posix())
 
 
@@ -137,6 +137,10 @@ def compute_fingerprint(root: Path, site_yaml: Path, resume_yaml: Path) -> str:
     root = root.resolve()
     if not root.is_dir():
         raise VintageReuseError(f"repository root is missing or is not a directory: {root}")
+    try:
+        load_image_pair(root)
+    except ImageManifestError as exc:
+        raise VintageReuseError(f"vintage image pair is invalid: {exc}") from exc
 
     site = _load_mapping(site_yaml, label="site YAML")
     resume = _load_mapping(resume_yaml, label="resume YAML")

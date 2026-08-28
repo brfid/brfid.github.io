@@ -11,18 +11,21 @@ Install these prerequisites:
 - Python 3.11 or newer
 - Hugo extended 0.156.0 or newer
 - Docker, only for the vintage pipeline
+- uv, only when you update the Python dependency locks
 
 Initialize the checkout and its local Python environment:
 
 ```bash
 git submodule update --init
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev,pdf]'
+.venv/bin/python -m pip install --require-hashes -r requirements/build.lock
+.venv/bin/python -m pip install --require-hashes -r requirements/dev.lock
+.venv/bin/python -m pip install --no-deps --no-build-isolation -e .
 .venv/bin/python -m playwright install chromium
 make check_env
 ```
 
-The repository vendors PaperMod as a Git submodule and serves self-hosted Newsreader and IBM Plex Mono fonts. It has no front-end package install or build step.
+The repository vendors PaperMod as a Git submodule and serves self-hosted Newsreader and IBM Plex Mono fonts. It has no front-end package install or build step. CI installs Python dependencies from hash-locked files, verifies the Hugo package against `requirements/hugo.sha256`, and pins its job, service, and BuildKit images by digest.
 
 ## Preview the site
 
@@ -56,6 +59,19 @@ make verify-site
 `make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. `make verify-site` clears deployment-only provenance inputs, builds Hugo in a clean directory, and checks routes, feeds, linked artifacts, structured data, navigation state, and the site-wide indexing policy. CI runs both commands.
 
 Use `make test` to run pytest without the other checks. Use `make help` to list all supported targets.
+
+## Update Python dependency locks
+
+After changing `pyproject.toml` or the build requirements, regenerate every affected lock with uv from the repository root:
+
+```bash
+uv pip compile requirements/build.in --python-version 3.11 --universal --generate-hashes -o requirements/build.lock
+uv pip compile pyproject.toml --python-version 3.11 --universal --generate-hashes --no-emit-package brfid-resume -o requirements/runtime.lock
+uv pip compile pyproject.toml --extra pdf --python-version 3.11 --universal --generate-hashes --no-emit-package brfid-resume -o requirements/publish.lock
+uv pip compile pyproject.toml --all-extras --python-version 3.11 --universal --generate-hashes --no-emit-package brfid-resume -o requirements/dev.lock
+```
+
+Run `make check` from an environment installed from the regenerated `dev.lock`. CI cache keys use the lock contents, and pip verifies every downloaded Python distribution against the committed hashes.
 
 ## Build the public site
 
@@ -104,8 +120,8 @@ You can request the same path manually:
 
 ```bash
 glab ci run --branch main \
-  --variables-env OPERATION:publish \
-  --variables-env PUBLISH_MODE:fast
+  --input operation:publish \
+  --input publish_mode:fast
 ```
 
 Fast mode reuses the exact bio, build log, and pipeline status from the newest matching successful standard publication, and keeps the GitLab pipeline link pointed at that source. GitLab retains the fingerprinted bundle for 90 days. Fast mode still rebuilds the public PDF and Hugo site, runs the production verifier, and deploys a new Pages artifact. It fails without deploying if the retained result has expired, its manifest or provenance is invalid, or a bio input or vintage implementation file has changed.
@@ -114,11 +130,11 @@ Run standard mode to produce a fresh retained result:
 
 ```bash
 glab ci run --branch main \
-  --variables-env OPERATION:publish \
-  --variables-env PUBLISH_MODE:standard
+  --input operation:publish \
+  --input publish_mode:standard
 ```
 
-In standard mode, the vintage pipeline uses only the immutable VAX and PDP-11 image digests pinned in `scripts/vintage-runner.sh`. It does not build fallback images.
+In standard mode, the vintage pipeline validates `vintage/image-pair.json` against the current image-owned source, then uses only that manifest’s immutable VAX and PDP-11 digests. Hosted execution disables local image fallback and Python-environment bootstrap.
 
 ## Source files
 
@@ -128,7 +144,9 @@ In standard mode, the vintage pipeline uses only the immutable VAX and PDP-11 im
 | `resume.yaml` | Public resume data and shared bio summary |
 | `resume.private.yaml` | Optional local phone overlay; gitignored |
 | `hugo/` | Site content, templates, configuration, styles, and fonts |
-| `resume_generator/` | Bio, vintage validation and reuse, build-log, and PDF generators |
+| `resume_generator/` | Bio, vintage validation and reuse, image-manifest, build-log, and PDF generators |
+| `requirements/` | Hash-locked Python environments and the verified Hugo package checksum |
+| `vintage/image-pair.json` | Promoted immutable emulator pair bound to its image-owned source |
 | `.gitlab-ci.yml` | GitLab checks, publication, validation, and image-build jobs |
 | `scripts/` | Site verifier, GitLab job scripts, and SIMH orchestration |
 | `STATUS.md` | Current operational state and queue |

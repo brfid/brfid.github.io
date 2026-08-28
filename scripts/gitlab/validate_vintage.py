@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import os
@@ -14,7 +15,8 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from resume_generator.gitlab_ci import JOB_ERRORS, executable, reset_directory, run
+from resume_generator.gitlab_ci import JOB_ERRORS, GitLabJobIdentity, executable, reset_directory, run
+from resume_generator.image_manifest import load_image_pair
 from resume_generator.vintage_contract import main as validate_vintage_contract
 from resume_generator.vintage_reuse import BUNDLE_FILES
 
@@ -46,14 +48,12 @@ def _require_artifacts() -> None:
             raise RuntimeError(f"final vintage artifact is empty: {path}")
 
 
-def validate(expected_sha256: str) -> None:
+def validate(expected_sha256: str, *, commit_sha: str) -> None:
     """Run and validate one pinned vintage pipeline result."""
     if expected_sha256 and SHA256.fullmatch(expected_sha256) is None:
-        raise ValueError("EXPECTED_VINTAGE_SHA256 must be blank or a lowercase SHA-256 digest")
-    commit_sha = os.environ.get("CI_COMMIT_SHA", "")
-    if not commit_sha:
-        raise ValueError("missing required GitLab CI variable: CI_COMMIT_SHA")
+        raise ValueError("expected vintage SHA-256 must be blank or a lowercase digest")
 
+    load_image_pair(ROOT)
     reset_directory(OUTPUT_DIR, create=True)
     build_id = f"validate-{datetime.now(UTC):%Y%m%d-%H%M%S}"
     environment = os.environ.copy()
@@ -61,7 +61,10 @@ def validate(expected_sha256: str) -> None:
         {
             "GIT_SHA": commit_sha,
             "ALLOW_LOCAL_IMAGE_BUILD": "0",
+            "ALLOW_ENVIRONMENT_BOOTSTRAP": "0",
+            "BUILD_LOCAL_IMAGE_PAIR": "0",
             "LOG_DIR": str(LOG_DIR),
+            "ROOT_DIR": str(ROOT),
         }
     )
     start = time.monotonic()
@@ -99,12 +102,17 @@ def validate(expected_sha256: str) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run vintage validation from GitLab CI."""
-    if argv:
-        print("validate_vintage.py takes no positional arguments", file=sys.stderr)
-        return 2
+    """Run vintage validation from a typed GitLab pipeline input."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--expected-sha256", default="", help="optional expected brad.bio.txt digest")
+    args = parser.parse_args(argv)
     try:
-        validate(os.environ.get("EXPECTED_VINTAGE_SHA256", ""))
+        identity = GitLabJobIdentity.from_environment(
+            ROOT,
+            expected_jobs=("vintage-validation",),
+            expected_sources=("web", "api"),
+        )
+        validate(args.expected_sha256, commit_sha=identity.commit_sha)
     except JOB_ERRORS as exc:
         print(f"GitLab vintage validation: {exc}", file=sys.stderr)
         return 1
