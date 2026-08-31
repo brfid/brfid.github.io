@@ -4,7 +4,7 @@ This file records current operations and queued work. Use `git log` for complete
 
 ## Current State
 
-- The repository moved from GitLab CI to GitHub Actions. `brfid/brfid.github.io` is canonical; `gitlab.com/brfid/brfid.gitlab.io` is a dormant, unpushed read-only mirror. The local checkout lives at `~/src/brfid.github.io`, with `origin` pointing at GitHub and a `gitlab` remote kept for reference. The pre-migration GitHub history (when this repo published only a redirect to GitLab) is preserved under the `archive/redirect-era` tag.
+- The repository moved from GitLab CI to GitHub Actions. `brfid/brfid.github.io` is canonical; the former `gitlab.com/brfid/brfid.gitlab.io` project has been deleted. The local checkout lives at `~/src/brfid.github.io`. The pre-migration GitHub history (when this repo published only a redirect to GitLab) is preserved under the `archive/redirect-era` tag.
 - GitHub Pages publishes the Hugo landing page, Blog, both RSS feeds, Resume, the `/about/` alias, `resume.pdf`, a build log, and `pipeline-status.json` at `https://brfid.github.io`. It emits no sitemap, taxonomy pages, or Hugo JSON indexes.
 - Every HTML page carries the full site-wide `noindex` policy. `robots.txt` leaves HTML crawlable and blocks the PDF, feeds, and pipeline status.
 - `site.yaml` supplies public identity and links. `resume.yaml` supplies the public resume and the shared landing-page summary. Generated Hugo data remains gitignored.
