@@ -75,9 +75,9 @@ def test_repository_image_pair_matches_image_owned_source() -> None:
     pair = load_image_pair(ROOT)
     verify_image_source_commit(ROOT, pair)
 
-    assert pair.source_sha == "f19f93ab57639cf2f168a33d8888f5e32c703040"
-    assert pair.vax.endswith("@sha256:aace291158b43ee425ba0f7ce1e83a705dd75f6a922b18926266752e0c23cfc9")
-    assert pair.pdp11.endswith("@sha256:239f0f8a4da44c236e05dc351e0775de78c11bb6edaf48d0af8965fcc22f7759")
+    assert pair.source_sha == "155972f9f9985266ab9add48ff0a47bda370c477"
+    assert pair.vax.endswith("@sha256:bffb6a8b073813eda542fbe92b76075ca745b125639bab43c6d63f8b20b82c54")
+    assert pair.pdp11.endswith("@sha256:04e9ded9fa0f80f6d8d41ec07bcd108849dfaf99f39bb670acfe763695fb1ab9")
 
 
 def test_image_input_digest_is_deterministic_and_covers_every_owned_input(tmp_path: Path) -> None:
