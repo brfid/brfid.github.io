@@ -24,7 +24,7 @@ IMAGE_INPUT_PATHS = (
 )
 IMAGE_INPUTS_LABEL = "io.brfid.vintage.image-inputs-sha256"
 IMAGE_MANIFEST_SCHEMA_VERSION = 1
-IMAGE_REGISTRY_PREFIX = "registry.gitlab.com/brfid/brfid.gitlab.io"
+IMAGE_REGISTRY_PREFIX = "ghcr.io/brfid"
 _IMAGE_INPUTS_DOMAIN = b"brfid-vintage-image-inputs-v1"
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _GIT_SHA = re.compile(r"[0-9a-f]{40}")

@@ -8,11 +8,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts" / "vintage-runner.sh"
-PIPELINE = ROOT / ".gitlab-ci.yml"
-GITLAB_SCRIPTS = ROOT / "scripts" / "gitlab"
-PUBLISH = GITLAB_SCRIPTS / "publish.py"
-VALIDATE = GITLAB_SCRIPTS / "validate_vintage.py"
-BUILD_IMAGES = GITLAB_SCRIPTS / "build_images.py"
+BUILD_IMAGES_WORKFLOW = ROOT / ".github" / "workflows" / "build-images.yml"
+VALIDATE_WORKFLOW = ROOT / ".github" / "workflows" / "vintage-validate.yml"
+GITHUB_SCRIPTS = ROOT / "scripts" / "github"
+PUBLISH = GITHUB_SCRIPTS / "publish.py"
+VALIDATE = GITHUB_SCRIPTS / "validate_vintage.py"
+BUILD_IMAGES = GITHUB_SCRIPTS / "build_images.py"
 IMAGE_MANIFEST = ROOT / "vintage" / "image-pair.json"
 PEXPECT_SCRIPTS = (
     RUNNER.parent / "vax_pexpect.py",
@@ -81,7 +82,7 @@ def test_production_images_are_immutable_and_fallback_is_disabled() -> None:
     assert len(manifest["image_inputs_sha256"]) == 64
     for machine in ("vax", "pdp11"):
         reference = manifest[machine]
-        assert reference.startswith(f"registry.gitlab.com/brfid/brfid.gitlab.io/{machine}-pexpect@sha256:")
+        assert reference.startswith(f"ghcr.io/brfid/{machine}-pexpect@sha256:")
         assert ":latest" not in reference
     assert "resume_generator.image_manifest" in runner
     assert '"ALLOW_LOCAL_IMAGE_BUILD": "0"' in publish
@@ -97,13 +98,12 @@ def test_production_images_are_immutable_and_fallback_is_disabled() -> None:
 
 def test_image_build_job_is_manual_and_reports_both_digests() -> None:
     """Image releases are typed manual operations that emit one promotable manifest."""
-    pipeline = PIPELINE.read_text(encoding="utf-8")
+    pipeline = BUILD_IMAGES_WORKFLOW.read_text(encoding="utf-8")
     build = BUILD_IMAGES.read_text(encoding="utf-8")
 
-    assert '"$[[ inputs.operation ]]" == "image-build"' in pipeline
-    assert '$CI_COMMIT_BRANCH == "main"' in pipeline
-    assert '$CI_COMMIT_REF_PROTECTED == "true"' in pipeline
-    assert "python3 -m scripts.gitlab.build_images" in pipeline
+    assert "workflow_dispatch:" in pipeline
+    assert "GITHUB_REF_PROTECTED: ${{ github.ref_protected }}" in pipeline
+    assert ".venv/bin/python -m scripts.github.build_images" in pipeline
     assert "expected_branch=PUBLICATION_BRANCH" in build
     assert "require_protected=True" in build
     assert ":latest" not in build
@@ -133,18 +133,18 @@ def test_local_image_fallback_builds_an_explicit_complete_pair() -> None:
 
 def test_publish_paths_use_the_shared_semantic_validator() -> None:
     """Manual validation and deployment must enforce one output contract."""
-    pipeline = PIPELINE.read_text(encoding="utf-8")
+    pipeline = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
     publish = PUBLISH.read_text(encoding="utf-8")
     validate = VALIDATE.read_text(encoding="utf-8")
     reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
 
-    assert ".venv/bin/python -m scripts.gitlab.validate_vintage" in pipeline
+    assert ".venv/bin/python -m scripts.github.validate_vintage" in pipeline
     assert "validate_bundle(" in publish
     assert "validate_vintage_contract(" in validate
     assert "validate_rendered_bio(rendered_bio, expected)" in reuse
 
 
-def test_gitlab_jobs_consume_direct_runner_artifacts() -> None:
+def test_github_jobs_consume_direct_runner_artifacts() -> None:
     """Deployment and validation must consume the runner's files without stdout transport."""
     runner = RUNNER.read_text(encoding="utf-8")
     publish = PUBLISH.read_text(encoding="utf-8")
@@ -172,7 +172,7 @@ def test_runner_preserves_public_status_and_log_identifiers() -> None:
     assert '"pipeline": "edcloud-vintage"' in runner
 
 
-def test_gitlab_jobs_export_the_log_directory_consumed_by_the_runner() -> None:
+def test_github_jobs_export_the_log_directory_consumed_by_the_runner() -> None:
     """Diagnostic artifact paths must use the directory inherited by the runner."""
     publish = PUBLISH.read_text(encoding="utf-8")
     validate = VALIDATE.read_text(encoding="utf-8")

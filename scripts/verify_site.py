@@ -23,7 +23,7 @@ import yaml
 from resume_generator.pipeline_status import PipelineStatusIssueCode, validate_pipeline_status
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_ORIGIN = "https://brfid.gitlab.io"
+PUBLIC_ORIGIN = "https://brfid.github.io"
 REQUIRED_FILES = (
     "404.html",
     "about/index.html",
@@ -801,7 +801,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Verify production-only artifacts and privacy contracts",
     )
     parser.add_argument("--resume-yaml", type=Path, help="Public resume YAML used to build the production PDF")
-    parser.add_argument("--build-run-url", help="Exact vintage GitLab pipeline URL rendered on the homepage")
+    parser.add_argument("--build-run-url", help="Exact vintage GitHub Actions run URL rendered on the homepage")
     args = parser.parse_args(argv)
 
     errors = verify_site(args.site_dir)

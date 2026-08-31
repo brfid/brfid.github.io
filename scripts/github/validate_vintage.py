@@ -15,7 +15,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
-from resume_generator.gitlab_ci import JOB_ERRORS, GitLabJobIdentity, executable, reset_directory, run
+from resume_generator.github_ci import JOB_ERRORS, GitHubJobIdentity, executable, reset_directory, run
 from resume_generator.image_manifest import load_image_pair
 from resume_generator.vintage_contract import main as validate_vintage_contract
 from resume_generator.vintage_reuse import BUNDLE_FILES
@@ -102,19 +102,19 @@ def validate(expected_sha256: str, *, commit_sha: str) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run vintage validation from a typed GitLab pipeline input."""
+    """Run vintage validation from a typed GitHub Actions workflow input."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-sha256", default="", help="optional expected brad.bio.txt digest")
     args = parser.parse_args(argv)
     try:
-        identity = GitLabJobIdentity.from_environment(
+        identity = GitHubJobIdentity.from_environment(
             ROOT,
             expected_jobs=("vintage-validation",),
-            expected_sources=("web", "api"),
+            expected_events=("workflow_dispatch",),
         )
         validate(args.expected_sha256, commit_sha=identity.commit_sha)
     except JOB_ERRORS as exc:
-        print(f"GitLab vintage validation: {exc}", file=sys.stderr)
+        print(f"GitHub vintage validation: {exc}", file=sys.stderr)
         return 1
     return 0
 

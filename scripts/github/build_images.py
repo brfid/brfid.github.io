@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and publish one explicit amd64 VAX/PDP-11 image pair to GitLab Registry."""
+"""Build and publish one explicit amd64 VAX/PDP-11 image pair to GitHub Container Registry."""
 
 from __future__ import annotations
 
@@ -11,10 +11,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from resume_generator.gitlab_ci import (
+from resume_generator.github_ci import (
     JOB_ERRORS,
     PUBLICATION_BRANCH,
-    GitLabJobIdentity,
+    GitHubJobIdentity,
     executable,
     required_environment,
     reset_directory,
@@ -30,17 +30,16 @@ from resume_generator.image_manifest import (
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_DIR = ROOT / "out"
 DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
-EXPECTED_REGISTRY = "registry.gitlab.com"
-EXPECTED_REGISTRY_USER = "gitlab-ci-token"
+EXPECTED_REGISTRY = "ghcr.io"
 BUILDKIT_IMAGE = "docker.io/moby/buildkit@sha256:040d34121c27906c4ff9ac152a30d52bf2c5d328d3bb748916bb3d2743c02528"
 
 
 @dataclass(frozen=True)
 class RegistryContext:
-    """Validated GitLab identity and registry credentials used by the image builder."""
+    """Validated GitHub identity and registry credentials used by the image builder."""
 
     commit_sha: str
-    pipeline_id: int
+    run_id: int
     registry: str
     image_prefix: str
     username: str
@@ -49,29 +48,28 @@ class RegistryContext:
     @classmethod
     def from_environment(cls) -> RegistryContext:
         """Reject identity overrides before sending credentials to the fixed registry."""
-        identity = GitLabJobIdentity.from_environment(
+        identity = GitHubJobIdentity.from_environment(
             ROOT,
             expected_branch=PUBLICATION_BRANCH,
-            expected_jobs=("image-build",),
-            expected_sources=("web", "api"),
+            expected_jobs=("build-images",),
+            expected_events=("workflow_dispatch",),
             require_protected=True,
         )
-        values = required_environment(("CI_REGISTRY", "CI_REGISTRY_IMAGE", "CI_REGISTRY_USER", "CI_REGISTRY_PASSWORD"))
+        values = required_environment(("REGISTRY", "REGISTRY_IMAGE", "REGISTRY_USERNAME", "REGISTRY_PASSWORD"))
         expected = {
-            "CI_REGISTRY": EXPECTED_REGISTRY,
-            "CI_REGISTRY_IMAGE": IMAGE_REGISTRY_PREFIX,
-            "CI_REGISTRY_USER": EXPECTED_REGISTRY_USER,
+            "REGISTRY": EXPECTED_REGISTRY,
+            "REGISTRY_IMAGE": IMAGE_REGISTRY_PREFIX,
         }
         for name, expected_value in expected.items():
             if values[name] != expected_value:
                 raise ValueError(f"{name} must be {expected_value!r}, got {values[name]!r}")
         return cls(
             commit_sha=identity.commit_sha,
-            pipeline_id=identity.pipeline_id,
-            registry=values["CI_REGISTRY"],
-            image_prefix=values["CI_REGISTRY_IMAGE"],
-            username=values["CI_REGISTRY_USER"],
-            password=values["CI_REGISTRY_PASSWORD"],
+            run_id=identity.run_id,
+            registry=values["REGISTRY"],
+            image_prefix=values["REGISTRY_IMAGE"],
+            username=values["REGISTRY_USERNAME"],
+            password=values["REGISTRY_PASSWORD"],
         )
 
 
@@ -134,7 +132,7 @@ def build_images(context: RegistryContext) -> None:
     )
     logged_in = True
 
-    builder = f"vintage-{context.pipeline_id}"
+    builder = f"vintage-{context.run_id}"
     created = False
     try:
         run(
@@ -193,17 +191,18 @@ def build_images(context: RegistryContext) -> None:
     (OUTPUT_DIR / "image-pair.json").write_text(rendered, encoding="utf-8")
     print(rendered, end="")
     print("Promote out/image-pair.json to vintage/image-pair.json, then run vintage validation.")
+    print("Both ghcr.io packages must be set to public visibility before the runner can pull them anonymously.")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Build the GitLab vintage image pair."""
+    """Build the GitHub Container Registry vintage image pair."""
     if argv:
         print("build_images.py takes no positional arguments", file=sys.stderr)
         return 2
     try:
         build_images(RegistryContext.from_environment())
     except JOB_ERRORS as exc:
-        print(f"GitLab image build: {exc}", file=sys.stderr)
+        print(f"GitHub image build: {exc}", file=sys.stderr)
         return 1
     return 0
 

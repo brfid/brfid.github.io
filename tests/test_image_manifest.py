@@ -24,8 +24,8 @@ from resume_generator.image_manifest import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SHA = "a" * 40
-VAX_REF = f"registry.gitlab.com/brfid/brfid.gitlab.io/vax-pexpect@sha256:{'1' * 64}"
-PDP11_REF = f"registry.gitlab.com/brfid/brfid.gitlab.io/pdp11-pexpect@sha256:{'2' * 64}"
+VAX_REF = f"ghcr.io/brfid/vax-pexpect@sha256:{'1' * 64}"
+PDP11_REF = f"ghcr.io/brfid/pdp11-pexpect@sha256:{'2' * 64}"
 
 
 def _run_git(git: str, root: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
@@ -119,7 +119,7 @@ def test_manifest_rejects_mutable_or_cross_project_references(tmp_path: Path) ->
     _write_inputs(tmp_path)
     manifest = _write_manifest(tmp_path)
     document = json.loads(manifest.read_text(encoding="utf-8"))
-    document["vax"] = "registry.gitlab.com/another/project/vax-pexpect:latest"
+    document["vax"] = "ghcr.io/another/vax-pexpect:latest"
     manifest.write_text(json.dumps(document), encoding="utf-8")
 
     with pytest.raises(ImageManifestError, match="image manifest vax is invalid"):

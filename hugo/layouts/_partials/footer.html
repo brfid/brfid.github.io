@@ -22,7 +22,7 @@
     {{- $bio := hugo.Data.bio -}}
     {{- if or $bio.build_log $bio.build_run_url }}
     {{- print " · "}}
-    <span>Build: {{ if $bio.build_log }}<a href="/build.log.html"{{ with $bio.build_id }} title="{{ . }}"{{ end }}>VAX/PDP-11 log</a>{{ end }}{{ if and $bio.build_log $bio.build_run_url }} &amp; {{ end }}{{ with $bio.build_run_url }}<a href="{{ . | safeURL }}" target="_blank" rel="noopener noreferrer">GitLab pipeline</a>{{ end }}</span>
+    <span>Build: {{ if $bio.build_log }}<a href="/build.log.html"{{ with $bio.build_id }} title="{{ . }}"{{ end }}>VAX/PDP-11 log</a>{{ end }}{{ if and $bio.build_log $bio.build_run_url }} &amp; {{ end }}{{ with $bio.build_run_url }}<a href="{{ . | safeURL }}" target="_blank" rel="noopener noreferrer">GitHub Actions run</a>{{ end }}</span>
     {{- end }}
 </footer>
 {{- end }}
