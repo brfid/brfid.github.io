@@ -96,6 +96,13 @@ def test_production_images_are_immutable_and_fallback_is_disabled() -> None:
     assert "io.brfid.vintage.image-inputs-sha256" in runner
 
 
+def test_vintage_validation_checks_out_full_history() -> None:
+    """A shallow checkout cannot resolve the promoted manifest's source commit."""
+    pipeline = VALIDATE_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "fetch-depth: 0" in pipeline
+
+
 def test_image_build_job_is_manual_and_reports_both_digests() -> None:
     """Image releases are typed manual operations that emit one promotable manifest."""
     pipeline = BUILD_IMAGES_WORKFLOW.read_text(encoding="utf-8")
