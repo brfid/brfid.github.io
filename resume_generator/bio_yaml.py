@@ -97,7 +97,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="Published build-log HTML, when available",
     )
     parser.add_argument("--pipeline-status", type=pathlib.Path, help="Structured pipeline-status.json")
-    parser.add_argument("--build-run-url", default="", help="GitLab pipeline associated with the vintage result")
+    parser.add_argument("--build-run-url", default="", help="GitHub Actions run associated with the vintage result")
     arguments = list(argv) if argv is not None else sys.argv[1:]
     if not arguments:
         parser.print_usage(sys.stderr)

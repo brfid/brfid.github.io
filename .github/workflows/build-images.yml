@@ -1,0 +1,53 @@
+name: Build vintage pipeline images
+
+# Publishes SHA-tagged amd64 images and reports their immutable digests.
+# Pin both digests in vintage/image-pair.json and validate the pair before merging.
+# Keep both ghcr.io packages public so runners can pull them without credentials.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      REGISTRY: ghcr.io
+      REGISTRY_IMAGE: ghcr.io/brfid
+      REGISTRY_USERNAME: ${{ github.actor }}
+      REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Prepare vintage environment
+        run: bash scripts/github/setup.sh vintage
+
+      - name: Build and publish image pair
+        run: .venv/bin/python -m scripts.github.build_images
+
+      - name: Upload manifest
+        uses: actions/upload-artifact@v7
+        with:
+          name: image-pair-${{ github.run_id }}
+          path: out/image-pair.json
+          retention-days: 14
+
+      - name: Summary
+        run: |
+          {
+            echo "## Immutable images built"
+            echo ""
+            echo '```json'
+            cat out/image-pair.json
+            echo '```'
+            echo ""
+            echo "Promote \`out/image-pair.json\` to \`vintage/image-pair.json\`, then run \`vintage-validate.yml\`."
+            echo ""
+            echo "Both ghcr.io packages must be flipped to public visibility before the runner can pull them anonymously."
+          } >> "$GITHUB_STEP_SUMMARY"

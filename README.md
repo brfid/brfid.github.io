@@ -1,13 +1,13 @@
-# brfid.gitlab.io
+# brfid.github.io
 
-Source and build tooling for [brfid.gitlab.io](https://brfid.gitlab.io/). Hugo renders the site, blog, and resume. A VAX and PDP-11 pipeline renders the landing-page bio published by the site.
+Source and build tooling for [brfid.github.io](https://brfid.github.io/). Hugo renders the site, blog, and resume. A VAX and PDP-11 pipeline renders the landing-page bio published by the site.
 
 ## Set up a checkout
 
 Install these prerequisites:
 
 - Git
-- GitLab CLI (`glab`), only for starting manual pipelines
+- GitHub CLI (`gh`), only for starting manual workflow runs
 - Python 3.11 or newer
 - Hugo extended 0.156.0 or newer
 - Docker, only for the vintage pipeline
@@ -105,9 +105,9 @@ For local execution, validation, implementation, and image promotion, see [the v
 
 ## Publish the site
 
-Before starting a manual pipeline, authenticate `glab` with `glab auth login --hostname gitlab.com` and verify it with `glab auth status`.
+Before starting a manual workflow run, authenticate `gh` with `gh auth login --hostname github.com` and verify it with `gh auth status`.
 
-A push to `main` uses standard mode: GitLab CI runs the checks and secret scan, executes the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitLab Pages. Add `[nopublish]` to the commit message to run checks without publishing.
+A push to `main` uses standard mode: the `publish.yml` workflow runs the checks and secret scan, executes the vintage pipeline, builds Hugo and the public PDF, verifies the published contracts, and deploys to GitHub Pages. Add `[nopublish]` to the commit message to run checks without publishing.
 
 For any change that does not affect the landing-page bio, such as a post, layout, or resume field other than `basics.summary`, add `[fast]` to the commit message to select fast mode:
 
@@ -119,19 +119,19 @@ git push origin main
 You can request the same path manually:
 
 ```bash
-glab ci run --branch main \
-  --input operation:publish \
-  --input publish_mode:fast
+gh workflow run publish.yml --ref main \
+  -f operation=publish \
+  -f publish_mode=fast
 ```
 
-Fast mode reuses the exact bio, build log, and pipeline status from the newest matching successful standard publication, and keeps the GitLab pipeline link pointed at that source. GitLab retains the fingerprinted bundle for 90 days. Fast mode still rebuilds the public PDF and Hugo site, runs the production verifier, and deploys a new Pages artifact. It fails without deploying if the retained result has expired, its manifest or provenance is invalid, or a bio input or vintage implementation file has changed.
+Fast mode reuses the exact bio, build log, and pipeline status from the newest matching successful standard publication, and keeps the GitHub Actions run link pointed at that source. GitHub retains the fingerprinted bundle artifact for 90 days. Fast mode still rebuilds the public PDF and Hugo site, runs the production verifier, and deploys a new Pages artifact. It fails without deploying if the retained result has expired, its manifest or provenance is invalid, or a bio input or vintage implementation file has changed.
 
 Run standard mode to produce a fresh retained result:
 
 ```bash
-glab ci run --branch main \
-  --input operation:publish \
-  --input publish_mode:standard
+gh workflow run publish.yml --ref main \
+  -f operation=publish \
+  -f publish_mode=standard
 ```
 
 In standard mode, the vintage pipeline validates `vintage/image-pair.json` against the current image-owned source, then uses only that manifest’s immutable VAX and PDP-11 digests. Hosted execution disables local image fallback and Python-environment bootstrap.
@@ -147,8 +147,8 @@ In standard mode, the vintage pipeline validates `vintage/image-pair.json` again
 | `resume_generator/` | Bio, vintage validation and reuse, image-manifest, build-log, and PDF generators |
 | `requirements/` | Hash-locked Python environments and the verified Hugo package checksum |
 | `vintage/image-pair.json` | Promoted immutable emulator pair bound to its image-owned source |
-| `.gitlab-ci.yml` | GitLab checks, publication, validation, and image-build jobs |
-| `scripts/` | Site verifier, GitLab job scripts, and SIMH orchestration |
+| `.github/workflows/` | GitHub Actions checks, publication, validation, and image-build workflows |
+| `scripts/` | Site verifier, GitHub job scripts, and SIMH orchestration |
 | `STATUS.md` | Current operational state and queue |
 | `docs/integration/INDEX.md` | Vintage pipeline operations |
 | `docs/archive/` | Retired-path registry; not operating guidance |

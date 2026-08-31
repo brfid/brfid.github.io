@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and verify one standard or fail-closed fast GitLab Pages publication."""
+"""Build and verify one standard or fail-closed fast GitHub Pages publication."""
 
 from __future__ import annotations
 
@@ -14,11 +14,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from resume_generator.bio_yaml import main as build_bio_yaml
-from resume_generator.gitlab_artifacts import create_bundle, download_latest_matching
-from resume_generator.gitlab_ci import (
+from resume_generator.github_artifacts import create_bundle, download_latest_matching
+from resume_generator.github_ci import (
     JOB_ERRORS,
     PUBLICATION_BRANCH,
-    GitLabJobIdentity,
+    GitHubJobIdentity,
     executable,
     reset_directory,
     run,
@@ -32,7 +32,7 @@ BUNDLE_DIR = ROOT / "build" / "vintage"
 REUSABLE_ROOT = ROOT / "reusable-vintage"
 
 
-def _run_standard(context: GitLabJobIdentity, bash: str) -> tuple[str, str]:
+def _run_standard(context: GitHubJobIdentity, bash: str) -> tuple[str, str]:
     reset_directory(BUNDLE_DIR, create=False)
     reset_directory(REUSABLE_ROOT, create=False)
     build_id = f"build-{datetime.now(UTC):%Y%m%d-%H%M%S}"
@@ -48,20 +48,20 @@ def _run_standard(context: GitLabJobIdentity, bash: str) -> tuple[str, str]:
         }
     )
     run([bash, "scripts/vintage-runner.sh", build_id], cwd=ROOT, env=runner_environment)
-    return context.commit_sha, context.pipeline_url
+    return context.commit_sha, context.run_url
 
 
-def _run_fast(context: GitLabJobIdentity, fingerprint: str) -> tuple[str, str]:
+def _run_fast(context: GitHubJobIdentity, fingerprint: str) -> tuple[str, str]:
     reset_directory(BUNDLE_DIR, create=False)
     source = download_latest_matching(
         BUNDLE_DIR,
         fingerprint=fingerprint,
-        project_id=context.project_id,
-        project_url=context.project_url,
+        repository=context.repository,
+        repository_url=context.repository_url,
         ref=PUBLICATION_BRANCH,
         max_age_days=90,
     )
-    return source.source_sha, source.source_pipeline_url
+    return source.source_sha, source.source_run_url
 
 
 def _stage_vintage_for_hugo(source_run_url: str) -> None:
@@ -91,7 +91,7 @@ def _stage_vintage_for_hugo(source_run_url: str) -> None:
         raise RuntimeError("could not generate Hugo bio data")
 
 
-def publish(mode: str, context: GitLabJobIdentity) -> None:
+def publish(mode: str, context: GitHubJobIdentity) -> None:
     """Run one complete publication and raise on any failed contract."""
     if context.branch != PUBLICATION_BRANCH:
         raise ValueError(f"site publication is allowed only from {PUBLICATION_BRANCH}")
@@ -115,7 +115,7 @@ def publish(mode: str, context: GitLabJobIdentity) -> None:
         ROOT / "resume.yaml",
         source_sha=source_sha,
         source_run_url=source_run_url,
-        project_url=context.project_url,
+        repository_url=context.repository_url,
     )
     _stage_vintage_for_hugo(source_run_url)
 
@@ -139,38 +139,38 @@ def publish(mode: str, context: GitLabJobIdentity) -> None:
             BUNDLE_DIR,
             REUSABLE_ROOT,
             fingerprint=fingerprint,
-            project_id=context.project_id,
-            project_url=context.project_url,
+            repository=context.repository,
+            repository_url=context.repository_url,
             ref=PUBLICATION_BRANCH,
             source_sha=context.commit_sha,
-            source_pipeline_id=context.pipeline_id,
-            source_pipeline_url=context.pipeline_url,
+            source_run_id=context.run_id,
+            source_run_url=context.run_url,
         )
 
-    print("GitLab Pages publication verified")
+    print("GitHub Pages publication verified")
     print(f"Mode: {mode}")
     print(f"SHA: {context.commit_sha}")
     print(f"Vintage pipeline: {source_run_url}")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run a standard or fast GitLab publication."""
+    """Run a standard or fast GitHub Pages publication."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("standard", "fast"))
     args = parser.parse_args(argv)
 
     try:
-        context = GitLabJobIdentity.from_environment(
+        context = GitHubJobIdentity.from_environment(
             ROOT,
             expected_branch=PUBLICATION_BRANCH,
             expected_jobs=("publish-standard", "publish-fast"),
             require_protected=True,
         )
         if context.job_name != f"publish-{args.mode}":
-            raise ValueError(f"publication mode {args.mode!r} does not match CI_JOB_NAME {context.job_name!r}")
+            raise ValueError(f"publication mode {args.mode!r} does not match GITHUB_JOB {context.job_name!r}")
         publish(args.mode, context)
     except JOB_ERRORS as exc:
-        print(f"GitLab publication: {exc}", file=sys.stderr)
+        print(f"GitHub publication: {exc}", file=sys.stderr)
         return 1
     return 0
 

@@ -1,0 +1,57 @@
+name: Validate vintage pipeline
+
+# Runs the pinned pipeline without publishing. Verifies direct artifacts,
+# source equivalence, and an optional rendered-bio SHA-256 baseline.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha256:
+        description: "Expected brad.bio.txt SHA256 (blank to record the hash without comparing)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  vintage-validation:
+    runs-on: ubuntu-latest
+    # Bound a stalled SIMH console session.
+    timeout-minutes: 180
+    env:
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Record host facts
+        run: |
+          echo "arch:   $(uname -m)"
+          echo "kernel: $(uname -sr)"
+          echo "docker: $(docker --version)"
+          echo "python: $(python3 --version)"
+          echo "cpus:   $(nproc)"
+          echo "memory: $(free -h | awk '/^Mem:/{print $2}')"
+          echo "disk:   $(df -h / | awk 'NR==2{print $4" free"}')"
+
+      - name: Prepare vintage environment
+        run: bash scripts/github/setup.sh vintage
+
+      - name: Run vintage validation
+        run: .venv/bin/python -m scripts.github.validate_vintage --expected-sha256 "${{ inputs.expected_sha256 }}"
+
+      - name: Collect diagnostics
+        if: always()
+        continue-on-error: true
+        run: ls -la out/
+
+      - name: Upload artifacts and log
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: vintage-validate-${{ github.run_id }}
+          path: out/
+          retention-days: 14
+          if-no-files-found: warn

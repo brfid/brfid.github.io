@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from resume_generator import gitlab_ci
+from resume_generator import github_ci
 
 ROOT = Path(__file__).resolve().parents[1]
 VALID_COMMIT_SHA = "0123456789abcdef0123456789abcdef01234567"
@@ -13,22 +13,20 @@ VALID_COMMIT_SHA = "0123456789abcdef0123456789abcdef01234567"
 
 def _set_valid_publish_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     values = {
-        "CI_COMMIT_BRANCH": "main",
-        "CI_COMMIT_REF_PROTECTED": "true",
-        "CI_COMMIT_SHA": VALID_COMMIT_SHA,
-        "CI_DEFAULT_BRANCH": "release",
-        "CI_JOB_NAME": "publish-standard",
-        "CI_PIPELINE_ID": "42",
-        "CI_PIPELINE_SOURCE": "push",
-        "CI_PIPELINE_URL": "https://gitlab.com/brfid/brfid.gitlab.io/-/pipelines/42",
-        "CI_PROJECT_ID": "85834009",
-        "CI_PROJECT_PATH": "brfid/brfid.gitlab.io",
-        "CI_PROJECT_URL": "https://gitlab.com/brfid/brfid.gitlab.io",
-        "CI_SERVER_HOST": "gitlab.com",
+        "GITHUB_REF_NAME": "main",
+        "GITHUB_REF_TYPE": "branch",
+        "GITHUB_REF_PROTECTED": "true",
+        "GITHUB_SHA": VALID_COMMIT_SHA,
+        "GITHUB_JOB": "publish-standard",
+        "GITHUB_RUN_ID": "42",
+        "GITHUB_EVENT_NAME": "push",
+        "GITHUB_REPOSITORY": "brfid/brfid.github.io",
+        "GITHUB_REPOSITORY_ID": "743333428",
+        "GITHUB_SERVER_URL": "https://github.com",
     }
     for name, value in values.items():
         monkeypatch.setenv(name, value)
-    monkeypatch.setattr(gitlab_ci, "checked_out_commit", lambda _root: VALID_COMMIT_SHA)
+    monkeypatch.setattr(github_ci, "checked_out_commit", lambda _root: VALID_COMMIT_SHA)
 
 
 def test_production_config_publishes_resume() -> None:
@@ -57,7 +55,7 @@ def test_production_config_publishes_blog_mechanics() -> None:
     assert menu_items["resume"]["pageRef"] == "/resume"
     assert "url" not in menu_items["resume"]
     assert menu_items["resume"]["params"]["companionurl"] == "/resume.pdf"
-    assert menu_items["source"]["url"] == "https://gitlab.com/brfid/brfid.gitlab.io"
+    assert menu_items["source"]["url"] == "https://github.com/brfid/brfid.github.io"
     assert "params" not in menu_items["source"]
     assert config["params"]["author"] == "Bradley Fidler"
     assert config["params"]["hideAuthor"] is True
@@ -116,18 +114,18 @@ def test_hugo_build_destinations_are_fixed_and_warnings_are_fatal() -> None:
     assert "--panicOnWarning" in production_target
 
 
-def test_gitlab_publish_uses_the_shared_production_verifier() -> None:
+def test_github_publish_uses_the_shared_production_verifier() -> None:
     """Publication must build the public PDF and verify the artifact tree after its CI gates."""
-    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
-    setup = (ROOT / "scripts" / "gitlab" / "setup.sh").read_text(encoding="utf-8")
-    publish = (ROOT / "scripts" / "gitlab" / "publish.py").read_text(encoding="utf-8")
+    pipeline = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
+    setup = (ROOT / "scripts" / "github" / "setup.sh").read_text(encoding="utf-8")
+    publish = (ROOT / "scripts" / "github" / "publish.py").read_text(encoding="utf-8")
 
     assert '--require-hashes -r "$lock_file"' in setup
     assert "install_python_environment requirements/publish.lock" in setup
     assert "--no-deps --no-build-isolation -e ." in setup
     assert "pip install --upgrade" not in setup
-    assert "bash scripts/gitlab/setup.sh publish" in pipeline
-    assert ".venv/bin/python -m scripts.gitlab.publish" in pipeline
+    assert "bash scripts/github/setup.sh publish" in pipeline
+    assert ".venv/bin/python -m scripts.github.publish" in pipeline
     assert 'run([make, "check"], cwd=ROOT)' not in publish
     assert 'run([make, "resume-pdf-public"], cwd=ROOT)' in publish
     assert "make sync-site-data sync-resume-data" not in publish
@@ -138,69 +136,58 @@ def test_gitlab_publish_uses_the_shared_production_verifier() -> None:
     assert '"--build-run-url"' in publish
     assert "private_resume_path" not in pipeline
     assert "private_resume_path" not in publish
-    assert "pages:\n    publish: site" in pipeline
+    assert "actions/upload-pages-artifact@v5" in pipeline
+    assert "actions/deploy-pages@v5" in pipeline
 
 
-def test_gitlab_publish_jobs_require_gates_and_upload_only_on_success() -> None:
+def test_github_publish_jobs_require_gates_and_upload_only_on_success() -> None:
     """Both publication modes require shared gates and expose artifacts only after success."""
-    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
-    publish = (ROOT / "scripts" / "gitlab" / "publish.py").read_text(encoding="utf-8")
-    gate_rules = pipeline.split("\n.gate-rules:\n", maxsplit=1)[1]
-    gate_rules = gate_rules.split("\nchecks:\n", maxsplit=1)[0]
-    publish_template = pipeline.split("\n.publish:\n", maxsplit=1)[1]
-    publish_template = publish_template.split("\npublish-standard:\n", maxsplit=1)[0]
-    standard_job = pipeline.split("\npublish-standard:\n", maxsplit=1)[1]
-    standard_job = standard_job.split("\npublish-fast:\n", maxsplit=1)[0]
-    fast_job = pipeline.split("\npublish-fast:\n", maxsplit=1)[1]
-    fast_job = fast_job.split("\nvintage-validation:\n", maxsplit=1)[0]
+    pipeline = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
+    standard_job = pipeline.split("\n  publish-standard:\n", maxsplit=1)[1]
+    standard_job = standard_job.split("\n  publish-fast:\n", maxsplit=1)[0]
+    fast_job = pipeline.split("\n  publish-fast:\n", maxsplit=1)[1]
 
-    assert "spec:\n  inputs:" in pipeline
-    assert '"$[[ inputs.operation ]]" == "publish"' in gate_rules
-    checks_job = pipeline.split("\nchecks:\n", maxsplit=1)[1].split("\nsecret-scan:\n", maxsplit=1)[0]
-    assert "- .gate-rules" in checks_job
-    assert "extends: .gate-rules" in pipeline.split("\nsecret-scan:\n", maxsplit=1)[1]
-    assert (
-        "needs:\n    - job: checks\n      artifacts: false\n    - job: secret-scan\n      artifacts: false"
-    ) in publish_template
+    assert "workflow_dispatch:" in pipeline
+    assert "operation:" in pipeline
+    assert "needs: [checks, secret-scan]" in pipeline
+    assert "needs: plan" in standard_job
+    assert "needs: plan" in fast_job
+    assert "needs.plan.outputs.mode == 'standard'" in standard_job
+    assert "needs.plan.outputs.mode == 'fast'" in fast_job
     for job in (standard_job, fast_job):
-        assert "when: on_success" in job
-        assert "when: always" not in job
-        assert "diagnostics/" not in job
-    assert "build/vintage/pipeline-status.json" in standard_job
-    assert "build/vintage/sections.jsonl" in standard_job
-    assert "build/vintage/pipeline-status.json" not in fast_job
-    assert "collect_failure_diagnostics" not in publish
-    assert 'run([make, "check"], cwd=ROOT)' not in publish
-    assert 'gitleaks git --redact --no-banner --log-opts="--all -m" .' in pipeline
-    assert "--no-merges" not in pipeline
-    assert "$CI_DEFAULT_BRANCH" not in pipeline
-    assert "$RUN_OPERATION" not in pipeline
-    assert "pages:\n    publish: site" in publish_template
+        assert "concurrency:" in job
+        assert "group: pages-production" in job
+        assert "cancel-in-progress: false" in job
+        assert "continue-on-error: true" not in job.split("Deploy to GitHub Pages", maxsplit=1)[0]
+    assert "Upload reusable vintage bundle" in standard_job
+    assert "Upload reusable vintage bundle" not in fast_job
+    assert "retention-days: 90" in standard_job
+    assert 'GITLEAKS_LOG_OPTS: "--all --no-merges"' in pipeline
+    assert "--no-banner" not in pipeline
 
 
-def test_gitlab_publish_identity_is_fixed(monkeypatch: pytest.MonkeyPatch) -> None:
-    """The validated context must use fixed production identity, independent of the default branch."""
+def test_github_publish_identity_is_fixed(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The validated context must use fixed production identity, independent of caller overrides."""
     _set_valid_publish_environment(monkeypatch)
 
-    context = gitlab_ci.GitLabJobIdentity.from_environment(
+    context = github_ci.GitHubJobIdentity.from_environment(
         ROOT,
         expected_branch="main",
         expected_jobs=("publish-standard", "publish-fast"),
         require_protected=True,
     )
-    publish = (ROOT / "scripts" / "gitlab" / "publish.py").read_text(encoding="utf-8")
-    shared = (ROOT / "resume_generator" / "gitlab_ci.py").read_text(encoding="utf-8")
+    shared = (ROOT / "resume_generator" / "github_ci.py").read_text(encoding="utf-8")
 
     assert context.branch == "main"
     assert context.commit_sha == VALID_COMMIT_SHA
-    assert context.project_id == 85834009
-    assert context.project_url == "https://gitlab.com/brfid/brfid.gitlab.io"
-    assert context.project_path == "brfid/brfid.gitlab.io"
-    assert context.server_host == "gitlab.com"
-    assert context.pipeline_source == "push"
+    assert context.repository_id == 743333428
+    assert context.repository == "brfid/brfid.github.io"
+    assert context.repository_url == "https://github.com/brfid/brfid.github.io"
+    assert context.server_url == "https://github.com"
+    assert context.event_name == "push"
     assert context.job_name == "publish-standard"
     assert context.ref_protected is True
-    assert "CI_DEFAULT_BRANCH" not in publish
+    assert context.run_url == "https://github.com/brfid/brfid.github.io/actions/runs/42"
     assert "shell=False" in shared
     assert "shell=True" not in shared
 
@@ -208,16 +195,14 @@ def test_gitlab_publish_identity_is_fixed(monkeypatch: pytest.MonkeyPatch) -> No
 @pytest.mark.parametrize(
     ("variable", "override"),
     (
-        ("CI_COMMIT_BRANCH", "release"),
-        ("CI_COMMIT_SHA", "f" * 40),
-        ("CI_PROJECT_ID", "85834010"),
-        ("CI_PROJECT_PATH", "someone/brfid.gitlab.io"),
-        ("CI_PROJECT_URL", "https://gitlab.com/someone/brfid.gitlab.io"),
-        ("CI_SERVER_HOST", "example.com"),
-        ("CI_PIPELINE_URL", "https://gitlab.com/brfid/brfid.gitlab.io/-/pipelines/43"),
+        ("GITHUB_REF_NAME", "release"),
+        ("GITHUB_SHA", "f" * 40),
+        ("GITHUB_REPOSITORY_ID", "1"),
+        ("GITHUB_REPOSITORY", "someone/brfid.github.io"),
+        ("GITHUB_SERVER_URL", "https://example.com"),
     ),
 )
-def test_gitlab_publish_rejects_identity_overrides(
+def test_github_publish_rejects_identity_overrides(
     monkeypatch: pytest.MonkeyPatch, variable: str, override: str
 ) -> None:
     """Manual variables must not redirect or reauthorize a production publication."""
@@ -225,7 +210,7 @@ def test_gitlab_publish_rejects_identity_overrides(
     monkeypatch.setenv(variable, override)
 
     with pytest.raises(ValueError, match=variable):
-        gitlab_ci.GitLabJobIdentity.from_environment(
+        github_ci.GitHubJobIdentity.from_environment(
             ROOT,
             expected_branch="main",
             expected_jobs=("publish-standard", "publish-fast"),
@@ -236,12 +221,12 @@ def test_gitlab_publish_rejects_identity_overrides(
 @pytest.mark.parametrize(
     ("variable", "override", "message"),
     (
-        ("CI_COMMIT_REF_PROTECTED", "false", "protected GitLab ref"),
-        ("CI_JOB_NAME", "vintage-validation", "CI_JOB_NAME"),
-        ("CI_PIPELINE_SOURCE", "schedule", "CI_PIPELINE_SOURCE"),
+        ("GITHUB_REF_PROTECTED", "false", "protected GitHub ref"),
+        ("GITHUB_JOB", "vintage-validation", "GITHUB_JOB"),
+        ("GITHUB_EVENT_NAME", "schedule", "GITHUB_EVENT_NAME"),
     ),
 )
-def test_gitlab_publish_rejects_wrong_job_context(
+def test_github_publish_rejects_wrong_job_context(
     monkeypatch: pytest.MonkeyPatch,
     variable: str,
     override: str,
@@ -251,7 +236,7 @@ def test_gitlab_publish_rejects_wrong_job_context(
     monkeypatch.setenv(variable, override)
 
     with pytest.raises(ValueError, match=message):
-        gitlab_ci.GitLabJobIdentity.from_environment(
+        github_ci.GitHubJobIdentity.from_environment(
             ROOT,
             expected_branch="main",
             expected_jobs=("publish-standard", "publish-fast"),
@@ -259,19 +244,12 @@ def test_gitlab_publish_rejects_wrong_job_context(
         )
 
 
-def test_gitlab_supply_chain_is_digest_pinned_and_hash_locked() -> None:
-    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
-    setup = (ROOT / "scripts" / "gitlab" / "setup.sh").read_text(encoding="utf-8")
+def test_github_supply_chain_is_hash_locked() -> None:
+    pipeline = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
+    setup = (ROOT / "scripts" / "github" / "setup.sh").read_text(encoding="utf-8")
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert project["build-system"]["requires"] == ["setuptools==84.0.0", "wheel==0.48.0"]
-    for image in (
-        "python:3.11-bookworm@sha256:",
-        "docker:27.5.1-dind@sha256:",
-        "docker:27.5.1-cli@sha256:",
-        "zricethezav/gitleaks:v8.30.1@sha256:",
-    ):
-        assert image in pipeline
     for lock_name in ("build.lock", "runtime.lock", "publish.lock", "dev.lock"):
         lock = (ROOT / "requirements" / lock_name).read_text(encoding="utf-8")
         assert "--hash=sha256:" in lock
@@ -280,28 +258,26 @@ def test_gitlab_supply_chain_is_digest_pinned_and_hash_locked() -> None:
     assert "hugo_${HUGO_VERSION}_checksums.txt" not in setup
     assert "pip install --upgrade" not in setup
     assert ".cache/ms-playwright/" not in pipeline
-    assert 'GIT_DEPTH: "0"' in pipeline
-    assert pipeline.count('GIT_SUBMODULE_DEPTH: "1"') == 2
+    assert "fetch-depth: 0" in pipeline
+    assert pipeline.count("submodules: recursive") == 3
 
 
-def test_gitlab_publish_supports_fail_closed_vintage_reuse() -> None:
+def test_github_publish_supports_fail_closed_vintage_reuse() -> None:
     """Fast mode must reuse validated provenance while both modes share one publication tail."""
-    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
-    publish = (ROOT / "scripts" / "gitlab" / "publish.py").read_text(encoding="utf-8")
-    artifacts = (ROOT / "resume_generator" / "gitlab_artifacts.py").read_text(encoding="utf-8")
+    pipeline = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
+    publish = (ROOT / "scripts" / "github" / "publish.py").read_text(encoding="utf-8")
+    artifacts = (ROOT / "resume_generator" / "github_artifacts.py").read_text(encoding="utf-8")
     reuse = (ROOT / "resume_generator" / "vintage_reuse.py").read_text(encoding="utf-8")
     footer = (ROOT / "hugo" / "layouts" / "_partials" / "footer.html").read_text(encoding="utf-8")
 
-    assert r"\[nopublish\]" in pipeline
-    assert r"\[fast\]" in pipeline
+    assert '"[nopublish]"' in pipeline
+    assert '"[fast]"' in pipeline
     assert "publish_mode:" in pipeline
-    assert '"$[[ inputs.publish_mode ]]" == "standard"' in pipeline
-    assert '"$[[ inputs.publish_mode ]]" == "fast"' in pipeline
-    assert "resource_group: pages-production" in pipeline
-    assert "on_new_commit: none" in pipeline
-    assert "interruptible: false" in pipeline
-    assert "expire_in: 90 days" in pipeline
-    assert "access: all" in pipeline
+    assert "needs.plan.outputs.mode == 'standard'" in pipeline
+    assert "needs.plan.outputs.mode == 'fast'" in pipeline
+    assert "group: pages-production" in pipeline
+    assert "cancel-in-progress: false" in pipeline
+    assert "retention-days: 90" in pipeline
 
     assert 'if mode == "standard":' in publish
     assert "download_latest_matching(" in publish
@@ -311,7 +287,7 @@ def test_gitlab_publish_supports_fail_closed_vintage_reuse() -> None:
     assert '"ALLOW_LOCAL_IMAGE_BUILD": "0"' in publish
     assert "vintage-source.env" not in publish
 
-    assert 'STANDARD_PIPELINE_NAME = "publish-standard"' in artifacts
+    assert 'WORKFLOW_FILE = "publish.yml"' in artifacts
     assert 'STANDARD_JOB_NAME = "publish-standard"' in artifacts
     assert "manifest sha256" in artifacts
     assert "checksum does not match" in artifacts
@@ -367,7 +343,7 @@ def test_site_chrome_preserves_navigation_accessibility_contract() -> None:
     assert ">Hugo</a>" in footer
     assert ">PaperMod</a>" in footer
     assert ">VAX/PDP-11 log</a>" in footer
-    assert ">GitLab pipeline</a>" in footer
+    assert ">GitHub Actions run</a>" in footer
     assert ">Site source</a>" not in footer
 
 

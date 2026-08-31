@@ -40,10 +40,10 @@ Production and the validation workflow set both allow flags and `BUILD_LOCAL_IMA
 | Stage | Machine | Operation | Output |
 |---|---|---|---|
 | B | VAX 4.3BSD | Read two mounted inputs, compile and run `bradman.c`, then `uuencode` its troff output | `stages/vax/brad.bio.uu` |
-| Host handoff | Local or GitLab runner | Validate and copy the VAX spool into the PDP-11 read-only input mount | `brad.bio.uu` |
+| Host handoff | Local or GitHub runner | Validate and copy the VAX spool into the PDP-11 read-only input mount | `brad.bio.uu` |
 | A | PDP-11 2.11BSD | `uudecode` the spool, then run `nroff -Tlp` | `stages/pdp11/brad.bio.txt` |
-| Runner finalization | Local or GitLab runner | Record status and render the host and guest log | `pipeline-status.json`, `build.log.html` |
-| Deployment job | GitLab runner | Produce or retrieve a matching result, validate it, and stage the three final artifacts for Hugo | `hugo/data/bio.yaml`, published log and status |
+| Runner finalization | Local or GitHub runner | Record status and render the host and guest log | `pipeline-status.json`, `build.log.html` |
+| Deployment job | GitHub runner | Produce or retrieve a matching result, validate it, and stage the three final artifacts for Hugo | `hugo/data/bio.yaml`, published log and status |
 
 The host transfers the spool between guests. The PDP-11 `unix` kernel has no working Ethernet.
 
@@ -69,11 +69,11 @@ The runner removes the generated files it owns before every run. After environme
 
 ## Reuse a successful production result
 
-Standard mode uploads `brad.bio.txt`, `build.log.html`, and `pipeline-status.json` under `reusable-vintage/FINGERPRINT/` in the successful `publish-standard` job artifact. A manifest binds their checksums to the source commit, pipeline, ref, project, and reuse fingerprint. GitLab retains that artifact for 90 days, and the project disables indefinite retention of the latest successful artifact.
+Standard mode uploads `brad.bio.txt`, `build.log.html`, and `pipeline-status.json` as the `reusable-vintage-FINGERPRINT` artifact of the successful `publish-standard` job. A manifest binds their checksums to the source commit, run, ref, repository, and reuse fingerprint. GitHub retains that artifact for 90 days.
 
-Fast mode, selected by `[fast]` in a pushed commit or the typed `publish_mode:fast` manual input, searches successful standard publications on `main` through GitLab's public API. The fingerprint recursively enumerates tracked and nonignored files in bounded implementation roots and excludes only named site/PDF-only modules. Before fingerprinting, validation requires `vintage/image-pair.json` to match the current image-owned source. Fast mode selects the newest artifact whose path matches that fingerprint, validates the manifest and all three checksums, then verifies that the status records the source commit, that the log and status name the same build, and that the rendered bio still matches the current public source strings.
+Fast mode, selected by `[fast]` in a pushed commit or the typed `publish_mode:fast` manual input, searches successful standard publications on `main` through GitHub's Actions API, authenticated with the workflow's own `GITHUB_TOKEN`. The fingerprint recursively enumerates tracked and nonignored files in bounded implementation roots and excludes only named site/PDF-only modules. Before fingerprinting, validation requires `vintage/image-pair.json` to match the current image-owned source. Fast mode selects the newest run whose artifact name matches that fingerprint, validates the manifest and all three checksums, then verifies that the status records the source commit, that the log and status name the same build, and that the rendered bio still matches the current public source strings.
 
-The deployment preserves the result's log, status, and build ID, and keeps the GitLab pipeline link pointed at its source pipeline. Hugo and the public PDF are rebuilt from the current commit and deployed through the normal production verifier. The raw `brad.bio.txt` remains an internal Pages input; GitLab retains it only in the public CI artifact.
+The deployment preserves the result's log, status, and build ID, and keeps the GitHub Actions run link pointed at its source run. Hugo and the public PDF are rebuilt from the current commit and deployed through the normal production verifier. The raw `brad.bio.txt` remains an internal Pages input; GitHub retains it only in the public CI artifact.
 
 Fast mode fails closed when no valid matching artifact is available. Run a standard publication to produce and retain a fresh result; fast mode never invents new provenance or silently runs the vintage pipeline.
 
@@ -89,25 +89,23 @@ Fast mode fails closed when no valid matching artifact is available. Run a stand
 
 ## Validate without publishing
 
-Push the branch and authenticate `glab`, then start a manual vintage-validation pipeline to exercise direct artifact collection, semantic comparison, status generation, and artifact upload:
+Push the branch and authenticate `gh`, then start the vintage-validate workflow to exercise direct artifact collection, semantic comparison, status generation, and artifact upload:
 
 ```bash
 BRANCH="$(git branch --show-current)"
-glab ci run --branch "$BRANCH" \
-  --input operation:vintage-validation
+gh workflow run vintage-validate.yml --ref "$BRANCH"
 ```
 
-To compare the rendered bio with a prior run, add `--input expected_vintage_sha256:EXPECTED_SHA256` and replace `EXPECTED_SHA256` with the recorded digest. Change the baseline when the public name, headline, or summary changes. With the same public input, orchestration, and promoted image pair, the rendered bio is byte-stable because it contains no build date.
+To compare the rendered bio with a prior run, add `-f expected_sha256=EXPECTED_SHA256` and replace `EXPECTED_SHA256` with the recorded digest. Change the baseline when the public name, headline, or summary changes. With the same public input, orchestration, and promoted image pair, the rendered bio is byte-stable because it contains no build date.
 
 ## Promote emulator images
 
 Use this procedure after changing an emulator Dockerfile, configuration, base image, dependency, or disk image:
 
-1. Commit and push the image-owned source to protected `main` with `[nopublish]`, then run the image-build pipeline:
+1. Commit and push the image-owned source to protected `main` with `[nopublish]`, then run the image-build workflow:
 
    ```bash
-   glab ci run --branch main \
-     --input operation:image-build
+   gh workflow run build-images.yml --ref main
    ```
 
 2. Download `out/image-pair.json` from the successful `image-build` job artifact. The report contains both immutable references, the source commit, and a deterministic digest of the image-owned files.
@@ -116,11 +114,11 @@ Use this procedure after changing an emulator Dockerfile, configuration, base im
 5. Inspect `pipeline-status.json`, `brad.bio.txt`, `build.log.html`, and the console-section artifact.
 6. Merge only after validation succeeds.
 
-The image-build job accepts only a typed manual pipeline on protected `main`. It uses a digest-pinned BuildKit backend, publishes source-commit tags under `registry.gitlab.com/brfid/brfid.gitlab.io/` for discovery, and labels both images with the source commit and image-input digest. Deployment pulls only manifest digests and requires both labels to match the promoted manifest. The Dockerfiles pin their base images by digest. The PDP-11 recipe downloads the versioned `211bsd-rpethset` package from this project's public GitLab Generic Package Registry and verifies checksum `74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42` before extraction.
+The image-build job accepts only a manually dispatched run on protected `main`. It uses a digest-pinned BuildKit backend, publishes source-commit tags under `ghcr.io/brfid/` for discovery, and labels both images with the source commit and image-input digest. Deployment pulls only manifest digests and requires both labels to match the promoted manifest. The Dockerfiles pin their base images by digest. Both ghcr.io packages must be public so the runner can pull them without credentials. The PDP-11 recipe downloads the versioned `211bsd-rpethset` disk image from a GitHub Release asset on this repository and verifies checksum `74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42` before extraction.
 
 ### Restore the PDP-11 disk package
 
-If the `211bsd-rpethset` package is missing from GitLab, download the original archive, verify it, and upload the verified bytes:
+If the `211bsd-rpethset` release asset is missing, download the original archive, verify it, and upload the verified bytes:
 
 ```bash
 curl --fail --location --show-error \
@@ -129,14 +127,13 @@ curl --fail --location --show-error \
 printf '%s  %s\n' \
   '74678c649338b10bfc470b4fec4bd75b649b4df1e3eb5a9f227ed7ac7d947b42' \
   '211bsd_rpethset.tgz' | shasum --algorithm 256 --check
-glab api --method PUT \
-  --header 'Content-Type: application/octet-stream' \
-  --input 211bsd_rpethset.tgz \
-  --silent \
-  projects/85834009/packages/generic/211bsd-rpethset/2019-05-30/211bsd_rpethset.tgz
+gh release upload 211bsd-rpethset-2019-05-30 \
+  211bsd_rpethset.tgz \
+  --repo brfid/brfid.github.io \
+  --clobber
 ```
 
-Delete the local archive after the upload. Confirm that the package remains anonymously downloadable before starting `image-build`; the Docker build does not use GitLab credentials to retrieve it.
+Delete the local archive after the upload. Confirm that the asset remains anonymously downloadable before starting `image-build`; the Docker build does not use GitHub credentials to retrieve it.
 
 ## References
 

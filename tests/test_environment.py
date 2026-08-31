@@ -57,11 +57,11 @@ def test_environment_check_rejects_a_non_exact_pdf_extra_pin(monkeypatch: pytest
         check_environment.check_playwright_version()
 
 
-def test_full_checkout_and_gitlab_jobs_install_the_pdf_extra() -> None:
+def test_full_checkout_and_github_jobs_install_the_pdf_extra() -> None:
     """Interactive and hosted PDF environments must consume locks with the exact runtime."""
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    setup = (ROOT / "scripts" / "gitlab" / "setup.sh").read_text(encoding="utf-8")
-    pipeline = (ROOT / ".gitlab-ci.yml").read_text(encoding="utf-8")
+    setup = (ROOT / "scripts" / "github" / "setup.sh").read_text(encoding="utf-8")
+    pipeline = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
     dev_lock = (ROOT / "requirements" / "dev.lock").read_text(encoding="utf-8")
     publish_lock = (ROOT / "requirements" / "publish.lock").read_text(encoding="utf-8")
 
@@ -71,5 +71,5 @@ def test_full_checkout_and_gitlab_jobs_install_the_pdf_extra() -> None:
     assert "install_python_environment requirements/publish.lock" in setup
     assert "playwright==1.62.0" in dev_lock
     assert "playwright==1.62.0" in publish_lock
-    assert "bash scripts/gitlab/setup.sh checks" in pipeline
-    assert "bash scripts/gitlab/setup.sh publish" in pipeline
+    assert "bash scripts/github/setup.sh checks" in pipeline
+    assert "bash scripts/github/setup.sh publish" in pipeline

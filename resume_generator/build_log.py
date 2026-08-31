@@ -183,7 +183,7 @@ def render_build_log(*, log_text: str, build_id: str, sections: Mapping[str, str
   </div>
   <nav class="log-links" aria-label="Build log links">
     <a href="/">Home</a>
-    <a href="https://gitlab.com/brfid/brfid.gitlab.io" rel="noopener noreferrer">Site source</a>
+    <a href="https://github.com/brfid/brfid.github.io" rel="noopener noreferrer">Site source</a>
   </nav>
 </header>
 <main id="build-log" aria-labelledby="log-title">

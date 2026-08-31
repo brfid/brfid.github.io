@@ -1,0 +1,215 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Operation for a manually started run"
+        type: choice
+        options:
+          - checks
+          - publish
+        default: publish
+      publish_mode:
+        description: "Publication mode for a manual publish run"
+        type: choice
+        options:
+          - standard
+          - fast
+        default: standard
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Prepare checks environment
+        run: bash scripts/github/setup.sh checks
+
+      - name: Quality checks
+        run: make check
+
+      - name: Verify site contracts
+        run: make verify-site
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks (full history)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A full-history scan also works after a force-push makes the prior SHA unreachable.
+          GITLEAKS_LOG_OPTS: "--all --no-merges"
+
+  plan:
+    needs: [checks, secret-scan]
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'publish'))
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+    steps:
+      - name: Determine publish mode
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          DISPATCH_MODE: ${{ inputs.publish_mode }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            mode="${DISPATCH_MODE:-standard}"
+          elif [[ "$COMMIT_MESSAGE" == *"[nopublish]"* ]]; then
+            mode="none"
+          elif [[ "$COMMIT_MESSAGE" == *"[fast]"* ]]; then
+            mode="fast"
+          else
+            mode="standard"
+          fi
+          echo "Publish mode: ${mode}"
+          echo "mode=${mode}" >> "$GITHUB_OUTPUT"
+
+  publish-standard:
+    needs: plan
+    if: needs.plan.outputs.mode == 'standard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    concurrency:
+      group: pages-production
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    env:
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Prepare publish environment
+        run: bash scripts/github/setup.sh publish
+
+      - name: Publish (standard)
+        run: .venv/bin/python -m scripts.github.publish standard
+
+      - name: Identify reusable vintage bundle
+        id: bundle
+        run: |
+          set -euo pipefail
+          fingerprint="$(ls reusable-vintage)"
+          echo "fingerprint=${fingerprint}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload reusable vintage bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: reusable-vintage-${{ steps.bundle.outputs.fingerprint }}
+          path: reusable-vintage/${{ steps.bundle.outputs.fingerprint }}
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages (attempt 1/3)
+        id: deploy1
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 2/3)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 3/3)
+        id: deployment
+        if: steps.deploy2.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+
+  publish-fast:
+    needs: plan
+    if: needs.plan.outputs.mode == 'fast'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: pages-production
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+      actions: read
+    env:
+      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Prepare publish environment
+        run: bash scripts/github/setup.sh publish
+
+      - name: Publish (fast)
+        run: .venv/bin/python -m scripts.github.publish fast
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages (attempt 1/3)
+        id: deploy1
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 2/3)
+        id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        uses: actions/deploy-pages@v5
+        continue-on-error: true
+
+      - name: Deploy to GitHub Pages (attempt 3/3)
+        id: deployment
+        if: steps.deploy2.outcome == 'failure'
+        uses: actions/deploy-pages@v5

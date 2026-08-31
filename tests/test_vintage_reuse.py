@@ -31,8 +31,8 @@ HEADLINE = "Principal Technical Writer"
 SUMMARY = "Keeps documentation true as products change."
 BUILD_ID = "build-20260824-120000"
 SOURCE_SHA = "a" * 40
-PROJECT_URL = "https://gitlab.com/example/site"
-SOURCE_RUN_URL = "https://gitlab.com/example/site/-/pipelines/123456"
+REPOSITORY_URL = "https://github.com/example/site"
+SOURCE_RUN_URL = "https://github.com/example/site/actions/runs/123456"
 BIO_TEXT = f"{NAME}\n{HEADLINE}\n\n{SUMMARY}\n"
 
 
@@ -79,8 +79,8 @@ def _write_fingerprint_tree(root: Path) -> tuple[Path, Path]:
         render_image_manifest(
             source_sha=SOURCE_SHA,
             image_inputs_sha256=image_digest,
-            vax=f"registry.gitlab.com/brfid/brfid.gitlab.io/vax-pexpect@sha256:{'1' * 64}",
-            pdp11=f"registry.gitlab.com/brfid/brfid.gitlab.io/pdp11-pexpect@sha256:{'2' * 64}",
+            vax=f"ghcr.io/brfid/vax-pexpect@sha256:{'1' * 64}",
+            pdp11=f"ghcr.io/brfid/pdp11-pexpect@sha256:{'2' * 64}",
         ),
         encoding="utf-8",
     )
@@ -127,7 +127,7 @@ def _validate(bundle_dir: Path, site_yaml: Path, resume_yaml: Path) -> None:
         resume_yaml,
         source_sha=SOURCE_SHA,
         source_run_url=SOURCE_RUN_URL,
-        project_url=PROJECT_URL,
+        repository_url=REPOSITORY_URL,
     )
 
 
@@ -172,7 +172,7 @@ def test_each_public_vintage_field_changes_fingerprint(tmp_path: Path, changed_f
 @pytest.mark.parametrize(
     "relative_path",
     (
-        Path(".gitlab-ci.yml"),
+        Path(".github/workflows/guarded-source.txt"),
         Path("requirements/runtime.lock"),
         Path("resume_generator/guarded-source.txt"),
         Path("scripts/guarded-source.txt"),
@@ -255,7 +255,7 @@ def test_ignored_vintage_files_do_not_change_fingerprint(tmp_path: Path) -> None
 
 def test_fingerprint_reports_a_missing_guarded_file(tmp_path: Path) -> None:
     site_yaml, resume_yaml = _write_fingerprint_tree(tmp_path)
-    missing = tmp_path / FINGERPRINT_ROOTS[0]
+    missing = tmp_path / "pyproject.toml"
     missing.unlink()
 
     with pytest.raises(VintageReuseError, match="fingerprint root is missing"):
@@ -271,7 +271,7 @@ def test_validate_bundle_accepts_matching_successful_artifacts(tmp_path: Path) -
         resume_yaml,
         source_sha=SOURCE_SHA,
         source_run_url=SOURCE_RUN_URL,
-        project_url=PROJECT_URL,
+        repository_url=REPOSITORY_URL,
     )
 
     assert validated.build_id == BUILD_ID
@@ -330,31 +330,31 @@ def test_validate_bundle_rejects_source_sha_mismatch(tmp_path: Path) -> None:
             resume_yaml,
             source_sha="b" * 40,
             source_run_url=SOURCE_RUN_URL,
-            project_url=PROJECT_URL,
+            repository_url=REPOSITORY_URL,
         )
 
 
 @pytest.mark.parametrize(
     "source_run_url",
     (
-        "http://gitlab.com/example/site/-/pipelines/123456",
-        "https://gitlab.com/another/site/-/pipelines/123456",
-        "https://gitlab.com/example/site/-/pipelines/not-a-number",
-        "https://gitlab.com/example/site/-/pipelines/123456/",
-        "https://gitlab.com/example/site/-/pipelines/123456?attempt=2",
+        "http://github.com/example/site/actions/runs/123456",
+        "https://github.com/another/site/actions/runs/123456",
+        "https://github.com/example/site/actions/runs/not-a-number",
+        "https://github.com/example/site/actions/runs/123456/",
+        "https://github.com/example/site/actions/runs/123456?attempt=2",
     ),
 )
 def test_validate_bundle_rejects_nonexact_source_run_url(tmp_path: Path, source_run_url: str) -> None:
     bundle_dir, site_yaml, resume_yaml = _write_bundle(tmp_path)
 
-    with pytest.raises(VintageReuseError, match="source GitLab pipeline URL must exactly match"):
+    with pytest.raises(VintageReuseError, match="source GitHub Actions run URL must exactly match"):
         validate_bundle(
             bundle_dir,
             site_yaml,
             resume_yaml,
             source_sha=SOURCE_SHA,
             source_run_url=source_run_url,
-            project_url=PROJECT_URL,
+            repository_url=REPOSITORY_URL,
         )
 
 
@@ -397,8 +397,8 @@ def test_cli_defaults_fingerprint_and_validate_from_repository_root(
                 SOURCE_SHA,
                 "--source-run-url",
                 SOURCE_RUN_URL,
-                "--project-url",
-                PROJECT_URL,
+                "--repository-url",
+                REPOSITORY_URL,
             ]
         )
         == 0
@@ -421,8 +421,8 @@ def test_validate_cli_returns_nonzero_with_clear_missing_artifact_error(
             SOURCE_SHA,
             "--source-run-url",
             SOURCE_RUN_URL,
-            "--project-url",
-            PROJECT_URL,
+            "--repository-url",
+            REPOSITORY_URL,
         ]
     )
 

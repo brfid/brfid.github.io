@@ -23,8 +23,8 @@ def _load_verifier() -> ModuleType:
 verifier = _load_verifier()
 
 
-RUN_URL = "https://gitlab.com/example/site/-/pipelines/123456"
-PRIOR_RUN_URL = "https://gitlab.com/example/site/-/pipelines/100001"
+RUN_URL = "https://github.com/example/site/actions/runs/123456"
+PRIOR_RUN_URL = "https://github.com/example/site/actions/runs/100001"
 BUILD_ID = "build-20260822-120000"
 PUBLIC_EMAIL = "public@example.com"
 
@@ -376,10 +376,10 @@ def test_output_policy_rejects_unbacked_and_unapproved_post_resources(tmp_path: 
     "link",
     (
         "https://example.com/posts/example/",
-        "http://brfid.gitlab.io/posts/example/",
-        "https://brfid.gitlab.io/%2e%2e/private/",
-        "https://brfid.gitlab.io/posts/../../private/",
-        "https://brfid.gitlab.io/posts/example/?preview=true",
+        "http://brfid.github.io/posts/example/",
+        "https://brfid.github.io/%2e%2e/private/",
+        "https://brfid.github.io/posts/../../private/",
+        "https://brfid.github.io/posts/example/?preview=true",
     ),
 )
 def test_feed_check_rejects_cross_origin_or_escaping_links(tmp_path: Path, link: str) -> None:
