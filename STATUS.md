@@ -4,8 +4,8 @@ This file records current operations and queued work. Use `git log` for complete
 
 ## Current State
 
-- The repository is migrating from GitLab CI to GitHub Actions; `main` still points at `gitlab.com/brfid/brfid.gitlab.io` while this migration lands. See Now, Blocked, and Open decisions below.
-- GitHub Pages will publish the Hugo landing page, Blog, both RSS feeds, Resume, the `/about/` alias, `resume.pdf`, a build log, and `pipeline-status.json` at `https://brfid.github.io`. It emits no sitemap, taxonomy pages, or Hugo JSON indexes.
+- The repository moved from GitLab CI to GitHub Actions. `brfid/brfid.github.io` is canonical; `gitlab.com/brfid/brfid.gitlab.io` is a dormant, unpushed read-only mirror. The local checkout lives at `~/src/brfid.github.io`, with `origin` pointing at GitHub and a `gitlab` remote kept for reference. The pre-migration GitHub history (when this repo published only a redirect to GitLab) is preserved under the `archive/redirect-era` tag.
+- GitHub Pages publishes the Hugo landing page, Blog, both RSS feeds, Resume, the `/about/` alias, `resume.pdf`, a build log, and `pipeline-status.json` at `https://brfid.github.io`. It emits no sitemap, taxonomy pages, or Hugo JSON indexes.
 - Every HTML page carries the full site-wide `noindex` policy. `robots.txt` leaves HTML crawlable and blocks the PDF, feeds, and pipeline status.
 - `site.yaml` supplies public identity and links. `resume.yaml` supplies the public resume and the shared landing-page summary. Generated Hugo data remains gitignored.
 - Hugo renders one public resume page, and Playwright prints it as a tagged, phone-free PDF. Local Hugo, PDF, preview, and verification builds clear deployment-only provenance. Only `make resume-pdf-application` reads `resume.private.yaml`; it writes the private PDF outside `site/`.
@@ -28,18 +28,15 @@ This file records current operations and queued work. Use `git log` for complete
 
 ## Now
 
-- Converting the GitLab CI publish path to GitHub Actions: `resume_generator/gitlab_*` and `scripts/gitlab/` are ported to `github_*`/`scripts/github/`, `.gitlab-ci.yml` is replaced by `.github/workflows/{publish,vintage-validate,build-images}.yml`, and the pinned PDP-11 disk archive is mirrored to a GitHub Release asset on `brfid/brfid.github.io`.
+- None.
 
 ## Next
 
-- Rebuild and promote the VAX/PDP-11 image pair against `ghcr.io/brfid/` via the new `build-images.yml` workflow, then update `vintage/image-pair.json` with the real digests.
-- Cut `brfid.gitlab.io`'s history over to `brfid/brfid.github.io`'s `main`, rename the local checkout to `~/src/brfid.github.io`, and configure branch protection and the `github-pages` environment's deployment branch policy there.
-- Run a full standard-mode publish on GitHub Actions end to end, then a fast-mode publish to confirm reuse works.
 - Import the next approved essay with its public assets, then verify its route, feed entry, metadata, and responsive layout.
 
 ## Blocked
 
-- `tests/test_image_manifest.py::test_repository_image_pair_matches_image_owned_source` and `::test_repository_image_pair_requires_both_provenance_labels` fail until the image pair above is rebuilt and repromoted; the committed `vintage/image-pair.json` digests are placeholders pointing at the pre-migration GitLab-hosted images.
+- None.
 
 ## Open decisions
 
