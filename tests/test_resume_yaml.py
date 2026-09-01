@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import yaml
 
@@ -19,6 +20,19 @@ def test_resume_human_authored_fields_remain_strings() -> None:
     assert isinstance(basics, dict)
     assert "phone" not in basics, "public resume.yaml must not contain a phone number"
     _assert_optional_strings(basics, ("name", "label", "email", "summary"))
+
+    networks: list[str] = []
+    for profile in basics["profiles"]:
+        assert isinstance(profile, dict)
+        assert set(profile) == {"network", "icon", "username", "url"}
+        assert all(isinstance(profile[field], str) and profile[field].strip() for field in profile)
+        parsed_url = urlparse(profile["url"])
+        assert parsed_url.scheme == "https"
+        assert parsed_url.netloc
+        networks.append(profile["network"])
+
+    assert len(networks) == len(set(networks))
+    assert networks == ["LinkedIn", "GitHub", "GitLab", "ORCID"]
 
     for employer in resume["work"]:
         assert isinstance(employer, dict)
