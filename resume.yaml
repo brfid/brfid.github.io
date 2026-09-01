@@ -17,6 +17,10 @@ basics:
     icon: github
     username: brfid
     url: https://github.com/brfid
+  - network: GitLab
+    icon: gitlab
+    username: brfid
+    url: https://gitlab.com/brfid
   - network: ORCID
     icon: orcid
     username: "0000-0002-2882-5915"
