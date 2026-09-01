@@ -17,7 +17,7 @@ help:
 	@echo "  make check_env     Verify local prerequisites"
 	@echo ""
 	@echo "Maintenance:"
-	@echo "  make clean         Remove generated build artifacts"
+	@echo "  make clean         Remove generated build artifacts and tool caches"
 	@echo ""
 	@echo "Build and preview:"
 	@echo "  make sync-site-data    Sync site.yaml -> hugo/data/site.yaml"
@@ -58,6 +58,9 @@ clean:
 	@rm -f hugo/.hugo_build.lock
 	@rm -f hugo/data/bio.yaml hugo/data/resume.yaml hugo/data/site.yaml
 	@rm -f hugo/static/build.log.html hugo/static/pipeline-status.json
+	@rm -rf .mypy_cache/ .pytest_cache/ .ruff_cache/
+	@find . -name .venv -prune -o -name .git -prune -o -type d -name __pycache__ -print0 \
+		| xargs -0 rm -rf
 	@echo "Cleanup complete"
 
 clear-local-provenance:
