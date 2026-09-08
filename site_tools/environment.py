@@ -88,6 +88,9 @@ def main() -> int:
     try:
         check_hugo()
         check_playwright_version()
+        for command in ("pdftotext", "pdfinfo"):
+            if shutil.which(command) is None:
+                raise RuntimeError(f"Poppler command not found: {command}")
         locations = playwright_install_locations()
     except (OSError, RuntimeError, tomllib.TOMLDecodeError) as error:
         print(f"Environment check failed: {error}", file=sys.stderr)

@@ -1,4 +1,4 @@
-"""Verify contracts that only exist in Hugo's rendered output."""
+"""Verify the generated public HTML, feeds, assets, and resume PDF."""
 
 from __future__ import annotations
 
@@ -20,8 +20,6 @@ from urllib.parse import unquote, urlparse, urlsplit
 
 import yaml
 
-from resume_generator.pipeline_status import PipelineStatusIssueCode, validate_pipeline_status
-
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_ORIGIN = "https://brfid.github.io"
 REQUIRED_FILES = (
@@ -35,8 +33,6 @@ REQUIRED_FILES = (
     "robots.txt",
 )
 CORE_ALLOWED_FILES = frozenset(REQUIRED_FILES) | {
-    "build.log.html",
-    "pipeline-status.json",
     "resume.pdf",
 }
 STATIC_ALLOWED_FILES = frozenset(
@@ -65,13 +61,11 @@ REQUIRED_ROBOTS_DIRECTIVES = frozenset({"noarchive", "nofollow", "noimageindex",
 EXPECTED_ROBOTS_LINES = (
     "User-agent: *",
     "Allow: /",
-    "Disallow: /pipeline-status.json",
     "Disallow: /resume.pdf",
     "Disallow: /index.xml",
     "Disallow: /posts/index.xml",
 )
 DOUBLE_ESCAPED_QUOTE = re.compile(r"&#(?:34|39|x22|x27);", re.IGNORECASE)
-PRODUCTION_REQUIRED_FILES = ("resume.pdf", "build.log.html", "pipeline-status.json")
 PLAUSIBLE_US_PHONE = re.compile(
     r"(?<!\d)(?:\+?1[\s.-]?)?(?:\([2-9]\d{2}\)|[2-9]\d{2})[\s.-]?[2-9]\d{2}[\s.-]?\d{4}(?!\d)"
 )
@@ -585,20 +579,6 @@ def verify_menu_state(site_dir: Path, errors: list[str]) -> None:
             )
 
 
-def verify_linked_artifacts(site_dir: Path, errors: list[str]) -> None:
-    """Require locally linked generated artifacts to exist in the rendered tree."""
-    homepage = site_dir / "index.html"
-    if not homepage.is_file():
-        return
-    parser = parse_html(homepage)
-    if any(anchor.get("href") == "/build.log.html" for anchor in parser.anchors):
-        record(
-            is_nonempty_file(site_dir / "build.log.html"),
-            errors,
-            "index.html: links to missing or empty build.log.html",
-        )
-
-
 def is_nonempty_file(path: Path) -> bool:
     """Return whether a path is a nonempty regular file."""
     return path.is_file() and path.stat().st_size > 0
@@ -624,24 +604,6 @@ def read_public_email(resume_yaml: Path, errors: list[str]) -> str | None:
     return email.strip()
 
 
-def read_build_id(status_path: Path, errors: list[str]) -> str | None:
-    """Read and validate the production pipeline result, returning its build ID."""
-    validation = validate_pipeline_status(status_path)
-    messages = {
-        PipelineStatusIssueCode.OBJECT: "expected a JSON object",
-        PipelineStatusIssueCode.RESULT: "result is not 'success'",
-        PipelineStatusIssueCode.EXIT_CODE: "exit_code is not 0",
-        PipelineStatusIssueCode.BUILD_ID: "build_id is missing or empty",
-    }
-    for issue in validation.issues:
-        if issue.code is PipelineStatusIssueCode.READ:
-            message = f"could not read valid JSON: {issue.detail}"
-        else:
-            message = messages.get(issue.code, issue.message)
-        errors.append(f"pipeline-status.json: {message}")
-    return validation.build_id
-
-
 def run_external(command: str, arguments: Sequence[str], errors: list[str]) -> str | None:
     """Run a required inspection command and return stdout on success."""
     executable = shutil.which(command)
@@ -654,8 +616,9 @@ def run_external(command: str, arguments: Sequence[str], errors: list[str]) -> s
             check=False,
             capture_output=True,
             text=True,
+            timeout=30,
         )
-    except OSError as error:
+    except (OSError, subprocess.TimeoutExpired) as error:
         errors.append(f"could not run {command}: {error}")
         return None
     if result.returncode:
@@ -709,72 +672,24 @@ def verify_resume_pdf(site_dir: Path, public_email: str | None, errors: list[str
         record(TAGGED_PDF.search(info) is not None, errors, "resume.pdf: PDF is not tagged")
 
 
-def verify_provenance_links(
-    site_dir: Path,
-    *,
-    build_id: str | None,
-    build_run_url: str,
-    errors: list[str],
-) -> None:
-    """Check that the homepage exposes the exact vintage provenance."""
-    homepage = site_dir / "index.html"
-    if not is_nonempty_file(homepage):
-        return
-    parser = parse_html(homepage)
-    build_log_links = [anchor for anchor in parser.anchors if anchor.get("href") == "/build.log.html"]
-    record(bool(build_log_links), errors, "index.html: missing exact link to /build.log.html")
-    if build_id is not None and build_log_links:
-        record(
-            any(anchor.get("title") == build_id for anchor in build_log_links),
-            errors,
-            f"index.html: build-log link title does not match build_id {build_id!r}",
-        )
-    record(
-        any(anchor.get("href") == build_run_url for anchor in parser.anchors),
-        errors,
-        f"index.html: missing exact build run URL {build_run_url!r}",
-    )
-
-
-def verify_production_site(site_dir: Path, *, resume_yaml: Path, build_run_url: str) -> list[str]:
-    """Return production-only artifact, privacy, and provenance failures."""
+def verify_resume_artifacts(site_dir: Path, *, resume_yaml: Path) -> list[str]:
+    """Require one complete public PDF in every verified build."""
     errors: list[str] = []
-    available = {
-        relative_path: is_nonempty_file(site_dir / relative_path) for relative_path in PRODUCTION_REQUIRED_FILES
-    }
-    for relative_path, exists in available.items():
-        record(exists, errors, f"missing or empty production artifact: {relative_path}")
-
     pdfs = sorted(
         path.relative_to(site_dir) for path in site_dir.rglob("*") if path.is_file() and path.suffix.lower() == ".pdf"
     )
-    record(
-        pdfs == [Path("resume.pdf")],
-        errors,
-        f"production site PDFs must be exactly ['resume.pdf']; found {pdfs!r}",
-    )
-
-    raw_bios = sorted(path.relative_to(site_dir) for path in site_dir.rglob("brad.bio.txt"))
-    record(not raw_bios, errors, f"raw brad.bio.txt was published: {raw_bios!r}")
-    verify_public_text(site_dir, errors)
-    verify_html_privacy(site_dir, errors)
-
+    record(pdfs == [Path("resume.pdf")], errors, f"site PDFs must be exactly ['resume.pdf']; found {pdfs!r}")
     public_email = read_public_email(resume_yaml, errors)
-    if available["resume.pdf"]:
+    pdf = site_dir / "resume.pdf"
+    if pdf.is_symlink() or not is_nonempty_file(pdf):
+        errors.append("missing, empty, or unsafe public artifact: resume.pdf")
+    else:
         verify_resume_pdf(site_dir, public_email, errors)
-
-    build_id = read_build_id(site_dir / "pipeline-status.json", errors) if available["pipeline-status.json"] else None
-    verify_provenance_links(
-        site_dir,
-        build_id=build_id,
-        build_run_url=build_run_url,
-        errors=errors,
-    )
     return errors
 
 
 def verify_site(site_dir: Path) -> list[str]:
-    """Return rendered-site failures that can be checked from available inputs."""
+    """Validate public HTML, feeds, indexing, and the allowed output paths."""
     errors: list[str] = []
     verify_output_policy(site_dir, ROOT / "hugo" / "content" / "posts", errors)
     verify_public_text(site_dir, errors)
@@ -787,7 +702,6 @@ def verify_site(site_dir: Path) -> list[str]:
     verify_feeds(site_dir, errors)
     verify_primary_links(site_dir, errors)
     verify_menu_state(site_dir, errors)
-    verify_linked_artifacts(site_dir, errors)
     return errors
 
 
@@ -795,28 +709,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run rendered-site verification from the command line."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("site_dir", type=Path, help="Hugo destination directory")
-    parser.add_argument(
-        "--production",
-        action="store_true",
-        help="Verify production-only artifacts and privacy contracts",
-    )
-    parser.add_argument("--resume-yaml", type=Path, help="Public resume YAML used to build the production PDF")
-    parser.add_argument("--build-run-url", help="Exact vintage GitHub Actions run URL rendered on the homepage")
+    parser.add_argument("--resume-yaml", type=Path, default=ROOT / "resume.yaml", help="Canonical public resume source")
     args = parser.parse_args(argv)
 
     errors = verify_site(args.site_dir)
-    if args.production:
-        if args.resume_yaml is None:
-            parser.error("--production requires --resume-yaml PATH")
-        if not args.build_run_url:
-            parser.error("--production requires --build-run-url URL")
-        errors.extend(
-            verify_production_site(
-                args.site_dir,
-                resume_yaml=args.resume_yaml,
-                build_run_url=args.build_run_url,
-            )
-        )
+    errors.extend(verify_resume_artifacts(args.site_dir, resume_yaml=args.resume_yaml))
     errors = list(dict.fromkeys(errors))
     if errors:
         for error in errors:

@@ -3,7 +3,7 @@ requires = ["setuptools==84.0.0", "wheel==0.48.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "brfid-resume"
+name = "brfid-site"
 version = "0.1.0"
 description = "Hugo site tooling with Playwright-generated resume PDFs."
 readme = "README.md"
@@ -20,7 +20,6 @@ pdf = [
 ]
 dev = [
   "mypy>=1.8",
-  "pexpect>=4.9",
   "pylint>=3.0",
   "pytest>=8.0",
   "ruff>=0.6.0",
@@ -30,12 +29,11 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["resume_generator*"]
+include = ["site_tools*"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["resume_generator", "scripts", "tests"]
-mypy_path = "scripts"
+files = ["site_tools", "tests"]
 warn_unused_configs = true
 warn_return_any = true
 warn_redundant_casts = true
@@ -48,7 +46,6 @@ strict_equality = true
 module = [
   "playwright",
   "playwright.*",
-  "pexpect",
   "yaml",
   "yaml.*",
 ]
@@ -83,10 +80,7 @@ convention = "google"
 "tests/**" = [
   "S101", # assert
   "D",    # test docstrings are intentionally sparse
-  "S108", # tests use representative /tmp paths inside simulated guests
 ]
-"scripts/pdp11_pexpect.py" = ["S108"] # fixed /tmp paths are inside the isolated PDP-11 guest
-"scripts/vax_pexpect.py" = ["S108"] # fixed /tmp paths are inside the isolated VAX guest
 [tool.pylint.main]
 py-version = "3.11"
 jobs = 0
@@ -101,9 +95,8 @@ disable = [
     "too-many-locals",  # R0914: Parser functions need many variables
     "too-many-branches",  # R0912: Parser functions have many cases
     "too-many-statements",  # R0915: Parser functions are naturally long
-    "too-many-lines",  # C0302: Build pipeline modules can be long
 ]
 
 [tool.vulture]
 min_confidence = 80
-exclude = [".venv", "site", "templates", "tests"]
+exclude = [".venv", "site", "tests"]

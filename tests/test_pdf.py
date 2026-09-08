@@ -10,8 +10,8 @@ from typing import Any
 import pytest
 from pytest import MonkeyPatch
 
-import resume_generator.pdf as pdf_module
-from resume_generator.pdf import _serve_directory, build_pdf, load_private_phone
+import site_tools.pdf as pdf_module
+from site_tools.pdf import _serve_directory, build_pdf, load_private_phone
 
 
 @contextmanager

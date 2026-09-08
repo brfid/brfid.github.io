@@ -2,214 +2,120 @@ name: Publish
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
   workflow_dispatch:
     inputs:
       operation:
-        description: "Operation for a manually started run"
+        description: "Build and check only, or also publish"
         type: choice
-        options:
-          - checks
-          - publish
+        options: [checks, publish]
         default: publish
-      publish_mode:
-        description: "Publication mode for a manual publish run"
-        type: choice
-        options:
-          - standard
-          - fast
-        default: standard
 
 permissions:
   contents: read
 
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  checks:
-    runs-on: ubuntu-latest
+  secret-scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install checksum-verified Gitleaks
+        run: |
+          set -euo pipefail
+          readonly GITLEAKS_VERSION="8.24.3"
+          readonly GITLEAKS_ASSET="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          readonly GITLEAKS_RELEASE="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          curl --fail --location --silent --show-error --retry 3 \
+            --output "$RUNNER_TEMP/gitleaks/$GITLEAKS_ASSET" "$GITLEAKS_RELEASE/$GITLEAKS_ASSET"
+          cp requirements/gitleaks.sha256 "$RUNNER_TEMP/gitleaks/checksums.txt"
+          (cd "$RUNNER_TEMP/gitleaks" && sha256sum --check checksums.txt)
+          tar -xzf "$RUNNER_TEMP/gitleaks/$GITLEAKS_ASSET" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          echo "$RUNNER_TEMP/gitleaks" >> "$GITHUB_PATH"
+      - name: Scan full Git history
+        run: gitleaks git --log-opts="--all --full-history -m" --redact --verbose --no-banner
+
+  checks:
+    needs: secret-scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           submodules: recursive
-          fetch-depth: 0
-
-      - name: Prepare checks environment
-        run: bash scripts/github/setup.sh checks
-
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11.16"
+      - name: Prepare build environment
+        run: bash scripts/github/setup.sh
       - name: Quality checks
         run: make check
-
-      - name: Verify site contracts
+      - name: Build and verify public HTML and PDF
         run: make verify-site
-
-  secret-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      - name: Upload verified Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
-          fetch-depth: 0
+          path: site
+          retention-days: 30
 
-      - name: Run gitleaks (full history)
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # A full-history scan also works after a force-push makes the prior SHA unreachable.
-          GITLEAKS_LOG_OPTS: "--all --no-merges"
-
-  plan:
-    needs: [checks, secret-scan]
+  deploy:
+    needs: checks
     if: |
-      github.ref == 'refs/heads/main' &&
-      (github.event_name == 'push' ||
+      github.repository_id == '743333428' &&
+      github.ref == 'refs/heads/main' && github.ref_protected &&
+      ((github.event_name == 'push' && !contains(github.event.head_commit.message, '[nopublish]')) ||
        (github.event_name == 'workflow_dispatch' && inputs.operation == 'publish'))
-    runs-on: ubuntu-latest
-    outputs:
-      mode: ${{ steps.plan.outputs.mode }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
-      - name: Determine publish mode
-        id: plan
+      - name: Check that this build is still current
+        id: current
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          DISPATCH_MODE: ${{ inputs.publish_mode }}
+          GH_TOKEN: ${{ github.token }}
+          CHECKED_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            mode="${DISPATCH_MODE:-standard}"
-          elif [[ "$COMMIT_MESSAGE" == *"[nopublish]"* ]]; then
-            mode="none"
-          elif [[ "$COMMIT_MESSAGE" == *"[fast]"* ]]; then
-            mode="fast"
+          latest_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)"
+          if [[ "$CHECKED_SHA" == "$latest_sha" ]]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
           else
-            mode="standard"
+            echo "A newer main commit exists; keeping its publication in charge."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "Publish mode: ${mode}"
-          echo "mode=${mode}" >> "$GITHUB_OUTPUT"
-
-  publish-standard:
-    needs: plan
-    if: needs.plan.outputs.mode == 'standard'
-    runs-on: ubuntu-latest
-    timeout-minutes: 70
-    concurrency:
-      group: pages-production
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    env:
-      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Prepare publish environment
-        run: bash scripts/github/setup.sh publish
-
-      - name: Publish (standard)
-        run: .venv/bin/python -m scripts.github.publish standard
-
-      - name: Identify reusable vintage bundle
-        id: bundle
-        run: |
-          set -euo pipefail
-          fingerprint="$(ls reusable-vintage)"
-          echo "fingerprint=${fingerprint}" >> "$GITHUB_OUTPUT"
-
-      - name: Upload reusable vintage bundle
-        uses: actions/upload-artifact@v7
-        with:
-          name: reusable-vintage-${{ steps.bundle.outputs.fingerprint }}
-          path: reusable-vintage/${{ steps.bundle.outputs.fingerprint }}
-          retention-days: 90
-          if-no-files-found: error
-
       - name: Configure GitHub Pages
-        uses: actions/configure-pages@v6
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: site
-
-      - name: Deploy to GitHub Pages (attempt 1/3)
+        if: steps.current.outputs.publish == 'true'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Deploy verified artifact (attempt 1/3)
+        if: steps.current.outputs.publish == 'true'
         id: deploy1
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
         continue-on-error: true
-
-      - name: Deploy to GitHub Pages (attempt 2/3)
-        id: deploy2
+      - name: Deploy verified artifact (attempt 2/3)
         if: steps.deploy1.outcome == 'failure'
-        uses: actions/deploy-pages@v5
-        continue-on-error: true
-
-      - name: Deploy to GitHub Pages (attempt 3/3)
-        id: deployment
-        if: steps.deploy2.outcome == 'failure'
-        uses: actions/deploy-pages@v5
-
-  publish-fast:
-    needs: plan
-    if: needs.plan.outputs.mode == 'fast'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    concurrency:
-      group: pages-production
-      cancel-in-progress: false
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deployment.outputs.page_url }}
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-      actions: read
-    env:
-      GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Prepare publish environment
-        run: bash scripts/github/setup.sh publish
-
-      - name: Publish (fast)
-        run: .venv/bin/python -m scripts.github.publish fast
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v6
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: site
-
-      - name: Deploy to GitHub Pages (attempt 1/3)
-        id: deploy1
-        uses: actions/deploy-pages@v5
-        continue-on-error: true
-
-      - name: Deploy to GitHub Pages (attempt 2/3)
         id: deploy2
-        if: steps.deploy1.outcome == 'failure'
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
         continue-on-error: true
-
-      - name: Deploy to GitHub Pages (attempt 3/3)
-        id: deployment
+      - name: Deploy verified artifact (attempt 3/3)
         if: steps.deploy2.outcome == 'failure'
-        uses: actions/deploy-pages@v5
+        id: deploy3
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

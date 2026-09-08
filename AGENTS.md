@@ -5,18 +5,17 @@ Use this file for stable repository constraints. Put setup and operator commands
 ## Repository scope
 
 - Build and publish the Hugo site at `brfid.github.io`.
-- Use Hugo for every published page. The VAX and PDP-11 pipeline generates the landing-page bio and provenance artifacts for Hugo; it does not generate the site.
+- Use Hugo for every published page, including the landing bio. Keep historical-computing projects independent of site publication.
 - Treat the repository, its history, commit messages, workflow logs, and generated site as public.
 - Keep private career strategy, draft positioning, salary data, confidential employer information, and rejected copy outside this repository.
-- Run the publish path on GitHub-hosted runners or local Docker. Do not add an external execution host or cloud account.
+- Run the publish path on GitHub-hosted runners and verify it with the same local build command. Do not add an external execution host or cloud account.
 
 ## Read order
 
 1. `README.md`
 2. `STATUS.md`
 3. `hugo/`
-4. `docs/integration/INDEX.md`, only for vintage pipeline work
-5. `~/src/career/STATUS.md`, only for resume surfaces, site reactivation, or phase-gated work
+4. `~/src/career/STATUS.md`, only for resume surfaces, site reactivation, or phase-gated work
 
 ## Sources of truth
 
@@ -24,9 +23,7 @@ Use this file for stable repository constraints. Put setup and operator commands
 |---|---|
 | Current operations and queue | `STATUS.md` |
 | Setup and supported commands | `README.md` |
-| Vintage pipeline | `docs/integration/INDEX.md` |
-| `pexpect` implementation | `docs/integration/operations/PEXPECT-PIPELINE-SPEC.md` |
-| Retired approaches | `docs/archive/DEAD-ENDS.md` |
+| Retired vintage experiment | `docs/vintage-pipeline.md` and its links to Git history |
 | Strategic career state | `~/src/career/STATUS.md` |
 | Completed work | `git log` |
 
@@ -58,7 +55,7 @@ Do not copy mutable state between these files.
 
 - Run Python through `.venv/bin/python`. Do not install packages globally or modify system Python.
 - Use the commands documented in `README.md` and `make help`.
-- Keep local and production provenance modes separate. `hugo-build`, `resume-pdf`, previews, and `verify-site` clear deployment-only bio, build-log, and status inputs; `resume-pdf-public` requires all three staged production inputs.
+- Use `make verify-site` for the complete public HTML and PDF build in local checks and CI. Deploy that verified artifact without rebuilding it. Do not restore separate publication or provenance modes.
 - Preview design and theme changes through Hugo. Do not create a separate HTML mockup.
 - Extend PaperMod through `hugo/assets/css/extended/`, self-hosted fonts, and repository-owned partials. Do not edit the PaperMod submodule.
 - Restart the preview after changing `resume.yaml`, or after changing layout or CSS that affects the PDF.
@@ -92,22 +89,12 @@ Use `- None.` for an empty section. Record only current or forward-looking opera
 - Leave HTML crawlable in `robots.txt` so crawlers can observe `noindex`. Use `robots.txt` only to block non-HTML artifacts.
 - Publish `/posts/`, `/index.xml`, `/posts/index.xml`, `/resume/`, `/about/`, and `/resume.pdf`.
 - Publish a post only when its front matter sets `draft: false`.
-- Fail deployment if a required route, feed, navigation link, indexing directive, provenance artifact, or public-PDF contract is missing.
-- Keep the GitHub repository and Pages site public. Fast mode authenticates its reusable-artifact search with the workflow's own `GITHUB_TOKEN`, since GitHub Actions artifacts require an authenticated request even in a public repository.
-- Keep the reusable vintage bundle's artifact retention at 90 days.
+- Fail deployment if a required route, feed, navigation link, indexing directive, or public-PDF contract is missing.
+- Keep the GitHub repository and Pages site public.
+- Keep build jobs read-only. Grant Pages and identity-token permissions only to deployment from this repository's protected `main` branch.
+- Pin Actions to full upstream commit IDs. Select the CI Python release and verify Hugo and Gitleaks downloads against committed checksums.
+- Keep deployment tied to the artifact from the same checked workflow run, and skip publication when `main` has advanced.
 - Keep all telephone numbers out of public HTML and PDFs. Deployment rejects `tel:` links, plausible US telephone-number text, and any PDF other than `resume.pdf` under `site/`.
-
-## Preserve vintage pipeline contracts
-
-- Drive SIMH with pexpect over stdin and stdout. Do not restore screen, telnet, or fixed-delay state transitions. A short per-line transport throttle is permitted to protect the guest tty.
-- Keep VAX and PDP-11 boot, shell, and shutdown state machines separate.
-- Use the host to transfer the UUCP spool. The PDP-11 `unix` kernel has no working Ethernet.
-- Keep `scripts/vintage-runner.sh` bind-mounting the checkout's pexpect scripts and `simh_session.py` over the cached image copies, and keep its final bio, build log, and status under `build/vintage/`.
-- Pin production to an explicit pair of immutable container image digests and disable local image fallback in deployment and validation.
-- Promote image changes through the manual image-build workflow and vintage validation procedure in `docs/integration/INDEX.md`.
-- Keep standard mode as the default. Explicit fast mode may reuse only the exact retained bio, build log, and status from a matching successful run in standard mode.
-- Include the three public bio strings and every implementation file that can affect vintage output or reuse validation in the reuse fingerprint. Keep unrelated site and resume fields eligible for fast mode.
-- Preserve reused vintage provenance: the status SHA, build ID, log, and GitHub Actions run link must continue to identify the source run. Fail closed rather than synthesizing current-run provenance or silently running the vintage pipeline.
 
 ## Commit and publish
 
@@ -117,10 +104,8 @@ Use `- None.` for an empty section. Record only current or forward-looking opera
 - Do not push unless the operator explicitly requests a push.
 - Before pushing, inspect changed files for private or secret material and run validation appropriate to the change.
 - Every push to `main` starts deployment unless the commit message contains `[nopublish]`.
-- A push whose commit message contains `[fast]` requests fail-closed fast mode. Use it only for changes that do not require a new landing-page bio result.
 
 ## Report implementation work
 
 - Summarize changes by file path.
 - List validation performed, or state that no validation ran.
-- Update `docs/integration/INDEX.md` when pipeline documentation paths change.

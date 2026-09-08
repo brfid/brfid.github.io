@@ -2,19 +2,14 @@
 
 from __future__ import annotations
 
-import sys
 import tomllib
 from pathlib import Path
 
 import pytest
 
+from site_tools import environment as check_environment
+
 ROOT = Path(__file__).resolve().parents[1]
-
-# scripts/ is not a package; add it to the path so the checked module keeps the
-# same import name that the repository-wide mypy invocation assigns it.
-sys.path.insert(0, str(ROOT / "scripts"))
-
-import check_environment  # noqa: E402 - scripts/ is intentionally added above
 
 
 def test_playwright_pin_lives_in_the_pdf_extra() -> None:
@@ -55,21 +50,3 @@ def test_environment_check_rejects_a_non_exact_pdf_extra_pin(monkeypatch: pytest
 
     with pytest.raises(RuntimeError, match="exact Playwright pin in the pdf extra"):
         check_environment.check_playwright_version()
-
-
-def test_full_checkout_and_github_jobs_install_the_pdf_extra() -> None:
-    """Interactive and hosted PDF environments must consume locks with the exact runtime."""
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    setup = (ROOT / "scripts" / "github" / "setup.sh").read_text(encoding="utf-8")
-    pipeline = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
-    dev_lock = (ROOT / "requirements" / "dev.lock").read_text(encoding="utf-8")
-    publish_lock = (ROOT / "requirements" / "publish.lock").read_text(encoding="utf-8")
-
-    assert "--require-hashes -r requirements/dev.lock" in readme
-    assert '"$lock_file"' in setup
-    assert "install_python_environment requirements/dev.lock" in setup
-    assert "install_python_environment requirements/publish.lock" in setup
-    assert "playwright==1.62.0" in dev_lock
-    assert "playwright==1.62.0" in publish_lock
-    assert "bash scripts/github/setup.sh checks" in pipeline
-    assert "bash scripts/github/setup.sh publish" in pipeline

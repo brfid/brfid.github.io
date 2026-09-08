@@ -1,108 +1,67 @@
 PYTHON ?= .venv/bin/python
 PREVIEW_PORT ?= 1313
 
-.PHONY: help test check verify-site check_env clean clear-local-provenance \
-        require-production-provenance sync-site-data sync-resume-data new-post \
-        hugo-build hugo-build-production \
-        resume-pdf resume-pdf-public resume-pdf-application \
-        preview preview-drafts
+.PHONY: help test check verify-site check_env clean prepare-site new-post \
+        hugo-build resume-pdf resume-pdf-application preview preview-drafts
 
 help:
 	@echo "brfid.github.io commands"
-	@echo ""
-	@echo "Checks:"
-	@echo "  make test          Run tests"
-	@echo "  make check         Run lint, format, type, test, and dead-code checks"
-	@echo "  make verify-site   Clean-build Hugo and verify rendered public contracts"
-	@echo "  make check_env     Verify local prerequisites"
-	@echo ""
-	@echo "Maintenance:"
-	@echo "  make clean         Remove generated build artifacts and tool caches"
-	@echo ""
-	@echo "Build and preview:"
-	@echo "  make sync-site-data    Sync site.yaml -> hugo/data/site.yaml"
-	@echo "  make sync-resume-data  Sync resume.yaml -> hugo/data/resume.yaml"
-	@echo "  make new-post POST_SLUG=my-post  Scaffold a draft post bundle"
-	@echo "  make hugo-build        Build the public site, including resume HTML, into site/"
-	@echo "  make resume-pdf             Build the site and public phone-free PDF"
-	@echo "  make resume-pdf-public      Build the staged production site and public PDF"
-	@echo "  make resume-pdf-application Build a private application PDF outside the web root"
-	@echo "  make preview                Serve the local public site and phone-free PDF"
-	@echo "  make preview-drafts         Serve the site with draft blog posts"
+	@echo "  make check                   Run lint, format, type, test, and dead-code checks"
+	@echo "  make verify-site             Build and verify the complete public HTML and PDF artifact"
+	@echo "  make test                    Run unit and workflow contract tests"
+	@echo "  make check_env               Verify local prerequisites"
+	@echo "  make hugo-build              Build HTML only into site/"
+	@echo "  make resume-pdf              Build public HTML and phone-free site/resume.pdf"
+	@echo "  make resume-pdf-application  Also build the private application PDF outside site/"
+	@echo "  make preview                 Serve the public site and PDF locally"
+	@echo "  make preview-drafts          Include draft posts in the local preview"
+	@echo "  make new-post POST_SLUG=name  Scaffold a draft post bundle"
+	@echo "  make clean                   Remove generated artifacts and tool caches"
 
 test:
-	@echo "Running tests..."
 	@$(PYTHON) -m pytest -q
 
 check:
-	@$(PYTHON) -m ruff check resume_generator scripts tests
-	@$(PYTHON) -m ruff format --check resume_generator scripts tests
-	@$(PYTHON) -m mypy resume_generator scripts tests
+	@$(PYTHON) -m ruff check site_tools tests
+	@$(PYTHON) -m ruff format --check site_tools tests
+	@$(PYTHON) -m mypy site_tools tests
 	@$(PYTHON) -m pytest -q
-	@$(PYTHON) -m pylint resume_generator scripts -sn
-	@$(PYTHON) -m vulture --config pyproject.toml resume_generator scripts
+	@$(PYTHON) -m pylint site_tools -sn
+	@$(PYTHON) -m vulture --config pyproject.toml site_tools
 
-verify-site: clear-local-provenance sync-site-data sync-resume-data
-	@hugo --source hugo --destination "$(abspath build/site-check)" --cleanDestinationDir --panicOnWarning
-	@$(PYTHON) scripts/verify_site.py build/site-check
+verify-site: resume-pdf
+	@$(PYTHON) -m site_tools.verify site
 
 check_env:
-	@echo "Checking prerequisites..."
-	@command -v "$(PYTHON)" >/dev/null 2>&1 || { echo "Python interpreter not found: $(PYTHON)"; exit 1; }
-	@$(PYTHON) scripts/check_environment.py
-	@echo "Environment OK: Hugo, Python, Playwright, and pinned Chromium are available"
+	@$(PYTHON) -m site_tools.environment
+	@echo "Environment OK: Hugo, Python, Playwright, Chromium, and PDF inspection tools are available"
 
 clean:
-	@echo "Removing generated build artifacts..."
-	@rm -rf build/ site/ local/
-	@rm -f hugo/.hugo_build.lock
-	@rm -f hugo/data/bio.yaml hugo/data/resume.yaml hugo/data/site.yaml
-	@rm -f hugo/static/build.log.html hugo/static/pipeline-status.json
-	@rm -rf .mypy_cache/ .pytest_cache/ .ruff_cache/
+	@rm -rf build/ site/ local/ .mypy_cache/ .pytest_cache/ .ruff_cache/
+	@rm -f hugo/.hugo_build.lock hugo/data/resume.yaml hugo/data/site.yaml
+	@rm -f hugo/data/bio.yaml hugo/static/build.log.html hugo/static/pipeline-status.json hugo/static/brad.bio.txt
 	@find . -name .venv -prune -o -name .git -prune -o -type d -name __pycache__ -print0 \
 		| xargs -0 rm -rf
-	@echo "Cleanup complete"
 
-clear-local-provenance:
-	@rm -f hugo/data/bio.yaml
-	@rm -f hugo/static/build.log.html hugo/static/pipeline-status.json
-
-require-production-provenance:
-	@test -s hugo/data/bio.yaml || { echo "Missing production provenance: hugo/data/bio.yaml"; exit 1; }
-	@test -s hugo/static/build.log.html || { echo "Missing production provenance: hugo/static/build.log.html"; exit 1; }
-	@test -s hugo/static/pipeline-status.json || { echo "Missing production provenance: hugo/static/pipeline-status.json"; exit 1; }
-
-sync-site-data:
+prepare-site:
 	@mkdir -p hugo/data
 	@cp site.yaml hugo/data/site.yaml
-	@echo "Synced site.yaml -> hugo/data/site.yaml"
-
-sync-resume-data:
-	@mkdir -p hugo/data
 	@cp resume.yaml hugo/data/resume.yaml
-	@echo "Synced resume.yaml -> hugo/data/resume.yaml"
+	@# Clear retired generated inputs in existing checkouts before Hugo copies static files.
+	@rm -f hugo/data/bio.yaml hugo/static/build.log.html hugo/static/pipeline-status.json hugo/static/brad.bio.txt
 
 new-post:
 	@test -n "$(POST_SLUG)" || { echo "Usage: make new-post POST_SLUG=my-post"; exit 2; }
 	@hugo new content --source hugo --kind posts "posts/$(POST_SLUG)"
 
-hugo-build: clear-local-provenance sync-site-data sync-resume-data
-	@hugo --source hugo --destination ../site --cleanDestinationDir --panicOnWarning
-
-hugo-build-production: require-production-provenance sync-site-data sync-resume-data
+hugo-build: prepare-site
 	@hugo --source hugo --destination ../site --cleanDestinationDir --panicOnWarning
 
 resume-pdf: hugo-build
-	@$(PYTHON) -c "from pathlib import Path; from resume_generator.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('site/resume.pdf'))"
-	@echo "Generated public site/resume.pdf"
+	@$(PYTHON) -c "from pathlib import Path; from site_tools.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('site/resume.pdf'))"
 
-resume-pdf-public: hugo-build-production
-	@$(PYTHON) -c "from pathlib import Path; from resume_generator.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('site/resume.pdf'))"
-	@echo "Generated production site/resume.pdf"
-
-resume-pdf-application: resume-pdf
-	@$(PYTHON) -c "from pathlib import Path; from resume_generator.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('local/bradley-fidler-resume.pdf'), private_resume_path=Path('resume.private.yaml'))"
-	@echo "Generated private local/bradley-fidler-resume.pdf"
+resume-pdf-application: verify-site
+	@$(PYTHON) -c "from pathlib import Path; from site_tools.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('local/bradley-fidler-resume.pdf'), private_resume_path=Path('resume.private.yaml'))"
 
 preview: resume-pdf
 	@hugo server --source hugo --destination ../site --disableFastRender --port $(PREVIEW_PORT)
