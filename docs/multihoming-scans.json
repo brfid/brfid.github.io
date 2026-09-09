@@ -1,0 +1,510 @@
+{
+  "description": "Source provenance for the archival page images linked in the multihoming post. Source paths are relative to the operator etext archive. BBN photographs are by Bradley Fidler; document authorship remains as cited in the post. PDF page numbers count from the beginning of each preserved file; printed pagination is recorded only where identified.",
+  "assets": [
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-2913-p57.png",
+      "source": "arpanet-sources/BBN (1974) Interface Message Processors for the ARPA Computer Network (Report 2913, Quarterly Technical Report 7).pdf",
+      "printed_pages": [
+        57
+      ],
+      "pdf_page": 59,
+      "source_sha256": "bb2ef373bcc3aebd9306a13adb7332458a1c8eb0da50b06dc98a4ff8edf11641",
+      "asset_sha256": "0a7c4c3a11e1c57e4fdb2724afe633a85cf0866bd3e600f225d900db7877f5c5",
+      "transformation": "Rendered PDF page 59 at 160 dpi with pdftoppm to PNG; complete printed page 57, with PDF rotation applied."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p77-csy-93a-p10.jpg",
+      "source": "BBN/p77 csy 93b routing algorithm improvements letter/2016-01-22 10.38.29.jpg",
+      "printed_pages": [
+        10
+      ],
+      "source_sha256": "02393b05e959a4bf9b9aca800c28d64cfc3e00c40741f1f2ec76d008063e360f",
+      "asset_sha256": "70fa87560ec3359e259241892eb5071189ad00a795e440a94e8853c5ad0395b2",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p79-isd-76-pp68-69.jpg",
+      "source": "BBN/p79 isd 76 continuation of command and control/2016-01-22 11.56.31.jpg",
+      "printed_pages": [
+        68,
+        69
+      ],
+      "source_sha256": "e4e604f1456cd599cb78f298c60087d93fc72e4c802c948e104d36f242ebc343",
+      "asset_sha256": "4788ef02276c6adda5721d25575dc8c0c0fe3195550273ca47e6637a2ea916eb",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p79-isd-76-pp70-71.jpg",
+      "source": "BBN/p79 isd 76 continuation of command and control/2016-01-22 11.56.36.jpg",
+      "printed_pages": [
+        70,
+        71
+      ],
+      "source_sha256": "32c4a56fa37ca798a69c68bb6f8f4f6a74063ab097b1bbfcb800c7270dfc045b",
+      "asset_sha256": "428696008cdffc86afed8776e4156597969779f564b1296abc1bdb00259a1898",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p79-isd-76-pp72-73.jpg",
+      "source": "BBN/p79 isd 76 continuation of command and control/2016-01-22 11.56.39.jpg",
+      "printed_pages": [
+        72,
+        73
+      ],
+      "source_sha256": "9a66c4971544d0111cd7ce2ebeeee0dc1975334c7f25806e39d38e3afe8cab48",
+      "asset_sha256": "ec71606c1f0ee8b604bf8d33e16bb00c697da1b006aee69ce629fa267aace216",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p79-isd-76-pp74-75.jpg",
+      "source": "BBN/p79 isd 76 continuation of command and control/2016-01-22 11.56.42.jpg",
+      "printed_pages": [
+        74,
+        75
+      ],
+      "source_sha256": "2ff8d68a9bfc4b3cb209fca642f43dd266d06a826dbd295ac915f5c879df7997",
+      "asset_sha256": "1686c9df58f130257a82c51c56c5880dc40604610d73cf19e082c45193c50d20",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p79-isd-76-pp76-77.jpg",
+      "source": "BBN/p79 isd 76 continuation of command and control/2016-01-22 11.56.44.jpg",
+      "printed_pages": [
+        76,
+        77
+      ],
+      "source_sha256": "3906ecf2bff50286571dc31be8fff74ac28646870c3b345fb0973098e4eba38d",
+      "asset_sha256": "b15bfc562879d9ffc1d0ded3c303b109fc45dc5c32ba33ac13c9c665e5d1d999",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4466-pp56-57.jpg",
+      "source": "BBN/4466 features of an internetwork protocol/2015-07-29 10.48.29.jpg",
+      "printed_pages": [
+        56,
+        57
+      ],
+      "source_sha256": "01b8ca0320771c559c18088694ef66b24a97d4cfe2c54de2098548f6befca4a8",
+      "asset_sha256": "a7f059a623f1ac4ccd2508979c725644fa4c7db7c75a4eca397512915080fd58",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4466-pp66-67.jpg",
+      "source": "BBN/4466 features of an internetwork protocol/2015-07-29 10.48.46.jpg",
+      "printed_pages": [
+        66,
+        67
+      ],
+      "source_sha256": "773aba991ac963684cab3415f501518dfd57c07e9cb5c2ec1ddb803352304dab",
+      "asset_sha256": "444ef21f8525c7d7ad91a7b01ed80cdc7af4f7302fe97c8e2b6a9ce7137686c2",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/pouzin-inwg20-p1.png",
+      "source": "INWG/CBI 123-Box 1-Folder 3-20pp.pdf",
+      "printed_pages": [
+        1
+      ],
+      "source_sha256": "dc22215190b51823b789d935b457a85d60efcbed196fb56ce9377288e7b1ae0f",
+      "pdf_page": 2,
+      "transformation": "Rendered complete PDF page 2 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "bad5a10840c4d0771e69d19aff90876f1fa642c042edc5ae219764e639aaa885"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/pouzin-inwg20-p2.png",
+      "source": "INWG/CBI 123-Box 1-Folder 3-20pp.pdf",
+      "printed_pages": [
+        2
+      ],
+      "source_sha256": "dc22215190b51823b789d935b457a85d60efcbed196fb56ce9377288e7b1ae0f",
+      "pdf_page": 3,
+      "transformation": "Rendered complete PDF page 3 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "140c921f5536d9d3ec1d02c2cf14ff70a95d24360b712d774e565bffd18afb26"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/pouzin-inwg20-p3.png",
+      "source": "INWG/CBI 123-Box 1-Folder 3-20pp.pdf",
+      "printed_pages": [
+        3
+      ],
+      "source_sha256": "dc22215190b51823b789d935b457a85d60efcbed196fb56ce9377288e7b1ae0f",
+      "pdf_page": 4,
+      "transformation": "Rendered complete PDF page 4 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "04d209e6d8ae1a003970d79aabe3a6af229399cf3542515d852239733a391173"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/pouzin-inwg20-p4.png",
+      "source": "INWG/CBI 123-Box 1-Folder 3-20pp.pdf",
+      "printed_pages": [
+        4
+      ],
+      "source_sha256": "dc22215190b51823b789d935b457a85d60efcbed196fb56ce9377288e7b1ae0f",
+      "pdf_page": 5,
+      "transformation": "Rendered complete PDF page 5 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "c4898ff07c5e0e6b91df37bf277345cbd8dde0b0509c6065fc3865ba85ff609f"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/cerf-itp-1973-pdf26.png",
+      "source": "INWG/CBI 123-Box 1-Folder 5-69pp.pdf",
+      "printed_pages": [],
+      "source_sha256": "6025c011ec6af0cbd5123cba0631877b94dc8fe103d789fcbd61d1f2a04d36fc",
+      "pdf_page": 26,
+      "transformation": "Rendered complete PDF page 26 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "fe379a1baab2a8776a5773bb3f03c1f1ded279003d41fe060b04dc526ac71505"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/cerf-itp-1973-pdf27.png",
+      "source": "INWG/CBI 123-Box 1-Folder 5-69pp.pdf",
+      "printed_pages": [],
+      "source_sha256": "6025c011ec6af0cbd5123cba0631877b94dc8fe103d789fcbd61d1f2a04d36fc",
+      "pdf_page": 27,
+      "transformation": "Rendered complete PDF page 27 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "885180b64c8906ff8f0ff717dcd4ebef5abf45f2d0db607d0ea7538c5d052380"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-2913-p38.png",
+      "source": "arpanet-sources/BBN (1974) Interface Message Processors for the ARPA Computer Network (Report 2913, Quarterly Technical Report 7).pdf",
+      "printed_pages": [
+        38
+      ],
+      "source_sha256": "bb2ef373bcc3aebd9306a13adb7332458a1c8eb0da50b06dc98a4ff8edf11641",
+      "pdf_page": 40,
+      "transformation": "Rendered complete PDF page 40 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "a0c1f7b2bcc5a3168aa74f3d31a77a67bb26550af33972022215ac2b45de6885"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-2913-p59.png",
+      "source": "arpanet-sources/BBN (1974) Interface Message Processors for the ARPA Computer Network (Report 2913, Quarterly Technical Report 7).pdf",
+      "printed_pages": [
+        59
+      ],
+      "source_sha256": "bb2ef373bcc3aebd9306a13adb7332458a1c8eb0da50b06dc98a4ff8edf11641",
+      "pdf_page": 61,
+      "transformation": "Rendered complete PDF page 61 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "eb51899c377a1a188afdb0ef4ad83ec644f068e80556d7c4e9348b1153033bd4"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-5256-p1.png",
+      "source": "BBN/5256 BBN (1983) Logical Addressing Implementation Specification (Report 5256).pdf",
+      "printed_pages": [
+        1
+      ],
+      "source_sha256": "a78104e8abbc55062da9dc7c204a53d582e23ad6a3a862340eedae8eb66b3ed1",
+      "pdf_page": 6,
+      "transformation": "Rendered complete PDF page 6 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "6104d24b036eaeca679c65f14376f0b3c7374d3815f540c2f6efc34151998acd"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-5256-p2.png",
+      "source": "BBN/5256 BBN (1983) Logical Addressing Implementation Specification (Report 5256).pdf",
+      "printed_pages": [
+        2
+      ],
+      "source_sha256": "a78104e8abbc55062da9dc7c204a53d582e23ad6a3a862340eedae8eb66b3ed1",
+      "pdf_page": 7,
+      "transformation": "Rendered complete PDF page 7 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "3ddb963eeb0eff0889df128bf3139ab5cf182f222e6beb1315c30456a1293a8f"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-5256-p3.png",
+      "source": "BBN/5256 BBN (1983) Logical Addressing Implementation Specification (Report 5256).pdf",
+      "printed_pages": [
+        3
+      ],
+      "source_sha256": "a78104e8abbc55062da9dc7c204a53d582e23ad6a3a862340eedae8eb66b3ed1",
+      "pdf_page": 8,
+      "transformation": "Rendered complete PDF page 8 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "a6bdccf52a3e981531ab1d047b9298df73195dcbb55bd9bc72ff2ac349a77969"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-5256-p4.png",
+      "source": "BBN/5256 BBN (1983) Logical Addressing Implementation Specification (Report 5256).pdf",
+      "printed_pages": [
+        4
+      ],
+      "source_sha256": "a78104e8abbc55062da9dc7c204a53d582e23ad6a3a862340eedae8eb66b3ed1",
+      "pdf_page": 9,
+      "transformation": "Rendered complete PDF page 9 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "fd14d31b8106e75ecf903f531790f4f64a925e6d86a0777e0ade3b74012431fd"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-5256-p5.png",
+      "source": "BBN/5256 BBN (1983) Logical Addressing Implementation Specification (Report 5256).pdf",
+      "printed_pages": [
+        5
+      ],
+      "source_sha256": "a78104e8abbc55062da9dc7c204a53d582e23ad6a3a862340eedae8eb66b3ed1",
+      "pdf_page": 10,
+      "transformation": "Rendered complete PDF page 10 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "6141f3129b0d5b097c13b7ff5f53c5358ef06ba3724aca81f9749cf03484124b"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-5256-p29.png",
+      "source": "BBN/5256 BBN (1983) Logical Addressing Implementation Specification (Report 5256).pdf",
+      "printed_pages": [
+        29
+      ],
+      "source_sha256": "a78104e8abbc55062da9dc7c204a53d582e23ad6a3a862340eedae8eb66b3ed1",
+      "pdf_page": 34,
+      "transformation": "Rendered complete PDF page 34 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "a2d1e0bf76c42fbd3f58ab28ba3448d35289b117d8459754b9b7285defb50230"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/pouzin-sch527-section6.png",
+      "source": "INWG/new scans/CBI 123_Pouzin_SCH527.pdf",
+      "printed_pages": [],
+      "source_sha256": "2f34d208e9a8b13b8a3706c2d5bf135a3648e195c4e99e82d1685d2d6d20d1c1",
+      "pdf_page": 5,
+      "transformation": "Rendered complete PDF page 5 at 160 dpi with pdftoppm to PNG; PDF rotation applied.",
+      "asset_sha256": "462d395124aed4088b893d79d1b9bf51d64be35c8e6af9bdf9dc0d9925ccfe1c"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-2714-p15.jpg",
+      "source": "BBN/2714 prototype wwmccs intercomputer network final report/2015-07-27 11.02.03.jpg",
+      "printed_pages": [
+        15
+      ],
+      "source_sha256": "5030ced347d97c58b38eb97d022be3deef3606d9a6760739997ea4dde7dc2168",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph without recompression.",
+      "asset_sha256": "8f49a5e851d23571ef5d0054d253911e6e69bc446ea1383f73768af8ab96598a"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp158-159.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.21.jpg",
+      "printed_pages": [
+        158,
+        159
+      ],
+      "source_sha256": "4d16181276bafd773e84f07afb9280fb34e4d0cadbdc505ef2f135596b617830",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "0f6bc18f9572fc367a92639c5ce1a4269c2c8e3d2ce1bbcd279f86a77b8fe219"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp160-161.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.24.jpg",
+      "printed_pages": [
+        160,
+        161
+      ],
+      "source_sha256": "63d692e95c572d74f52945e83782e45b442b63178e1a9a7dfdb194289422c4b9",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "d500bb8abc3cac7ac06410694461b801490aaf46280adac3bb59ea8c4ae0f9de"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp162-163.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.30.jpg",
+      "printed_pages": [
+        162,
+        163
+      ],
+      "source_sha256": "335d981f9a88dd1f6876d054f48874bf1d44b299f3734792cb472587ac8e545a",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "5c04859f5561a1cda68ded8009e067b7c466bc7b3d774e29a1c78e4e3693a4d9"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp164-165.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.32.jpg",
+      "printed_pages": [
+        164,
+        165
+      ],
+      "source_sha256": "118adfd899c38a2524bcfc3b87a7cd8718f9f0732821c821da28987a72aeb48f",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "02061d42dba6a2527a0fa0ece5bf0347e6eaaf0d06275edf000b8727e7b38ac2"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp174-175.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.46.jpg",
+      "printed_pages": [
+        174,
+        175
+      ],
+      "source_sha256": "df9417eebd4683959752ee70c8c016017a295e71c14d27bcbc71668770a6ca0f",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "fe3feccec1e483c0fd5463120eeb38bfd344bca5361d753ce7511936b0075551"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp176-177.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.49.jpg",
+      "printed_pages": [
+        176,
+        177
+      ],
+      "source_sha256": "dd88b6e46e765f12e646ddbf83f640fada96ac3401abe1864afaca00955b36f4",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "831f8dbb5d01098ecd8ae0a10576600ef011062b635a0d9d7b276b2d5867a5aa"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp178-179.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.52.jpg",
+      "printed_pages": [
+        178,
+        179
+      ],
+      "source_sha256": "9b7bc0032c5b72c2193ac933516d8f7bd6bcd2d9327086641a65bf730fbde873",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "e3669f84f468e24b389193f3b719560e56e395498094ee7d451b9fc5024ef9d1"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp180-181.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.36.57.jpg",
+      "printed_pages": [
+        180,
+        181
+      ],
+      "source_sha256": "24fdd01102eb59970a86ae55ec9d97ffb22bb3c5d8d2854661ca1353dc15561b",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "c382cb5055a86717cc987aa7220fb3d34083ccf595b9ac903e918e84a729dba4"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp182-183.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.37.03.jpg",
+      "printed_pages": [
+        182,
+        183
+      ],
+      "source_sha256": "f619378ed5329e5aac50c78f68fc03949292c3b69b5f51c85e99454819db6cad",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "e15f540310ef9de40a371b6dcac098abbb95f2307619f3af73d62e3224e610e1"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-3119-pp184-185.jpg",
+      "source": "BBN/3119 autodin 2 study contract/2015-07-27 09.37.06.jpg",
+      "printed_pages": [
+        184,
+        185
+      ],
+      "source_sha256": "f6710fb19a1c39084c9583802afea666cf8d6a4133f901bd4e517937b2ee2380",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "49a4a103686fce8b2018fbe36ff2554060a21edc2c04c0c2536da7a295289598"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4761-pp66-67.jpg",
+      "source": "BBN/4761 combined quarterly technical report 22/2015-07-27 12.40.18.jpg",
+      "printed_pages": [
+        66,
+        67
+      ],
+      "source_sha256": "42f92aff2909274cef4b876ca7c0e8cc42113301bf91c03a1ced4292d4920536",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "57ddc1baca617a401d73d6d5017d5f5de239172cc42abf93b21e895dc19eb070"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4761-pp68-69.jpg",
+      "source": "BBN/4761 combined quarterly technical report 22/2015-07-27 12.40.21.jpg",
+      "printed_pages": [
+        68,
+        69
+      ],
+      "source_sha256": "80b0b0e012b95dcb40691d2efa728f934301aad7fa2f9cc02defea3d0ddbf682",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "6867f5a81326bf73797ffb63c50877843c24b65f716a49b8691106bb073ebc9e"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4761-pp70-71.jpg",
+      "source": "BBN/4761 combined quarterly technical report 22/2015-07-27 12.40.23.jpg",
+      "printed_pages": [
+        70,
+        71
+      ],
+      "source_sha256": "b220f0b05310d613d5f3c2b350bb561859739d9c5be881f705ea1cffbf4d0430",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "278a58b3841e851c7cb5b198382b37898ac4435cddcd0a87167e5a74f2e781d1"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4761-pp72-73.jpg",
+      "source": "BBN/4761 combined quarterly technical report 22/2015-07-27 12.40.25.jpg",
+      "printed_pages": [
+        72,
+        73
+      ],
+      "source_sha256": "2acf74c3deb12712f146dccefbc40851ccdc26df532f328fa793ddc2e9f656e5",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "e204251dd2266a7aa252b5251e95731767c5002c14772458d765b326cc606c02"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4761-pp74-75.jpg",
+      "source": "BBN/4761 combined quarterly technical report 22/2015-07-27 12.40.28.jpg",
+      "printed_pages": [
+        74,
+        75
+      ],
+      "source_sha256": "307aa1e32be2577083a75fdb42794751a62d3ee3e298536b6c9d3ea89eada770",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "1f82a1af32a61b277fa14a4e749ef5dc0061cd348c11d30a5f48c27eff78dad8"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4825-pp72-73.jpg",
+      "source": "BBN/4825 combined quarterly technical report 23/2015-07-27 12.46.58.jpg",
+      "printed_pages": [
+        72,
+        73
+      ],
+      "source_sha256": "1944b86861ffc72c3261b2a5823c38bfa11c718fd1199bfa4885f6a8019d7f12",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "dcfac9053dc5ed88e79641146772c5225132a8d2fcfec78285ec0cda1b33e068"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/bbn-4825-pp74-75.jpg",
+      "source": "BBN/4825 combined quarterly technical report 23/2015-07-27 12.47.01.jpg",
+      "printed_pages": [
+        74,
+        75
+      ],
+      "source_sha256": "32b5ce643c896440f677fd9a9beee200d52c76a05f4052edff9323f87967eb09",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page spread without recompression.",
+      "asset_sha256": "1f5d092352b7eb5f8315d72ac0ed9b0830625e3c52543b0cbc5bb19fa656441e"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p81-isd-113-p14-3.jpg",
+      "source": "BBN/p81 isd 113 continuation of command and control/2016-01-22 11.44.51.jpg",
+      "printed_pages": [
+        "14-2",
+        "14-3"
+      ],
+      "source_sha256": "454f4da0294b7f2eec0a26d2a7b4d85f956cbb7d74e46d5ef0d46bc59cc5eff1",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata, then applied a lossless 180-degree JPEG rotation with jpegtran; retained dimensions and the complete two-page spread.",
+      "asset_sha256": "680847b8608e7eaa08a439a6a9832bcb89e6ac47bca0e8e0793d80932471d924"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p82-isd-79-p1-1.jpg",
+      "source": "BBN/multinet device driver enhancement proposal/2016-01-22 09.08.41.jpg",
+      "printed_pages": [
+        "1-1"
+      ],
+      "source_sha256": "9f6ade6ff938620f24cb125955af813327aad21f6f2f258d5c4e8601ca9e6a4a",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph without recompression.",
+      "asset_sha256": "d65ccfe62d036806be58ca73c0fac59a7a1371a543f2f78f1907c1cb101937c9"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p82-isd-79-p1-2.jpg",
+      "source": "BBN/multinet device driver enhancement proposal/2016-01-22 09.08.44.jpg",
+      "printed_pages": [
+        "1-2"
+      ],
+      "source_sha256": "24c64be98b100dc878ef1a9ad7852d564ecca9ace6b20bec617676a7c888c598",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph without recompression.",
+      "asset_sha256": "7b61396cd24db9ee662c3c302cbcd39ab4177b8b27b155b5b121b6348607e676"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p82-isd-79-p2-1.jpg",
+      "source": "BBN/multinet device driver enhancement proposal/2016-01-22 09.08.48.jpg",
+      "printed_pages": [
+        "2-1"
+      ],
+      "source_sha256": "8aee36fb277227b28416d2aa735525d6cfb72d737e70124d1463f717f86972fc",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph without recompression.",
+      "asset_sha256": "7c8d5895f1292803236945330c13f7ffa7a465af8aabf12a523e28dd5efb328d"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p82-isd-79-p2-2.jpg",
+      "source": "BBN/multinet device driver enhancement proposal/2016-01-22 09.08.56.jpg",
+      "printed_pages": [
+        "2-2"
+      ],
+      "source_sha256": "15c9af24137bd2959c0f52fa2f9190c5c5199bd3a4d7ad1409b6f4b4b05b07eb",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph without recompression.",
+      "asset_sha256": "30e10578bd368aef552b1d739c7c9f63cca516b044a56d7871910cf9041a0a75"
+    }
+  ]
+}

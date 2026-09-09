@@ -46,29 +46,6 @@
             localStorage.setItem("menu-scroll-position", menu.scrollLeft);
         }
     }
-
-    document.querySelectorAll('a[href^="#"]:not(.skip-link)').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            const id = decodeURIComponent(this.getAttribute("href").substring(1));
-            const target = document.getElementById(id);
-            if (!target) {
-                return;
-            }
-            e.preventDefault();
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                target.scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                target.scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
 </script>
 
 {{- if (not site.Params.disableScrollToTop) }}
@@ -122,7 +99,7 @@
 </script>
 {{- end }}
 
-{{- if (and (eq .Kind "page") (ne .Layout "archives") (ne .Layout "search") (.Param "ShowCodeCopyButtons")) }}
+{{- if and (.Param "ShowCodeCopyButtons") (findRE `<pre\b` .Content 1) }}
 <script>
     document.querySelectorAll('pre > code').forEach((codeblock) => {
         const container = codeblock.parentNode.parentNode;

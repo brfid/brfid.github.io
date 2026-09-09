@@ -1,154 +1,88 @@
 from __future__ import annotations
 
-import sys
-from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import nullcontext
 from pathlib import Path
-from types import ModuleType
-from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
+from playwright.sync_api import Browser, Page
 from pytest import MonkeyPatch
 
-import site_tools.pdf as pdf_module
 from site_tools.pdf import _serve_directory, build_pdf, load_private_phone
 
 
-@contextmanager
-def _fake_serve_directory(_root: Path) -> Iterator[int]:
-    yield 43123
+@pytest.fixture
+def renderer(monkeypatch: MonkeyPatch) -> tuple[MagicMock, MagicMock]:
+    page = MagicMock(spec=Page)
+    page.goto.return_value.ok = True
+    page.evaluate.return_value = []
 
+    def write_pdf(**options: object) -> None:
+        Path(str(options["path"])).write_bytes(b"%PDF-1.4\n")
 
-def _install_fake_playwright(
-    monkeypatch: MonkeyPatch,
-    *,
-    page: Any,
-    calls: dict[str, object],
-) -> None:
-    """Install one-page Playwright and local-server fakes for build_pdf tests."""
-
-    class _FakeBrowser:
-        def new_page(self) -> Any:
-            return page
-
-        def close(self) -> None:
-            calls["closed"] = True
-
-    class _FakeChromium:
-        def launch(self) -> _FakeBrowser:
-            calls["launched"] = True
-            return _FakeBrowser()
-
-    class _FakePlaywright:
-        chromium = _FakeChromium()
-
-    class _FakeSyncPlaywright:
-        def __enter__(self) -> _FakePlaywright:
-            return _FakePlaywright()
-
-        def __exit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc: BaseException | None,
-            tb: Any,
-        ) -> None:
-            return None
-
-    fake_sync_api = ModuleType("playwright.sync_api")
-
-    def _sync_playwright() -> _FakeSyncPlaywright:
-        return _FakeSyncPlaywright()
-
-    fake_sync_api.sync_playwright = _sync_playwright  # type: ignore[attr-defined]
-    monkeypatch.setitem(sys.modules, "playwright.sync_api", fake_sync_api)
-    monkeypatch.setattr(pdf_module, "_serve_directory", _fake_serve_directory)
+    page.pdf.side_effect = write_pdf
+    browser = MagicMock(spec=Browser)
+    browser.new_page.return_value = page
+    runtime = MagicMock()
+    runtime.chromium.launch.return_value = browser
+    monkeypatch.setattr("playwright.sync_api.sync_playwright", lambda: nullcontext(runtime))
+    monkeypatch.setattr("site_tools.pdf._serve_directory", lambda _root: nullcontext(43123))
+    return page, browser
 
 
 def test_serve_directory_serves_files(tmp_path: Path) -> None:
+    import urllib.request
+
     (tmp_path / "index.html").write_text("hello", encoding="utf-8")
-
-    with _serve_directory(tmp_path) as port:
-        import urllib.request
-
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/index.html", timeout=2) as resp:
-            body = resp.read().decode("utf-8")
-
-    assert body == "hello"
+    with (
+        _serve_directory(tmp_path) as port,
+        urllib.request.urlopen(f"http://127.0.0.1:{port}/index.html", timeout=2) as response,
+    ):
+        assert response.read().decode("utf-8") == "hello"
 
 
-def test_build_pdf_uses_playwright_and_writes_target_path(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
+@pytest.mark.parametrize("private", (False, True))
+def test_build_pdf_writes_target_with_required_print_options(
+    tmp_path: Path, renderer: tuple[MagicMock, MagicMock], private: bool
 ) -> None:
+    page, browser = renderer
     site_dir = tmp_path / "site"
-    site_dir.mkdir(parents=True)
-    (site_dir / "resume").mkdir()
-    (site_dir / "resume" / "index.html").write_text("<html>ok</html>", encoding="utf-8")
-    application_pdf = tmp_path / "local" / "bradley-fidler-resume.pdf"
-    private_resume = tmp_path / "resume.private.yaml"
-    private_resume.write_text('basics:\n  phone: "+1-555-0100"\n', encoding="utf-8")
+    pdf_path = tmp_path / "local" / "application.pdf" if private else site_dir / "resume.pdf"
+    overlay = tmp_path / "resume.private.yaml"
+    overlay.write_text('basics:\n  phone: "+1-555-0100"\n', encoding="utf-8")
 
-    calls: dict[str, object] = {}
-
-    class _FakeResponse:
-        ok = True
-        status = 200
-
-    class _FakePage:
-        def emulate_media(self, *, media: str, color_scheme: str = "light") -> None:
-            calls["media"] = media
-            calls["color_scheme"] = color_scheme
-
-        def goto(self, url: str, *, wait_until: str) -> _FakeResponse:
-            calls["url"] = url
-            calls["wait_until"] = wait_until
-            return _FakeResponse()
-
-        def evaluate(self, expression: str, argument: object = None) -> object:
-            calls.setdefault("evaluated", [])
-            evaluated = calls["evaluated"]
-            assert isinstance(evaluated, list)
-            evaluated.append((expression, argument))
-            return [] if "document.fonts.check" in expression else None
-
-        def pdf(self, **kwargs: object) -> None:
-            calls["pdf"] = kwargs
-            path = kwargs["path"]
-            Path(str(path)).write_bytes(b"%PDF-1.4\n")
-
-    _install_fake_playwright(monkeypatch, page=_FakePage(), calls=calls)
-
-    pdf_path = build_pdf(
-        site_dir=site_dir,
-        resume_url_path="/resume/",
-        pdf_path=application_pdf,
-        private_resume_path=private_resume,
+    assert (
+        build_pdf(
+            site_dir=site_dir,
+            resume_url_path="/resume/",
+            pdf_path=pdf_path,
+            private_resume_path=overlay if private else None,
+        )
+        == pdf_path
     )
 
-    assert pdf_path == application_pdf
-    assert pdf_path.exists()
-    assert calls["media"] == "print"
-    assert calls["wait_until"] == "load"
-    evaluated = calls["evaluated"]
-    assert isinstance(evaluated, list)
-    assert "private phone injection target" in evaluated[0][0]
-    assert evaluated[0][1] == "+1-555-0100"
-    assert "document.fonts.load" in evaluated[1][0]
-    assert "faces.length > 0" in evaluated[1][0]
-    assert "await document.fonts.ready" in evaluated[1][0]
-    assert "document.fonts.check" in evaluated[1][0]
-    assert '"Newsreader"' in evaluated[1][0]
-    assert '"IBM Plex Mono"' in evaluated[1][0]
-    assert evaluated[1][1] is None
-    pdf_kwargs = calls["pdf"]
-    assert isinstance(pdf_kwargs, dict)
-    assert pdf_kwargs["prefer_css_page_size"] is True
-    assert pdf_kwargs["print_background"] is True
-    assert pdf_kwargs["tagged"] is True
-    assert pdf_kwargs["outline"] is True
-    assert calls["launched"] is True
-    assert calls["closed"] is True
-    assert str(calls["url"]).startswith("http://127.0.0.1:")
+    assert pdf_path.is_file()
+    page.emulate_media.assert_called_once_with(media="print", color_scheme="light")
+    page.goto.assert_called_once_with("http://127.0.0.1:43123/resume/", wait_until="load")
+    page.pdf.assert_called_once_with(
+        path=str(pdf_path), print_background=True, tagged=True, outline=True, prefer_css_page_size=True
+    )
+    browser.close.assert_called_once_with()
+    evaluations = page.evaluate.call_args_list
+    assert len(evaluations) == (2 if private else 1)
+    if private:
+        assert "private phone injection target" in evaluations[0].args[0]
+        assert evaluations[0].args[1] == "+1-555-0100"
+    font_expression = evaluations[-1].args[0]
+    for required in (
+        "document.fonts.load",
+        "faces.length > 0",
+        "await document.fonts.ready",
+        "document.fonts.check",
+        '"Newsreader"',
+        '"IBM Plex Mono"',
+    ):
+        assert required in font_expression
 
 
 def test_load_private_phone_returns_none_when_overlay_is_not_requested() -> None:
@@ -212,143 +146,38 @@ def test_build_pdf_rejects_missing_private_overlay_before_creating_directories(t
     assert not pdf_path.parent.exists()
 
 
-def test_build_pdf_propagates_navigation_errors(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
+@pytest.mark.parametrize(
+    ("failure", "message"),
+    (
+        ("navigation", "navigation failed"),
+        ("missing-response", "did not load cleanly .no response."),
+        ("not-found", "did not load cleanly .404."),
+        ("fonts", "required resume fonts did not load: Newsreader, IBM Plex Mono"),
+        ("pdf", "pdf creation failed"),
+    ),
+)
+def test_build_pdf_closes_browser_and_propagates_rendering_failures(
+    tmp_path: Path, renderer: tuple[MagicMock, MagicMock], failure: str, message: str
 ) -> None:
+    page, browser = renderer
+    if failure == "navigation":
+        page.goto.side_effect = RuntimeError("navigation failed")
+    elif failure == "missing-response":
+        page.goto.return_value = None
+    elif failure == "not-found":
+        page.goto.return_value.ok = False
+        page.goto.return_value.status = 404
+    elif failure == "fonts":
+        page.evaluate.return_value = ["Newsreader", "IBM Plex Mono"]
+    else:
+        page.pdf.side_effect = RuntimeError("pdf creation failed")
     site_dir = tmp_path / "site"
-    site_dir.mkdir(parents=True)
-    (site_dir / "resume").mkdir()
-    (site_dir / "resume" / "index.html").write_text("<html>ok</html>", encoding="utf-8")
     pdf_path = site_dir / "resume.pdf"
-    calls: dict[str, object] = {}
 
-    class _FailingPage:
-        def emulate_media(self, *, media: str, color_scheme: str = "light") -> None:
-            del media, color_scheme
-
-        def goto(self, url: str, *, wait_until: str) -> None:
-            del url, wait_until
-            raise RuntimeError("navigation failed")
-
-    _install_fake_playwright(monkeypatch, page=_FailingPage(), calls=calls)
-
-    with pytest.raises(RuntimeError, match="navigation failed"):
+    with pytest.raises(RuntimeError, match=message):
         build_pdf(site_dir=site_dir, resume_url_path="/resume/", pdf_path=pdf_path)
 
     assert not pdf_path.exists()
-    assert calls["closed"] is True
-
-
-def test_build_pdf_rejects_missing_required_fonts_and_closes_browser(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    site_dir = tmp_path / "site"
-    pdf_path = site_dir / "resume.pdf"
-    calls: dict[str, object] = {}
-
-    class _OkResponse:
-        ok = True
-        status = 200
-
-    class _MissingFontsPage:
-        def emulate_media(self, *, media: str, color_scheme: str = "light") -> None:
-            del media, color_scheme
-
-        def goto(self, url: str, *, wait_until: str) -> _OkResponse:
-            del url, wait_until
-            return _OkResponse()
-
-        def evaluate(self, expression: str, argument: object = None) -> list[str]:
-            del argument
-            calls["font_expression"] = expression
-            return ["Newsreader", "IBM Plex Mono"]
-
-        def pdf(self, **kwargs: object) -> None:  # pragma: no cover - must not run
-            del kwargs
-            raise AssertionError("pdf() should not run before fonts are loaded")
-
-    _install_fake_playwright(monkeypatch, page=_MissingFontsPage(), calls=calls)
-
-    with pytest.raises(RuntimeError, match="required resume fonts did not load: Newsreader, IBM Plex Mono"):
-        build_pdf(site_dir=site_dir, resume_url_path="/resume/", pdf_path=pdf_path)
-
-    assert "document.fonts.load" in str(calls["font_expression"])
-    assert "faces.length > 0" in str(calls["font_expression"])
-    assert "await document.fonts.ready" in str(calls["font_expression"])
-    assert "document.fonts.check" in str(calls["font_expression"])
-    assert '"Newsreader"' in str(calls["font_expression"])
-    assert '"IBM Plex Mono"' in str(calls["font_expression"])
-    assert calls["closed"] is True
-    assert not pdf_path.exists()
-
-
-def test_build_pdf_closes_browser_when_pdf_creation_fails(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    site_dir = tmp_path / "site"
-    pdf_path = site_dir / "resume.pdf"
-    calls: dict[str, object] = {}
-
-    class _OkResponse:
-        ok = True
-        status = 200
-
-    class _FailingPdfPage:
-        def emulate_media(self, *, media: str, color_scheme: str = "light") -> None:
-            del media, color_scheme
-
-        def goto(self, url: str, *, wait_until: str) -> _OkResponse:
-            del url, wait_until
-            return _OkResponse()
-
-        def evaluate(self, expression: str, argument: object = None) -> list[str]:
-            del expression, argument
-            return []
-
-        def pdf(self, **kwargs: object) -> None:
-            del kwargs
-            raise RuntimeError("pdf creation failed")
-
-    _install_fake_playwright(monkeypatch, page=_FailingPdfPage(), calls=calls)
-
-    with pytest.raises(RuntimeError, match="pdf creation failed"):
-        build_pdf(site_dir=site_dir, resume_url_path="/resume/", pdf_path=pdf_path)
-
-    assert calls["closed"] is True
-    assert not pdf_path.exists()
-
-
-def test_build_pdf_rejects_non_ok_response(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-) -> None:
-    site_dir = tmp_path / "site"
-    site_dir.mkdir(parents=True)
-    pdf_path = site_dir / "resume.pdf"
-    calls: dict[str, object] = {}
-
-    class _NotFoundResponse:
-        ok = False
-        status = 404
-
-    class _NotFoundPage:
-        def emulate_media(self, *, media: str, color_scheme: str = "light") -> None:
-            del media, color_scheme
-
-        def goto(self, url: str, *, wait_until: str) -> _NotFoundResponse:
-            del url, wait_until
-            return _NotFoundResponse()
-
-        def pdf(self, **kwargs: object) -> None:  # pragma: no cover - must not run
-            raise AssertionError("pdf() should not be reached on a non-OK response")
-
-    _install_fake_playwright(monkeypatch, page=_NotFoundPage(), calls=calls)
-
-    with pytest.raises(RuntimeError, match="did not load cleanly .404."):
-        build_pdf(site_dir=site_dir, resume_url_path="/resume/", pdf_path=pdf_path)
-
-    assert not pdf_path.exists()
-    assert calls["closed"] is True
+    browser.close.assert_called_once_with()
+    if failure != "pdf":
+        page.pdf.assert_not_called()

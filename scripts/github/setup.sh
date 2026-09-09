@@ -26,6 +26,12 @@ python -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements/build.lock
 .venv/bin/python -m pip install --require-hashes -r requirements/dev.lock
 .venv/bin/python -m pip install --no-deps --no-build-isolation -e .
+# Chromium comes from Playwright; the runner's Google APT index is unused.
+for apt_source in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+  if [[ -f "$apt_source" ]] && grep -Eq 'https?://dl\.google\.com/linux/chrome(-stable)?/deb/?([[:space:]]|$)' "$apt_source"; then
+    sudo mv "$apt_source" "${apt_source}.disabled"
+  fi
+done
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends poppler-utils
 .venv/bin/python -m playwright install --with-deps chromium

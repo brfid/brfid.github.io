@@ -60,13 +60,13 @@ def playwright_install_locations() -> list[Path]:
 def check_playwright_version() -> None:
     """Require the installed Playwright package to match the project pin."""
     project = tomllib.loads(PROJECT_FILE.read_text(encoding="utf-8"))
-    dependencies = project.get("project", {}).get("optional-dependencies", {}).get("pdf", [])
+    dependencies = project.get("project", {}).get("dependencies", [])
     expected = next(
         (match.group(1) for dependency in dependencies if (match := PLAYWRIGHT_PIN.fullmatch(dependency))),
         None,
     )
     if expected is None:
-        raise RuntimeError(f"could not find an exact Playwright pin in the pdf extra in {PROJECT_FILE}")
+        raise RuntimeError(f"could not find an exact Playwright pin in project dependencies in {PROJECT_FILE}")
     try:
         installed = metadata.version("playwright")
     except metadata.PackageNotFoundError as error:

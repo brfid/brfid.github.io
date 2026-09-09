@@ -99,6 +99,182 @@ def test_robots_check_rejects_a_conflicting_index_directive(tmp_path: Path) -> N
     assert errors == ["index.html: conflicting robots index/follow policy"]
 
 
+@pytest.mark.parametrize(
+    "relative_path",
+    (
+        "posts/index.html",
+        "posts/example/index.html",
+        "posts/page/2/index.html",
+        "posts/page/10/index.html",
+        "posts/page/1/index.html",
+        "index.html",
+        "resume/index.html",
+        "about/index.html",
+        "404.html",
+        "posts/future-article/index.html",
+    ),
+)
+def test_robots_policy_requires_noindex_on_every_html_page(tmp_path: Path, relative_path: str) -> None:
+    page = tmp_path / relative_path
+    page.parent.mkdir(parents=True, exist_ok=True)
+    policy = "noindex, nofollow, noarchive, nosnippet, noimageindex"
+    page.write_text(f'<meta name="robots" content="{policy}">\n', encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_robots(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize("crawler", ("robots", "googlebot", "bingbot"))
+@pytest.mark.parametrize("directive", ("index", "follow", "all"))
+def test_robots_check_rejects_indexing_permissions_on_posts(tmp_path: Path, crawler: str, directive: str) -> None:
+    post = tmp_path / "posts" / "example" / "index.html"
+    post.parent.mkdir(parents=True)
+    post.write_text(
+        '<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">\n'
+        f'<meta name="{crawler}" content="{directive}">\n',
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+
+    verifier.verify_robots(tmp_path, errors)
+
+    assert errors == ["posts/example/index.html: conflicting robots index/follow policy"]
+
+
+def test_robots_check_rejects_the_previous_indexable_blog_policy(tmp_path: Path) -> None:
+    post = tmp_path / "posts" / "example" / "index.html"
+    post.parent.mkdir(parents=True)
+    post.write_text(
+        '<meta name="robots" content="index, follow, noarchive">\n',
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+
+    verifier.verify_robots(tmp_path, errors)
+
+    assert errors == [
+        "posts/example/index.html: missing full robots no-index policy",
+        "posts/example/index.html: conflicting robots index/follow policy",
+    ]
+
+
+@pytest.mark.parametrize("missing", ("noindex", "nofollow", "noarchive", "nosnippet", "noimageindex"))
+def test_robots_check_requires_every_exclusion_on_posts(tmp_path: Path, missing: str) -> None:
+    post = tmp_path / "posts" / "example" / "index.html"
+    post.parent.mkdir(parents=True)
+    policy = ", ".join(
+        directive
+        for directive in ("noindex", "nofollow", "noarchive", "nosnippet", "noimageindex")
+        if directive != missing
+    )
+    post.write_text(f'<meta name="robots" content="{policy}">\n', encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_robots(tmp_path, errors)
+
+    assert errors == ["posts/example/index.html: missing full robots no-index policy"]
+
+
+def test_robots_check_rejects_an_html_page_without_a_policy(tmp_path: Path) -> None:
+    (tmp_path / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_robots(tmp_path, errors)
+
+    assert errors == ["index.html: missing full robots no-index policy"]
+
+
+def test_sitemap_check_accepts_an_absent_sitemap(tmp_path: Path) -> None:
+    errors: list[str] = []
+
+    verifier.verify_no_sitemap(tmp_path, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    "contents", ("", "<urlset />", "<urlset><url><loc>https://brfid.github.io/posts/</loc></url></urlset>")
+)
+def test_sitemap_check_rejects_any_retained_sitemap(tmp_path: Path, contents: str) -> None:
+    (tmp_path / "sitemap.xml").write_text(
+        contents,
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+
+    verifier.verify_no_sitemap(tmp_path, errors)
+
+    assert errors == ["sitemap.xml: must not be published while all HTML is excluded from indexing"]
+
+
+def test_sitemap_check_rejects_a_broken_sitemap_symlink(tmp_path: Path) -> None:
+    (tmp_path / "sitemap.xml").symlink_to(tmp_path / "missing.xml")
+    errors: list[str] = []
+
+    verifier.verify_no_sitemap(tmp_path, errors)
+
+    assert errors == ["sitemap.xml: must not be published while all HTML is excluded from indexing"]
+
+
+def test_robots_file_preserves_html_crawling_and_artifact_exclusions(tmp_path: Path) -> None:
+    robots = tmp_path / "robots.txt"
+    crawl_policy = "User-agent: *\nAllow: /\nDisallow: /resume.pdf\nDisallow: /index.xml\nDisallow: /posts/index.xml\n"
+    robots.write_text(crawl_policy, encoding="utf-8")
+    errors: list[str] = []
+    verifier.verify_robots_file(tmp_path, errors)
+    assert errors == []
+
+    robots.write_text(crawl_policy + "\nSitemap: https://brfid.github.io/sitemap.xml\n", encoding="utf-8")
+    verifier.verify_robots_file(tmp_path, errors)
+    assert any("unexpected directives" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    "changed_line",
+    ("Allow: /", "Disallow: /resume.pdf", "Disallow: /index.xml", "Disallow: /posts/index.xml"),
+)
+def test_robots_file_rejects_missing_crawl_contract_directives(tmp_path: Path, changed_line: str) -> None:
+    lines = ("User-agent: *", "Allow: /", "Disallow: /resume.pdf", "Disallow: /index.xml", "Disallow: /posts/index.xml")
+    (tmp_path / "robots.txt").write_text("\n".join(line for line in lines if line != changed_line), encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_robots_file(tmp_path, errors)
+
+    assert any("unexpected directives" in error for error in errors)
+
+
+@pytest.mark.parametrize("blocked_path", ("/", "/posts/", "/posts/example/"))
+def test_robots_file_rejects_html_crawl_blocks(tmp_path: Path, blocked_path: str) -> None:
+    crawl_policy = "User-agent: *\nAllow: /\nDisallow: /resume.pdf\nDisallow: /index.xml\nDisallow: /posts/index.xml\n"
+    (tmp_path / "robots.txt").write_text(crawl_policy + f"Disallow: {blocked_path}\n", encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_robots_file(tmp_path, errors)
+
+    assert any("unexpected directives" in error for error in errors)
+
+
+def _write_feeds(
+    site_dir: Path,
+    *,
+    link: str = f"{verifier.PUBLIC_ORIGIN}/posts/example/",
+    description: str = "Post",
+    content: str | None = "<p>Full article.</p>",
+) -> None:
+    encoded = "" if content is None else f"<content:encoded><![CDATA[{content}]]></content:encoded>"
+    feed = (
+        '<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><item>'
+        f"<description>{description}</description><link>{link}</link>{encoded}"
+        "</item></channel></rss>\n"
+    )
+    for relative_path in ("index.xml", "posts/index.xml"):
+        path = site_dir / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(feed, encoding="utf-8")
+
+
 def test_feed_check_allows_literal_entities_but_rejects_double_escaped_quotes(
     tmp_path: Path,
 ) -> None:
@@ -107,22 +283,12 @@ def test_feed_check_allows_literal_entities_but_rejects_double_escaped_quotes(
     post.parent.mkdir(parents=True)
     post.write_text("<html></html>\n", encoding="utf-8")
 
-    def _write_feeds(description: str) -> None:
-        feed = (
-            "<rss><channel><item>"
-            f"<description>{description}</description>"
-            f"<link>{verifier.PUBLIC_ORIGIN}/posts/example/</link>"
-            "</item></channel></rss>\n"
-        )
-        (site_dir / "index.xml").write_text(feed, encoding="utf-8")
-        (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
-
-    _write_feeds("Write &amp;amp; literally")
+    _write_feeds(site_dir, description="Write &amp;amp; literally")
     errors: list[str] = []
     verifier.verify_feeds(site_dir, errors)
     assert errors == []
 
-    _write_feeds("Broken apostrophe: &amp;#39;")
+    _write_feeds(site_dir, description="Broken apostrophe: &amp;#39;")
     errors = []
     verifier.verify_feeds(site_dir, errors)
     assert len(errors) == 2
@@ -191,6 +357,52 @@ def test_output_policy_accepts_only_contract_paths_and_source_backed_resources(t
 
     assert errors == []
 
+    for directory in (posts_source, source_resource.parent, site_dir, site_dir / "posts" / "published-post"):
+        (directory / ".DS_Store").write_bytes(b"Finder metadata")
+    for directory in (source_resource.parent, site_dir / "posts" / "published-post"):
+        nested = directory / "scans"
+        nested.mkdir(exist_ok=True)
+        (nested / ".DS_Store").touch()
+
+    verifier.verify_output_policy(site_dir, posts_source, errors)
+
+    assert errors == []
+
+
+@pytest.mark.parametrize("name", (".private", ".DS_Store.txt", ".DS_Store.png"))
+def test_output_policy_still_rejects_other_hidden_files(tmp_path: Path, name: str) -> None:
+    posts_source = _write_post_source(tmp_path)
+    source = posts_source / "published-post" / name
+    source.write_bytes(b"not Finder metadata")
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / name).write_bytes(b"not Finder metadata")
+    errors: list[str] = []
+
+    verifier.verify_output_policy(site_dir, posts_source, errors)
+
+    assert f"published post resource has a hidden path component: {source}" in errors
+    assert f"rendered output path is not allowed: {name}" in errors
+
+
+def test_output_policy_rejects_symlinks_named_like_finder_metadata(tmp_path: Path) -> None:
+    posts_source = _write_post_source(tmp_path)
+    outside = tmp_path / "outside.txt"
+    outside.write_bytes(b"not Finder metadata")
+    (posts_source / ".DS_Store").symlink_to(outside)
+    resource = posts_source / "published-post" / ".DS_Store"
+    resource.symlink_to(outside)
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / ".DS_Store").symlink_to(outside)
+    errors: list[str] = []
+
+    verifier.verify_output_policy(site_dir, posts_source, errors)
+
+    assert f"post bundle is not a regular directory: {posts_source / '.DS_Store'}" in errors
+    assert f"published post resource is a symbolic link: {resource}" in errors
+    assert "rendered output is a symbolic link or special entry: .DS_Store" in errors
+
 
 def test_output_policy_rejects_drafts_archives_metadata_and_symlinks(tmp_path: Path) -> None:
     posts_source = _write_post_source(tmp_path, slug="draft-post", draft=True)
@@ -200,6 +412,7 @@ def test_output_policy_rejects_drafts_archives_metadata_and_symlinks(tmp_path: P
     rejected = (
         "draft.yaml",
         "source.tar.gz",
+        "sitemap.xml",
         "UPPER.HTML",
         "diagnostics/pipeline.log",
         "build.log.html",
@@ -255,9 +468,7 @@ def test_feed_check_rejects_cross_origin_or_escaping_links(tmp_path: Path, link:
     target = site_dir / "posts" / "example" / "index.html"
     target.parent.mkdir(parents=True)
     target.write_text("<html></html>\n", encoding="utf-8")
-    feed = f"<rss><channel><item><description>Post</description><link>{link}</link></item></channel></rss>\n"
-    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
-    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    _write_feeds(site_dir, link=link)
     errors: list[str] = []
 
     verifier.verify_feeds(site_dir, errors)
@@ -274,9 +485,7 @@ def test_feed_check_rejects_a_symlink_escape(tmp_path: Path) -> None:
     (outside / "index.html").write_text("<html></html>\n", encoding="utf-8")
     (site_dir / "posts" / "escape").symlink_to(outside, target_is_directory=True)
     link = f"{verifier.PUBLIC_ORIGIN}/posts/escape/"
-    feed = f"<rss><channel><item><description>Post</description><link>{link}</link></item></channel></rss>\n"
-    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
-    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    _write_feeds(site_dir, link=link)
     errors: list[str] = []
 
     verifier.verify_feeds(site_dir, errors)
@@ -341,9 +550,7 @@ def test_feed_errors_never_echo_a_rejected_secret_value(tmp_path: Path) -> None:
     (site_dir / "posts").mkdir(parents=True)
     token = "github" + "_pat_" + "A" * 30
     link = f"{verifier.PUBLIC_ORIGIN}/posts/missing/?token={token}"
-    feed = f"<rss><channel><item><description>{token}</description><link>{link}</link></item></channel></rss>\n"
-    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
-    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    _write_feeds(site_dir, link=link, description=token)
     errors: list[str] = []
 
     verifier.verify_feeds(site_dir, errors)
@@ -429,12 +636,37 @@ def test_feed_scan_decodes_html_description_attributes(tmp_path: Path) -> None:
     target.write_text("<html></html>\n", encoding="utf-8")
     description = "&lt;span title=&quot;&amp;#43;44 20 7946 0958&quot;&gt;Post&lt;/span&gt;"
     link = f"{verifier.PUBLIC_ORIGIN}/posts/example/"
-    feed = f"<rss><channel><item><description>{description}</description><link>{link}</link></item></channel></rss>\n"
-    (site_dir / "index.xml").write_text(feed, encoding="utf-8")
-    (site_dir / "posts" / "index.xml").write_text(feed, encoding="utf-8")
+    _write_feeds(site_dir, link=link, description=description)
     errors: list[str] = []
 
     verifier.verify_feeds(site_dir, errors)
+
+    assert len(errors) == 2
+    assert all("decoded content: contains a plausible international phone number" in error for error in errors)
+    assert all("7946" not in error for error in errors)
+
+
+@pytest.mark.parametrize("content", (None, "", " \n"))
+def test_feed_check_requires_full_text(tmp_path: Path, content: str | None) -> None:
+    target = tmp_path / "posts" / "example" / "index.html"
+    target.parent.mkdir(parents=True)
+    target.write_text("<html></html>\n", encoding="utf-8")
+    _write_feeds(tmp_path, content=content)
+    errors: list[str] = []
+
+    verifier.verify_feeds(tmp_path, errors)
+
+    assert errors == [f"{feed}: item 1: missing full-text content:encoded" for feed in ("index.xml", "posts/index.xml")]
+
+
+def test_feed_scan_decodes_full_text_attributes(tmp_path: Path) -> None:
+    target = tmp_path / "posts" / "example" / "index.html"
+    target.parent.mkdir(parents=True)
+    target.write_text("<html></html>\n", encoding="utf-8")
+    _write_feeds(tmp_path, content='<span title="&#43;44 20 7946 0958">Post</span>')
+    errors: list[str] = []
+
+    verifier.verify_feeds(tmp_path, errors)
 
     assert len(errors) == 2
     assert all("decoded content: contains a plausible international phone number" in error for error in errors)

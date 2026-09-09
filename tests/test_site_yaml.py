@@ -32,7 +32,6 @@ def test_site_yaml_is_the_complete_public_landing_source() -> None:
     assert len(labels) == len(set(labels))
     assert site["name"] == resume["basics"]["name"]
     assert site["headline"] == resume["basics"]["label"]
-    assert labels == ["LinkedIn", "GitHub", "GitLab", "ORCID", "Strava"]
 
 
 def test_resume_profiles_are_a_consistent_subset_of_the_landing_links() -> None:

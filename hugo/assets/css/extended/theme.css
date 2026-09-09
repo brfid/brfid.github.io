@@ -223,12 +223,6 @@
   background: transparent;
 }
 
-/* Override PaperMod's !important heading-anchor hover color. */
-.post-single .anchor:hover,
-.post-single .anchor:focus-visible {
-  color: var(--interactive-hover) !important;
-}
-
 .theme-toggle svg {
   transition: stroke 0.15s ease;
 }

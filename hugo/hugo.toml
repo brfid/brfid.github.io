@@ -3,13 +3,14 @@ locale = "en-US"
 title = "Bradley Fidler"
 theme = "PaperMod"
 publishDir = "../site"
-disableKinds = ["sitemap", "taxonomy", "term"]
+disableKinds = ["taxonomy", "term", "sitemap"]
 
 # Use only the static hugo/static/robots.txt file.
 enableRobotsTXT = false
 buildDrafts = false
 buildFuture = false
 disableAliases = false
+ignoreFiles = ['(^|/)\.DS_Store$']
 
 [pagination]
   pagerSize = 10

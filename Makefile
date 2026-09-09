@@ -8,7 +8,7 @@ help:
 	@echo "brfid.github.io commands"
 	@echo "  make check                   Run lint, format, type, test, and dead-code checks"
 	@echo "  make verify-site             Build and verify the complete public HTML and PDF artifact"
-	@echo "  make test                    Run unit and workflow contract tests"
+	@echo "  make test                    Run unit, browser, and workflow contract tests"
 	@echo "  make check_env               Verify local prerequisites"
 	@echo "  make hugo-build              Build HTML only into site/"
 	@echo "  make resume-pdf              Build public HTML and phone-free site/resume.pdf"
@@ -39,7 +39,6 @@ check_env:
 clean:
 	@rm -rf build/ site/ local/ .mypy_cache/ .pytest_cache/ .ruff_cache/
 	@rm -f hugo/.hugo_build.lock hugo/data/resume.yaml hugo/data/site.yaml
-	@rm -f hugo/data/bio.yaml hugo/static/build.log.html hugo/static/pipeline-status.json hugo/static/brad.bio.txt
 	@find . -name .venv -prune -o -name .git -prune -o -type d -name __pycache__ -print0 \
 		| xargs -0 rm -rf
 
@@ -47,8 +46,6 @@ prepare-site:
 	@mkdir -p hugo/data
 	@cp site.yaml hugo/data/site.yaml
 	@cp resume.yaml hugo/data/resume.yaml
-	@# Clear retired generated inputs in existing checkouts before Hugo copies static files.
-	@rm -f hugo/data/bio.yaml hugo/static/build.log.html hugo/static/pipeline-status.json hugo/static/brad.bio.txt
 
 new-post:
 	@test -n "$(POST_SLUG)" || { echo "Usage: make new-post POST_SLUG=my-post"; exit 2; }

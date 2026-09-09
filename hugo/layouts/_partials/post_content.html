@@ -1,0 +1,19 @@
+{{- /* Goldmark has no footnote render hook. Add the label to its rendered
+     endnotes while preserving every reference and return-link destination. */ -}}
+{{- $content := .Content -}}
+{{- $opening := `<div class="footnotes" role="doc-endnotes">\s*<hr\s*/?>` -}}
+
+{{- /* Retain an author's adjacent Notes heading and its existing TOC anchor. */ -}}
+{{- $content = $content | replaceRE
+    (printf `<h2 id="([^"]+)">((?:<a\s[^>]+>)?Notes(?:</a>)?)</h2>\s*%s` $opening)
+    `<div class="footnotes" role="doc-endnotes" aria-labelledby="${1}"><hr><h2 id="${1}" class="notes-title">${2}</h2>`
+-}}
+{{- $content = $content | replaceRE $opening
+    `<div class="footnotes" role="doc-endnotes" aria-label="Notes"><hr><h2 class="notes-title">Notes</h2>`
+-}}
+{{- $content = replace $content
+    `class="footnote-backref" role="doc-backlink"`
+    `class="footnote-backref" role="doc-backlink" aria-label="Return to text"`
+-}}
+
+{{- $content | safeHTML -}}

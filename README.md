@@ -9,8 +9,6 @@ site.yaml + resume.yaml + Hugo content and templates
     -> Hugo HTML -> Playwright PDF -> artifact verification -> GitHub Pages
 ```
 
-Pull requests and publications run the same build and verification commands. Deployment receives the verified artifact from its own workflow run and does not rebuild it.
-
 ## Set up a checkout
 
 Install Git, Make, Python 3.11 or newer, Hugo extended 0.156.0 or newer, and Poppler (`pdfinfo` and `pdftotext`). GitHub CLI (`gh`) is needed only for manual workflow operations. Then run:
@@ -28,9 +26,9 @@ make verify-site
 
 On Linux, use `.venv/bin/python -m playwright install --with-deps chromium` for the browser installation so Chromium's system libraries are installed too.
 
-The result is the complete public site under `site/`, including `site/resume.pdf`. A verification failure exits unsuccessfully and prevents CI from uploading a Pages artifact.
+The result is the complete public site under `site/`, including `site/resume.pdf`.
 
-The repository vendors PaperMod as a pinned Git submodule and serves its fonts locally. There is no front-end package install or build step. Python dependencies install from hash locks. CI selects Python 3.11.16 on `ubuntu-24.04`, verifies Hugo and Gitleaks downloads against committed checksums, and pins Actions to full commit IDs. The version selections live in `scripts/github/setup.sh` and `.github/workflows/publish.yml`. Hosted runner updates and system PDF tools remain outside those pins; the build is not claimed to be byte-identical across machines.
+The repository vendors PaperMod as a pinned Git submodule and serves its [fonts locally](docs/fonts.md). There is no front-end package install or build step. Python dependencies install from hash locks. The [setup script](scripts/github/setup.sh) and [workflow](.github/workflows/publish.yml) select CI tools, verify downloads against committed checksums, and pin Actions to full commit IDs. Hosted runner updates and system PDF tools remain outside those pins; the build is not claimed to be byte-identical across machines.
 
 ## Preview the site
 
@@ -48,12 +46,18 @@ make preview PREVIEW_PORT=1314
 
 ## Run checks
 
+Before running `make verify-site`, stop any Hugo preview in this checkout. Both commands use `site/`, and an active preview can overwrite production output with localhost URLs. Restart the preview after verification if needed.
+
 ```bash
 make check
 make verify-site
 ```
 
-`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. The tests cover privacy failures, output policy, feeds, PDF rendering boundaries, and workflow gates. The stale-build guard is tested with successful, superseded, and failed API responses.
+`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. The browser tests render Hugo into a temporary directory and use the installed Chromium to check navigation, theme controls, article semantics, code copying, and print scoping without touching your preview.
+
+`make verify-site` builds fresh HTML and a Chromium PDF, then validates the [publication contracts](AGENTS.md#preserve-publication-contracts). A verification failure exits unsuccessfully and prevents CI from uploading a Pages artifact. Pull requests and publications use this command too. Use `.venv/bin/python -m site_tools.verify site` to recheck an existing artifact without rebuilding it.
+
+Use `make test` for unit, browser, and workflow tests alone, `make hugo-build` for HTML alone, and `make help` for the supported command list.
 
 With Gitleaks installed, run the same history scan as CI:
 
@@ -62,10 +66,6 @@ gitleaks git --log-opts="--all --full-history -m" --redact --verbose --no-banner
 ```
 
 This scans all fetched branches and tags, including merge results, and redacts matches in its diagnostics. It checks committed history; review uncommitted changes before committing them.
-
-`make verify-site` builds fresh HTML and a real Chromium PDF, then checks required routes, feeds, navigation, structured data, the output allowlist, indexing directives, public email, PDF tagging, and phone and secret exclusion. This is also the CI build command. Use `.venv/bin/python -m site_tools.verify site` to recheck an existing artifact without rebuilding it.
-
-Use `make test` for unit and workflow tests alone, `make hugo-build` for HTML alone, and `make help` for the supported command list.
 
 ## Build an application PDF
 
@@ -85,13 +85,13 @@ make new-post POST_SLUG=maintenance-window
 
 Edit `hugo/content/posts/maintenance-window/index.md` and place approved image assets beside it. Production publishes a post only when its front matter explicitly sets `draft: false`.
 
-Working drafts stay outside this public repository. Add only approved copy and public assets.
+Maintain the complete article, citations, and supporting assets in its Hugo page bundle. The site publishes the full article as HTML and RSS. Working drafts stay outside this public repository; add only approved copy and public assets.
 
 ## Publish the site
 
-A push to `main` runs the full-history secret scan, quality checks, and complete HTML/PDF build. After those pass, the workflow uploads the verified Pages artifact. Deployment runs only for this repository's protected `main` branch, and skips a build if the branch has advanced since it was checked. Only the deployment job has Pages write and identity-token permissions.
+A push to `main` runs the full-history secret scan, quality checks, and complete HTML/PDF build. After those pass, the workflow uploads the verified Pages artifact and deploys it from the same run without rebuilding it. Deployment runs only for this repository's protected `main` branch, and skips a build if the branch has advanced since it was checked.
 
-A commit message containing `[nopublish]` runs the checks and retains the artifact without deploying. Every publication uses the same build path; `[fast]` has no special meaning.
+A push whose head commit message contains `[nopublish]` runs the checks and retains the artifact without deploying.
 
 To publish the current `main` manually, authenticate GitHub CLI and start the workflow:
 
@@ -100,22 +100,24 @@ gh auth status
 gh workflow run publish.yml --ref main -f operation=publish
 ```
 
-Use `-f operation=checks` to build and verify without publishing. Open the resulting run to inspect its `github-pages` artifact, retained for 30 days:
+Use `-f operation=checks` to build and verify without publishing. Open the resulting run to inspect its `github-pages` artifact, kept for the [workflow's configured retention period](.github/workflows/publish.yml):
 
 ```bash
 gh run list --workflow publish.yml --limit 5
 gh run view --web
 ```
 
-Pages deployment retries transient failures up to three times using the same artifact. A failed build cannot reach deployment. Inspect the failed job and the live site if all deployment attempts fail.
+Pages deployment retries transient failures up to three times using the same artifact. Inspect the failed job and the live site if all deployment attempts fail.
 
-Every rendered HTML page contains `noindex, nofollow, noarchive, nosnippet, noimageindex`. Hugo emits no sitemap. `robots.txt` leaves HTML crawlable and blocks the public PDF and feeds.
+All HTML, including the blog index, full articles, pagination, homepage, résumé, and aliases, requests exclusion from indexing. The policy applies globally to current and future articles. See the [publication contracts](AGENTS.md#preserve-publication-contracts) for the exact directives.
+
+The site does not publish or advertise a sitemap. `robots.txt` leaves HTML crawlable so search engines can read its indexing directives, and blocks the public PDF and feeds. Article URLs, supporting assets, and both full-text feeds remain available to readers. The PDF block discourages crawling but [does not guarantee exclusion from search](https://developers.google.com/search/docs/crawling-indexing/robots/intro). These controls do not prevent public copies or archival retention; the repository's revision history is also public.
 
 ## Recover a publication
 
-If deployment alone failed and the run still identifies the current `main` commit, use GitHub Actions' **Re-run failed jobs** within the artifact's 30-day retention window. The deployment job reuses that run's checked artifact. If the artifact expired, start a new manual publication of `main`.
+If deployment alone failed, the run still identifies the current `main` commit, and its checked artifact remains available, use GitHub Actions' **Re-run failed jobs**. The deployment job reuses that artifact. If it expired or `main` advanced, start a new manual publication of `main`.
 
-If published source needs correction, inspect the offending commit, revert that change on `main`, verify the resulting source, and push the new commit. Replace the example SHA before running:
+If published source needs correction, start with a clean checkout on `main`. Inspect the offending commit, revert that change, verify the resulting source, and push the new commit. Replace the example SHA before running:
 
 ```bash
 git status --short --branch
@@ -127,9 +129,7 @@ make verify-site
 git push origin main
 ```
 
-Start with a clean checkout on `main`. Revert a multi-commit change from newest to oldest, or prepare a focused corrective commit when other work depends on it. Recovery preserves shared history and passes through the same checks as an ordinary publication.
-
-The current workflow checks the latest `main` commit before starting deployment. Runs from before the vintage pipeline retirement use the workflow at their original revision and lack that guard; use a new publication of `main` for recovery.
+Revert a multi-commit change from newest to oldest, or prepare a focused corrective commit when other work depends on it. Recovery preserves shared history and passes through the same checks as an ordinary publication.
 
 ## Update dependencies
 
@@ -140,7 +140,9 @@ uv pip compile requirements/build.in --python-version 3.11 --universal --generat
 uv pip compile pyproject.toml --all-extras --python-version 3.11 --universal --generate-hashes --no-emit-package brfid-site -o requirements/dev.lock
 ```
 
-Reinstall from the updated locks and run both checks above. Inspect `/resume/` and the PDF when updating Playwright, since its Chromium version affects pagination. Update the Python selection in `.github/workflows/publish.yml`; update Hugo's version in `scripts/github/setup.sh` together with its independently verified package checksum in `requirements/hugo.sha256`.
+Reinstall from the updated locks and, if Playwright changed, reinstall Chromium using the [checkout setup commands](#set-up-a-checkout). Run [the checks](#run-checks). After a Playwright update, inspect `/resume/` and `/resume.pdf`, since its Chromium version affects pagination.
+
+Update the Python selection in [.github/workflows/publish.yml](.github/workflows/publish.yml); update Hugo's version in [scripts/github/setup.sh](scripts/github/setup.sh) together with its independently verified package checksum in `requirements/hugo.sha256`.
 
 Update Gitleaks' version in `.github/workflows/publish.yml` together with `requirements/gitleaks.sha256`, checked against the upstream release's checksum file. Run the history scan after an update because detection rules may change.
 
@@ -158,8 +160,6 @@ For an Action update, resolve the intended release in its upstream repository to
 | `site_tools/verify.py` | Rendered HTML, feed, privacy, and PDF verification |
 | `site_tools/environment.py` | Local prerequisite checks |
 | `requirements/` | Hash-locked Python environment and Hugo/Gitleaks download checksums |
+| [docs/multihoming-scans.json](docs/multihoming-scans.json) | Published archival scan paths, source provenance, and checksums |
 | `.github/workflows/publish.yml` | Checks, artifact handoff, and Pages deployment |
 | `scripts/github/setup.sh` | Hosted build environment setup |
-| `STATUS.md` | Current operational state and queue |
-
-The former VAX/PDP-11 bio pipeline is [documented as a retired experiment](docs/vintage-pipeline.md); its implementation remains in Git history. [ARPANET Redux](https://github.com/brfid/arpanet-redux) continues the historical-computing work as an independent project.

@@ -17,6 +17,14 @@
     </a>
     {{- end }}
     {{- end }}
+    {{- if and (eq .Kind "section") (eq .Section "posts") }}
+    {{- range where hugo.Data.site.links "icon" "substack" }}
+    <a class="section-feed-link" href="{{ trim .url " " | safeURL }}" target="_blank" rel="noopener noreferrer me">
+      <span aria-hidden="true">{{ partial "svg.html" (dict "name" .icon) }}</span>
+      <span>Email updates via Substack</span>
+    </a>
+    {{- end }}
+    {{- end }}
   </h1>
   {{- if .Description }}
   <div class="post-description">
@@ -28,9 +36,7 @@
 
 {{- if .Content }}
 <div class="post-content md-content">
-  {{- if not (.Param "disableAnchoredHeadings") }}
-  {{- partial "anchored_headings.html" .Content -}}
-  {{- else }}{{ .Content }}{{ end }}
+  {{- .Content -}}
 </div>
 {{- end }}
 

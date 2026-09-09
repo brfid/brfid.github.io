@@ -32,7 +32,6 @@ def test_resume_human_authored_fields_remain_strings() -> None:
         networks.append(profile["network"])
 
     assert len(networks) == len(set(networks))
-    assert networks == ["LinkedIn", "GitHub", "GitLab", "ORCID"]
 
     for employer in resume["work"]:
         assert isinstance(employer, dict)

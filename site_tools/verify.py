@@ -48,6 +48,8 @@ STATIC_ALLOWED_FILES = frozenset(
         "fonts/plex-mono-400-latin.woff2",
         "fonts/plex-mono-500-latin-ext.woff2",
         "fonts/plex-mono-500-latin.woff2",
+        "fonts/source-serif4-italic.woff2",
+        "fonts/source-serif4-roman.woff2",
         "safari-pinned-tab.svg",
     }
 )
@@ -86,6 +88,11 @@ SECRET_PATTERNS = (
 TAGGED_PDF = re.compile(r"^Tagged:\s+yes\s*$", re.MULTILINE)
 
 
+def _is_finder_metadata(path: Path) -> bool:
+    """Ignore regular Finder metadata without exempting symlinks or other hidden files."""
+    return path.name == ".DS_Store" and not path.is_symlink() and path.is_file()
+
+
 def _published_post_outputs(posts_source_dir: Path, errors: list[str]) -> tuple[set[str], set[str]]:
     """Return allowed post pages and source-backed public resources."""
     pages: set[str] = set()
@@ -95,7 +102,7 @@ def _published_post_outputs(posts_source_dir: Path, errors: list[str]) -> tuple[
         return pages, resources
 
     for bundle in sorted(posts_source_dir.iterdir()):
-        if bundle.name.startswith("_"):
+        if bundle.name.startswith("_") or _is_finder_metadata(bundle):
             continue
         if bundle.is_symlink() or not bundle.is_dir():
             errors.append(f"post bundle is not a regular directory: {bundle}")
@@ -129,7 +136,7 @@ def _published_post_outputs(posts_source_dir: Path, errors: list[str]) -> tuple[
 
         pages.add(f"posts/{bundle.name}/index.html")
         for resource in sorted(bundle.rglob("*")):
-            if resource == index:
+            if resource == index or _is_finder_metadata(resource):
                 continue
             if resource.is_symlink():
                 errors.append(f"published post resource is a symbolic link: {resource}")
@@ -173,6 +180,8 @@ def _rendered_files(site_dir: Path, errors: list[str]) -> dict[str, Path]:
                 child_directories.remove(name)
         for name in child_files:
             child = directory_path / name
+            if _is_finder_metadata(child):
+                continue
             relative_path = child.relative_to(site_dir).as_posix()
             try:
                 status = child.lstat()
@@ -188,8 +197,8 @@ def _rendered_files(site_dir: Path, errors: list[str]) -> dict[str, Path]:
     return files
 
 
-def verify_output_policy(site_dir: Path, posts_source_dir: Path, errors: list[str]) -> None:
-    """Fail closed unless every rendered path belongs to the explicit Pages contract."""
+def verify_output_policy(site_dir: Path, posts_source_dir: Path, errors: list[str]) -> set[str]:
+    """Check the output allowlist and return source-backed published post paths."""
     post_pages, post_resources = _published_post_outputs(posts_source_dir, errors)
     files = _rendered_files(site_dir, errors)
     if isinstance(PAGER_SIZE, bool) or not isinstance(PAGER_SIZE, int) or PAGER_SIZE <= 0:
@@ -214,6 +223,7 @@ def verify_output_policy(site_dir: Path, posts_source_dir: Path, errors: list[st
         errors.append(f"rendered output path is not allowed: {relative_path}")
     for expected_page in sorted(post_pages | pagination_paths):
         record(expected_page in files, errors, f"published page is missing from rendered output: {expected_page}")
+    return post_pages
 
 
 def _nested_strings(value: object) -> list[str]:
@@ -306,6 +316,7 @@ class RenderedPageParser(HTMLParser):
         """Initialize collected metadata, links, and JSON-LD blocks."""
         super().__init__()
         self.robots: list[str] = []
+        self.crawler_robots: list[str] = []
         self.anchors: list[dict[str, str]] = []
         self.attribute_values: list[str] = []
         self.json_ld: list[str] = []
@@ -318,6 +329,8 @@ class RenderedPageParser(HTMLParser):
         self.attribute_values.extend(value for value in attributes.values() if value)
         if tag == "meta" and attributes.get("name", "").lower() == "robots":
             self.robots.append(attributes.get("content", ""))
+        elif tag == "meta" and attributes.get("name", "").lower() in {"googlebot", "googlebot-news", "bingbot"}:
+            self.crawler_robots.append(attributes.get("content", ""))
         elif tag == "a":
             self.anchors.append(attributes)
         elif tag == "script" and attributes.get("type", "").lower() == "application/ld+json":
@@ -381,12 +394,11 @@ def verify_required_files(site_dir: Path, errors: list[str]) -> bool:
         available = path.is_file() and path.stat().st_size > 0
         record(available, errors, f"missing or empty: {relative_path}")
         missing = missing or not available
-    record(not (site_dir / "sitemap.xml").exists(), errors, "unexpected sitemap.xml")
     return missing
 
 
 def verify_robots(site_dir: Path, errors: list[str]) -> None:
-    """Check the full no-index policy on every rendered HTML page."""
+    """Require the complete no-index policy on every HTML page."""
     for path in sorted(site_dir.rglob("*.html")):
         parser = parse_html(path)
         directives = [
@@ -394,17 +406,29 @@ def verify_robots(site_dir: Path, errors: list[str]) -> None:
             for content in parser.robots
         ]
         all_directives = set().union(*directives) if directives else set()
-        relative_path = path.relative_to(site_dir)
+        for content in parser.crawler_robots:
+            all_directives.update(directive.strip().lower() for directive in content.split(",") if directive.strip())
+        relative_path = path.relative_to(site_dir).as_posix()
         record(
             any(directive_set >= REQUIRED_ROBOTS_DIRECTIVES for directive_set in directives),
             errors,
             f"{relative_path}: missing full robots no-index policy",
         )
         record(
-            all_directives.isdisjoint({"all", "follow", "index"}),
+            all_directives <= REQUIRED_ROBOTS_DIRECTIVES,
             errors,
             f"{relative_path}: conflicting robots index/follow policy",
         )
+
+
+def verify_no_sitemap(site_dir: Path, errors: list[str]) -> None:
+    """Reject a stale sitemap when every HTML page is excluded from indexing."""
+    sitemap = site_dir / "sitemap.xml"
+    record(
+        not sitemap.exists() and not sitemap.is_symlink(),
+        errors,
+        "sitemap.xml: must not be published while all HTML is excluded from indexing",
+    )
 
 
 def verify_robots_file(site_dir: Path, errors: list[str]) -> None:
@@ -468,7 +492,7 @@ def rendered_path_for_url(site_dir: Path, url: str) -> Path:
 
 
 def verify_feeds(site_dir: Path, errors: list[str]) -> None:
-    """Check feed XML, post targets, and numeric-quote double escaping."""
+    """Require full-text feed items, safe post targets, and correctly escaped descriptions."""
     for relative_path in ("index.xml", "posts/index.xml"):
         feed_path = site_dir / relative_path
         try:
@@ -482,10 +506,12 @@ def verify_feeds(site_dir: Path, errors: list[str]) -> None:
         record(bool(items), errors, f"{relative_path}: feed has no items")
         for item_number, item in enumerate(items, start=1):
             description = item.findtext("description", default="")
+            content = item.findtext("{http://purl.org/rss/1.0/modules/content/}encoded", default="")
             link = item.findtext("link", default="").strip()
             item_label = f"{relative_path}: item {item_number}"
+            record(bool(content.strip()), errors, f"{item_label}: missing full-text content:encoded")
             _record_sensitive_text(
-                [description, link, *decoded_html_values(description)],
+                [description, content, link, *decoded_html_values(description), *decoded_html_values(content)],
                 label=f"{item_label}: decoded content",
                 errors=errors,
             )
@@ -513,15 +539,6 @@ def verify_feeds(site_dir: Path, errors: list[str]) -> None:
                 )
 
 
-def find_menu_link(parser: RenderedPageParser, path: str) -> dict[str, str] | None:
-    """Find a primary-menu link by its URL path."""
-    for anchor in parser.anchors:
-        classes = anchor.get("class", "").split()
-        if "menu-primary-link" in classes and urlparse(anchor.get("href", "")).path == path:
-            return anchor
-    return None
-
-
 def find_link(parser: RenderedPageParser, path: str, required_class: str | None = None) -> dict[str, str] | None:
     """Find a rendered link by URL path and optional CSS class."""
     for anchor in parser.anchors:
@@ -537,7 +554,7 @@ def verify_primary_links(site_dir: Path, errors: list[str]) -> None:
     homepage = parse_html(site_dir / "index.html")
     for path in ("/posts/", "/resume/"):
         record(
-            find_menu_link(homepage, path) is not None,
+            find_link(homepage, path, "menu-primary-link") is not None,
             errors,
             f"index.html: missing primary link to {path}",
         )
@@ -568,7 +585,7 @@ def verify_menu_state(site_dir: Path, errors: list[str]) -> None:
 
     for relative_path, (menu_path, expected_state) in sorted(expected_states.items()):
         parser = parse_html(site_dir / relative_path)
-        link = find_menu_link(parser, menu_path)
+        link = find_link(parser, menu_path, "menu-primary-link")
         record(link is not None, errors, f"{relative_path}: missing menu link to {menu_path}")
         if link is not None:
             record(
@@ -654,18 +671,7 @@ def verify_resume_pdf(site_dir: Path, public_email: str | None, errors: list[str
     if text is not None:
         if public_email is not None:
             record(public_email in text, errors, "resume.pdf: missing the public basics.email")
-        record(
-            PLAUSIBLE_US_PHONE.search(text) is None,
-            errors,
-            "resume.pdf: contains a plausible US phone number",
-        )
-        record(
-            PLAUSIBLE_INTERNATIONAL_PHONE.search(text) is None,
-            errors,
-            "resume.pdf: contains a plausible international phone number",
-        )
-        for label, pattern in SECRET_PATTERNS:
-            record(pattern.search(text) is None, errors, f"resume.pdf: contains possible {label}")
+        _record_sensitive_text([text], label="resume.pdf", errors=errors)
 
     info = run_external("pdfinfo", [str(pdf_path.resolve())], errors)
     if info is not None:
@@ -698,6 +704,7 @@ def verify_site(site_dir: Path) -> list[str]:
         return errors
     verify_robots(site_dir, errors)
     verify_robots_file(site_dir, errors)
+    verify_no_sitemap(site_dir, errors)
     verify_homepage_schema(site_dir, errors)
     verify_feeds(site_dir, errors)
     verify_primary_links(site_dir, errors)

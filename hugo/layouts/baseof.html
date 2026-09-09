@@ -17,7 +17,7 @@
     {{- partial "head.html" . }}
 </head>
 
-{{- if (or (ne .Kind `page` ) (eq .Layout `archives`) (eq .Layout `search`)) }}
+{{- if ne .Kind `page` }}
 <body class="list" id="top">
 {{- else if eq .Layout `resume` }}
 <body class="resume-page" id="top">
@@ -29,7 +29,7 @@
     <main class="main" id="main-content" tabindex="-1">
         {{- block "main" . }}{{ end }}
     </main>
-    {{ partialCached "footer.html" . .Layout .Kind (.Param "hideFooter") (.Param "ShowCodeCopyButtons") -}}
+    {{ partial "footer.html" . -}}
 </body>
 
 </html>

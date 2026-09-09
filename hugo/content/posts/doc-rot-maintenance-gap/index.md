@@ -1,72 +1,66 @@
 ---
-title: "Doc rot: the maintenance gap the end-to-end argument leaves open"
+title: "Doc rot: two questions for a documentation pipeline"
 date: 2026-07-11
 draft: false
-description: "Documentation can pass every existing check while losing fit with the product. Keeping it current requires both the right evidence and a maintained path back after change."
+description: "End-to-end reasoning and software maintenance suggest two questions for a docs pipeline: what evidence supports a claim, and what brings it back for review?"
 tags: ["documentation", "docs-as-code", "software-maintenance", "testing"]
 ---
 
-Documentation does not have to change to become stale because the product (or the world) can move around it.
+A documentation build can pass while a page gives advice that no longer fits the product. The links still resolve, the examples still compile, and the recommended approach still works. A newer approach may now serve readers better, without anything in the pipeline prompting someone to reconsider the old recommendation.
 
-Software research described this maintenance problem decades ago. Lehman showed that a static program can become less useful as the reality it reflects changes.[^lehman-1980] Parnas described software that had aged "even though nobody has touched it" and documentation that becomes "increasingly inaccurate" when updates are deferred.[^parnas-1994]
+I started thinking about this as an application of the end-to-end principle to documentation pipelines. That led me to ask what a check can actually establish. Reading it alongside work on software evolution and maintenance suggested a second question: what brings a claim back for review when the circumstances supporting it change?
 
-A page can keep passing every existing check while losing its fit with the product or with the conditions in which the product is used. Each check may still return the right verdict within its scope even though no process brings the relevant claim back to the person or check able to reassess it after change.
+Together, these ideas offer a way to identify some of the maintenance work a docs pipeline needs:
 
-## Two questions
+1. What evidence would let a person or check assess this claim?
+2. What will bring it back for reassessment, and who will act on the result?
 
-A docs pipeline combines automated checks, review tasks, and people. Each can answer some questions and not others. A Markdown linter can report whether a file follows its rules. A live contract test can report observed API behavior. Choosing the current integration path requires product and user evidence.
+## What can a check establish?
 
-Two questions expose the difference:
+Saltzer, Reed, and Clark's end-to-end argument concerns the placement of functions in a system. When a function requires knowledge and help from the application at the endpoints, mechanisms inside the communication system cannot completely provide it. Those mechanisms can still be useful. In their file-transfer example, checks within the network can reduce errors, while the application still needs to verify the transferred file and handle failure.[^saltzer-1984]
 
-1. Can this person or check answer the claim with current evidence?
-2. What will make that person or check look again over time, and who is responsible for acting on the result?
+For documentation, I find the useful analogy in asking what information a check needs to support the conclusion we want to draw. A Markdown linter has enough information to check its formatting rules. It has no evidence about whether a recommended integration suits the reader's task. That assessment may require current product knowledge and experience with how people use it.
 
-The end-to-end argument explains the first question. Saltzer, Reed, and Clark show that complete implementation depends on knowledge held by the application at the endpoints, although a partial lower-level version may still improve performance.[^saltzer-1984] Applied to documentation, the person or check must be able to reach the evidence the claim requires. A live contract test can answer a narrow question about endpoint behavior. A recommendation about when to use that endpoint needs current product and user evidence.
+The fit is partial: a docs pipeline combines tools and judgments that do not necessarily form a neat hierarchy, and a recommendation may have no single conclusive test. The end-to-end argument helps frame the question; identifying adequate evidence for a particular claim remains part of the work.
 
-The second question accounts for time: an engineer can verify behavior during launch and never be asked to revisit it after release, while a linter can run on every release and check only form. A maintained path connects the person or check able to answer with a reliable trigger or cadence and assigns responsibility for the result.
+This gives routine checks a useful, bounded role. A link checker can report whether a link resolved when it ran. A test can show how an example behaved under specified conditions. Those results contribute evidence about the page. A claim about which approach readers should choose needs evidence suited to that decision.
 
-## The grid
+## What brings the claim back for review?
 
-Carry one machine-testable claim through all four cells: "`GET /foo?mode=summary` returns HTTP `200` in the supported release environment."
+An adequate review at publication establishes something about the conditions at that time. Keeping the page useful also means noticing when those conditions may have changed.
+
+Software maintenance research provides a reason to ask about this. Lehman described how programs that reflect a changing external reality can become less useful unless they evolve.[^lehman-1980] Parnas distinguished aging caused by changing expectations from aging introduced through modifications, and described how deferred documentation updates make later changes harder.[^parnas-1994]
+
+The corresponding problem in docs is easy to imagine. An engineer reviews an integration guide at launch. Later, the product gains a new integration method. The original method still works, so its tests keep passing. The recommendation needs another look, but a trigger tied only to changes in the old method may never request that review.
+
+If we want the guide to remain current, someone needs a way to notice the relevant change, reassess the guidance, and decide what to do with it. A release review, a connection to the responsible product team, or a scheduled review could provide that opportunity. The choice depends on how the product changes and what the team can sustain.
+
+## Following one claim through the pipeline
+
+Consider a narrower claim: under the documented test conditions, `GET /foo?mode=summary` returns HTTP `200` in a specified supported version and environment.
+
+We can distinguish the evidence a check supplies from whether it runs again:
 
 {{< maintenance-grid >}}
 
-The bottom row is useful when its scope is explicit. A recurring linter keeps reporting on form; it does not report the endpoint's current response. A change trigger also cannot answer the claim. It becomes useful by routing the page to a test or reviewer that can. The trigger and the reviewer together create the maintained path.
+The recurring contract test gives us a way to gather fresh evidence about the response. Its usefulness depends on whether the conditions still match the claim, whether the test continues to run, and whether anyone investigates failures. The layout and structure checks remain useful for the properties they assess.
 
-The grid uses a contract claim because a machine can answer it. A recommendation is harder. Deciding which integration path readers should use requires current product and user evidence. The same maintenance question applies: what event or schedule returns that recommendation to someone who can reassess it?
+The distinction helps locate different kinds of missing work. We may lack a check or review with relevant evidence. We may have that review available but no reason for it to happen again. Or reviews may recur while their findings wait indefinitely for attention. Ownership helps organize the response, but the responsible person or team also needs time and authority to act.
 
-## The known failure and the quiet one
+## Choosing maintenance work the team can sustain
 
-The familiar failure comes from reading a bounded green result as a broader verdict. For code, a mismatch sometimes announces itself through a test, type check, or runtime failure already operating for another reason. Many documentation claims have no executable consequence. A link checker reports whether it could reach a link when it ran. A linter reports rule conformance. A schema validator reports structural validity. All can be green while a product claim is false. Each result says only what that tool measured.
+I would start with claims whose failure would materially affect a reader's task. For a behavior that can be tested, record the relevant conditions, connect the test to the claim, and decide what should happen when the result changes. Maintaining the test is part of that commitment.
 
-The quieter failure is orphaned knowledge. Someone can answer the relevant question and does so once, but no maintained path returns the page for review. The page remains in CI while the decisive review disappears.
+For recommendations, responsibility at the page or feature level may be more practical. Connecting a guide to a product area can help catch changes that a dependency on one endpoint would miss, including the arrival of a new alternative. A periodic review can provide another opportunity to notice changes, at a frequency that reflects both the consequences of stale advice and the available review time.
 
-A green build can coexist with either failure. One assigns broad meaning to a narrow result. The other fails to ask the right person or check again.
+These arrangements have costs. Triggers generate triage work, mappings become outdated, and scheduled reviews compete with other tasks. Sometimes the appropriate response will be to narrow a claim, state its version or conditions, or retire guidance the team can no longer support.
 
-Swanson calls maintenance in response to a changed environment adaptive maintenance.[^swanson-1976] Orphaned knowledge is an adaptive-maintenance failure: the means to answer exists, but no standing process invokes it after change.
-
-## When docs become machine input
-
-Automated readers make stale guidance travel faster. When a retrieval system, coding agent, or support workflow uses an orphaned page as source material, the same claim can appear in repeated answers or edits. A coherent page can produce working but outdated guidance.
-
-LLMs do not create the maintenance gap. They can increase its reach when a workflow selects a stale page and gives it authority. The source still needs an owner and a trigger.
-
-## What to do
-
-Start with the material claims on a page. For "`GET /foo?mode=summary` returns HTTP `200` in the supported release environment," a contract test can supply current evidence. Run it when the handler or contract changes and on a schedule, and assign responsibility for maintaining the test and acting on its result.
-
-Guidance needs a broader mapping. Give each page or feature a responsible maintainer and connect it to the product area it describes. A mapping to existing dependencies can miss a newly introduced alternative, so the trigger must also cover the product capability or release area. A scheduled review provides a backstop for changes that no existing dependency can anticipate. Changes to source, schema, release state, deprecation status, or team ownership can then create a review task.
-
-This routing creates maintenance and triage work. Use claim-level automation for material assertions a machine can check; page- or feature-level ownership can carry the rest. Event-driven triggers should fire only for changes that can plausibly affect the guidance.
-
-Run the two questions on each material page or claim: a missing answer to the first reveals a knowledge gap, and a missing answer to the second reveals an ownership gap. The end-to-end argument shows where an answer can be found, and maintenance supplies the return path that lets the system ask again after change.
+For an important page, the two questions make those commitments easier to examine: what evidence supports its claims, and what will bring them back for reconsideration? The answers can help a team decide where another test would help, where review is needed, and what continuing work it is taking on by publishing the page.
 
 ## Notes
 
-[^saltzer-1984]: Saltzer, J.H., Reed, D.P., and Clark, D.D. "End-to-End Arguments in System Design." *ACM Transactions on Computer Systems* 2, no. 4 (November 1984): 277–288. The knowledge condition and performance-enhancement qualification appear on p. 278. <https://web.mit.edu/Saltzer/www/publications/endtoend/endtoend.pdf>
+[^saltzer-1984]: J. H. Saltzer, D. P. Reed, and D. D. Clark, "[End-to-End Arguments in System Design](https://web.mit.edu/Saltzer/www/publications/endtoend/endtoend.pdf)," *ACM Transactions on Computer Systems* 2, no. 4 (1984): 277–288. See the opening statement of the argument and the sections "End-to-end caretaking," "Performance aspects," and "Identifying the ends."
 
-[^lehman-1980]: Lehman, M.M. "Programs, Life Cycles, and Laws of Software Evolution." *Proceedings of the IEEE* 68, no. 9 (September 1980): 1060–1076. The statement that software does not deteriorate spontaneously appears on p. 1061. E-programs mechanize a human or societal activity (p. 1062), and an installed program becomes part of the world it models (p. 1063). Law I applies to a used program that reflects another reality: it undergoes continual change or becomes progressively less useful (p. 1068). <https://users.ece.utexas.edu/~perry/education/SE-Intro/lehman.pdf>
+[^lehman-1980]: M. M. Lehman, "[Programs, Life Cycles, and Laws of Software Evolution](https://users.ece.utexas.edu/~perry/education/SE-Intro/lehman.pdf)," *Proceedings of the IEEE* 68, no. 9 (1980): 1060–1076. See the discussion of E-programs and the first law of software evolution, especially p. 1068. The application to documentation here is mine.
 
-[^parnas-1994]: Parnas, D.L. "Software Aging." Invited plenary talk, *Proceedings of the 16th International Conference on Software Engineering* (ICSE), 1994: 279–287. Parnas distinguishes aging caused by failure to meet changing needs from aging caused by changes themselves (p. 279). The untouched-software and documentation passages appear in §§2.1–2.2, p. 280. <https://www.eecs.yorku.ca/course_archive/2009-10/W/6431/Parnas.pdf>
-
-[^swanson-1976]: Swanson, E.B. "The Dimensions of Maintenance." *Proceedings of the 2nd International Conference on Software Engineering* (ICSE '76), 1976: 492–497. Corrective maintenance is defined on p. 492; adaptive and perfective maintenance, with the summary table, appear on p. 493. <https://dl.acm.org/doi/10.5555/800253.807723>
+[^parnas-1994]: D. L. Parnas, "[Software Aging](https://www.eecs.yorku.ca/course_archive/2009-10/W/6431/Parnas.pdf)," *Proceedings of the 16th International Conference on Software Engineering* (1994): 279–287. See §§2.1–2.2, p. 280, on changing expectations, modifications, and deferred documentation updates.
