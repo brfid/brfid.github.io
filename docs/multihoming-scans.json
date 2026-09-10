@@ -1,5 +1,5 @@
 {
-  "description": "Source provenance for the archival page images linked in the multihoming post. Source paths are relative to the operator etext archive. BBN photographs are by Bradley Fidler; document authorship remains as cited in the post. PDF page numbers count from the beginning of each preserved file; printed pagination is recorded only where identified.",
+  "description": "Source provenance for the archival page images and PDF downloads linked in the multihoming post. Source paths are relative to the operator etext archive. BBN photographs are by Bradley Fidler; document authorship remains as cited in the post. PDF page numbers count from the beginning of each preserved file; printed pagination is recorded only where identified.",
   "assets": [
     {
       "asset": "hugo/content/posts/multihoming/scans/bbn-2913-p57.png",
@@ -577,6 +577,113 @@
       "source_sha256": "2cdd89f909af6e4b669ddec55e82720d57fa686f3a3b399ee1d53b1d6069bf1f",
       "asset_sha256": "cc9ff4f583843b73c887a76ad935aa465d8fef0bfde9b62c3c3a12b8dc500bad",
       "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph or spread without recompression."
+    },
+    {
+      "asset": "docs/multihoming-sources/pouzin-inwg20-1973.pdf",
+      "source": "INWG/CBI 123-Box 1-Folder 3-20pp.pdf",
+      "source_sha256": "dc22215190b51823b789d935b457a85d60efcbed196fb56ce9377288e7b1ae0f",
+      "asset_sha256": "9f6d04ae4bff70e228a3fe526a29e069672cbd2297fe75ee4293f864e64fb5d6",
+      "transformation": "Extracted PDF pages 2–6 from the 20-page archival packet, retaining all five pages of the English INWG 20 note without cropping or rasterization.",
+      "source_pdf_pages": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "printed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "asset": "docs/multihoming-sources/zimmermann-elie-sch519-1-1974.pdf",
+      "source": "INWG/new scans/CBI 123_Zimmermann and Elie_SCH 519.1.pdf",
+      "source_sha256": "101f12f8b92789cf9a3a63df63ff2600cf8ee8cceb79ef3f33a93d2ef2f6192f",
+      "asset_sha256": "101f12f8b92789cf9a3a63df63ff2600cf8ee8cceb79ef3f33a93d2ef2f6192f",
+      "transformation": "Complete source PDF copied unchanged.",
+      "pdf_pages": 31
+    },
+    {
+      "asset": "docs/multihoming-sources/pouzin-inwg42-1973.pdf",
+      "source": "INWG/INWG42Pouzin.pdf",
+      "source_sha256": "00a64621e47ffa61facdd2945883abcc547c495e67d4cd9b126fef1a2b137a52",
+      "asset_sha256": "00a64621e47ffa61facdd2945883abcc547c495e67d4cd9b126fef1a2b137a52",
+      "transformation": "Complete source PDF copied unchanged.",
+      "pdf_pages": 19
+    },
+    {
+      "asset": "docs/multihoming-sources/pouzin-sch527-1974.pdf",
+      "source": "INWG/new scans/CBI 123_Pouzin_SCH527.pdf",
+      "source_sha256": "2f34d208e9a8b13b8a3706c2d5bf135a3648e195c4e99e82d1685d2d6d20d1c1",
+      "asset_sha256": "2f34d208e9a8b13b8a3706c2d5bf135a3648e195c4e99e82d1685d2d6d20d1c1",
+      "transformation": "Complete source PDF copied unchanged.",
+      "pdf_pages": 13
+    },
+    {
+      "asset": "docs/multihoming-sources/bbn-report-2913-1974.pdf",
+      "source": "BBN/2913 BBN (1974) Interface Message Processors for the ARPA Computer Network (Report 2913, Quarterly Technical Report 7).pdf",
+      "source_sha256": "bb2ef373bcc3aebd9306a13adb7332458a1c8eb0da50b06dc98a4ff8edf11641",
+      "asset_sha256": "bb2ef373bcc3aebd9306a13adb7332458a1c8eb0da50b06dc98a4ff8edf11641",
+      "transformation": "Complete source PDF copied unchanged.",
+      "pdf_pages": 61
+    },
+    {
+      "asset": "docs/multihoming-sources/cerf-itp-1973-archival-packet.pdf",
+      "source": "INWG/CBI 123-Box 1-Folder 5-69pp.pdf",
+      "source_sha256": "6025c011ec6af0cbd5123cba0631877b94dc8fe103d789fcbd61d1f2a04d36fc",
+      "asset_sha256": "6025c011ec6af0cbd5123cba0631877b94dc8fe103d789fcbd61d1f2a04d36fc",
+      "transformation": "Complete source PDF copied unchanged.",
+      "pdf_pages": 69
+    },
+    {
+      "asset": "docs/multihoming-sources/pouzin-sch516-1973.pdf",
+      "source": "INWG/new scans/CBI 123_Pouzin_SCH 516.pdf",
+      "source_sha256": "8581201fb349da793473e3eccb5435a1da2217102c901d6beed8aa8cbe0f25e5",
+      "asset_sha256": "8581201fb349da793473e3eccb5435a1da2217102c901d6beed8aa8cbe0f25e5",
+      "transformation": "Complete source PDF copied unchanged.",
+      "pdf_pages": 29
+    },
+    {
+      "asset": "docs/multihoming-sources/waterloo-network-modelling-simulation-1977.pdf",
+      "source": "CYCLADES/2026-09-10-research/1977-waterloo-network-simulation.pdf",
+      "source_sha256": "1db48991a41a3c648b7d256809431c0edab7df86f9f1e1c4cb1f181046cc24aa",
+      "asset_sha256": "1db48991a41a3c648b7d256809431c0edab7df86f9f1e1c4cb1f181046cc24aa",
+      "transformation": "Complete source PDF copied unchanged.",
+      "source_url": "https://publications.gc.ca/collections/collection_2020/isde-ised/Co24/Co24-532-1977-eng.pdf",
+      "pdf_pages": 125
+    },
+    {
+      "asset": "docs/multihoming-sources/morgan-performance-measurement-1975.pdf",
+      "source": "CYCLADES/2026-09-10-research/1975-waterloo-network-monitor.pdf",
+      "source_sha256": "b46b4b613a8a16f465723bcf823d758fa9e51380015eb310788efe75978e93b6",
+      "asset_sha256": "b46b4b613a8a16f465723bcf823d758fa9e51380015eb310788efe75978e93b6",
+      "transformation": "Complete source PDF copied unchanged.",
+      "source_url": "https://publications.gc.ca/collections/collection_2020/isde-ised/Co24/Co24-530-1975-eng.pdf",
+      "pdf_pages": 251
+    },
+    {
+      "asset": "docs/multihoming-sources/gelenbe-grange-mussard-rr230-1977.pdf",
+      "source": "CYCLADES/2026-09-10-research/INRIA1977_240_pdf_impression.pdf",
+      "source_sha256": "30fd5e445fe93352895c9a001eda09c642c5e902474539fc20c79be23db27819",
+      "asset_sha256": "30fd5e445fe93352895c9a001eda09c642c5e902474539fc20c79be23db27819",
+      "transformation": "Complete source PDF copied unchanged.",
+      "source_url": "https://inria.hal.science/hal-04716470v1",
+      "license": "CC BY 4.0, stated on HAL wrapper; deposited 2024-10-01",
+      "pdf_pages": 20
+    },
+    {
+      "asset": "docs/multihoming-sources/eyries-pujolle-rr314-1978.pdf",
+      "source": "CYCLADES/2026-09-10-research/INRIA1978_317_pdf_impression.pdf",
+      "source_sha256": "c14e837ac12189e80e35c2088b1e8425019c3a35d45ae16307867f39b1e26382",
+      "asset_sha256": "c14e837ac12189e80e35c2088b1e8425019c3a35d45ae16307867f39b1e26382",
+      "transformation": "Complete source PDF copied unchanged.",
+      "source_url": "https://inria.hal.science/hal-04716570v1",
+      "license": "CC BY 4.0, stated on HAL wrapper; deposited 2024-10-01",
+      "pdf_pages": 16
     }
   ]
 }
