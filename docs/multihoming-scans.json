@@ -505,6 +505,78 @@
       "source_sha256": "15c9af24137bd2959c0f52fa2f9190c5c5199bd3a4d7ad1409b6f4b4b05b07eb",
       "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph without recompression.",
       "asset_sha256": "30e10578bd368aef552b1d739c7c9f63cca516b044a56d7871910cf9041a0a75"
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/pouzin-inwg20-p5.png",
+      "source": "INWG/CBI 123-Box 1-Folder 3-20pp.pdf",
+      "printed_pages": [
+        5
+      ],
+      "pdf_page": 6,
+      "source_sha256": "dc22215190b51823b789d935b457a85d60efcbed196fb56ce9377288e7b1ae0f",
+      "asset_sha256": "2fdd6f1899ad1ad20f07b865d93c44793d6148d419e36ea156489267d43efa60",
+      "transformation": "Rendered complete PDF page 6 at 160 dpi with pdftoppm to PNG; PDF rotation applied."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/cyclades-sch519-cover.png",
+      "source": "INWG/new scans/CBI 123_Zimmermann and Elie_SCH 519.1.pdf",
+      "printed_pages": [],
+      "pdf_page": 1,
+      "source_sha256": "101f12f8b92789cf9a3a63df63ff2600cf8ee8cceb79ef3f33a93d2ef2f6192f",
+      "asset_sha256": "21227e9a101913983c88b303302468309d516c1f1be8a4ec92e7b701943b5d13",
+      "transformation": "Rendered complete PDF page 1 at 160 dpi with pdftoppm to PNG; PDF rotation applied."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/cyclades-sch519-p4.png",
+      "source": "INWG/new scans/CBI 123_Zimmermann and Elie_SCH 519.1.pdf",
+      "printed_pages": [
+        4
+      ],
+      "pdf_page": 4,
+      "source_sha256": "101f12f8b92789cf9a3a63df63ff2600cf8ee8cceb79ef3f33a93d2ef2f6192f",
+      "asset_sha256": "bd34daf168abcdc40e42244d02e6773f5a33bfb98386fb728a8a0c974a7ee5dc",
+      "transformation": "Rendered complete PDF page 4 at 160 dpi with pdftoppm to PNG; PDF rotation applied."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/cyclades-sch519-p5.png",
+      "source": "INWG/new scans/CBI 123_Zimmermann and Elie_SCH 519.1.pdf",
+      "printed_pages": [
+        5
+      ],
+      "pdf_page": 5,
+      "source_sha256": "101f12f8b92789cf9a3a63df63ff2600cf8ee8cceb79ef3f33a93d2ef2f6192f",
+      "asset_sha256": "d14fd78e6380cbc0ee40189bd2afe81aec1eea5351970979c496a435208fa960",
+      "transformation": "Rendered complete PDF page 5 at 160 dpi with pdftoppm to PNG; PDF rotation applied."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/cyclades-sch519-p8.png",
+      "source": "INWG/new scans/CBI 123_Zimmermann and Elie_SCH 519.1.pdf",
+      "printed_pages": [
+        8
+      ],
+      "pdf_page": 8,
+      "source_sha256": "101f12f8b92789cf9a3a63df63ff2600cf8ee8cceb79ef3f33a93d2ef2f6192f",
+      "asset_sha256": "6f9731837d6c709e067d59dc864748dfa94510f4af378e5b5ac1a63a83ed4846",
+      "transformation": "Rendered complete PDF page 8 at 160 dpi with pdftoppm to PNG; PDF rotation applied."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p78-isd-15-cover.jpg",
+      "source": "BBN/P78 ISD 15 continuation of command and control technology/2016-01-22 09.10.41.jpg",
+      "printed_pages": [],
+      "source_sha256": "b028dc301dd7e1f72d73ce8315d6f1247bc9484ef604d0fb4685eacdeb7f8dc7",
+      "asset_sha256": "2a4d9a22a46ed62c4908ff07807a0679b5d0e881d5bdeeb176a87993f0db1b4c",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph or spread without recompression."
+    },
+    {
+      "asset": "hugo/content/posts/multihoming/scans/p78-isd-15-pp60-61.jpg",
+      "source": "BBN/P78 ISD 15 continuation of command and control technology/2016-01-22 09.13.11.jpg",
+      "printed_pages": [
+        60,
+        61
+      ],
+      "source_sha256": "2cdd89f909af6e4b669ddec55e82720d57fa686f3a3b399ee1d53b1d6069bf1f",
+      "asset_sha256": "cc9ff4f583843b73c887a76ad935aa465d8fef0bfde9b62c3c3a12b8dc500bad",
+      "transformation": "Removed EXIF/XMP, IPTC and comment metadata; retained JPEG image data, dimensions and original page photograph or spread without recompression."
     }
   ]
 }
