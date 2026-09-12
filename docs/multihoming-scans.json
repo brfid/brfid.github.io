@@ -1,5 +1,24 @@
 {
-  "description": "Source provenance for the archival page images and PDF downloads linked in the multihoming post. Source paths are relative to the operator etext archive. BBN photographs are by Bradley Fidler; document authorship remains as cited in the post. PDF page numbers count from the beginning of each preserved file; printed pagination is recorded only where identified.",
+  "description": "Source provenance for the archival page images and PDF downloads linked in the multihoming post. Source paths are relative to the operator etext archive. BBN photographs are by Bradley Fidler; BBN 2913 and 5256 page images were rendered from Matthias Bärwolff's digitizations; document authorship remains as cited in the post. PDF page numbers count from the beginning of each preserved file; printed pagination is recorded only where identified.",
+  "external_sources": [
+    {
+      "name": "Matthias Bärwolff's BBN ARPANET reports collection",
+      "url": "http://xn--brwolff-5wa.de/bbn-arpanet-reports-collection/",
+      "context": "Bärwolff assembled the collection while researching his 2010 dissertation, End-to-End Arguments in the Internet: Principles, Practices, and Theory.",
+      "source_paths": [
+        "arpanet-sources/BBN (1974) Interface Message Processors for the ARPA Computer Network (Report 2913, Quarterly Technical Report 7).pdf",
+        "BBN/2913 BBN (1974) Interface Message Processors for the ARPA Computer Network (Report 2913, Quarterly Technical Report 7).pdf",
+        "BBN/5256 BBN (1983) Logical Addressing Implementation Specification (Report 5256).pdf"
+      ]
+    },
+    {
+      "name": "Matthias Bärwolff's public research files",
+      "url": "http://xn--brwolff-5wa.de/public/",
+      "source_paths": [
+        "INWG/INWG42Pouzin.pdf"
+      ]
+    }
+  ],
   "assets": [
     {
       "asset": "hugo/content/posts/multihoming/scans/bbn-2913-p57.png",
@@ -608,28 +627,12 @@
       "pdf_pages": 31
     },
     {
-      "asset": "docs/multihoming-sources/pouzin-inwg42-1973.pdf",
-      "source": "INWG/INWG42Pouzin.pdf",
-      "source_sha256": "00a64621e47ffa61facdd2945883abcc547c495e67d4cd9b126fef1a2b137a52",
-      "asset_sha256": "00a64621e47ffa61facdd2945883abcc547c495e67d4cd9b126fef1a2b137a52",
-      "transformation": "Complete source PDF copied unchanged.",
-      "pdf_pages": 19
-    },
-    {
       "asset": "docs/multihoming-sources/pouzin-sch527-1974.pdf",
       "source": "INWG/new scans/CBI 123_Pouzin_SCH527.pdf",
       "source_sha256": "2f34d208e9a8b13b8a3706c2d5bf135a3648e195c4e99e82d1685d2d6d20d1c1",
       "asset_sha256": "2f34d208e9a8b13b8a3706c2d5bf135a3648e195c4e99e82d1685d2d6d20d1c1",
       "transformation": "Complete source PDF copied unchanged.",
       "pdf_pages": 13
-    },
-    {
-      "asset": "docs/multihoming-sources/bbn-report-2913-1974.pdf",
-      "source": "BBN/2913 BBN (1974) Interface Message Processors for the ARPA Computer Network (Report 2913, Quarterly Technical Report 7).pdf",
-      "source_sha256": "bb2ef373bcc3aebd9306a13adb7332458a1c8eb0da50b06dc98a4ff8edf11641",
-      "asset_sha256": "bb2ef373bcc3aebd9306a13adb7332458a1c8eb0da50b06dc98a4ff8edf11641",
-      "transformation": "Complete source PDF copied unchanged.",
-      "pdf_pages": 61
     },
     {
       "asset": "docs/multihoming-sources/cerf-itp-1973-archival-packet.pdf",
