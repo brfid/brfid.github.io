@@ -15,7 +15,7 @@ Use this file for stable repository constraints, `README.md` for setup and opera
 1. `README.md`
 2. `hugo/`
 
-For nonfiction editorial work on the owner's Mac, use `~/src/posts`: read its `AGENTS.md` and the essay's `notes.md`, and revise its `article/` master. Export approved publication content through that workspace's explicit exporter, which checks destination divergence and source provenance. Keep private guidance, research, and working examples there. The site builds independently; its checks and CI must not require the private repository. The procedural documentation rules below govern site setup and operation instructions.
+For nonfiction editorial work on the owner's Mac, use `~/src/posts`: read its `AGENTS.md` and the essay's `notes.md`, and revise its `article/` master. Follow that workspace's instructions to compare and copy approved publication content, preserving divergent site work and source provenance. Keep private guidance, research, and working examples there. The site builds independently; its checks and CI must not require the private repository. The procedural documentation rules below govern site setup and operation instructions.
 
 ## Documentation
 

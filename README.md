@@ -77,11 +77,11 @@ The command first builds and verifies the phone-free public artifact. It then wr
 
 ## Edit and import a blog post
 
-Nonfiction drafts, research, writing guidance, and editable masters live in the owner's private `~/src/posts` workspace. Begin there with `AGENTS.md` and the essay's `notes.md`; revise its `article/` directory and review the one-way export described in that workspace's README. The exporter checks for divergent local site changes before copying approved content.
+Nonfiction drafts, research, writing guidance, and editable masters live in the owner's private `~/src/posts` workspace. Begin there with `AGENTS.md` and the essay's `notes.md`; revise its `article/` directory and follow the publication instructions in that workspace's README. Compare both copies and preserve divergent local site changes before copying approved content.
 
-This repository holds complete approved publication copies in `hugo/content/posts/<slug>/`, with citations, relative assets, and full-text RSS. Existing archival provenance and repository PDF downloads remain under `docs/`; preserve their paths and checksums. The private exporter maintains those publication files without placing private research in the site or adding a private build dependency. Production publishes an imported post only when its front matter explicitly sets `draft: false`.
+This repository holds complete approved publication copies in `hugo/content/posts/<slug>/`, with citations, relative assets, and full-text RSS. Existing archival provenance and repository PDF downloads remain under `docs/`; preserve their paths and checksums. Copy only approved publication files; private research stays in the authoring repository, with no private build dependency. Production publishes an imported post only when its front matter explicitly sets `draft: false`.
 
-After export, inspect the diff and run `make verify-site` for changed publication content. Publication is a separate action under the instructions below. Templates, shortcodes, styles, feeds, build tooling, and public resume data remain maintained in this repository.
+After copying approved content, inspect the diff and run `make verify-site` for changed publication content. Publication is a separate action under the instructions below. Templates, shortcodes, styles, feeds, build tooling, and public resume data remain maintained in this repository.
 
 ## Publish the site
 
