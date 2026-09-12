@@ -75,17 +75,13 @@ This scans all fetched branches and tags, including merge results, and redacts m
 
 The command first builds and verifies the phone-free public artifact. It then writes the private PDF to `local/bradley-fidler-resume.pdf`. Only this target reads the private overlay. It rejects a missing or invalid overlay and any private PDF destination inside `site/`.
 
-## Add a blog post
+## Edit and import a blog post
 
-Create a draft page bundle:
+Nonfiction drafts, research, writing guidance, and editable masters live in the owner's private `~/src/posts` workspace. Begin there with `AGENTS.md` and the essay's `notes.md`; revise its `article/` directory and review the one-way export described in that workspace's README. The exporter checks for divergent local site changes before copying approved content.
 
-```bash
-make new-post POST_SLUG=maintenance-window
-```
+This repository holds complete approved publication copies in `hugo/content/posts/<slug>/`, with citations, relative assets, and full-text RSS. Existing archival provenance and repository PDF downloads remain under `docs/`; preserve their paths and checksums. The private exporter maintains those publication files without placing private research in the site or adding a private build dependency. Production publishes an imported post only when its front matter explicitly sets `draft: false`.
 
-Edit `hugo/content/posts/maintenance-window/index.md` and place approved image assets beside it. Production publishes a post only when its front matter explicitly sets `draft: false`.
-
-Maintain the complete article, citations, and supporting assets in its Hugo page bundle. The site publishes the full article as HTML and RSS. Working drafts stay outside this public repository; add only approved copy and public assets.
+After export, inspect the diff and run `make verify-site` for changed publication content. Publication is a separate action under the instructions below. Templates, shortcodes, styles, feeds, build tooling, and public resume data remain maintained in this repository.
 
 ## Publish the site
 
