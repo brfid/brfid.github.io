@@ -1,0 +1,357 @@
+
+Date: Tuesday, 1 July 1980 02:34-PDT 
+From: Feinler at SRI-KL 
+To: [SRI-KL]<NIC-WORK>liaison.txt: 
+cc: bboard, callan, raphael, kunzelman, nielson, jgoldberg,
+      hart, pwok at SRI-KL 
+Re: ARPANET NEWS from DCA
+
+Dear Liaison,
+
+Maj. Haughney of the Defense Communications Agency (DCA) has asked me
+to distribute the following ARPANET newsletter to all of you.  Will
+you please pass it on to administrators and systems people who may not
+otherwise see it.  Send questions and replies to DCACODE535@ISI.
+Thanks.
+
+Jake
+
+---------------------------------------------------------------------
+
+GENTLEPERSONS:
+
+     There are several changes forthcoming to the ARPANET over the
+next couple of years which will have considerable impact upon the
+ARPANET community.  Since you, the liaisons, are the primary point of
+contact for users, DCA believes that it is a good idea to keep the
+liaisons better informed of actions that will affect you and your
+users over the next few years.  To achieve this goal, DCA will publish
+a network newsletter which will provide management and technical
+information and guidance to you, the liaisons.  This net message is
+DCA's first newsletter.  Future newsletters will be provided through
+the ARPANET on an as needed basis.  Widest dissemination of pertinent
+information contained in this newsletter to ARPANET users by the
+liaisons is requested.
+
+   Maj. Joseph Haughney
+   DCA
+
+
+
+
+---------------------------------------------------------------------
+
+ANEWS-1                                                   DCA Code 531
+1 July 1980                                           (DCACODE535@ISI)
+                                                        (202) 692-6175
+
+                          ARPANET NEWSLETTER
+
+
+---------------------------------------------------------------------
+
+     Over the past eleven years, the ARPANET has grown considerably
+and has become the major U. S. Government research and development
+communications network.  The ARPANET liaisons have made significant
+contributions to the network's success.  Your efforts are voluntary,
+but are critical to successful operation of each Host, IMP, and TIP.
+Your continued support of the ARPANET is greatly appreciated and will
+facilitate continued smooth ARPANET operation.
+
+     To aid you in performance of your duties, DCA will attempt to
+provide you with the latest information in network improvements.  This
+information is grouped into two major areas: management and technical
+improvements.  However, a brief discussion of where we are going with
+the ARPANET is in order.
+
+     The ARPANET is still a rapidly growing network.  It provides a
+service which is both cost and operationally effective.  We predict
+the ARPANET will grow to approximately 100 nodes by 1983, when we will
+begin transferring some of the subscribers to DOD's AUTODIN II
+network.
+
+     While the ARPANET is quite successful, it does have some
+problems.  The basic hardware and software are becoming obsolete.  The
+nodes use minicomputers developed in the 1960s which no longer have
+sufficient memory and other capabilities to support technical
+improvements to the network.  In addition, the ultimate goal of our
+planning is to provide for an ARPANET II which will be a virtual
+network and make use of several different physical networks (e.g.
+AUTODIN II, residual ARPANET, and commercial networks to provide
+interconnectivity between users while still maintaining network
+transparency.  This goal is subject, as usual, to cost, schedule and
+technical constraints.
+
+     The meshing of our immediate problems with our long term goal has
+produced the following course of action.  The ARPANET will be
+"modernized" over the next three years to eliminate immediate
+problems.  We will also develop the capability to readily transfer
+ARPANET nodes and users to AUTODIN II, and possibly commercial
+networks, when this is financially and operationally feasible.
+
+     Now that we have stated our goal, we will address the various
+supporting actions that we are undertaking which will have an impact
+on you, the liaisons.
+
+
+
+
+                          MANAGEMENT ACTIONS
+
+ACCESS POLICY
+
+     The ARPANET is not meant to compete with commercial networks.
+Commercial networks should be used whenever there is not any
+requirement to communicate with ARPANET hosts and/or subscribers.
+There have been some developments in work being done on gateways
+between commercial networks and the ARPANET.  Some hosts have
+implemented such gateways.  However, such interfaces are proscribed
+unless specifically authorized by DCA.  Access problems with internet
+gateways, as recently evidenced by the illegal access of a Canadian
+Firm's computer by someone operating a New York high school's computer
+system through a TELENET/DATAPAC gateway, show that technical problems
+must still be resolved.  Hence, if you have an unauthorized gateway in
+your Host computer, DCA should be informed immediately, and the
+gateway terminated or suspended until DCA can review the access
+controls for gateways.
+
+     DCA has recently asked the ARPANET Sponsors for a detailed survey
+of all ARPANET users.  This survey information will be added to the
+Network Information Center (NIC) Identification Data Base.  The reason
+for the expanded data base is to provide an all encompassing
+description of who, where, and why a user is on the ARPANET.  This
+information will be used for planning to move users onto AUTODIN II
+and as a validation mechanism for the TIP Log-in program, which we
+will discuss later.  To reduce workload on the liaisons, we plan to
+send out quarterly updates of the master file which the host and TIP
+liaison will be responsible for verifying and updating.  This report
+will, hopefully, be initially published in June of 1981.  It will
+replace the TIP inventory report which TIP liaisons now send us.  Host
+systems which do not have any mechanism for managing backside
+terminal/user validation and verification, should establish procedural
+or software control mechanisms to obtain the required information.
+
+     You may wonder why we are placing such emphasis on knowing who is
+on the ARPANET.  When the network was small, a decentralized
+management approach was established due to the nature of the network
+and the small community of users. This promoted flexibility and
+synergy in network use.  Now that the network has grown to over 66
+nodes and an estimated four to five thousand users, flexibility must
+be tempered with management control to prevent waste and misuse.  The
+decentralized management of network access and resources is still our
+objective.  We just want to ensure that we can verify proper resource
+utilization and prevent unauthorized penetrations.  We believe that
+the data base that we are establishing, can be used as a tool for
+improving your and our management control.  We deal in gross
+quantities, you deal in the particulars.
+
+     DCA will be publishing a new Host/TIP Liaison Responsibilities
+letter in July 1980 which will describe these new reporting
+requirements.
+
+
+
+
+TIP LOG IN
+
+     ARPA has let a contract to Bolt Beranek and Newman, Inc. (BBN) to
+study and develop, if feasible, a TIP Log-In program and data base.
+By mid 1982 this effort should, hopefully, result in a means to
+directly control access to TIPS.  The design will take into account
+the problems encountered with a previous TIP Log-in effort made on the
+ARPANET several years ago.
+
+     The present design suggests an approach where a user would log
+into a TIP when he wants access to the network.  The TIP would
+transmit the log-in information to a regional data base node, which
+would verify the user and validate to the TIP that that user is
+allowed network access.  In some cases, this may result in a double
+log-in, depending upon the host password system design.  The regional
+data bases would be updated on a daily basis from a master data base.
+This data base would be constructed based on a permission tree
+structure where permissions are delegated down the tree.  For example,
+a sponsor would grant permission to a contract monitor to connect a
+certain number of users.  The contract monitor would then grant
+permissions for that number of users to a contractor, who would then
+delegate these permissions to his program manager.  The program
+manager could delegate permissions down to the project leader or the
+individual users.  When the contract is terminated, the contract
+monitor revokes his permission, which deletes the contractor
+personnel's access to the ARPANET.
+
+     The previously-mentioned ARPANET NIC Data Base will be used
+initially to cross-check the TIP Log-in data base, and hence it's
+accuracy is critical to preventing valid users from being temporarily
+without service when TIP Log-in is implemented.  The TIP Log-in data
+base will be managed by the NIC when it becomes operational.  The TIP
+Log-in data base will eventually replace all or part of the NIC data
+base, depending upon whether or not we are successful in our
+development effort to incorporate terminals which access the network
+through hosts into the TIP Log-in software.
+
+     BBN is also studying the feasibility of applying TIP Log-in
+mechanisms to host computer users.  Hence, host liaisons should also
+ensure that their terminals and users are included in the NIC Data
+Base to preclude problems with service, if TIP Log-in is implemented
+for the Hosts.
+
+TIP INVENTORY
+
+     For TIP liaisons, we have mentioned that we intend to eliminate
+the TIP Quarterly Inventory and replace it with a NIC Data Base
+Update. You should be sure of the accuracy of your inputs, because we
+intend to structure the TIP buffering mechanism to support only those
+TIP ports which are reflected in the NIC Data Base.  All new TIP users
+will have to have a complete entry in the NIC Data Base and be
+approved by DCA before these users will be permitted access to the
+TIP.  NOTE: This procedure includes dial-in users.  Guidelines for
+approval and procedures for requesting new user access will be
+outlined in the new ARPANET Host/TIP Liaison Responsibilities letter
+which will be sent to you in July 1980 as mentioned above, and the TIP
+buffering allocation scheme will be enforced as of 1 February 1981.
+
+
+
+
+96 BIT HEADERS
+
+     DCA recently announced by net note that only 96-bit headers will
+be accepted by the network nodes as of 1 January 1981.  This date
+still stands.  Users, when reviewing the impact of the header change
+upon them, should also review their applications software to ensure
+their compatibility with 96-bit headers.  We have received some
+queries from liaisons who did not realize the possible impacts on
+their applications software of the 96-bit headers.
+
+LIAISON MEETINGS
+
+     In order to improve information dissemination between DCA and the
+liaisons, we plan to hold a series of one day meetings for liaisons.
+These meetings will cover the items discussed in this newsletter plus
+any topics, problems, etc., that the liaisons wish to discuss.  These
+meetings will occur in the Fall of 1980.  Tentative scheduling for the
+meetings are:
+
+GEOGRAPHICAL AREA   DATE       MEETING SITE
+
+New England         21 Nov     To be determined
+Washington D.C.     18 Nov     DCA Headquarters
+West Coast          30 Sept    Naval Postgraduate School, Monterey, CA
+Mid West             3 Dec     St Louis Area
+
+     Proposed agenda items, comments, etc., should be forwarded by net
+mail to DCACODE535@ISI no later than 15 September 80.
+
+SPONSOR RELATIONS
+
+     The ARPANET has Sponsors who represent the various communities of
+interest found on the network.  These Sponsors handle funding and
+management of community resources.  DCA Code 535 attempts to assist
+the liaisons whenever possible with problem areas and questions that
+are not resolved by the NCC or the NIC.  However, your first point of
+contact in such situations, should be your ARPANET Sponsor.  In some
+cases, the Sponsor may still refer the liaison to DCA.  However, the
+Sponsor can sometimes handle the situation within his own resources.
+Such contacts can also keep the Sponsor better aware of the services
+being provided to his users and enable him to more effectively
+represent them.  In other words, it pays to know your Sponsor and work
+with him.
+
+CIRCUIT FORECASTING
+
+     AT&T has stated a twelve to eighteen month lead time to provide
+wideband 50/56KB service.  This lead time may be even longer in
+California.  To provide timely service, they have asked us to forecast
+our requirements as much as possible.  These forecasts are not firm
+orders, but are used by AT&T for planning purposes to estimate such
+things as modem production requirements and transmisssion overbuilds.
+If you have, or know of, any new node or high speed VDH requirements
+which are being contemplated or discussed, please let DCA know
+immediately. These requirements may just be in the discussion stage
+and unfunded.  However, by including such possible requirements in our
+forecast, we hope to reduce circuit, and hence node/VDH installation
+lead times, to a more reasonable time frame.
+
+
+
+
+
+                              TECHNICAL
+
+NEW ARPANET PROTOCOLS
+
+     The Office of the Secretary of Defense has directed that a set of
+DOD Standard Protocols be used on all Department of Defense
+communications networks. This directive applies to the ARPANET.  The
+ARPANET Host protocols will be replaced over the next three years with
+the new DOD Standard Protocol set.  This has a direct impact on host
+operating systems and some applications programs that use the ARPANET.
+The ARPANET Network Control Program (NCP) will be replaced by two DOD
+protocols, the DOD Standard Transmission Control Protocol (TCP) and
+the Internet Protocol (IP).  ARPANET FTP and TELNET protocols will
+also be updated and standardized.  Planning for this transition is
+still under development.  The NIC plans to publish for DCA a new
+Protocol Handbook by the end of this year, which will provide details
+on the new protocol specifications.
+
+     DCA also intends to provide an ARPANET online protocol
+clearinghouse which will provide a repository for already developed
+implementations of these protocols and act as a clearinghouse to
+resolve problem areas and coordinate new protocol implementation
+development.  As soon as the planning is finished, we will publish the
+details.  In the meantime, unless you have already begun development
+of the protocols, you may want to start budgeting for the protocol
+software development for your host.  NOTE: H316 TIP protocol
+development is being addressed by an ARPA contract with BBN, and
+involves a hardware addition to the TIP which will be discussed later.
+DOD Standard Protocol Development for the PLURIBUS TIP is still being
+studied as to the most cost and operationally effective way to
+implement the protocols.
+
+C/30 PROCURMENT
+
+     The new BBN C/30 IMP and TIP can now be ordered.  These computers
+are direct replacements for the Honeywell 316 hardware, and run the
+existing IMP and TIP software in an emulation mode.  The C/30 costs
+from $20,000 to $35,000 depending upon configuration.  These new
+systems will begin to be installed as new nodes in late fall of 1980.
+We hope to eventually replace all Honeywell equipment with the C/30s
+depending, of course, on funding availability.  Unless there is a need
+for a node which requires a large amount of processing power, the BBN
+C/30 or equivalent will be the only type of node hardware procurred in
+the future.
+
+     The C/30 will also be used to support the DOD Standard TCP and
+Internet Protocol implementation in the TIP.  This will be
+accomplished by removing the IMP software from the H316 TIP and
+placing it in a C/30.  The removal of the IMP software will make room
+in the TIP for the installation of the programs to support the new and
+existing protocols in the TIP.  All H316 TIPs will require
+installation of the C/30 IMP to support the DOD protocols by late
+1983.  DCA will contact the Sponsors when an installation schedule is
+known.  Sponsor's will approve C/30 procurement.  However, for those
+sites which must fund for hardware node procurement, approximately
+$20,000 should be budgeted in Fy 1981 or 1982, to support procurement
+of the C/30 Protocol TIP expansion hardware.
+
+
+
+
+SUMMARY
+
+     We have attempted to address items which will have a direct
+impact on liaisons and their users for the next few years.  If you
+have any questions on these subjects, drop DCA and your Sponsor a net
+note.  Due to the fact that some of our actions are still in the
+planning and development stage, some of the information that we
+provided you is nebulous.  However, at least, you have an approximate
+idea of what is planned for the network.  We will try to provide the
+specifics as they develop and incorporate them in our next newsletter.
+If you have any items that you wish addressed in the next newsletter,
+please let us know.  We will attempt to address them wherever
+possible.
+----------------------------------------------------------------------
+
+
+
+

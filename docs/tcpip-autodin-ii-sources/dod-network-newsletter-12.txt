@@ -1,0 +1,71 @@
+18-Jun-82 15:55:41-PDT,3235;000000000001
+Mail-from: ARPANET host SRI-NIC rcvd at 18-Jun-82 1555-PDT
+Date: 18 Jun 1982 1510-PDT
+From: Nic at SRI-NIC
+Subject: NETWORK NEWSLETTER
+To:   ANEWS-DIST:
+
+=====================================================================
+ANEWS-12                                                 DCA Code 252
+11 June 1982                                           (DCACODE252@ISI)
+                                                       (202) 692-6175
+                  DoD NETWORK NEWSLETTER
+
+=====================================================================
+             TOPICS:  - DCA Reorganizes
+                      - TIP Inventory Reports
+                      - C/30 Upgrade
+---------------------------------------------------------------------
+DCA REORGANIZES
+
+   DCA is being reorganized to carry out the DoD decision to cancel 
+   AUTODIN II in favor of an ARPANET-based system, known as the Defense 
+   Data Network (DDN).  As part of this reorganization, the ARPANET 
+   Management Branch has become a part of the DDN Program Managers 
+   Staff.  This action has been taken to insure that actions to 
+   implement the DDN will have minimum impact upon services to ARPANET 
+   users.  As a result, Code 252 is now Code B645.  Messages addressed 
+   to DCACODE252 at USC-ISI will continue to reach us.
+   
+CHANGES TO PROCEDURES FOR SUBMISSION OF TIP INVENTORY REPORT
+
+   The following changes have been made in the procedures for submission
+   of the TIP Inventory Report:
+   
+   1.  SUBMISSION OF REPORTS:  Reports are to be submitted to a new 
+   address: TACSTATRPT@BBNB.  Previous addressees (i.e., NIC@NIC, 
+   Huntley@SRI-NIC, etc.) should no longer be cc:ed.  Reports are to be 
+   submitted during the first week of each quarter, i.e., the first week
+   of January, April, July, and October.  Each quarterly report should 
+   be complete within itself, even though the information is unchanged 
+   from the previous quarterly report.
+   
+   2.  FORMAT CHANGES:  Facilities will be identified both by name and 
+   address, e.g. DCEC-TIP, 2/20. Under the column heading, "TYPE", use 
+   the following codes to indicate the type of port:
+      H = Hard wired
+      D = Dial-up.
+   Other codes may be used in addition to these if needed; however, such
+   other codes as are used must be explained at the bottom of the 
+   report.
+   
+C\30 UPGRADE
+
+   Most sites have already placed their orders with BBN for C\30 
+   equipment to replace the older Honeywell H316 and H516, and BBN 
+   Pluribus nodes on the ARPANET.  There are still a few stragglers, 
+   however, who have not yet placed their orders.  Although we can 
+   understand the budgetary constraints which some of you are under, we 
+   cannot allow the Network as a whole to suffer as a result of a few. 
+   Some have wondered what will happen if a given node has not been 
+   upgraded by the January 83 deadline.  Such nodes will, of necessity, 
+   be reconfigured out of the network for the benefit of those who have 
+   upgraded.  We regret this necessity, but will have no choice in the 
+   matter.
+   
+   Sincerely,
+   
+   Major Glynn Parker
+   DCA Code B645
+   ARPANET Management Section
+-------
