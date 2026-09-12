@@ -27,6 +27,7 @@ REQUIRED_FILES = (
     "about/index.html",
     "index.html",
     "index.xml",
+    "posts/doc-rot-maintenance-gap/index.html",
     "posts/index.html",
     "posts/index.xml",
     "resume/index.html",
@@ -573,14 +574,14 @@ def verify_primary_links(site_dir: Path, errors: list[str]) -> None:
     )
 
 
-def verify_menu_state(site_dir: Path, errors: list[str]) -> None:
-    """Check exact and descendant current states in the rendered menu."""
+def verify_menu_state(site_dir: Path, post_pages: set[str], errors: list[str]) -> None:
+    """Check current menu states on source-backed canonical pages."""
     expected_states = {
         "posts/index.html": ("/posts/", "page"),
         "resume/index.html": ("/resume/", "page"),
     }
-    for post_path in site_dir.glob("posts/*/index.html"):
-        expected_states[str(post_path.relative_to(site_dir))] = ("/posts/", "location")
+    for post_path in post_pages:
+        expected_states[post_path] = ("/posts/", "location")
 
     for relative_path, (menu_path, expected_state) in sorted(expected_states.items()):
         parser = parse_html(site_dir / relative_path)
@@ -696,7 +697,7 @@ def verify_resume_artifacts(site_dir: Path, *, resume_yaml: Path) -> list[str]:
 def verify_site(site_dir: Path) -> list[str]:
     """Validate public HTML, feeds, indexing, and the allowed output paths."""
     errors: list[str] = []
-    verify_output_policy(site_dir, ROOT / "hugo" / "content" / "posts", errors)
+    post_pages = verify_output_policy(site_dir, ROOT / "hugo" / "content" / "posts", errors)
     verify_public_text(site_dir, errors)
     verify_html_privacy(site_dir, errors)
     if verify_required_files(site_dir, errors):
@@ -707,7 +708,7 @@ def verify_site(site_dir: Path) -> list[str]:
     verify_homepage_schema(site_dir, errors)
     verify_feeds(site_dir, errors)
     verify_primary_links(site_dir, errors)
-    verify_menu_state(site_dir, errors)
+    verify_menu_state(site_dir, post_pages, errors)
     return errors
 
 

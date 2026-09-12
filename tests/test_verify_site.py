@@ -326,6 +326,31 @@ def test_run_external_reports_a_missing_command(monkeypatch: MonkeyPatch) -> Non
     assert errors == ["required external command not found: pdfinfo"]
 
 
+def test_menu_state_checks_articles_when_an_old_post_url_redirects(tmp_path: Path) -> None:
+    article_path = "posts/current-post/index.html"
+    for relative_path, href, state in (
+        ("posts/index.html", "/posts/", "page"),
+        ("resume/index.html", "/resume/", "page"),
+        (article_path, "/posts/", "location"),
+    ):
+        page = tmp_path / relative_path
+        page.parent.mkdir(parents=True, exist_ok=True)
+        page.write_text(f'<a class="menu-primary-link" href="{href}" aria-current="{state}">Menu</a>', encoding="utf-8")
+    redirect = tmp_path / "posts/old-post/index.html"
+    redirect.parent.mkdir()
+    redirect.write_text('<meta http-equiv="refresh" content="0; url=/posts/current-post/">', encoding="utf-8")
+    errors: list[str] = []
+
+    verifier.verify_menu_state(tmp_path, {article_path}, errors)
+
+    assert errors == []
+
+    (tmp_path / article_path).write_text("<p>Article without navigation</p>", encoding="utf-8")
+    verifier.verify_menu_state(tmp_path, {article_path}, errors)
+
+    assert errors == [f"{article_path}: missing menu link to /posts/"]
+
+
 def _write_post_source(tmp_path: Path, slug: str = "published-post", *, draft: bool = False) -> Path:
     posts = tmp_path / "content" / "posts"
     bundle = posts / slug

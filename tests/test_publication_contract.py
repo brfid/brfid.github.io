@@ -97,7 +97,7 @@ def test_navigation_and_theme_controls(web_page: tuple[Page, str]) -> None:
 
 def test_content_semantics_and_conditional_code_copy(web_page: tuple[Page, str]) -> None:
     page, origin = web_page
-    source = (ROOT / "hugo/content/posts/doc-rot-maintenance-gap/index.md").read_text(encoding="utf-8")
+    source = (ROOT / "hugo/content/posts/doc-rot-e2e/index.md").read_text(encoding="utf-8")
     post = yaml.safe_load(source.split("---", 2)[1])
     page.goto(f"{origin}/posts/")
     card = page.locator("article").filter(has=page.get_by_role("heading", name=post["title"], exact=True))
@@ -105,7 +105,7 @@ def test_content_semantics_and_conditional_code_copy(web_page: tuple[Page, str])
     fallback = page.locator("article").filter(has=page.get_by_role("heading", name="Render contract", exact=True))
     expect(fallback.locator(".entry-content")).to_have_text("Fallback summary. ...")
 
-    page.goto(f"{origin}/posts/doc-rot-maintenance-gap/")
+    page.goto(f"{origin}/posts/doc-rot-e2e/")
     expect(page.get_by_role("navigation", name="Post navigation")).to_be_visible()
     table = page.get_by_role("table")
     assert table.locator("caption").inner_text().strip()
@@ -136,7 +136,7 @@ def test_resume_print_styles_are_scoped_to_the_resume(web_page: tuple[Page, str]
     expect(page.locator("body")).to_have_css("page", "resume")
     expect(page.locator(".header")).to_be_hidden()
     resume_title_size = page.locator("h1").evaluate("el => getComputedStyle(el).fontSize")
-    page.goto(f"{origin}/posts/doc-rot-maintenance-gap/")
+    page.goto(f"{origin}/posts/doc-rot-e2e/")
     expect(page.locator("body")).to_have_css("page", "auto")
     expect(page.locator(".header")).to_be_visible()
     expect(page.locator("h1")).not_to_have_css("font-size", resume_title_size)
