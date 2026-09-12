@@ -33,6 +33,15 @@ def rendered_site(tmp_path_factory: pytest.TempPathFactory) -> Iterator[tuple[Br
         "    Plain example\n",
         encoding="utf-8",
     )
+    reading_post = source / "content/posts/reading-contract/index.md"
+    reading_post.parent.mkdir()
+    body_words = " ".join(["body"] * 212)
+    note_words = " ".join(["note"] * 212)
+    reading_post.write_text(
+        "---\ntitle: Reading contract\ndate: 2020-01-02\ndraft: false\n---\n\n"
+        f"{body_words}.[^contract]\n\n[^contract]: {note_words}\n",
+        encoding="utf-8",
+    )
     output = root / "site"
     hugo = shutil.which("hugo")
     assert hugo is not None, "Install Hugo using the README setup instructions"
@@ -127,6 +136,19 @@ def test_content_semantics_and_conditional_code_copy(web_page: tuple[Page, str])
     assert page.locator("script").count() == scripts_without_code
     assert page.get_by_role("heading", level=3).count() > 0
     assert page.get_by_role("heading", level=4).count() > 0
+
+
+def test_reading_time_separates_article_and_notes(web_page: tuple[Page, str]) -> None:
+    page, origin = web_page
+    page.goto(f"{origin}/posts/")
+    reading_card = page.locator("article").filter(has=page.get_by_role("heading", name="Reading contract", exact=True))
+    expect(reading_card.locator(".reading-time")).to_have_text("(1 min read + 1 min notes)")
+
+    page.goto(f"{origin}/posts/reading-contract/")
+    expect(page.locator(".post-meta .reading-time")).to_have_text("(1 min read + 1 min notes)")
+
+    page.goto(f"{origin}/posts/render-contract/")
+    expect(page.locator(".post-meta .reading-time")).to_have_text("1 min read")
 
 
 def test_resume_print_styles_are_scoped_to_the_resume(web_page: tuple[Page, str]) -> None:

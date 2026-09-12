@@ -1,0 +1,42 @@
+{{- $scratch := newScratch }}
+
+{{- if not .Date.IsZero -}}
+    {{- $scratch.Add "meta" (slice (printf "<span title='%s'>%s</span>" (.Date) (.Date | time.Format (default ":date_long" site.Params.DateFormat)))) }}
+{{- end }}
+
+{{- if (.Param "ShowReadingTime") -}}
+    {{- $readingTime := printf "%d min read" .ReadingTime -}}
+    {{- $footnoteStart := `<div class="footnotes" role="doc-endnotes">` -}}
+    {{- $contentParts := split (string .Content) $footnoteStart -}}
+    {{- if gt (len $contentParts) 1 -}}
+        {{- $bodyContent := index $contentParts 0 -}}
+        {{- $notesContent := index $contentParts 1 -}}
+        {{- /* Keep generated references and backlinks out of the prose estimates. */ -}}
+        {{- $bodyContent = replaceRE `<sup id="fnref[^"]*">.*?</sup>` "" $bodyContent -}}
+        {{- $bodyContent = replaceRE `<h2 id="[^"]+">(?:<a[^>]*>)?Notes(?:</a>)?</h2>\s*$` "" $bodyContent -}}
+        {{- $notesContent = replaceRE `<a[^>]*class="footnote-backref"[^>]*>.*?</a>` "" $notesContent -}}
+        {{- $bodyWords := countwords ($bodyContent | plainify) -}}
+        {{- $notesWords := countwords ($notesContent | plainify) -}}
+        {{- /* Hugo's built-in English estimate uses 212 words per minute. */ -}}
+        {{- $bodyMinutes := int (math.Ceil (div (float $bodyWords) 212)) -}}
+        {{- $notesMinutes := int (math.Ceil (div (float $notesWords) 212)) -}}
+        {{- $readingTime = printf "(%d min read + %d min notes)" $bodyMinutes $notesMinutes -}}
+    {{- end -}}
+    {{- $scratch.Add "meta" (slice (printf `<span class="reading-time">%s</span>` $readingTime)) }}
+{{- end }}
+
+{{- if (.Param "ShowWordCount") -}}
+    {{- $scratch.Add "meta" (slice (printf "<span>%s</span>" (i18n "words" .WordCount | default (printf "%d words" .WordCount)))) }}
+{{- end }}
+
+{{- if not (.Param "hideAuthor") -}}
+    {{- with (partial "author.html" .) }}
+        {{- $scratch.Add "meta" (slice (printf "<span>%s</span>" .)) }}
+    {{- end }}
+{{- end }}
+
+{{/* Combine all meta information into a single string with separators and render it as HTML.*/}}
+
+{{- with ($scratch.Get "meta") }}
+    {{- delimit . "&nbsp;·&nbsp;" | safeHTML -}}
+{{- end -}}
