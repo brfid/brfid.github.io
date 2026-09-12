@@ -52,7 +52,7 @@ For nonfiction editorial work on the owner's Mac, use `~/src/posts`: read its `A
 
 - Keep all HTML, including the blog index, published posts, pagination, homepage, résumé, and aliases, on `noindex, nofollow, noarchive, nosnippet, noimageindex`. Apply this policy globally to current and future articles.
 - Do not publish or advertise a sitemap while all HTML is excluded from indexing.
-- Leave HTML crawlable in `robots.txt` so crawlers can observe `noindex`. Use `robots.txt` only to block non-HTML artifacts.
+- Leave HTML crawlable for search engines in `robots.txt` so they can observe `noindex`. Block non-HTML artifacts and explicitly exclude archive crawlers (`archive.org_bot`, `ia_archiver`, and `CCBot`) from the entire site.
 - Publish `/posts/`, `/index.xml`, `/posts/index.xml`, `/resume/`, `/about/`, and `/resume.pdf`.
 - Publish a post only when its front matter sets `draft: false`.
 - Fail deployment if a required route, feed, navigation link, indexing directive, or public-PDF contract is missing.

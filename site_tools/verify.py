@@ -61,6 +61,10 @@ PAGER_SIZE = HUGO_CONFIG["pagination"]["pagerSize"]
 TEXT_OUTPUT_SUFFIXES = frozenset({".css", ".html", ".json", ".svg", ".txt", ".xml"})
 REQUIRED_ROBOTS_DIRECTIVES = frozenset({"noarchive", "nofollow", "noimageindex", "noindex", "nosnippet"})
 EXPECTED_ROBOTS_LINES = (
+    "User-agent: archive.org_bot",
+    "User-agent: ia_archiver",
+    "User-agent: CCBot",
+    "Disallow: /",
     "User-agent: *",
     "Allow: /",
     "Disallow: /resume.pdf",
@@ -442,11 +446,6 @@ def verify_robots_file(site_dir: Path, errors: list[str]) -> None:
         lines == list(EXPECTED_ROBOTS_LINES),
         errors,
         f"robots.txt: unexpected directives: {lines!r}",
-    )
-    record(
-        "Disallow: /" not in lines,
-        errors,
-        "robots.txt: blanket crawl block hides the HTML no-index policy",
     )
 
 

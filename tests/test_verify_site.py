@@ -10,6 +10,10 @@ from pytest import MonkeyPatch
 from site_tools import verify as verifier
 
 PUBLIC_EMAIL = "public@example.com"
+CRAWL_POLICY = (
+    "User-agent: archive.org_bot\nUser-agent: ia_archiver\nUser-agent: CCBot\nDisallow: /\n\n"
+    "User-agent: *\nAllow: /\nDisallow: /resume.pdf\nDisallow: /index.xml\nDisallow: /posts/index.xml\n"
+)
 
 
 def _write_public_tree(tmp_path: Path) -> tuple[Path, Path]:
@@ -220,7 +224,7 @@ def test_sitemap_check_rejects_a_broken_sitemap_symlink(tmp_path: Path) -> None:
 
 def test_robots_file_preserves_html_crawling_and_artifact_exclusions(tmp_path: Path) -> None:
     robots = tmp_path / "robots.txt"
-    crawl_policy = "User-agent: *\nAllow: /\nDisallow: /resume.pdf\nDisallow: /index.xml\nDisallow: /posts/index.xml\n"
+    crawl_policy = CRAWL_POLICY
     robots.write_text(crawl_policy, encoding="utf-8")
     errors: list[str] = []
     verifier.verify_robots_file(tmp_path, errors)
@@ -236,7 +240,7 @@ def test_robots_file_preserves_html_crawling_and_artifact_exclusions(tmp_path: P
     ("Allow: /", "Disallow: /resume.pdf", "Disallow: /index.xml", "Disallow: /posts/index.xml"),
 )
 def test_robots_file_rejects_missing_crawl_contract_directives(tmp_path: Path, changed_line: str) -> None:
-    lines = ("User-agent: *", "Allow: /", "Disallow: /resume.pdf", "Disallow: /index.xml", "Disallow: /posts/index.xml")
+    lines = CRAWL_POLICY.splitlines()
     (tmp_path / "robots.txt").write_text("\n".join(line for line in lines if line != changed_line), encoding="utf-8")
     errors: list[str] = []
 
@@ -247,7 +251,7 @@ def test_robots_file_rejects_missing_crawl_contract_directives(tmp_path: Path, c
 
 @pytest.mark.parametrize("blocked_path", ("/", "/posts/", "/posts/example/"))
 def test_robots_file_rejects_html_crawl_blocks(tmp_path: Path, blocked_path: str) -> None:
-    crawl_policy = "User-agent: *\nAllow: /\nDisallow: /resume.pdf\nDisallow: /index.xml\nDisallow: /posts/index.xml\n"
+    crawl_policy = CRAWL_POLICY
     (tmp_path / "robots.txt").write_text(crawl_policy + f"Disallow: {blocked_path}\n", encoding="utf-8")
     errors: list[str] = []
 
