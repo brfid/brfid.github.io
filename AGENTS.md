@@ -64,7 +64,8 @@ For nonfiction editorial work on the owner's Mac, use `~/src/posts`: read its `A
 
 ## Commit and publish
 
-- Keep `main` linear. Use complete, intention-revealing commits and do not commit generated directories such as `site/`, `build/`, `local/`, or `.venv/`.
+- For authorized edits, make coherent local checkpoint commits at meaningful milestones, before major changes of direction, and when finishing the task. Keep messages clear enough to identify and revert each stage; describe any unfinished checkpoint. Preserve unrelated work unless the operator asks to include it. Retain useful checkpoints; do not amend, squash, or otherwise rewrite them unless requested.
+- Keep `main` linear. Validate as appropriate to the change and do not commit generated directories such as `site/`, `build/`, `local/`, or `.venv/`.
 - Do not merge, rebase, tag, or push commits from the offline pre-rewrite backup.
 - Do not rewrite shared `main` history unless the operator explicitly requests it.
 - Do not push unless the operator explicitly requests a push.
