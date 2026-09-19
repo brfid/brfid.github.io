@@ -1,7 +1,10 @@
 PYTHON ?= .venv/bin/python
 PREVIEW_PORT ?= 1313
+BUILD_ROOT ?= build
+OUTPUT_DIR ?= site
+HUGO_EXTRA ?=
 
-.PHONY: help test check verify-site check_env clean prepare-site new-post \
+.PHONY: help test test-unit check verify-site check_env clean prepare-site new-post \
         hugo-build resume-pdf resume-pdf-application preview preview-drafts
 
 help:
@@ -9,17 +12,21 @@ help:
 	@echo "  make check                   Run lint, format, type, test, and dead-code checks"
 	@echo "  make verify-site             Build and verify the complete public HTML and PDF artifact"
 	@echo "  make test                    Run unit, browser, and workflow contract tests"
+	@echo "  make test-unit               Run tests that do not need Hugo or a local browser"
 	@echo "  make check_env               Verify local prerequisites"
 	@echo "  make hugo-build              Build HTML only into site/"
 	@echo "  make resume-pdf              Build public HTML and phone-free site/resume.pdf"
 	@echo "  make resume-pdf-application  Also build the private application PDF outside site/"
-	@echo "  make preview                 Serve the public site and PDF locally"
-	@echo "  make preview-drafts          Include draft posts in the local preview"
+	@echo "  make preview                 Serve an isolated local preview and PDF"
+	@echo "  make preview-drafts          Include draft posts in the isolated preview"
 	@echo "  make new-post POST_SLUG=name  Scaffold a draft post bundle"
 	@echo "  make clean                   Remove generated artifacts and tool caches"
 
 test:
 	@$(PYTHON) -m pytest -q
+
+test-unit:
+	@$(PYTHON) -m pytest -q -m "not integration"
 
 check:
 	@$(PYTHON) -m ruff check site_tools tests
@@ -43,25 +50,34 @@ clean:
 		| xargs -0 rm -rf
 
 prepare-site:
-	@mkdir -p hugo/data
-	@cp site.yaml hugo/data/site.yaml
-	@cp resume.yaml hugo/data/resume.yaml
+	@mkdir -p $(BUILD_ROOT)/hugo-data
+	@cp site.yaml $(BUILD_ROOT)/hugo-data/site.yaml
+	@cp resume.yaml $(BUILD_ROOT)/hugo-data/resume.yaml
 
 new-post:
 	@test -n "$(POST_SLUG)" || { echo "Usage: make new-post POST_SLUG=my-post"; exit 2; }
 	@hugo new content --source hugo --kind posts "posts/$(POST_SLUG)"
 
 hugo-build: prepare-site
-	@hugo --source hugo --destination ../site --cleanDestinationDir --panicOnWarning
+	@HUGO_DATADIR=../$(BUILD_ROOT)/hugo-data HUGO_RESOURCEDIR=../$(BUILD_ROOT)/hugo-resources \
+		hugo --source hugo --destination ../$(OUTPUT_DIR) --cacheDir $(CURDIR)/$(BUILD_ROOT)/hugo-cache \
+		--cleanDestinationDir --panicOnWarning $(HUGO_EXTRA)
 
-resume-pdf: hugo-build
-	@$(PYTHON) -c "from pathlib import Path; from site_tools.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('site/resume.pdf'))"
+resume-pdf: check_env hugo-build
+	@$(PYTHON) -m site_tools.pdf --site-dir $(OUTPUT_DIR) --output $(OUTPUT_DIR)/resume.pdf
 
 resume-pdf-application: verify-site
-	@$(PYTHON) -c "from pathlib import Path; from site_tools.pdf import build_pdf; build_pdf(site_dir=Path('site'), resume_url_path='/resume/', pdf_path=Path('local/bradley-fidler-resume.pdf'), private_resume_path=Path('resume.private.yaml'))"
+	@$(PYTHON) -m site_tools.pdf --site-dir site --output local/bradley-fidler-resume.pdf \
+		--private-overlay resume.private.yaml
 
-preview: resume-pdf
-	@hugo server --source hugo --destination ../site --disableFastRender --port $(PREVIEW_PORT)
+preview:
+	@$(MAKE) resume-pdf BUILD_ROOT=local/preview OUTPUT_DIR=local/preview/site
+	@HUGO_DATADIR=../local/preview/hugo-data HUGO_RESOURCEDIR=../local/preview/hugo-resources \
+		hugo server --source hugo --destination ../local/preview/site --cacheDir $(CURDIR)/local/preview/hugo-cache \
+		--disableFastRender --port $(PREVIEW_PORT)
 
-preview-drafts: resume-pdf
-	@hugo server --source hugo --destination ../site --buildDrafts --disableFastRender --port $(PREVIEW_PORT)
+preview-drafts:
+	@$(MAKE) resume-pdf BUILD_ROOT=local/preview OUTPUT_DIR=local/preview/site HUGO_EXTRA=--buildDrafts
+	@HUGO_DATADIR=../local/preview/hugo-data HUGO_RESOURCEDIR=../local/preview/hugo-resources \
+		hugo server --source hugo --destination ../local/preview/site --cacheDir $(CURDIR)/local/preview/hugo-cache \
+		--buildDrafts --disableFastRender --port $(PREVIEW_PORT)

@@ -10,6 +10,7 @@ from pytest import MonkeyPatch
 
 from site_tools.http import serve_directory
 from site_tools.pdf import build_pdf, load_private_phone
+from site_tools.pdf import main as pdf_main
 
 
 @pytest.fixture
@@ -31,6 +32,7 @@ def renderer(monkeypatch: MonkeyPatch) -> tuple[MagicMock, MagicMock]:
     return page, browser
 
 
+@pytest.mark.integration
 def test_serve_directory_serves_files(tmp_path: Path) -> None:
     import urllib.request
 
@@ -129,6 +131,30 @@ def test_build_pdf_rejects_resolved_private_output_inside_site_before_creating_d
 
     assert not site_dir.exists()
     assert not pdf_path.resolve().parent.exists()
+
+
+def test_pdf_cli_rejects_private_output_inside_the_public_tree(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    site_dir = tmp_path / "site"
+    overlay = tmp_path / "synthetic-private.yaml"
+    overlay.write_text('basics:\n  phone: "415-555-0199"\n', encoding="utf-8")
+
+    assert (
+        pdf_main(
+            [
+                "--site-dir",
+                str(site_dir),
+                "--output",
+                str(site_dir / "private.pdf"),
+                "--private-overlay",
+                str(overlay),
+            ]
+        )
+        == 1
+    )
+    assert "private resume PDF must be written outside" in capsys.readouterr().err
+    assert not site_dir.exists()
 
 
 def test_build_pdf_rejects_missing_private_overlay_before_creating_directories(tmp_path: Path) -> None:

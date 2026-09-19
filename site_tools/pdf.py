@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import argparse
+import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -136,3 +139,28 @@ def build_pdf(
                 browser.close()
 
     return pdf_path
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Build a public or explicitly requested private résumé PDF."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--site-dir", type=Path, required=True, help="Generated HTML site")
+    parser.add_argument("--output", type=Path, required=True, help="Destination PDF")
+    parser.add_argument("--resume-url", default="/resume/", help="Résumé URL path within the generated site")
+    parser.add_argument("--private-overlay", type=Path, help="Optional untracked YAML with basics.phone")
+    args = parser.parse_args(argv)
+    try:
+        build_pdf(
+            site_dir=args.site_dir,
+            resume_url_path=args.resume_url,
+            pdf_path=args.output,
+            private_resume_path=args.private_overlay,
+        )
+    except (OSError, RuntimeError, ValueError) as error:
+        print(f"PDF build failed: {error}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

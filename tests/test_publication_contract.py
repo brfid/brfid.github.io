@@ -13,6 +13,7 @@ from playwright.sync_api import Browser, Page, expect, sync_playwright
 from site_tools.http import serve_directory
 
 ROOT = Path(__file__).resolve().parents[1]
+pytestmark = pytest.mark.integration
 
 
 def render_site(root: Path, *, extra_posts: int = 0, resume_yaml: str | None = None) -> Path:

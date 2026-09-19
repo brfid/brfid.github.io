@@ -38,6 +38,8 @@ make preview
 
 Open `http://localhost:1313/`. The command builds the public site and PDF before starting Hugo with live reload. Restart it after changing `resume.yaml`, the resume layout, or print CSS.
 
+Preview writes to `local/preview/site/` and stages its Hugo data and cache under `local/preview/`. The verified publication artifact remains in `site/`, so you can run `make verify-site` while preview is running.
+
 Use `make preview-drafts` to include draft posts. Set `PREVIEW_PORT` to use another port:
 
 ```bash
@@ -45,8 +47,6 @@ make preview PREVIEW_PORT=1314
 ```
 
 ## Run checks
-
-Before running `make verify-site`, stop any Hugo preview in this checkout. Both commands use `site/`, and an active preview can overwrite production output with localhost URLs. Restart the preview after verification if needed.
 
 ```bash
 make check
@@ -58,6 +58,7 @@ make verify-site
 `make verify-site` builds fresh HTML and a Chromium PDF, then validates the [publication contracts](AGENTS.md#preserve-publication-contracts). A verification failure exits unsuccessfully and prevents CI from uploading a Pages artifact. Pull requests and publications use this command too. Use `.venv/bin/python -m site_tools.verify site` to recheck an existing artifact without rebuilding it.
 
 Use `make test` for unit, browser, and workflow tests alone, `make hugo-build` for HTML alone, and `make help` for the supported command list.
+Use `make test-unit` when you need only tests that do not start Hugo or Chromium. The full `make test` and `make check` targets always include browser and PDF integration tests.
 
 With Gitleaks installed, run the same history scan as CI:
 
@@ -152,7 +153,9 @@ For an Action update, resolve the intended release in its upstream repository to
 | `resume.yaml` | Canonical public resume and shared landing summary |
 | `resume.private.yaml` | Optional local phone overlay; gitignored |
 | `hugo/` | Content, templates, configuration, styles, and fonts |
-| `site_tools/pdf.py` | Public and private PDF rendering |
+| `site_tools/pdf.py` | Public and opt-in private PDF rendering and command line entry point |
+| `site_tools/http.py` | Local HTTP serving for browser and PDF checks |
+| `site_tools/publication.py` | Source-derived post routes, aliases, and output expectations |
 | `site_tools/verify.py` | Rendered HTML, feed, privacy, and PDF verification |
 | `site_tools/environment.py` | Local prerequisite checks |
 | `requirements/` | Hash-locked Python environment and Hugo/Gitleaks download checksums |
