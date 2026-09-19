@@ -28,7 +28,7 @@ def _write_public_tree(tmp_path: Path) -> tuple[Path, Path]:
 def test_default_verification_requires_the_public_pdf(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
     site_dir, resume_yaml = _write_public_tree(tmp_path)
     (site_dir / "resume.pdf").unlink()
-    monkeypatch.setattr(verifier, "verify_site", lambda _site_dir: [])
+    monkeypatch.setattr(verifier, "verify_site", lambda _site_dir, **_kwargs: [])
     assert verifier.main([str(site_dir), "--resume-yaml", str(resume_yaml)]) == 1
 
 
@@ -519,8 +519,8 @@ def test_feed_check_rejects_a_symlink_escape(tmp_path: Path) -> None:
 
     verifier.verify_feeds(site_dir, errors)
 
-    assert len(errors) == 2
-    assert all("escapes the rendered site root" in error for error in errors)
+    assert "rendered directory is a symbolic link or special entry: posts/escape" in errors
+    assert sum("escapes the rendered site root" in error for error in errors) == 2
 
 
 def test_text_scan_redacts_international_phones_and_secrets(tmp_path: Path) -> None:
@@ -700,3 +700,244 @@ def test_feed_scan_decodes_full_text_attributes(tmp_path: Path) -> None:
     assert len(errors) == 2
     assert all("decoded content: contains a plausible international phone number" in error for error in errors)
     assert all("7946" not in error for error in errors)
+
+
+def _write_source_tree(tmp_path: Path, *, front_matter: str = "") -> Path:
+    """Build a small independent source tree for complete verifier calls."""
+    root = tmp_path / "source"
+    hugo = root / "hugo"
+    hugo.mkdir(parents=True)
+    (hugo / "hugo.toml").write_text(
+        'baseURL = "https://brfid.github.io/"\nbuildFuture = false\nbuildDrafts = false\n'
+        "disableAliases = false\n[pagination]\n  pagerSize = 10\n",
+        encoding="utf-8",
+    )
+    post = hugo / "content/posts/approved/index.md"
+    post.parent.mkdir(parents=True)
+    post.write_text(f"---\ntitle: Approved\ndraft: false\n{front_matter}---\n\nBody.\n", encoding="utf-8")
+    (root / "resume.yaml").write_text(f"basics:\n  email: {PUBLIC_EMAIL}\n", encoding="utf-8")
+    return root
+
+
+@pytest.mark.parametrize(
+    ("damage", "diagnostic"),
+    (
+        ("missing-post", "published page is missing from rendered output: posts/approved/index.html"),
+        ("invalid-utf8", "could not read rendered text: index.html"),
+        ("broken-file-link", "rendered output is a symbolic link or special entry: extra.html"),
+        ("directory-link", "rendered directory is a symbolic link or special entry: linked"),
+        ("malformed-config", "Hugo configuration is missing or invalid"),
+        ("missing-config", "Hugo configuration is missing or invalid"),
+    ),
+)
+def test_complete_verifier_reports_damaged_inputs_without_tracebacks(
+    tmp_path: Path, monkeypatch: MonkeyPatch, capsys: pytest.CaptureFixture[str], damage: str, diagnostic: str
+) -> None:
+    source = _write_source_tree(tmp_path)
+    site_dir, _ = _write_public_tree(tmp_path)
+    (site_dir / "index.html").write_text("<html></html>\n", encoding="utf-8")
+    post = site_dir / "posts/approved/index.html"
+    post.parent.mkdir(parents=True)
+    post.write_text("<html></html>\n", encoding="utf-8")
+    _write_stylesheet(site_dir)
+    monkeypatch.setattr(
+        verifier,
+        "run_external",
+        lambda command, _arguments, _errors: PUBLIC_EMAIL if command == "pdftotext" else "Tagged: yes\n",
+    )
+    if damage == "missing-post":
+        post.unlink()
+    elif damage == "invalid-utf8":
+        (site_dir / "index.html").write_bytes(b"\xff")
+    elif damage == "broken-file-link":
+        (site_dir / "extra.html").symlink_to(tmp_path / "missing.html")
+    elif damage == "directory-link":
+        outside = tmp_path / "outside-directory"
+        outside.mkdir()
+        (site_dir / "linked").symlink_to(outside, target_is_directory=True)
+    elif damage == "malformed-config":
+        (source / "hugo/hugo.toml").write_text("[broken\n", encoding="utf-8")
+    else:
+        (source / "hugo/hugo.toml").unlink()
+
+    assert verifier.main([str(site_dir), "--source-root", str(source)]) == 1
+    output = capsys.readouterr()
+    assert diagnostic in output.err
+    assert "Traceback" not in output.err
+
+
+def test_complete_verifier_reports_independent_defects(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    source = _write_source_tree(tmp_path)
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / "index.html").write_bytes(b"\xff")
+    (site_dir / "extra.html").symlink_to(tmp_path / "missing.html")
+
+    assert verifier.main([str(site_dir), "--source-root", str(source)]) == 1
+    errors = capsys.readouterr().err
+    assert "could not read rendered text: index.html" in errors
+    assert "published page is missing from rendered output: posts/approved/index.html" in errors
+    assert "rendered output is a symbolic link or special entry: extra.html" in errors
+    assert "missing, empty, or unsafe public artifact: resume.pdf" in errors
+    assert "Traceback" not in errors
+
+
+def test_source_alias_is_allowed_and_redirect_target_is_checked(tmp_path: Path) -> None:
+    source = _write_source_tree(tmp_path, front_matter='aliases: ["/posts/old-approved/"]\n')
+    errors: list[str] = []
+    catalog = verifier.load_catalog(source, errors)
+    assert catalog is not None
+    assert errors == []
+    assert catalog.aliases == {"posts/old-approved/index.html": "posts/approved/index.html"}
+
+    alias = "posts/old-approved/index.html"
+    target = "https://brfid.github.io/posts/approved/"
+    page = tmp_path / "site" / alias
+    page.parent.mkdir(parents=True)
+    page.write_text(
+        f'<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">'
+        f'<link rel="canonical" href="{target}">'
+        f'<meta http-equiv="refresh" content="0; url={target}">',
+        encoding="utf-8",
+    )
+    canonical = tmp_path / "site/posts/approved/index.html"
+    canonical.parent.mkdir(parents=True)
+    canonical.write_text("<html></html>\n", encoding="utf-8")
+    pagination = tmp_path / "site/posts/page/1/index.html"
+    pagination.parent.mkdir(parents=True)
+    pagination.write_text("<html></html>\n", encoding="utf-8")
+    _write_stylesheet(tmp_path / "site")
+    artifact = verifier.load_rendered_artifact(tmp_path / "site", errors)
+    verifier.verify_output_policy(
+        tmp_path / "site", source / "hugo/content/posts", errors, catalog=catalog, files=artifact.files
+    )
+    verifier.verify_aliases(catalog, artifact.pages, errors)
+    assert errors == []
+
+    page.write_text(page.read_text(encoding="utf-8").replace(target, "https://example.invalid/"), encoding="utf-8")
+    artifact = verifier.load_rendered_artifact(tmp_path / "site", errors)
+    verifier.verify_aliases(catalog, artifact.pages, errors)
+    assert any("incorrect canonical redirect target" in error for error in errors)
+
+
+@pytest.mark.parametrize(
+    ("front_matter", "diagnostic"),
+    (
+        ('aliases: ["/posts/%2e%2e/"]\n', "unsafe alias"),
+        ('aliases: ["/posts/approved/"]\n', "alias collides"),
+        ("date: 2999-01-01\n", "future-dated post"),
+        ("url: /posts/renamed/\n", "unsupported routing fields"),
+        ("hiddenInRss: true\n", "cannot be hidden"),
+    ),
+)
+def test_source_catalog_rejects_unsupported_routes_and_schedules(
+    tmp_path: Path, front_matter: str, diagnostic: str
+) -> None:
+    source = _write_source_tree(tmp_path, front_matter=front_matter)
+    errors: list[str] = []
+    verifier.load_catalog(source, errors)
+    assert any(diagnostic in error for error in errors)
+
+
+FEED_BODY = (
+    '<h2 id="intro">Intro &amp; scope</h2>'
+    '<p>Opening <a href="https://example.org/source?a=1&amp;b=2">source</a> and <code>code</code>.</p>'
+    "<pre><code>if ready:\n  run()</code></pre>"
+    '<p>Image <img src="/posts/approved/picture.png" alt="Description"> and final paragraph.</p>'
+    '<p>Reference<sup id="fnref:1"><a href="#fn:1">1</a></sup>.</p>'
+    '<div class="footnotes" role="doc-endnotes"><ol><li id="fn:1">'
+    '<p>Complete note text.</p><a href="#fnref:1" class="footnote-backref">return</a>'
+    "</li></ol></div>"
+)
+
+
+def _write_full_feed_fixture(tmp_path: Path) -> tuple[Path, verifier.SourceCatalog]:
+    source = _write_source_tree(tmp_path)
+    errors: list[str] = []
+    catalog = verifier.load_catalog(source, errors)
+    assert catalog is not None and not errors
+    site_dir = tmp_path / "site"
+    page = site_dir / "posts/approved/index.html"
+    page.parent.mkdir(parents=True)
+    page.write_text(f'<div class="post-content md-content">{FEED_BODY}</div>', encoding="utf-8")
+    _replace_feed_body(site_dir, FEED_BODY)
+    return site_dir, catalog
+
+
+def _replace_feed_body(site_dir: Path, body: str, *, link: str = "https://brfid.github.io/posts/approved/") -> None:
+    item = f"<item><link>{link}</link><guid>{link}</guid><description>Post</description>"
+    item += f"<content:encoded><![CDATA[{body}]]></content:encoded></item>"
+    feed = f'<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel>{item}</channel></rss>'
+    for relative_path in ("index.xml", "posts/index.xml"):
+        path = site_dir / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(feed, encoding="utf-8")
+
+
+def _full_feed_errors(site_dir: Path, catalog: verifier.SourceCatalog) -> list[str]:
+    errors: list[str] = []
+    artifact = verifier.load_rendered_artifact(site_dir, errors)
+    verifier.verify_feeds(site_dir, errors, texts=artifact.texts, catalog=catalog, pages=artifact.pages)
+    return errors
+
+
+def test_feed_matches_the_complete_article_with_entities_code_images_and_notes(tmp_path: Path) -> None:
+    site_dir, catalog = _write_full_feed_fixture(tmp_path)
+    assert _full_feed_errors(site_dir, catalog) == []
+
+    _replace_feed_body(site_dir, FEED_BODY.replace("&amp;", "&#38;").replace(' role="doc-endnotes"', ""))
+    assert _full_feed_errors(site_dir, catalog) == []
+
+
+@pytest.mark.parametrize(
+    ("body", "diagnostic"),
+    (
+        ("<p>Stub.</p>", "full-text body differs"),
+        (FEED_BODY.replace(" and final paragraph.", "."), "full-text body differs"),
+        (FEED_BODY.replace("Complete note text.", ""), "full-text body differs"),
+        (FEED_BODY.replace("/posts/approved/picture.png", "/wrong.png"), "full-text body differs"),
+    ),
+)
+def test_feed_rejects_incomplete_or_changed_body(tmp_path: Path, body: str, diagnostic: str) -> None:
+    site_dir, catalog = _write_full_feed_fixture(tmp_path)
+    _replace_feed_body(site_dir, body)
+    errors = _full_feed_errors(site_dir, catalog)
+    assert sum(diagnostic in error for error in errors) == 2
+
+
+def test_feed_rejects_missing_duplicate_and_wrong_post_items(tmp_path: Path) -> None:
+    site_dir, catalog = _write_full_feed_fixture(tmp_path)
+    for relative_path in ("index.xml", "posts/index.xml"):
+        path = site_dir / relative_path
+        contents = path.read_text(encoding="utf-8")
+        path.write_text(
+            contents.replace(contents[contents.index("<item>") : contents.index("</item>") + 7], ""), encoding="utf-8"
+        )
+    errors = _full_feed_errors(site_dir, catalog)
+    assert sum("missing published post item" in error for error in errors) == 2
+
+    _replace_feed_body(site_dir, FEED_BODY)
+    for relative_path in ("index.xml", "posts/index.xml"):
+        path = site_dir / relative_path
+        contents = path.read_text(encoding="utf-8")
+        item = contents[contents.index("<item>") : contents.index("</item>") + 7]
+        path.write_text(contents.replace(item, item + item), encoding="utf-8")
+    errors = _full_feed_errors(site_dir, catalog)
+    assert sum("duplicate canonical post" in error for error in errors) == 2
+
+    _replace_feed_body(site_dir, FEED_BODY, link="https://brfid.github.io/posts/other/")
+    errors = _full_feed_errors(site_dir, catalog)
+    assert sum("item target is not a canonical published post" in error for error in errors) == 2
+
+
+def test_primary_navigation_rejects_a_foreign_origin_with_the_same_path(tmp_path: Path) -> None:
+    site_dir = tmp_path / "site"
+    site_dir.mkdir()
+    (site_dir / "index.html").write_text(
+        '<a class="menu-primary-link" href="https://example.invalid/posts/">Blog</a>'
+        '<a class="menu-primary-link" href="/resume/">Resume</a>',
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+    verifier.verify_primary_links(site_dir, errors)
+    assert "index.html: missing primary link to /posts/" in errors
