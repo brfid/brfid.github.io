@@ -82,6 +82,8 @@ Nonfiction drafts, research, writing guidance, and editable masters live in the 
 
 This repository holds complete approved publication copies in `hugo/content/posts/<slug>/`, with citations, relative assets, and full-text RSS. Existing archival provenance and repository PDF downloads remain under `docs/`; preserve their paths and checksums. Copy only approved publication files; private research stays in the authoring repository, with no private build dependency. Production publishes an imported post only when its front matter explicitly sets `draft: false`.
 
+For a published post, use its bundle directory as the canonical slug and a date without a time. Optional aliases must be a list of `/posts/<slug>/` paths. The verifier rejects route overrides (`url`, a different `slug`, `type`, `layout`, `outputs`, `headless`, or `build`), future dates, `publishDate`, and `expiryDate`. Keep both feeds complete: published posts cannot set `hiddenInRss`, and Hugo's RSS limit must remain unlimited.
+
 After copying approved content, inspect the diff and run `make verify-site` for changed publication content. Publication is a separate action under the instructions below. Templates, shortcodes, styles, feeds, build tooling, and public resume data remain maintained in this repository.
 
 ## Publish the site
@@ -144,6 +146,20 @@ Update the Python selection in [.github/workflows/publish.yml](.github/workflows
 Update Gitleaks' version in `.github/workflows/publish.yml` together with `requirements/gitleaks.sha256`, checked against the upstream release's checksum file. Run the history scan after an update because detection rules may change.
 
 For an Action update, resolve the intended release in its upstream repository to a commit, inspect its changes, and replace the full commit ID and version comment together. GitHub documents [why full commit IDs provide immutable Action references](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions). There is no dependency cache or automatic dependency-update workflow in this repository.
+
+## Contribute to the site
+
+Read [the repository rules](AGENTS.md) before editing publication behavior. Use the [Google developer documentation style guide](https://developers.google.com/style/highlights) for procedures and the [Google Python docstring guidance](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) for Python APIs. Ruff enforces the configured Google-style docstring rules and the repository's 120-character Python format; it does not enforce the entire Google Python guide.
+
+| Change | Local check |
+|---|---|
+| Python behavior without a browser | `make test-unit` |
+| Hugo layout, script, browser, PDF, or workflow behavior | `make check` |
+| Published routes, feeds, crawler policy, privacy, or complete site output | `make verify-site` after `make check` |
+
+`site_tools/publication.py` reads Hugo configuration and post front matter to define source-backed routes, aliases, and resources. `site_tools/verify.py` inspects the generated artifact against those expectations and independent publication and privacy rules. Add a route through approved source data; keep safety requirements independent of the output under test.
+
+Repository-owned templates in `hugo/layouts/` extend the pinned PaperMod theme. Footer script partials are included conditionally, so check both the template and its browser behavior when changing them. `resume.yaml` supplies the public résumé and landing summary; only `make resume-pdf-application` supplies the untracked private phone overlay to the PDF renderer. Keep its output outside `site/`.
 
 ## Source files
 

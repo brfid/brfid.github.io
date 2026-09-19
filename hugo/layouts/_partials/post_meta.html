@@ -35,8 +35,6 @@
     {{- end }}
 {{- end }}
 
-{{/* Combine all meta information into a single string with separators and render it as HTML.*/}}
-
 {{- with ($scratch.Get "meta") }}
     {{- delimit . "&nbsp;·&nbsp;" | safeHTML -}}
 {{- end -}}

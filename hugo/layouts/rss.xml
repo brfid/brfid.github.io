@@ -1,4 +1,4 @@
-{{- /* PaperMod feed override for the current locale accessor and one-pass description escaping. */}}
+{{- /* Override PaperMod's locale and escaping behavior; share post_content with HTML so RSS stays complete. */}}
 {{- $authorEmail := "" }}
 {{- with site.Params.author }}
   {{- if reflect.IsMap . }}

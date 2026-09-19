@@ -136,6 +136,24 @@ def test_theme_choice_persists_and_no_script_mode_uses_system_theme(web_page: tu
         no_script.close()
 
 
+def test_system_theme_changes_until_keyboard_choice_is_saved(web_page: tuple[Page, str]) -> None:
+    page, origin = web_page
+    page.goto(origin)
+    expect(page.locator("html")).to_have_attribute("data-theme", "light")
+    page.emulate_media(color_scheme="dark")
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    page.emulate_media(color_scheme="light")
+    expect(page.locator("html")).to_have_attribute("data-theme", "light")
+
+    toggle = page.get_by_role("button", name="Switch to dark theme; light theme is active")
+    toggle.focus()
+    page.keyboard.press("Enter")
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    page.emulate_media(color_scheme="dark")
+    page.emulate_media(color_scheme="light")
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+
+
 def test_summaries_and_comparison_grid(web_page: tuple[Page, str]) -> None:
     page, origin = web_page
     page.goto(f"{origin}/posts/")

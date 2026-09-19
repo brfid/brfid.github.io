@@ -826,6 +826,7 @@ def test_source_alias_is_allowed_and_redirect_target_is_checked(tmp_path: Path) 
         ('aliases: ["/posts/%2e%2e/"]\n', "unsafe alias"),
         ('aliases: ["/posts/approved/"]\n', "alias collides"),
         ("date: 2999-01-01\n", "future-dated post"),
+        ('date: "2026-01-01T12:00:00Z"\n', "date timestamps are unsupported"),
         ("url: /posts/renamed/\n", "unsupported routing fields"),
         ("hiddenInRss: true\n", "cannot be hidden"),
     ),

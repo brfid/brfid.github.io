@@ -453,7 +453,7 @@ def verify_robots_file(site_dir: Path, errors: list[str], *, texts: dict[str, st
     record(
         lines == list(EXPECTED_ROBOTS_LINES),
         errors,
-        f"robots.txt: unexpected directives: {lines!r}",
+        "robots.txt: unexpected directives",
     )
 
 
@@ -867,7 +867,16 @@ def verify_resume_artifacts(site_dir: Path, *, resume_yaml: Path, files: dict[st
 def verify_site(
     site_dir: Path, *, catalog: SourceCatalog | None = None, artifact: RenderedArtifact | None = None
 ) -> list[str]:
-    """Validate public HTML, feeds, indexing, and the allowed output paths."""
+    """Validate public HTML, feeds, indexing, and allowed output paths.
+
+    Args:
+        site_dir: Rendered Hugo destination.
+        catalog: Optional source routes already loaded by the CLI.
+        artifact: Optional safe inventory already loaded by the CLI.
+
+    Returns:
+        Independent validation errors. Missing inputs skip only their dependent checks.
+    """
     errors: list[str] = []
     if artifact is None:
         artifact = load_rendered_artifact(site_dir, errors)

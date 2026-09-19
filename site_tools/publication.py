@@ -57,13 +57,14 @@ def _alias_output(alias: str) -> str | None:
 
 
 def _is_future(value: object, *, path: Path, errors: list[str], build_date: dt.date) -> bool:
-    """Report unsupported future-dated posts without changing Hugo's schedule."""
+    """Require date-only post dates and reject posts Hugo would publish later."""
     if value is None:
         return False
+    if isinstance(value, dt.datetime) or (isinstance(value, str) and len(value) > 10):
+        errors.append(f"post date timestamps are unsupported by the publication gate: {path}")
+        return True
     try:
-        if isinstance(value, dt.datetime):
-            day = value.date()
-        elif isinstance(value, dt.date):
+        if isinstance(value, dt.date):
             day = value
         elif isinstance(value, str):
             day = dt.date.fromisoformat(value[:10])
@@ -192,7 +193,16 @@ def discover_posts(posts_source_dir: Path, *, origin: str, pager_size: int, erro
 def load_catalog(
     repository_root: Path, errors: list[str], *, posts_source_dir: Path | None = None
 ) -> SourceCatalog | None:
-    """Load Hugo configuration at the verification boundary, then inspect post sources."""
+    """Load Hugo configuration at the verification boundary, then inspect post sources.
+
+    Args:
+        repository_root: Root containing `hugo/hugo.toml`.
+        errors: Receives source and configuration diagnostics without source excerpts.
+        posts_source_dir: Optional controlled post corpus for contract tests.
+
+    Returns:
+        The source catalog, or `None` when configuration cannot be read.
+    """
     config_path = repository_root / "hugo/hugo.toml"
     try:
         config = tomllib.loads(config_path.read_text(encoding="utf-8"))
