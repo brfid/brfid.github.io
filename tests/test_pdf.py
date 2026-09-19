@@ -8,7 +8,8 @@ import pytest
 from playwright.sync_api import Browser, Page
 from pytest import MonkeyPatch
 
-from site_tools.pdf import _serve_directory, build_pdf, load_private_phone
+from site_tools.http import serve_directory
+from site_tools.pdf import build_pdf, load_private_phone
 
 
 @pytest.fixture
@@ -26,7 +27,7 @@ def renderer(monkeypatch: MonkeyPatch) -> tuple[MagicMock, MagicMock]:
     runtime = MagicMock()
     runtime.chromium.launch.return_value = browser
     monkeypatch.setattr("playwright.sync_api.sync_playwright", lambda: nullcontext(runtime))
-    monkeypatch.setattr("site_tools.pdf._serve_directory", lambda _root: nullcontext(43123))
+    monkeypatch.setattr("site_tools.pdf.serve_directory", lambda _root: nullcontext(43123))
     return page, browser
 
 
@@ -35,7 +36,7 @@ def test_serve_directory_serves_files(tmp_path: Path) -> None:
 
     (tmp_path / "index.html").write_text("hello", encoding="utf-8")
     with (
-        _serve_directory(tmp_path) as port,
+        serve_directory(tmp_path) as port,
         urllib.request.urlopen(f"http://127.0.0.1:{port}/index.html", timeout=2) as response,
     ):
         assert response.read().decode("utf-8") == "hello"

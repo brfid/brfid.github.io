@@ -2,39 +2,12 @@
 
 from __future__ import annotations
 
-import threading
-from collections.abc import Iterator
-from contextlib import contextmanager
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-
-class _QuietHandler(SimpleHTTPRequestHandler):
-    """HTTP handler that suppresses request logging."""
-
-    def log_message(self, _format: str, *_args: object) -> None:  # pylint: disable=arguments-differ
-        return
-
-
-@contextmanager
-def _serve_directory(root: Path) -> Iterator[int]:
-    """Serve a directory on localhost and yield its ephemeral port."""
-    handler = partial(_QuietHandler, directory=str(root))
-    server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-    port = server.server_address[1]
-
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    try:
-        yield port
-    finally:
-        server.shutdown()
-        server.server_close()
-        thread.join(timeout=5)
+from site_tools.http import serve_directory
 
 
 def load_private_phone(path: Path | None) -> str | None:
@@ -96,7 +69,7 @@ def build_pdf(
     # pylint: disable=import-outside-toplevel
     from playwright.sync_api import sync_playwright
 
-    with _serve_directory(site_dir) as port:
+    with serve_directory(site_dir) as port:
         url = f"http://127.0.0.1:{port}{resume_url_path}"
         with sync_playwright() as p:
             browser = p.chromium.launch()
