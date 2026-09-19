@@ -164,6 +164,37 @@ def test_highlighted_and_plain_code_can_be_copied(web_page: tuple[Page, str]) ->
         assert page.evaluate("navigator.clipboard.readText()") == code.text_content()
 
 
+def test_rejected_clipboard_write_reports_failure_without_page_error(web_page: tuple[Page, str]) -> None:
+    page, origin = web_page
+    page_errors: list[str] = []
+    page.on("pageerror", lambda error: page_errors.append(str(error)))
+    page.add_init_script(
+        "Object.defineProperty(navigator, 'clipboard', {value: {writeText: async () => {throw Error('denied')}}})"
+    )
+    page.goto(f"{origin}/posts/render-contract/")
+    button = page.locator(".copy-code").first
+    page.locator("pre > code").first.hover()
+    button.click()
+    expect(button).to_have_text("copy failed; retry")
+    expect(button).to_have_attribute("aria-live", "polite")
+    assert page_errors == []
+
+
+def test_copy_fallback_checks_its_result_and_allows_retry(web_page: tuple[Page, str]) -> None:
+    page, origin = web_page
+    page.add_init_script(
+        "Object.defineProperty(navigator, 'clipboard', {value: undefined}); document.execCommand = () => false;"
+    )
+    page.goto(f"{origin}/posts/render-contract/")
+    button = page.locator(".copy-code").first
+    page.locator("pre > code").first.hover()
+    button.click()
+    expect(button).to_have_text("copy failed; retry")
+    page.evaluate("document.execCommand = () => true")
+    button.click()
+    expect(button).to_have_text("copied!")
+
+
 def test_reading_time_separates_article_and_notes(web_page: tuple[Page, str]) -> None:
     page, origin = web_page
     page.goto(f"{origin}/posts/")
