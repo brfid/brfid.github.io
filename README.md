@@ -11,24 +11,39 @@ site.yaml + resume.yaml + Hugo content and templates
 
 ## Set up a checkout
 
-Install Git, Make, Python 3.11 or newer, Hugo extended 0.156.0 or newer, and Poppler (`pdfinfo` and `pdftotext`). GitHub CLI (`gh`) is needed only for manual workflow operations. Then run:
+Install Git, Make, Python 3.11 or newer, Hugo extended 0.156.0 or newer, and Poppler (`pdfinfo` and `pdftotext`). GitHub CLI (`gh`) is needed only for manual workflow operations. Complete these steps from the repository root:
 
-```bash
-git submodule update --init
-python3 -m venv .venv
-.venv/bin/python -m pip install --require-hashes -r requirements/build.lock
-.venv/bin/python -m pip install --require-hashes -r requirements/dev.lock
-.venv/bin/python -m pip install --no-deps --no-build-isolation -e .
-.venv/bin/python -m playwright install chromium
-make check_env
-make verify-site
-```
+1. Initialize the theme and install the Python dependencies:
 
-On Linux, use `.venv/bin/python -m playwright install --with-deps chromium` for the browser installation so Chromium's system libraries are installed too.
+   ```bash
+   git submodule update --init
+   python3 -m venv .venv
+   .venv/bin/python -m pip install --require-hashes -r requirements/build.lock
+   .venv/bin/python -m pip install --require-hashes -r requirements/dev.lock
+   .venv/bin/python -m pip install --no-deps --no-build-isolation -e .
+   ```
+
+2. Install Chromium. On Linux, include its system libraries:
+
+   ```bash
+   .venv/bin/python -m playwright install --with-deps chromium
+   ```
+
+   On macOS, install Chromium:
+
+   ```bash
+   .venv/bin/python -m playwright install chromium
+   ```
+
+3. Check prerequisites and build the complete public artifact:
+
+   ```bash
+   make verify-site
+   ```
 
 The result is the complete public site under `site/`, including `site/resume.pdf`.
 
-The repository vendors PaperMod as a pinned Git submodule and serves its [fonts locally](docs/fonts.md). There is no front-end package install or build step. Python dependencies install from hash locks. The [setup script](scripts/github/setup.sh) and [workflow](.github/workflows/publish.yml) select CI tools, verify downloads against committed checksums, and pin Actions to full commit IDs. Hosted runner updates and system PDF tools remain outside those pins; the build is not claimed to be byte-identical across machines.
+The repository vendors PaperMod as a pinned Git submodule and serves its [fonts locally](docs/fonts.md). There is no front-end package install or build step.
 
 ## Preview the site
 
@@ -36,7 +51,7 @@ The repository vendors PaperMod as a pinned Git submodule and serves its [fonts 
 make preview
 ```
 
-Open `http://localhost:1313/`. The command builds the public site and PDF before starting Hugo with live reload. Restart it after changing `resume.yaml`, the resume layout, or print CSS.
+Open `http://localhost:1313/`. The command builds the public site and PDF before starting Hugo with live reload. Restart it after changing `site.yaml`, `resume.yaml`, or any layout or CSS that affects the PDF.
 
 Preview writes to `local/preview/site/` and stages its Hugo data and cache under `local/preview/`. The verified publication artifact remains in `site/`, so you can run `make verify-site` while preview is running.
 
@@ -53,12 +68,19 @@ make check
 make verify-site
 ```
 
-`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. The browser tests render Hugo into a temporary directory and use the installed Chromium to check navigation, theme controls, article semantics, code copying, and print scoping without touching your preview.
+`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. Its browser and PDF integration tests render Hugo into temporary directories and use the installed Chromium to check navigation, theme controls, article semantics, code copying, print scoping, and private PDF isolation without touching your preview.
 
 `make verify-site` builds fresh HTML and a Chromium PDF, then validates the [publication contracts](AGENTS.md#preserve-publication-contracts). A verification failure exits unsuccessfully and prevents CI from uploading a Pages artifact. Pull requests and publications use this command too. Use `.venv/bin/python -m site_tools.verify site` to recheck an existing artifact without rebuilding it.
 
-Use `make test` for unit, browser, and workflow tests alone, `make hugo-build` for HTML alone, and `make help` for the supported command list.
-Use `make test-unit` when you need only tests that do not start Hugo or Chromium. The full `make test` and `make check` targets always include browser and PDF integration tests.
+During development, choose checks for the changed behavior:
+
+| Change | Local check |
+|---|---|
+| Python behavior without Hugo or Chromium | `make test-unit` |
+| Hugo layout, script, browser, PDF, or workflow behavior | `make check` |
+| Published routes, feeds, crawler policy, privacy, or complete site output | `make verify-site` after `make check` |
+
+Use `make test` to run the same unit and integration tests without the other quality checks, `make hugo-build` for HTML alone, and `make help` for the supported command list.
 
 With Gitleaks installed, run the same history scan as CI:
 
@@ -67,6 +89,16 @@ gitleaks git --log-opts="--all --full-history -m" --redact --verbose --no-banner
 ```
 
 This scans all fetched branches and tags, including merge results, and redacts matches in its diagnostics. It checks committed history; review uncommitted changes before committing them.
+
+## Edit the public resume or profile
+
+Follow the [public resume data rules](AGENTS.md#public-resume-data) when editing these sources:
+
+1. Edit `resume.yaml` for resume content, including `basics.summary`, which also appears on the homepage. Edit `site.yaml` for the homepage name, headline, and profile links.
+2. Run `make verify-site` to build and validate the public HTML and PDF.
+3. [Start or restart the preview](#preview-the-site), then inspect the homepage, `/resume/`, and `/resume.pdf`.
+
+To include a phone number in a private copy, [build an application PDF](#build-an-application-pdf).
 
 ## Build an application PDF
 
@@ -84,11 +116,11 @@ This repository holds complete approved publication copies in `hugo/content/post
 
 For a published post, use its bundle directory as the canonical slug and a date without a time. Optional aliases must be a list of `/posts/<slug>/` paths. The verifier rejects route overrides (`url`, a different `slug`, `type`, `layout`, `outputs`, `headless`, or `build`), future dates, `publishDate`, and `expiryDate`. Keep both feeds complete: published posts cannot set `hiddenInRss`, and Hugo's RSS limit must remain unlimited.
 
-After copying approved content, inspect the diff and run `make verify-site` for changed publication content. Publication is a separate action under the instructions below. Templates, shortcodes, styles, feeds, build tooling, and public resume data remain maintained in this repository.
+After copying approved content, inspect the diff and run `make verify-site` for changed publication content. Follow [Publish the site](#publish-the-site) when you are ready to publish. Templates, shortcodes, styles, feeds, build tooling, and public resume data remain maintained in this repository.
 
 ## Publish the site
 
-A push to `main` runs the full-history secret scan, quality checks, and complete HTML/PDF build. After those pass, the workflow uploads the verified Pages artifact and deploys it from the same run without rebuilding it. Deployment runs only for this repository's protected `main` branch, and skips a build if the branch has advanced since it was checked.
+A push to `main` runs the full-history secret scan, quality checks, and complete HTML/PDF build. After those pass, the workflow uploads the verified Pages artifact and deploys it from the same run without rebuilding it. Deployment runs only for this repository's protected `main` branch, and skips deployment if the branch has advanced since it was checked.
 
 A push whose head commit message contains `[nopublish]` runs the checks and retains the artifact without deploying.
 
@@ -106,29 +138,40 @@ gh run list --workflow publish.yml --limit 5
 gh run view --web
 ```
 
-Pages deployment retries transient failures up to three times using the same artifact. Inspect the failed job and the live site if all deployment attempts fail.
+Pages deployment makes up to three attempts using the same artifact. If all attempts fail, inspect the failed job and the live site.
 
-All HTML, including the blog index, full articles, pagination, homepage, résumé, and aliases, requests exclusion from indexing. The policy applies globally to current and future articles. See the [publication contracts](AGENTS.md#preserve-publication-contracts) for the exact directives.
-
-The site does not publish or advertise a sitemap. `robots.txt` leaves HTML crawlable so search engines can read its indexing directives, blocks the public PDF and feeds, and requests full-site exclusion for `archive.org_bot`, `ia_archiver`, and [Common Crawl's `CCBot`](https://commoncrawl.org/ccbot). Article URLs, supporting assets, and both full-text feeds remain available to readers. The PDF block discourages crawling but [does not guarantee exclusion from search](https://developers.google.com/search/docs/crawling-indexing/robots/intro). These controls depend on crawler cooperation and do not remove existing copies; the repository's revision history is also public. For Wayback Machine exclusion or removal, follow the [Internet Archive's request procedure](https://archivesupport.zendesk.com/hc/en-us/articles/360004651732-Using-The-Wayback-Machine).
+The site and repository history remain public. The [indexing and crawler controls](AGENTS.md#preserve-publication-contracts) depend on crawler cooperation and do not remove existing copies.
 
 ## Recover a publication
 
 If deployment alone failed, the run still identifies the current `main` commit, and its checked artifact remains available, use GitHub Actions' **Re-run failed jobs**. The deployment job reuses that artifact. If it expired or `main` advanced, start a new manual publication of `main`.
 
-If published source needs correction, start with a clean checkout on `main`. Inspect the offending commit, revert that change, verify the resulting source, and push the new commit. Replace the example SHA before running:
+If published source needs correction, start with a clean checkout on `main`:
 
-```bash
-git status --short --branch
-git log -5 --oneline
-git show BAD_COMMIT_SHA
-git revert BAD_COMMIT_SHA
-make check
-make verify-site
-git push origin main
-```
+1. Inspect the offending commit. Replace `BAD_COMMIT_SHA` with its commit ID:
+
+   ```bash
+   git status --short --branch
+   git log -5 --oneline
+   git show BAD_COMMIT_SHA
+   ```
+
+2. Revert the change:
+
+   ```bash
+   git revert BAD_COMMIT_SHA
+   ```
+
+3. Run the [complete checks](#run-checks).
+4. Publish the correction:
+
+   ```bash
+   git push origin main
+   ```
 
 Revert a multi-commit change from newest to oldest, or prepare a focused corrective commit when other work depends on it. Recovery preserves shared history and passes through the same checks as an ordinary publication.
+
+For Wayback Machine exclusion or removal, follow the [Internet Archive's request procedure](https://archivesupport.zendesk.com/hc/en-us/articles/360004651732-Using-The-Wayback-Machine).
 
 ## Update dependencies
 
@@ -147,19 +190,17 @@ Update Gitleaks' version in `.github/workflows/publish.yml` together with `requi
 
 For an Action update, resolve the intended release in its upstream repository to a commit, inspect its changes, and replace the full commit ID and version comment together. GitHub documents [why full commit IDs provide immutable Action references](https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions). There is no dependency cache or automatic dependency-update workflow in this repository.
 
+Python dependencies install from hash locks. The [setup script](scripts/github/setup.sh) and [workflow](.github/workflows/publish.yml) select CI tools, verify downloads against committed checksums, and pin Actions to full commit IDs. Hosted runner updates and system PDF tools remain outside those pins; the build is not claimed to be byte-identical across machines.
+
 ## Contribute to the site
 
 Read [the repository rules](AGENTS.md) before editing publication behavior. Use the [Google developer documentation style guide](https://developers.google.com/style/highlights) for procedures and the [Google Python docstring guidance](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) for Python APIs. Ruff enforces the configured Google-style docstring rules and the repository's 120-character Python format; it does not enforce the entire Google Python guide.
 
-| Change | Local check |
-|---|---|
-| Python behavior without a browser | `make test-unit` |
-| Hugo layout, script, browser, PDF, or workflow behavior | `make check` |
-| Published routes, feeds, crawler policy, privacy, or complete site output | `make verify-site` after `make check` |
+Choose validation from [Run checks](#run-checks).
 
 `site_tools/publication.py` reads Hugo configuration and post front matter to define source-backed routes, aliases, and resources. `site_tools/verify.py` inspects the generated artifact against those expectations and independent publication and privacy rules. Add a route through approved source data; keep safety requirements independent of the output under test.
 
-Repository-owned templates in `hugo/layouts/` extend the pinned PaperMod theme. Footer script partials are included conditionally, so check both the template and its browser behavior when changing them. `resume.yaml` supplies the public résumé and landing summary; only `make resume-pdf-application` supplies the untracked private phone overlay to the PDF renderer. Keep its output outside `site/`.
+Repository-owned templates in `hugo/layouts/` extend the pinned PaperMod theme. Footer script partials are included conditionally, so check both the template and its browser behavior when changing them.
 
 ## Source files
 

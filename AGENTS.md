@@ -45,7 +45,7 @@ For nonfiction editorial work on the owner's Mac, use `~/src/posts`: read its `A
 - Use one public build path, `make verify-site`, for the complete HTML and PDF artifact in local checks and CI.
 - Preview design and theme changes through Hugo. Do not create a separate HTML mockup.
 - Extend PaperMod through `hugo/assets/css/extended/`, self-hosted fonts, and repository-owned partials. Do not edit the PaperMod submodule.
-- Restart the preview after changing `resume.yaml`, or after changing layout or CSS that affects the PDF.
+- Restart the preview after changing `site.yaml` or `resume.yaml`, or after changing layout or CSS that affects the PDF.
 - Inspect both `/resume/` and `/resume.pdf` after resume changes. Inspect the application PDF when private-overlay behavior changes.
 
 ## Preserve publication contracts
