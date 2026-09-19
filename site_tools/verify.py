@@ -259,7 +259,7 @@ def verify_public_text(site_dir: Path, errors: list[str], *, texts: dict[str, st
             _record_sensitive_text(decoded, label=f"{relative_path}: decoded data", errors=errors)
 
 
-class RenderedPageParser(HTMLParser):
+class RenderedPageParser(HTMLParser):  # pylint: disable=too-many-instance-attributes
     """Collect the small set of HTML fields used by the verifier."""
 
     def __init__(self) -> None:
@@ -563,6 +563,7 @@ def body_signature(fragment: str) -> tuple[object, ...]:
     return parser.signature()
 
 
+# pylint: disable=too-many-locals
 def verify_feeds(
     site_dir: Path,
     errors: list[str],
@@ -646,6 +647,7 @@ def verify_feeds(
                 errors.append(f"{relative_path}: missing published post item: {missing}")
 
 
+# pylint: enable=too-many-locals
 def _local_link_path(href: str, source_page: str, origin: str) -> str | None:
     """Resolve safe local navigation forms without accepting foreign origins."""
     parsed = urlsplit(href)

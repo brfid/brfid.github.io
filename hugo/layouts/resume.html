@@ -15,11 +15,7 @@
       <div class="resume-header-right">
         <a class="resume-contact-link resume-download-link" href="/resume.pdf" download>
           <span class="resume-contact-icon" aria-hidden="true">
-            <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
-              <path d="M12 3v12"></path>
-              <path d="m7 10 5 5 5-5"></path>
-              <path d="M5 21h14"></path>
-            </svg>
+            {{ partial "resume/download_icon.html" (dict "hidden" false) }}
           </span>
           <span>Download PDF</span>
         </a>
@@ -66,9 +62,7 @@
         <div class="listing-item-head resume-employer-head">
           <h3 class="resume-item-title">{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}</h3>
           <span class="listing-dates">
-            {{ dateFormat "Jan 2006" (time .startDate) }} -
-            {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
-            {{- else }} Present{{ end }}
+            {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "Jan 2006" "open" "Present") }}
           </span>
         </div>
         {{- with .location }}<div class="listing-item-sub resume-employer-location">{{ . }}</div>{{ end }}
@@ -78,19 +72,10 @@
             <div class="listing-item-head resume-role-head">
               <h4 class="resume-item-title">{{ .position }}</h4>
               <span class="listing-dates">
-                {{ dateFormat "Jan 2006" (time .startDate) }} -
-                {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
-                {{- else }} Present{{ end }}
+                {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "Jan 2006" "open" "Present") }}
               </span>
             </div>
-            {{- with .summary }}<p>{{ . }}</p>{{ end }}
-            {{- with .highlights }}
-            <ul>
-              {{- range . }}
-              <li>{{ . }}</li>
-              {{- end }}
-            </ul>
-            {{- end }}
+            {{ partial "resume/summary_highlights.html" . }}
           </div>
           {{- end }}
         </div>
@@ -100,23 +85,14 @@
         <div class="listing-item-head">
           <h3 class="resume-item-title">{{ .position }}</h3>
           <span class="listing-dates">
-            {{ dateFormat "Jan 2006" (time .startDate) }} -
-            {{- if .endDate }} {{ dateFormat "Jan 2006" (time .endDate) }}
-            {{- else }} Present{{ end }}
+            {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "Jan 2006" "open" "Present") }}
           </span>
         </div>
         <div class="listing-item-sub">
           {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
           {{- with .location }} · {{ . }}{{ end }}
         </div>
-        {{- with .summary }}<p>{{ . }}</p>{{ end }}
-        {{- with .highlights }}
-        <ul>
-          {{- range . }}
-          <li>{{ . }}</li>
-          {{- end }}
-        </ul>
-        {{- end }}
+        {{ partial "resume/summary_highlights.html" . }}
       </div>
       {{- end }}
       {{- end }}
@@ -148,8 +124,7 @@
           <h3 class="resume-item-title">{{ .institution }}</h3>
           {{- if .endDate }}
           <span class="listing-dates">
-            {{- if .startDate }}{{ dateFormat "2006" (time .startDate) }} - {{ end -}}
-            {{ dateFormat "2006" (time .endDate) }}
+            {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "2006") }}
           </span>
           {{- end }}
         </div>
@@ -188,8 +163,7 @@
           <h3 class="resume-item-title">{{ .organization }}</h3>
           {{- if .endDate }}
           <span class="listing-dates">
-            {{- if .startDate }}{{ dateFormat "2006" (time .startDate) }} - {{ end -}}
-            {{ dateFormat "2006" (time .endDate) }}
+            {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "2006") }}
           </span>
           {{- end }}
         </div>

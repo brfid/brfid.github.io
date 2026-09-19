@@ -1,0 +1,57 @@
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.setAttribute('aria-live', 'polite');
+        const copyLabel = {{ (i18n "code_copy" | default "copy") | jsonify | safeJS }};
+        const copiedLabel = {{ (i18n "code_copied" | default "copied!") | jsonify | safeJS }};
+        copybutton.textContent = copyLabel;
+        let resetTimer;
+
+        function copyingDone() {
+            copybutton.textContent = copiedLabel;
+            resetTimer = setTimeout(() => {
+                copybutton.textContent = copyLabel;
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', async () => {
+            clearTimeout(resetTimer);
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                    await navigator.clipboard.writeText(codeblock.textContent);
+                } else {
+                    const range = document.createRange();
+                    range.selectNodeContents(codeblock);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    try {
+                        if (!document.execCommand('copy')) {
+                            throw new Error('copy command failed');
+                        }
+                    } finally {
+                        selection.removeAllRanges();
+                    }
+                }
+                copyingDone();
+            } catch {
+                copybutton.textContent = 'copy failed; retry';
+            }
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            // td containing LineNos
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            // table containing LineNos and code
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            // code blocks not having highlight as parent class
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>

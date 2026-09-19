@@ -15,7 +15,7 @@ from site_tools.http import serve_directory
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def render_site(root: Path, *, extra_posts: int = 0) -> Path:
+def render_site(root: Path, *, extra_posts: int = 0, resume_yaml: str | None = None) -> Path:
     """Render repository templates with a small synthetic post collection."""
     source = root / "hugo"
     shutil.copytree(
@@ -28,6 +28,8 @@ def render_site(root: Path, *, extra_posts: int = 0) -> Path:
     (source / "data").mkdir()
     for name in ("resume.yaml", "site.yaml"):
         shutil.copy2(ROOT / name, source / "data" / name)
+    if resume_yaml is not None:
+        (source / "data/resume.yaml").write_text(resume_yaml, encoding="utf-8")
 
     corpus = {
         "described-contract": (
@@ -214,6 +216,49 @@ def test_pagination_and_drafts_use_controlled_posts(tmp_path: Path) -> None:
     assert "Described contract" not in first_page
     assert "Described contract" in second_page
     assert not (output / "posts/draft-contract/index.html").exists()
+
+
+def test_resume_date_ranges_cover_grouped_roles_and_optional_years(tmp_path: Path) -> None:
+    resume_yaml = """basics:
+  name: Test Writer
+  label: Writer
+  email: test@example.com
+work:
+  - name: Grouped Employer
+    startDate: 2020-01-01
+    positions:
+      - position: Ongoing Role
+        startDate: 2022-03-01
+      - position: Earlier Role
+        startDate: 2020-01-01
+        endDate: 2022-02-01
+  - name: Ordinary Employer
+    position: Writer
+    startDate: 2018-04-01
+    endDate: 2019-05-01
+education:
+  - institution: First School
+    startDate: 2000-01-01
+    endDate: 2004-01-01
+  - institution: Second School
+    endDate: 2007-01-01
+volunteer:
+  - organization: Service
+    startDate: 2010-01-01
+    endDate: 2012-01-01
+"""
+    output = render_site(tmp_path, resume_yaml=resume_yaml)
+    source = (output / "resume/index.html").read_text(encoding="utf-8")
+    for expected in (
+        "Jan 2020 - Present",
+        "Mar 2022 - Present",
+        "Jan 2020 - Feb 2022",
+        "Apr 2018 - May 2019",
+        "2000 - 2004",
+        "2007",
+        "2010 - 2012",
+    ):
+        assert expected in source
 
 
 def test_resume_print_styles_are_scoped_to_the_resume(web_page: tuple[Page, str]) -> None:

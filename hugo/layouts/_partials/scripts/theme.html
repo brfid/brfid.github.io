@@ -1,0 +1,34 @@
+<script>
+    (() => {
+        const html = document.querySelector("html");
+        const toggle = document.getElementById("theme-toggle");
+        const themeColor = document.querySelector('meta[name="theme-color"]');
+
+        const syncThemeControl = () => {
+            const currentTheme = html.dataset.theme === "dark" ? "dark" : "light";
+            const nextTheme = currentTheme === "dark" ? "light" : "dark";
+            toggle.setAttribute("aria-label", `Switch to ${nextTheme} theme; ${currentTheme} theme is active`);
+            toggle.title = `Switch to ${nextTheme} theme (Alt + T)`;
+            if (themeColor) {
+                themeColor.content = getComputedStyle(html).getPropertyValue("--theme").trim();
+            }
+        };
+
+        syncThemeControl();
+
+        toggle.addEventListener("click", () => {
+            const nextTheme = html.dataset.theme === "dark" ? "light" : "dark";
+            html.dataset.theme = nextTheme;
+            localStorage.setItem("pref-theme", nextTheme);
+            syncThemeControl();
+        });
+
+        const colorScheme = window.matchMedia('(prefers-color-scheme: dark)');
+        colorScheme.addEventListener("change", event => {
+            if (!localStorage.getItem("pref-theme")) {
+                html.dataset.theme = event.matches ? "dark" : "light";
+                syncThemeControl();
+            }
+        });
+    })();
+</script>

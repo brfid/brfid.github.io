@@ -78,6 +78,7 @@ def _is_future(value: object, *, path: Path, errors: list[str], build_date: dt.d
     return False
 
 
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 def discover_posts(posts_source_dir: Path, *, origin: str, pager_size: int, errors: list[str]) -> SourceCatalog:
     """Read published bundles and validate their canonical and alias routes."""
     pages: set[str] = set()
@@ -187,6 +188,7 @@ def discover_posts(posts_source_dir: Path, *, origin: str, pager_size: int, erro
     return SourceCatalog(origin, pager_size, frozenset(pages), aliases, frozenset(resources))
 
 
+# pylint: enable=too-many-locals,too-many-branches,too-many-statements
 def load_catalog(
     repository_root: Path, errors: list[str], *, posts_source_dir: Path | None = None
 ) -> SourceCatalog | None:

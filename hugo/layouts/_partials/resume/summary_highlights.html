@@ -1,0 +1,8 @@
+{{- with .summary }}<p>{{ . }}</p>{{ end }}
+{{- with .highlights }}
+<ul>
+  {{- range . }}
+  <li>{{ . }}</li>
+  {{- end }}
+</ul>
+{{- end }}

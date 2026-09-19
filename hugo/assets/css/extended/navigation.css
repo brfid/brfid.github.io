@@ -1,3 +1,108 @@
+/* Navigation and footer. */
+
+.header .logo a {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  transition: color 0.12s ease;
+}
+
+#menu a {
+  align-items: center;
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 14px;
+  gap: 0.35rem;
+  transition: color 0.12s ease;
+}
+
+#menu > li {
+  align-items: center;
+  display: inline-flex;
+}
+
+#menu .menu-item-with-companion {
+  gap: 0.35rem;
+}
+
+#menu .menu-utility-item {
+  border-inline-start: 1px solid var(--border);
+  color: var(--secondary);
+  margin-inline-start: 0.2rem;
+  padding-inline-start: 0.8rem;
+}
+
+#menu .menu-utility-item a {
+  color: inherit;
+}
+
+#menu .menu-link-icon,
+#menu .menu-companion-link {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+}
+
+#menu .menu-link-icon svg,
+#menu .menu-companion-link svg {
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+#menu .menu-companion-link {
+  color: var(--secondary);
+}
+
+/* Resume and article links. */
+.post-single a {
+  transition: color 0.12s ease;
+}
+
+.header .logo a:hover,
+.header .logo a:focus-visible,
+#menu a:hover,
+#menu a:focus-visible,
+.bio-link:hover,
+.bio-link:focus-visible,
+.post-single a:hover,
+.post-single a:focus-visible,
+.footer a:hover,
+.footer a:focus-visible,
+.section-feed-link:hover,
+.section-feed-link:focus-visible,
+.error-links a:hover,
+.error-links a:focus-visible,
+.paginav a:hover,
+.paginav a:focus-visible {
+  color: var(--interactive-hover);
+}
+
+.paginav a:hover,
+.paginav a:focus-visible {
+  background: transparent;
+}
+
+.theme-toggle svg {
+  transition: stroke 0.15s ease;
+}
+
+.theme-toggle:hover svg,
+.theme-toggle:focus-visible svg {
+  stroke: var(--interactive-hover);
+}
+
+.footer {
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+}
+
+.footer a {
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+
 /* Navigation state and keyboard focus. */
 
 .skip-link {

@@ -86,15 +86,6 @@ jobs = 0
 [tool.pylint.format]
 max-line-length = 120
 
-[tool.pylint.messages_control]
-# Ruff enforces Google-style docstrings in source; tests are exempt.
-disable = [
-    "too-many-instance-attributes",  # R0902: Config classes need many attributes
-    "too-many-locals",  # R0914: Parser functions need many variables
-    "too-many-branches",  # R0912: Parser functions have many cases
-    "too-many-statements",  # R0915: Parser functions are naturally long
-]
-
 [tool.vulture]
 min_confidence = 80
 exclude = [".venv", "site", "tests"]
