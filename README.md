@@ -55,7 +55,7 @@ Open `http://localhost:1313/`. The command builds the public site and PDF before
 
 Preview writes to `local/preview/site/` and stages its Hugo data and cache under `local/preview/`. The verified publication artifact remains in `site/`, so you can run `make verify-site` while preview is running.
 
-Use `make preview-drafts` to include draft posts. Set `PREVIEW_PORT` to use another port:
+Set `PREVIEW_PORT` to use another port:
 
 ```bash
 make preview PREVIEW_PORT=1314
@@ -112,11 +112,28 @@ The command first builds and verifies the phone-free public artifact. It then wr
 
 Nonfiction drafts, research, writing guidance, and editable masters live in the owner's private `~/src/posts` workspace. Begin there with `AGENTS.md` and the essay's `notes.md`; revise its `article/` directory and follow the publication instructions in that workspace's README. Compare both copies and preserve divergent local site changes before copying approved content.
 
-This repository holds complete approved publication copies in `hugo/content/posts/<slug>/`, with citations, relative assets, and full-text RSS. Existing archival provenance and repository PDF downloads remain under `docs/`; preserve their paths and checksums. Copy only approved publication files; private research stays in the authoring repository, with no private build dependency. Production publishes an imported post only when its front matter explicitly sets `draft: false`.
+This repository holds only approved, published copies in `hugo/content/posts/<slug>/`, with citations, required assets, and full-text RSS. Keep drafts and publication plans in the private authoring repository; `draft: true` excludes a page from Hugo output but exposes its source in this public repository. Import approved content with `draft: false`. The site has no private build dependency.
 
 For a published post, use its bundle directory as the canonical slug and a date without a time. Optional aliases must be a list of `/posts/<slug>/` paths. The verifier rejects route overrides (`url`, a different `slug`, `type`, `layout`, `outputs`, `headless`, or `build`), future dates, `publishDate`, and `expiryDate`. Keep both feeds complete: published posts cannot set `hiddenInRss`, and Hugo's RSS limit must remain unlimited.
 
 After copying approved content, inspect the diff and run `make verify-site` for changed publication content. Follow [Publish the site](#publish-the-site) when you are ready to publish. Templates, shortcodes, styles, feeds, build tooling, and public resume data remain maintained in this repository.
+
+## Host cited sources
+
+Before adding an archival document or page image, check for a publicly accessible complete copy of the same edition. Retrieve the file, compare its identity and page coverage with the research original, and verify any page locator. Prefer an archive's direct file URL; a catalogue entry alone is insufficient. Keep originals and detailed retrieval evidence in the private authoring workspace or their existing archival collection.
+
+Keep necessary page photographs in the published post's `scans/` bundle. Keep necessary archival PDFs in `docs/<slug>-sources/`, outside the Pages artifact, and cite a raw GitHub URL pinned to a full, already published commit ID. Verify the remote bytes before using that URL. Preserve filenames and record checksums, original-source provenance, transformations and page mappings in the post's manifest under `docs/`. Remove entries for files no longer hosted; retain provenance for externally linked documents where it substantiates a citation.
+
+The current arrangement keeps page images directly viewable and archival PDF downloads separate from the [public PDF contract](AGENTS.md#preserve-publication-contracts). A raw PDF URL may download the file instead of opening at a page fragment, so give printed and PDF page numbers in the citation. Correct an archival file under a new filename and update the citation deliberately; do not silently replace cited bytes.
+
+| Arrangement | Reader access and citation | Build and maintenance |
+| --- | --- | --- |
+| Hugo bundle assets | Site URLs open page images directly; PDF serving would support browser page locators. | Files travel in every Pages artifact. Archival PDFs would require a deliberate change to the resume-only PDF contract and its checks. |
+| Repository files with raw URLs | Public downloads; full commit IDs fix the cited bytes. | Current choice for small, seldom-changing archival PDFs. Git stores their history; Hugo does not copy `docs/`. |
+| Release assets | Direct downloads tied to a release; avoid `latest` links for citations. | Useful for a substantially larger collection. Adds release creation, upload, checksum and retention work outside the site build. |
+| Git LFS | Stores pointers in Git and objects separately. | Unsuitable here: GitHub documents that LFS cannot be used with Pages sites. It adds storage, bandwidth and checkout management without improving these small archival downloads. |
+
+GitHub documents a [1 GB published-site limit](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits), [release files below 2 GiB with no total release-size or bandwidth limit](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases#storage-and-bandwidth-quotas), and the [Pages restriction on LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-git-large-file-storage). Recheck those contracts before changing storage. These alternatives do not require a migration of the present collection.
 
 ## Publish the site
 

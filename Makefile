@@ -4,8 +4,8 @@ BUILD_ROOT ?= build
 OUTPUT_DIR ?= site
 HUGO_EXTRA ?=
 
-.PHONY: help test test-unit check verify-site check_env clean prepare-site new-post \
-        hugo-build resume-pdf resume-pdf-application preview preview-drafts
+.PHONY: help test test-unit check verify-site check_env clean prepare-site \
+        hugo-build resume-pdf resume-pdf-application preview
 
 help:
 	@echo "brfid.github.io commands"
@@ -18,8 +18,6 @@ help:
 	@echo "  make resume-pdf              Build public HTML and phone-free site/resume.pdf"
 	@echo "  make resume-pdf-application  Also build the private application PDF outside site/"
 	@echo "  make preview                 Serve an isolated local preview and PDF"
-	@echo "  make preview-drafts          Include draft posts in the isolated preview"
-	@echo "  make new-post POST_SLUG=name  Scaffold a draft post bundle"
 	@echo "  make clean                   Remove generated artifacts and tool caches"
 
 test:
@@ -54,10 +52,6 @@ prepare-site:
 	@cp site.yaml $(BUILD_ROOT)/hugo-data/site.yaml
 	@cp resume.yaml $(BUILD_ROOT)/hugo-data/resume.yaml
 
-new-post:
-	@test -n "$(POST_SLUG)" || { echo "Usage: make new-post POST_SLUG=my-post"; exit 2; }
-	@hugo new content --source hugo --kind posts "posts/$(POST_SLUG)"
-
 hugo-build: prepare-site
 	@HUGO_DATADIR=../$(BUILD_ROOT)/hugo-data HUGO_RESOURCEDIR=../$(BUILD_ROOT)/hugo-resources \
 		hugo --source hugo --destination ../$(OUTPUT_DIR) --cacheDir $(CURDIR)/$(BUILD_ROOT)/hugo-cache \
@@ -75,9 +69,3 @@ preview:
 	@HUGO_DATADIR=../local/preview/hugo-data HUGO_RESOURCEDIR=../local/preview/hugo-resources \
 		hugo server --source hugo --destination ../local/preview/site --cacheDir $(CURDIR)/local/preview/hugo-cache \
 		--disableFastRender --port $(PREVIEW_PORT)
-
-preview-drafts:
-	@$(MAKE) resume-pdf BUILD_ROOT=local/preview OUTPUT_DIR=local/preview/site HUGO_EXTRA=--buildDrafts
-	@HUGO_DATADIR=../local/preview/hugo-data HUGO_RESOURCEDIR=../local/preview/hugo-resources \
-		hugo server --source hugo --destination ../local/preview/site --cacheDir $(CURDIR)/local/preview/hugo-cache \
-		--buildDrafts --disableFastRender --port $(PREVIEW_PORT)
