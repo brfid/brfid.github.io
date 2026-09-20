@@ -9,11 +9,13 @@ tags: ["history", "networking", "internet", "multihoming"]
 
 ## Introduction
 
-I generated this with Astra in response to questions posed by John Day. The account follows the effort to separate a destination's identity from its network attachments, from early naming proposals through implementations and the standards of the 1980s. It traces which mechanisms entered use, which remained proposals, and how Internet specifications divided responsibility for multihoming.
+Today, Internet addresses point to destination's *network interface*. They've pointed to the interface, and not to something else about the destination, since the late 1960s, even before the Internet itself.
 
-Host multihoming concerns one communicating destination reachable through several network attachments. The questions are which entity a design names, who selects an attachment, and whether an existing conversation can continue after an attachment fails. A router forwarding a packet is a relay on its path; it acts as a destination when the communication terminates there.
+We might have had different addressing, and a different Internet. Different addressing architectures were designed, implemented at different scales, and considered for the early Internet. *Multihoming* is one big area of alternate designs and paths not taken. It's about what gets addressed, which changes how a node is visible in the network cosmology of addresses and identities.
 
-The historical distinction is between providing several ways to reach a destination and making their use a common responsibility of the network. CYCLADES and BBN developed mechanisms for preserving destination identity, while the 1989 Internet requirements left remote multihoming to applications. The sources document both practical adoption and continuing disagreement over the scope of a common service. Proposals, implementation reports, and demonstrated behavior need to remain distinct throughout that history.
+Host multihoming concerns one communicating destination reachable through several network attachments. The questions are which entity a design names, who selects an attachment, and whether an existing conversation can continue after an attachment fails. Today, multihoming is an add-on in the application layer, but it might have lived in the network.
+
+There's more to say about multihoming, but this post is really to publish what I was able to clank out with my personal archives, in response to a question by John Day. It traces work on theory and application, mostly on the French CYCLADES networking project, and BBN, the US defense contractor (with special appearances by USC/ISI and MIT).
 
 ## Walden separated communication endpoints from sites
 
