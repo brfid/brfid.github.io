@@ -6,6 +6,7 @@ Use this file for stable repository constraints, `README.md` for setup and opera
 
 - Build and publish the Hugo site at `brfid.github.io`.
 - Use Hugo for every published page, including the landing bio. Keep complete approved publication copies, citations, supporting assets, and full-text RSS here. Nonfiction editorial masters belong in the private `~/src/posts` workspace.
+- Host source documents and source page images here only when an equivalent copy is not already available online. Link to the existing online copy when it is available; retain research originals and provenance in the private nonfiction workspace. Do not stage sources for an unpublished essay in this public repository solely because a draft exists.
 - Treat the repository, its history, commit messages, workflow logs, and generated site as public.
 - Keep private career strategy, draft positioning, salary data, confidential employer information, and rejected copy outside this repository.
 - Run the publish path on GitHub-hosted runners and verify it with the same local build command. Do not add an external execution host or cloud account.
