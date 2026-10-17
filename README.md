@@ -112,7 +112,9 @@ The command first builds and verifies the phone-free public artifact. It then wr
 
 Nonfiction drafts, research, writing guidance, and editable masters live in the owner's private `~/src/posts` workspace. Begin there with `AGENTS.md` and the essay's `notes.md`; revise its `article/` directory and follow the publication instructions in that workspace's README. Compare both copies and preserve divergent local site changes before copying approved content.
 
-This repository holds only approved, published copies in `hugo/content/posts/<slug>/`, with citations, required assets, and full-text RSS. Keep drafts and publication plans in the private authoring repository; `draft: true` excludes a page from Hugo output but exposes its source in this public repository. Import approved content with `draft: false`. The site has no private build dependency.
+This repository holds approved publication copies in `hugo/content/posts/<slug>/`, with citations, required assets, and full-text RSS. The author may explicitly authorize a public draft copy with `draft: true`; that excludes the page from Hugo output while exposing its source in this public repository. Keep its editorial master and publication plans in the private authoring repository. Website publication requires separate approval and `draft: false`. The site has no private build dependency.
+
+For an authorized public draft, verify that its route, assets and unique text are absent from the normal site build and both feeds. Use `[nopublish]` in the pushed head commit to run checks without deploying the site.
 
 For a published post, use its bundle directory as the canonical slug and a date without a time. Optional aliases must be a list of `/posts/<slug>/` paths. The verifier rejects route overrides (`url`, a different `slug`, `type`, `layout`, `outputs`, `headless`, or `build`), future dates, `publishDate`, and `expiryDate`. Keep both feeds complete: published posts cannot set `hiddenInRss`, and Hugo's RSS limit must remain unlimited.
 
