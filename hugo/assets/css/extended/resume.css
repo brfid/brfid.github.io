@@ -1,0 +1,324 @@
+/* Resume-page chrome. Shared section/item primitives live in listing.css. */
+
+.cv-content {
+  margin-top: 3.5rem;
+}
+
+.resume-print-header,
+.resume-print-summary {
+  display: none;
+}
+
+.resume-selected-work {
+  break-inside: avoid;
+}
+
+.resume-selected-work a {
+  overflow-wrap: anywhere;
+}
+
+.resume-linkedin {
+  color: var(--secondary);
+  font-size: 0.9em;
+}
+
+.resume-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.resume-header-right {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.resume-contact-link {
+  align-items: center;
+  color: var(--secondary);
+  display: inline-flex;
+  font-size: 0.875rem;
+  gap: 0.45rem;
+  line-height: 1.3rem;
+  margin: 0.1rem 0;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.resume-contact-icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 1rem;
+  height: 1.3rem;
+  justify-content: center;
+  width: 1rem;
+}
+
+.resume-contact-icon svg {
+  display: block;
+  height: 0.9rem;
+  width: 0.9rem;
+}
+
+.resume-profile-links {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-start;
+  margin-top: 0.6rem;
+}
+
+.resume-profile-links a {
+  align-items: center;
+  color: var(--secondary);
+  display: inline-flex;
+  justify-content: center;
+  min-height: 2rem;
+  min-width: 2rem;
+}
+
+.resume-profile-links svg {
+  height: 1.05rem;
+  width: 1.05rem;
+}
+
+.resume-label {
+  color: var(--secondary);
+  margin: 0.25rem 0 0.1rem;
+}
+
+.resume-location {
+  color: var(--secondary);
+  margin: 0;
+}
+
+.resume-item-title {
+  font-size: inherit;
+  font-weight: 400;
+  letter-spacing: inherit;
+  line-height: inherit;
+  margin: 0;
+}
+
+.listing-section a:not(.resume-contact-link) {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.resume-employer-name {
+  min-width: 0;
+}
+
+.resume-employer-head .resume-item-title {
+  display: inline;
+  font-weight: 500;
+}
+
+.resume-role-list {
+  margin-top: 0.35rem;
+}
+
+.resume-role + .resume-role {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .resume-header {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .resume-header-right {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* Playwright uses this rule for PDF size and margins. */
+@page resume {
+  size: Letter;
+  margin: 0.5in 0.65in;
+}
+
+/* PDF layout. */
+@media print {
+  body.home-cv {
+    --theme: #fff;
+    --entry: #fff;
+    --primary: #1a1a1a;
+    --secondary: #4a4a4a;
+    --content: #1a1a1a;
+    --border: #ccc;
+    --forest: #1a1a1a;
+    color: var(--content);
+    background: var(--theme);
+    color-scheme: light;
+  }
+
+  .resume-print-header,
+  .resume-print-summary {
+    display: block;
+  }
+
+  .home-info,
+  .resume-profile-links {
+    display: none;
+  }
+
+  .cv-content {
+    margin-top: 0;
+  }
+
+  body.home-cv {
+    font-size: 10pt;
+    line-height: 1.35;
+    page: resume;
+  }
+
+  body.home-cv .header,
+  body.home-cv .footer,
+  body.home-cv .skip-link,
+  body.home-cv .resume-download-link {
+    display: none !important;
+  }
+
+  body.home-cv .main {
+    max-width: none;
+    padding: 0;
+  }
+
+  body.home-cv .post-title {
+    font-size: 23pt;
+    margin-bottom: 0.1rem;
+  }
+
+  body.home-cv .post-content {
+    font-size: 10pt;
+    line-height: 1.35;
+  }
+
+  body.home-cv .post-content h2 {
+    font-size: 15pt;
+    line-height: 1.2;
+  }
+
+  body.home-cv .resume-header {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    align-items: baseline;
+    gap: 0.2rem 1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  body.home-cv .resume-header-right {
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.2rem 1rem;
+  }
+
+  body.home-cv .resume-heading-details {
+    grid-column: 1 / -1;
+  }
+
+  body.home-cv .resume-header-right,
+  body.home-cv .resume-contact-link {
+    font-size: 9pt;
+    line-height: 1.2;
+  }
+
+  body.home-cv .resume-label,
+  body.home-cv .resume-location {
+    line-height: 1.25;
+  }
+
+  body.home-cv .listing-section {
+    margin-bottom: 0.55rem;
+  }
+
+  /* Keep section headings with the following item. */
+  body.home-cv .listing-section h2 {
+    break-after: avoid;
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.1rem;
+  }
+
+  body.home-cv .listing-item {
+    margin-bottom: 0.55rem;
+  }
+
+  body.home-cv .listing-item p,
+  body.home-cv .listing-item ul {
+    margin-bottom: 0.2rem;
+    margin-top: 0.2rem;
+  }
+
+  body.home-cv .listing-item li {
+    margin-bottom: 0.08rem;
+    margin-top: 0.08rem;
+  }
+
+  body.home-cv .listing-dates,
+  body.home-cv .listing-item-sub,
+  body.home-cv .listing-keywords {
+    font-size: 9pt;
+  }
+
+  body.home-cv .listing-item-sub {
+    margin-bottom: 0.2rem;
+  }
+
+  body.home-cv .resume-role-list {
+    margin-top: 0.2rem;
+  }
+
+  body.home-cv .resume-role + .resume-role {
+    margin-top: 0.6rem;
+  }
+
+  body.home-cv .listing-item {
+    page-break-inside: avoid;
+  }
+
+  /* Keep compact skills and education sections together. */
+  body.home-cv .resume-skills,
+  body.home-cv .resume-education {
+    break-inside: avoid;
+  }
+
+  body.home-cv .resume-skills {
+    break-before: page;
+  }
+
+  body.home-cv .resume-employer {
+    page-break-inside: auto;
+  }
+
+  body.home-cv .resume-employer-head,
+  body.home-cv .resume-employer-location,
+  body.home-cv .resume-role-head {
+    break-inside: avoid;
+    break-after: avoid;
+  }
+
+  body.home-cv .resume-role {
+    break-inside: avoid;
+  }
+
+  body.home-cv .resume-role li {
+    break-inside: avoid;
+  }
+
+  body.home-cv a,
+  body.home-cv .listing-section a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+}

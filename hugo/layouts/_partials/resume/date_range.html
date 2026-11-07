@@ -1,0 +1,12 @@
+{{- $dates := slice -}}
+{{- with .start -}}
+  {{- $dates = $dates | append (dateFormat $.format (time .)) -}}
+{{- end -}}
+{{- with .end -}}
+  {{- $dates = $dates | append (dateFormat $.format (time .)) -}}
+{{- else -}}
+  {{- with .open -}}
+    {{- $dates = $dates | append . -}}
+  {{- end -}}
+{{- end -}}
+{{- delimit $dates " - " -}}

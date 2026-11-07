@@ -1,0 +1,10 @@
+{{- /* Preserve author-supplied links without nesting anchors. Absolute URLs
+     keep section links useful in the full-text RSS feeds. */ -}}
+{{- $linked := and (not (.Page.Param "disableAnchoredHeadings")) (not (findRE `<a\s` .Text)) -}}
+<h{{ .Level }} id="{{ .Anchor }}"{{ with .Attributes.class }} class="{{ . }}"{{ end }}>
+  {{- if $linked -}}
+    <a class="heading-link" href="{{ .Page.Permalink }}#{{ .Anchor }}">{{ .Text }}</a>
+  {{- else -}}
+    {{- .Text -}}
+  {{- end -}}
+</h{{ .Level }}>

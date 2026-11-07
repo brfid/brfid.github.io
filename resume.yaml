@@ -1,0 +1,102 @@
+basics:
+  name: Brad Fidler
+  label: "Principal Technical Writer | Documentation Platforms"
+  email: brfid@icloud.com
+  summary: |-
+    I run technical documentation at a cybersecurity company. I write documentation and build tools that help colleagues contribute. Previously, I wrote lessons-learned analyses of distributed systems and taught technology history.
+  location:
+    city: Seattle
+    countryCode: US
+    region: Washington
+  profiles:
+  - network: LinkedIn
+    icon: linkedin
+    username: brfid
+    url: https://www.linkedin.com/in/brfid/
+  - network: GitHub
+    icon: github
+    username: brfid
+    url: https://github.com/brfid
+  - network: GitLab
+    icon: gitlab
+    username: brfid
+    url: https://gitlab.com/brfid
+  - network: ORCID
+    icon: orcid
+    username: "0000-0002-2882-5915"
+    url: https://orcid.org/0000-0002-2882-5915
+work:
+- name: DomainTools
+  url: https://docs.domaintools.com
+  location: Seattle, WA, US
+  startDate: '2023-10-01'
+  positions:
+  - position: Principal Technical Writer
+    startDate: '2026-07-01'
+    summary: "Set priorities for customer documentation with product and engineering teams, covering both the guidance customers need and the systems used to publish it. Plan quarterly work, provide technical direction to another writer, and serve as final editor for the site."
+    highlights: []
+  - position: Senior Technical Writer
+    startDate: '2025-01-01'
+    endDate: '2026-06-01'
+    summary: "Responsible for maintaining accurate product documentation and API contracts. Published engineering contributions through release workflows. Maintained and tested OpenAPI specifications for developers and internal teams. Reworked the site and publishing pipeline so engineers could contribute documentation directly."
+    highlights: []
+  - position: Technical Writer
+    startDate: '2023-10-01'
+    endDate: '2024-12-01'
+    summary: "Established docs.domaintools.com, migrated the existing documentation, and set the writing standards and contribution process."
+    highlights: []
+- name: JPMorgan Chase & Co.
+  position: Contract Technical Writer
+  startDate: '2023-04-01'
+  endDate: '2023-10-01'
+  summary: "Ran a cloud migration hub supporting datacenter modernization for 50,000+ engineers. Drafted cloud-migration and configuration-management policy that passed external audit."
+  highlights: []
+  location: Jersey City (Hybrid), NJ, US
+- name: Romeo Power, Inc.
+  position: Technical Writer (Document Control Analyst II)
+  startDate: '2022-07-01'
+  endDate: '2023-03-01'
+  summary: Documented Git workflows and release processes to meet software development quality standards.
+  highlights: []
+  location: Los Angeles (Remote), CA, US
+- name: Stevens Institute of Technology
+  position: Assistant Professor, Science and Technology Studies
+  url: https://www.stevens.edu
+  startDate: '2017-08-01'
+  endDate: '2022-06-01'
+  summary: Taught computing, networking, and policy, and ran research and consulting projects for NSF and the aerospace industry.
+  highlights: []
+  location: Hoboken (Hybrid), NJ, US
+- name: UCLA Computer Science
+  position: Assistant Researcher
+  url: https://www.cs.ucla.edu
+  startDate: '2012-09-01'
+  endDate: '2016-07-01'
+  summary: Wrote a historical study of DARPA's networking programs to inform future research policy.
+  highlights: []
+  location: Los Angeles (Hybrid), CA, US
+education:
+- institution: UCLA
+  area: History of Science, Technology, and Medicine
+  studyType: PhD
+- institution: York University
+  area: Political Science
+  studyType: Master of Arts
+skills:
+- name: Documentation publishing and contribution
+  keywords:
+  - Publishing automation
+  - Contribution workflows
+  - Information architecture
+  - Git
+  - CI/CD
+  - MCP tool definitions
+  - Agent instructions and evaluation
+- name: API specification and validation
+  keywords:
+  - OpenAPI
+  - REST APIs
+  - Contract validation
+  - Python
+  - pytest
+  - Schemathesis

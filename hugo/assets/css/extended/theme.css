@@ -1,0 +1,61 @@
+/* Site palette and shared layout. */
+
+:root {
+  /* Light palette. */
+  --theme: #f4f1e6;
+  --entry: #eee9d8;
+  --primary: #21281f;
+  --secondary: #5f6b5c;
+  --tertiary: #ddd7c2;
+  --content: #21281f;
+  --border: #ddd7c2;
+  --code-bg: #eee9d8;
+  --code-block-bg: #e6e1d0;
+
+  --forest: #2f6b43;
+  --interactive-hover: #176b35;
+
+  /* Align navigation, content, and footer widths. */
+  --main-width: 640px;
+  --nav-width: 640px;
+}
+
+:root[data-theme="dark"] {
+  /* Dark palette. */
+  --theme: #141a15;
+  --entry: #1c231d;
+  --primary: #e7e3d4;
+  --secondary: #8a9c8c;
+  --tertiary: #2b342c;
+  --content: #e7e3d4;
+  --border: #2b342c;
+  --code-bg: #1c231d;
+  --code-block-bg: #171d18;
+
+  --forest: #7fbf8e;
+  --interactive-hover: #b8f5c2;
+}
+
+/* Apply the dark palette in auto mode when JavaScript is unavailable. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="auto"] {
+    --theme: #141a15;
+    --entry: #1c231d;
+    --primary: #e7e3d4;
+    --secondary: #8a9c8c;
+    --tertiary: #2b342c;
+    --content: #e7e3d4;
+    --border: #2b342c;
+    --code-bg: #1c231d;
+    --code-block-bg: #171d18;
+    color-scheme: dark;
+
+    --forest: #7fbf8e;
+    --interactive-hover: #b8f5c2;
+  }
+}
+
+/* Keep list-page canvas color separate from entry cards. */
+.list {
+  background: var(--theme);
+}

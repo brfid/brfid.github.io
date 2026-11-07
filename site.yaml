@@ -1,0 +1,20 @@
+name: Brad Fidler
+url: https://brfid.github.io/
+headline: Principal Technical Writer | Documentation Platforms
+# Public identity and links; resume.yaml basics.summary supplies the bio text.
+links:
+  - label: LinkedIn
+    icon: linkedin
+    url: https://www.linkedin.com/in/brfid/
+  - label: GitHub
+    icon: github
+    url: https://github.com/brfid
+  - label: GitLab
+    icon: gitlab
+    url: https://gitlab.com/brfid
+  - label: ORCID
+    icon: orcid
+    url: https://orcid.org/0000-0002-2882-5915
+  - label: Strava
+    icon: strava
+    url: https://www.strava.com/athletes/brfid

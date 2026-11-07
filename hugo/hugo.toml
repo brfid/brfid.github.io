@@ -1,0 +1,83 @@
+baseURL = "https://brfid.github.io/"
+locale = "en-US"
+title = "Brad Fidler"
+theme = "PaperMod"
+publishDir = "../site"
+disableKinds = ["taxonomy", "term", "sitemap"]
+
+# Use only the static hugo/static/robots.txt file.
+enableRobotsTXT = false
+buildDrafts = false
+buildFuture = false
+disableAliases = false
+ignoreFiles = ['(^|/)\.DS_Store$']
+
+[pagination]
+  pagerSize = 10
+
+[[cascade]]
+  [cascade.params]
+    robotsNoIndex = true
+
+[params.label]
+  text = "brfid.github.io"
+
+[menu]
+  [[menu.main]]
+    identifier = "work"
+    name = "Work"
+    pageRef = "/work"
+    weight = 1
+  [[menu.main]]
+    identifier = "posts"
+    name = "Blog"
+    pageRef = "/posts"
+    weight = 2
+  [[menu.main]]
+    identifier = "cv"
+    name = "Download CV"
+    url = "/resume.pdf"
+    weight = 5
+    [menu.main.params]
+      download = true
+  [[menu.main]]
+    identifier = "source"
+    name = "Source"
+    url = "https://github.com/brfid/brfid.github.io"
+    weight = 10
+
+[params]
+  env = "production"
+  author = "Brad Fidler"
+  hideAuthor = true
+  description = "Brad Fidler, Principal Technical Writer."
+  mainSections = ["posts"]
+  defaultTheme = "auto"
+  disableThemeToggle = false
+  ShowReadingTime = true
+  ShowPostNavLinks = true
+  ShowBreadCrumbs = false
+  ShowCodeCopyButtons = true
+  ShowShareButtons = false
+  ShowFullTextinRSS = true
+  ShowRssButtonInSectionTermList = true
+  ShowToc = true
+  TocOpen = false
+
+  [params.assets]
+    theme_color = "#f4f1e6"
+    msapplication_TileColor = "#f4f1e6"
+
+[outputs]
+  home = ["HTML", "RSS"]
+
+[markup]
+  [markup.goldmark.renderer]
+    unsafe = false
+  [markup.highlight]
+    noClasses = false
+    style = "monokai"
+  [markup.tableOfContents]
+    startLevel = 2
+    endLevel = 3
+    ordered = false

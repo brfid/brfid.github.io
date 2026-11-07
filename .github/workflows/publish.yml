@@ -1,0 +1,121 @@
+name: Publish
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Build and check only, or also publish"
+        type: choice
+        options: [checks, publish]
+        default: publish
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  secret-scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install checksum-verified Gitleaks
+        run: |
+          set -euo pipefail
+          readonly GITLEAKS_VERSION="8.24.3"
+          readonly GITLEAKS_ASSET="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          readonly GITLEAKS_RELEASE="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          mkdir -p "$RUNNER_TEMP/gitleaks"
+          curl --fail --location --silent --show-error --retry 3 \
+            --output "$RUNNER_TEMP/gitleaks/$GITLEAKS_ASSET" "$GITLEAKS_RELEASE/$GITLEAKS_ASSET"
+          cp requirements/gitleaks.sha256 "$RUNNER_TEMP/gitleaks/checksums.txt"
+          (cd "$RUNNER_TEMP/gitleaks" && sha256sum --check checksums.txt)
+          tar -xzf "$RUNNER_TEMP/gitleaks/$GITLEAKS_ASSET" -C "$RUNNER_TEMP/gitleaks" gitleaks
+          echo "$RUNNER_TEMP/gitleaks" >> "$GITHUB_PATH"
+      - name: Scan full Git history
+        run: gitleaks git --log-opts="--all --full-history -m" --redact --verbose --no-banner
+
+  checks:
+    needs: secret-scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11.16"
+      - name: Prepare build environment
+        run: bash scripts/github/setup.sh
+      - name: Quality checks
+        run: make check
+      - name: Build and verify public HTML and PDF
+        run: make verify-site
+      - name: Upload verified Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: site
+          retention-days: 30
+
+  deploy:
+    needs: checks
+    if: |
+      github.repository_id == '1448760640' &&
+      github.ref == 'refs/heads/main' && github.ref_protected &&
+      ((github.event_name == 'push' && !contains(github.event.head_commit.message, '[nopublish]')) ||
+       (github.event_name == 'workflow_dispatch' && inputs.operation == 'publish'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy1.outputs.page_url || steps.deploy2.outputs.page_url || steps.deploy3.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - name: Check that this build is still current
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECKED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          latest_sha="$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)"
+          if [[ "$CHECKED_SHA" == "$latest_sha" ]]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "A newer main commit exists; keeping its publication in charge."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Configure GitHub Pages
+        if: steps.current.outputs.publish == 'true'
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - name: Deploy verified artifact (attempt 1/3)
+        if: steps.current.outputs.publish == 'true'
+        id: deploy1
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        continue-on-error: true
+      - name: Deploy verified artifact (attempt 2/3)
+        if: steps.deploy1.outcome == 'failure'
+        id: deploy2
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        continue-on-error: true
+      - name: Deploy verified artifact (attempt 3/3)
+        if: steps.deploy2.outcome == 'failure'
+        id: deploy3
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

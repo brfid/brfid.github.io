@@ -1,0 +1,119 @@
+{
+  "description": "Citation files for the author-authorized AUTODIN II public repository draft. The post remains draft: true and is excluded from the website and feeds. Editorial masters, research originals and detailed access records remain in the private authoring workspace. Other retained documents and page images are linked to verified existing public copies rather than duplicated here.",
+  "assets": [
+    {
+      "asset": "docs/tcpip-autodin-ii-sources/nic-1979-proposal-addendum.jpg",
+      "title": "SRI, Addendum to Proposal ECU 79-99, undated; photograph from CHM SRI collection",
+      "locator": "unnumbered addendum page; IMG_6527",
+      "sha256": "4511cfcacb24a413c9de3e67f9752ecbf43cd6d1ca75b86f1b0918cd17b533bf",
+      "bytes": 2044620,
+      "operation": "Removed private EXIF/XMP/IPTC/comment or PNG textual metadata; retained orientation-only EXIF where needed. Compressed JPEG data, displayed pixels and page framing unchanged.",
+      "document_author": "SRI; Elizabeth J. Feinler named on Proposal ECU 80-149.",
+      "archival_custody": "Computer History Museum, SRI collection; precise accession/box/folder unrecorded for these photographs.",
+      "digitization": "Photograph supplied from Brad Fidler collection; photographer not separately established."
+    },
+    {
+      "asset": "docs/tcpip-autodin-ii-sources/nic-1979-cost-sheet.jpg",
+      "title": "SRI, Proposal ECU 79-99, cost estimate, November 5, 1979; photograph from CHM SRI collection",
+      "locator": "Task Three cost estimate; IMG_6531",
+      "sha256": "88f94dcd9464ccebf505c283f5fc457cc33371ce2a1e7012591b04bf6af2bf96",
+      "bytes": 1504777,
+      "operation": "Removed private EXIF/XMP/IPTC/comment or PNG textual metadata; retained orientation-only EXIF where needed. Compressed JPEG data, displayed pixels and page framing unchanged.",
+      "document_author": "SRI; Elizabeth J. Feinler named on Proposal ECU 80-149.",
+      "archival_custody": "Computer History Museum, SRI collection; precise accession/box/folder unrecorded for these photographs.",
+      "digitization": "Photograph supplied from Brad Fidler collection; photographer not separately established."
+    },
+    {
+      "asset": "docs/tcpip-autodin-ii-sources/nic-1980-protocol-list.jpg",
+      "title": "SRI, DoD Network Information Center and Protocol Repository, Proposal ECU 80-149, December 18, 1980; photograph from CHM SRI collection",
+      "locator": "Attachment 1; IMG_6612",
+      "sha256": "db033ace57db799e0954dbb3e00d3862af644c5a6af38f5bdce0668f682a178c",
+      "bytes": 1811166,
+      "operation": "Removed private EXIF/XMP/IPTC/comment or PNG textual metadata; retained orientation-only EXIF where needed. Compressed JPEG data, displayed pixels and page framing unchanged.",
+      "document_author": "SRI; Elizabeth J. Feinler named on Proposal ECU 80-149.",
+      "archival_custody": "Computer History Museum, SRI collection; precise accession/box/folder unrecorded for these photographs.",
+      "digitization": "Photograph supplied from Brad Fidler collection; photographer not separately established."
+    },
+    {
+      "asset": "docs/tcpip-autodin-ii-sources/nic-1980-proposal-cover.jpg",
+      "title": "Elizabeth J. Feinler, DoD Network Information Center and Protocol Repository, Proposal ECU 80-149, December 18, 1980; photograph from CHM SRI collection",
+      "locator": "title page; IMG_6618",
+      "sha256": "f1446ac0361b4ba367f8bb55d90ac3808f3e15b7ad5a5c786ab7f3e68abab322",
+      "bytes": 1601723,
+      "operation": "Removed private EXIF/XMP/IPTC/comment or PNG textual metadata; retained orientation-only EXIF where needed. Compressed JPEG data, displayed pixels and page framing unchanged.",
+      "document_author": "SRI; Elizabeth J. Feinler named on Proposal ECU 80-149.",
+      "archival_custody": "Computer History Museum, SRI collection; precise accession/box/folder unrecorded for these photographs.",
+      "digitization": "Photograph supplied from Brad Fidler collection; photographer not separately established."
+    },
+    {
+      "asset": "docs/tcpip-autodin-ii-sources/bbn-source-comparison.txt",
+      "sha256": "3191262a674a9224fed6a276134042bedf5b20a4299a58ac2b355a1a0099a825",
+      "bytes": 386282,
+      "operation": "Full listed files decoded as Latin-1 and reproduced in UTF-8 with line numbers and per-file hashes. No source logic edited; no execution.",
+      "coverage": "Selected complete files, not either complete archive. LABEL is a preservation-era transcription. October 1982 README identifies excluded code only.",
+      "document_author": "BBN source authors as named in individual file headers; Michael A. Wingfield named in PDP-11 tcp.c.",
+      "archival_custody": "PDP-11 archive distributed through Noel Chiappa; VAX beta preserved in CSRG archive. Exact archive hashes and file provenance retained in packet and private manifest.",
+      "digitization": "Selected source files transcribed from preserved archive bytes, with line numbers added for review; no execution."
+    }
+  ],
+  "external_source_provenance": "https://github.com/brfid/autodin-ii-tcpip/blob/f912f143cc0d5ed55ed28de2f9fd29a90aaf28d4/sources/retained-sources.json",
+  "external_access_checked": "2026-10-16",
+  "external_complete_copies": [
+    {
+      "id": "dti-ada060668",
+      "requested_url": "https://archive.org/download/DTIC_ADA060668/DTIC_ADA060668.pdf",
+      "final_url": "https://dn760008.eu.archive.org/0/items/DTIC_ADA060668/DTIC_ADA060668.pdf",
+      "identity": "Steven F. Holmgren, David C. Healy, David A. Willcox; Digital Technology Incorporated; INFE Program Design Specifications, Document 6, May 15, 1978; DTIC AD-A060668.",
+      "http_status": 200,
+      "bytes": 29835706,
+      "sha256": "76de965fd2fd0b1eb8434d7ae13881e9a4d2cd1426546a2cd68aa615c5c55b17",
+      "pdf_pages": 120,
+      "cited_page_pairs": [
+        [
+          3,
+          "cover"
+        ],
+        [
+          14,
+          "7"
+        ],
+        [
+          18,
+          "11"
+        ],
+        [
+          19,
+          "12"
+        ]
+      ],
+      "comparison": "Each public PDF cited page, rendered at the scale of the held extract, is exactly identical in decoded RGB pixels to that retained extract.",
+      "read_scope": "Cover or identifying pages, cited pages, and final page checked; not a new historical reading of every page."
+    },
+    {
+      "id": "audit-90-097-wayback",
+      "requested_url": "https://web.archive.org/web/2020id_/https://media.defense.gov/1990/Jul/05/2001714385/-1/-1/1/90-097.pdf",
+      "final_url": "https://web.archive.org/web/20190805182326id_/https://media.defense.gov/1990/Jul/05/2001714385/-1/-1/1/90-097.pdf",
+      "identity": "DoD Inspector General; Defense Data Network; Audit Report 90-097, July 5, 1990; cover and dated final-report memorandum verified.",
+      "http_status": 200,
+      "bytes": 5443962,
+      "sha256": "721b5bd76781e8e92df604078616e3f7dcdd86158f772c165b1878f382f27b5c",
+      "pdf_pages": 99,
+      "cited_page_pairs": [
+        [
+          17,
+          "8"
+        ],
+        [
+          24,
+          "15"
+        ],
+        [
+          50,
+          "41"
+        ]
+      ],
+      "comparison": "Each public PDF cited page, rendered at 110 dpi, is exactly identical in decoded RGB pixels to that retained extract.",
+      "read_scope": "Cover or identifying pages, cited pages, and final page checked; not a new historical reading of every page."
+    }
+  ]
+}

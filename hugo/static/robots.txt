@@ -1,0 +1,12 @@
+# Archive crawler exclusions are requests, not access controls.
+User-agent: archive.org_bot
+User-agent: ia_archiver
+User-agent: CCBot
+Disallow: /
+
+# HTML remains crawlable so search engines can observe its noindex directive.
+User-agent: *
+Allow: /
+Disallow: /resume.pdf
+Disallow: /index.xml
+Disallow: /posts/index.xml

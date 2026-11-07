@@ -1,0 +1,7 @@
+{{- with site.GetPage "/work" }}
+{{- $publicURL := printf "%s%s" (strings.TrimSuffix "/" hugo.Data.site.url) .RelPermalink }}
+<section class="listing-section resume-selected-work">
+  <h2>Selected work</h2>
+  <p><a href="{{ $publicURL }}">{{ $publicURL }}</a></p>
+</section>
+{{- end }}

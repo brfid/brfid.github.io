@@ -1,0 +1,36 @@
+{{- /* This PaperMod base override supplies the skip link, page classes, and site footer scripts. */ -}}
+{{- if lt hugo.Version "0.156.0" }}
+{{- errorf "=> hugo v0.156.0 or greater is required to build this site " }}
+{{- end -}}
+
+<!DOCTYPE html>
+{{- $theme := site.Params.defaultTheme | default "auto" }}
+{{- $direction := .Language.Direction | default "auto" }}
+{{- if eq $theme "dark" }}
+<html lang="{{ site.Language }}" dir="{{ $direction }}" data-theme="dark">
+{{- else if eq $theme "light" }}
+<html lang="{{ site.Language }}" dir="{{ $direction }}" data-theme="light">
+{{- else }}
+<html lang="{{ site.Language }}" dir="{{ $direction }}" data-theme="auto">
+{{- end }}
+
+<head>
+    {{- partial "head.html" . }}
+</head>
+
+{{- if .IsHome }}
+<body class="home-cv" id="top">
+{{- else if ne .Kind `page` }}
+<body class="list" id="top">
+{{- else }}
+<body id="top">
+{{- end }}
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    {{ partialCached "header.html" . .Page -}}
+    <main class="main" id="main-content" tabindex="-1">
+        {{- block "main" . }}{{ end }}
+    </main>
+    {{ partial "footer.html" . -}}
+</body>
+
+</html>

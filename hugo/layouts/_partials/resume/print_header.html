@@ -1,0 +1,31 @@
+{{- $basics := hugo.Data.resume.basics }}
+<header class="post-header resume-print-header">
+  <div class="resume-header">
+    <h1 class="post-title">{{ $basics.name }}</h1>
+    <div class="resume-header-right">
+      {{- with $basics.email }}
+      <a class="resume-contact-link" href="mailto:{{ . }}">
+        <span class="resume-contact-icon" aria-hidden="true">{{ partial "svg.html" (dict "name" "email") }}</span>
+        <span>{{ . }}</span>
+      </a>
+      {{- end }}
+      {{- range $basics.profiles }}
+      {{- if eq .network "LinkedIn" }}
+      <a class="resume-contact-link" href="{{ .url }}">{{ strings.TrimPrefix "https://www." .url }}</a>
+      {{- end }}
+      {{- end }}
+      <template id="resume-private-phone-template">
+        <a class="resume-contact-link" data-resume-private-phone href="">
+          <span class="resume-contact-icon" aria-hidden="true">{{ partial "svg.html" (dict "name" "phone") }}</span>
+          <span data-resume-private-phone-text></span>
+        </a>
+      </template>
+    </div>
+    <div class="resume-heading-details">
+      <p class="resume-label">{{ $basics.label }}</p>
+      {{- with $basics.location }}
+      <p class="resume-location">{{ .city }}, {{ .region }}</p>
+      {{- end }}
+    </div>
+  </div>
+</header>

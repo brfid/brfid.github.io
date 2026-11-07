@@ -1,0 +1,110 @@
+{{- $r := hugo.Data.resume }}
+    {{- with $r.work }}
+    <section class="listing-section">
+      <h2>Experience</h2>
+      {{- range (sort . "startDate" "desc") }}
+      {{- $positions := .positions | default (slice .) }}
+      {{- $showRoleDates := gt (len $positions) 1 }}
+      <div class="listing-item resume-employer">
+        <div class="listing-item-head resume-employer-head">
+          <div class="resume-employer-name">
+            <h3 class="resume-item-title">{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}</h3>
+            {{- with .location }}<span class="listing-item-sub resume-employer-location"> · {{ . }}</span>{{ end }}
+          </div>
+          <span class="listing-dates">
+            {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "Jan 2006" "open" "Present") }}
+          </span>
+        </div>
+        <div class="resume-role-list">
+          {{- range (sort $positions "startDate" "desc") }}
+          <div class="resume-role">
+            <div class="listing-item-head resume-role-head">
+              <h4 class="resume-item-title">{{ .position }}</h4>
+              {{- if $showRoleDates }}
+              <span class="listing-dates">
+                {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "Jan 2006" "open" "Present") }}
+              </span>
+              {{- end }}
+            </div>
+            {{ partial "resume/summary_highlights.html" . }}
+          </div>
+          {{- end }}
+        </div>
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.skills }}
+    <section class="listing-section resume-skills">
+      <h2>Skills</h2>
+      {{- range . }}
+      <div class="listing-item">
+        <div class="listing-item-head">
+          <h3 class="resume-item-title">{{ .name }}</h3>
+        </div>
+        {{- with .keywords }}
+        <span class="listing-keywords">{{ delimit . " · " }}</span>
+        {{- end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.education }}
+    <section class="listing-section resume-education">
+      <h2>Education</h2>
+      {{- range . }}
+      <div class="listing-item">
+        <div class="listing-item-head">
+          <h3 class="resume-item-title">{{ .institution }}</h3>
+          {{- if .endDate }}
+          <span class="listing-dates">
+            {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "2006") }}
+          </span>
+          {{- end }}
+        </div>
+        <div class="listing-item-sub">{{ .studyType }}{{ with .area }}, {{ . }}{{ end }}</div>
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.publications }}
+    <section class="listing-section">
+      <h2>Publications</h2>
+      {{- range . }}
+      <div class="listing-item">
+        <div class="listing-item-head">
+          <h3 class="resume-item-title">
+            {{- if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}
+          </h3>
+          {{- with .releaseDate }}
+          <span class="listing-dates">{{ dateFormat "Jan 2006" (time .) }}</span>
+          {{- end }}
+        </div>
+        <div class="listing-item-sub">{{ .publisher }}</div>
+        {{- with .summary }}<p>{{ . }}</p>{{ end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
+
+    {{- with $r.volunteer }}
+    <section class="listing-section">
+      <h2>Service</h2>
+      {{- range . }}
+      <div class="listing-item">
+        <div class="listing-item-head">
+          <h3 class="resume-item-title">{{ .organization }}</h3>
+          {{- if .endDate }}
+          <span class="listing-dates">
+            {{ partial "resume/date_range.html" (dict "start" .startDate "end" .endDate "format" "2006") }}
+          </span>
+          {{- end }}
+        </div>
+        {{- with .summary }}<p>{{ . }}</p>{{ end }}
+      </div>
+      {{- end }}
+    </section>
+    {{- end }}
