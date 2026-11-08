@@ -1,9 +1,9 @@
 basics:
   name: Brad Fidler
-  label: "Principal Technical Writer | Documentation Platforms"
+  label: "Principal Technical Writer | Documentation Engineering"
   email: brfid@icloud.com
   summary: |-
-    I run technical documentation at a cybersecurity company. I write documentation and build tools that help colleagues contribute. Previously, I wrote lessons-learned analyses of distributed systems and taught technology history.
+    I run technical documentation at a cybersecurity company, writing product and API guidance and building the tools used to contribute and publish it. Previously, I wrote lessons-learned analyses of distributed systems and taught technology history.
   location:
     city: Seattle
     countryCode: US
@@ -38,7 +38,7 @@ work:
   - position: Senior Technical Writer
     startDate: '2025-01-01'
     endDate: '2026-06-01'
-    summary: "Responsible for maintaining accurate product documentation and API contracts. Published engineering contributions through release workflows. Maintained and tested OpenAPI specifications for developers and internal teams. Reworked the site and publishing pipeline so engineers could contribute documentation directly."
+    summary: "Responsible for maintaining accurate product documentation and API contracts. Integrated documentation into product releases so it could ship at tech preview. Expanded and tested OpenAPI specifications used for developer reference, code generation, and API contract tests. Reworked the site and publishing pipeline so engineers could contribute documentation directly. Developed an LLM interaction test suite for the product MCP and handed it to QA."
     highlights: []
   - position: Technical Writer
     startDate: '2023-10-01'
@@ -56,7 +56,7 @@ work:
   position: Technical Writer (Document Control Analyst II)
   startDate: '2022-07-01'
   endDate: '2023-03-01'
-  summary: Documented Git workflows and release processes to meet software development quality standards.
+  summary: Wrote Git workflow and release documentation that passed a software process assessment.
   highlights: []
   location: Los Angeles (Remote), CA, US
 - name: Stevens Institute of Technology
@@ -72,7 +72,7 @@ work:
   url: https://www.cs.ucla.edu
   startDate: '2012-09-01'
   endDate: '2016-07-01'
-  summary: Wrote a historical study of DARPA's networking programs to inform future research policy.
+  summary: Contributed to a DARPA study on how research teams and institutions shaped the design of the early Internet.
   highlights: []
   location: Los Angeles (Hybrid), CA, US
 education:
@@ -87,6 +87,7 @@ skills:
   keywords:
   - Publishing automation
   - Contribution workflows
+  - Contributor plugin development (Codex, Claude Code)
   - Information architecture
   - Git
   - CI/CD

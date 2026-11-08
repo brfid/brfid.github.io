@@ -13,24 +13,6 @@
   text-decoration-thickness: 2px;
 }
 
-.post-single .post-content :is(h1, h2, h3, h4, h5, h6) a:not(.heading-link) {
-  box-shadow: none;
-  color: var(--forest);
-  text-decoration: none;
-}
-
-.post-single .post-content :is(h1, h2, h3, h4, h5, h6) a:not(.heading-link):is(:hover, :focus-visible) {
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.15em;
-}
-
-.md-content .heading-link:focus-visible,
-.post-article .post-content a:focus-visible {
-  outline: 2px solid var(--forest);
-  outline-offset: 3px;
-}
-
 /* Superscripts and return arrows use their shape to identify citation links. */
 .post-article .post-content a.footnote-ref,
 .post-article .post-content a.footnote-backref {
@@ -110,7 +92,6 @@
 
 .section-feed-link {
   align-items: center;
-  color: var(--secondary);
   display: inline-flex;
   font-family: var(--mono);
   font-size: 0.72rem;
@@ -120,9 +101,6 @@
   margin-inline-start: 0.65rem;
   min-height: 2rem;
   padding-inline: 0.15rem;
-  text-decoration-line: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 0.22em;
   transition: color 0.12s ease;
   vertical-align: 0.2em;
 }
@@ -130,11 +108,6 @@
 .section-feed-link svg {
   height: 0.9rem;
   width: 0.9rem;
-}
-
-.entry-link:focus-visible {
-  outline: 2px solid var(--forest);
-  outline-offset: 3px;
 }
 
 .post-entry:hover,

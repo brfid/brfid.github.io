@@ -104,7 +104,7 @@
   margin: 0;
 }
 
-.listing-section a:not(.resume-contact-link) {
+.listing-section a {
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;

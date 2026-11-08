@@ -1,0 +1,32 @@
+/* Standalone links share one treatment; links within prose keep their underlines. */
+@media screen {
+  .post-single .post-content :is(h1, h2, h3, h4, h5, h6) a:not(.heading-link),
+  .cv-content .resume-item-title a,
+  .listing-section.resume-selected-work a,
+  .section-feed-link,
+  .error-links a {
+    color: var(--forest);
+    text-decoration: none;
+  }
+
+  .post-single .post-content :is(h1, h2, h3, h4, h5, h6) a:not(.heading-link):is(:hover, :focus-visible),
+  .cv-content .resume-item-title a:is(:hover, :focus-visible),
+  .listing-section.resume-selected-work a:is(:hover, :focus-visible),
+  .section-feed-link:is(:hover, :focus-visible),
+  .error-links a:is(:hover, :focus-visible),
+  .header .logo a:is(:hover, :focus-visible),
+  #menu .menu-primary-link:is(:hover, :focus-visible),
+  .bio-link:is(:hover, :focus-visible),
+  .footer a:is(:hover, :focus-visible) {
+    color: var(--interactive-hover);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.15em;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--forest);
+    outline-offset: 3px;
+  }
+}
