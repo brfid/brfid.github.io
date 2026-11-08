@@ -83,21 +83,35 @@ education:
   area: Political Science
   studyType: Master of Arts
 skills:
-- name: Documentation publishing and contribution
+- name: Documentation leadership
   keywords:
-  - Publishing automation
-  - Contribution workflows
-  - Contributor plugin development (Codex, Claude Code)
+  - Documentation strategy
+  - Quarterly planning
   - Information architecture
-  - Git
-  - CI/CD
-  - MCP tool definitions
-  - Agent instructions and evaluation
-- name: API specification and validation
+  - Editorial standards
+  - Contributor workflows
+  - Contribution workflows
+- name: Documentation engineering
   keywords:
+  - Docs-as-code
+  - Publishing automation
+  - CI/CD
+  - Git
+  - Python
+  - Contributor plugin development (Codex, Claude Code)
+- name: API documentation and validation
+  keywords:
+  - API documentation
+  - OpenAPI specifications
   - OpenAPI
   - REST APIs
+  - API contract testing
   - Contract validation
-  - Python
   - pytest
   - Schemathesis
+- name: AI tooling and evaluation
+  keywords:
+  - Agent instructions
+  - Agent instructions and evaluation
+  - MCP tool and resource definitions
+  - LLM interaction testing
