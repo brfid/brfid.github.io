@@ -3,6 +3,9 @@ PREVIEW_PORT ?= 1313
 BUILD_ROOT ?= build
 OUTPUT_DIR ?= site
 HUGO_EXTRA ?=
+LOCAL_ROOT ?= local
+
+-include Makefile.local
 
 .PHONY: help test test-unit check verify-site check_env clean prepare-site \
         hugo-build resume-pdf resume-pdf-application preview
@@ -35,7 +38,7 @@ check:
 	@$(PYTHON) -m vulture --config pyproject.toml site_tools
 
 verify-site: resume-pdf
-	@$(PYTHON) -m site_tools.verify site
+	@$(PYTHON) -m site_tools.verify "$(OUTPUT_DIR)"
 
 check_env:
 	@$(PYTHON) -m site_tools.environment
@@ -48,24 +51,24 @@ clean:
 		| xargs -0 rm -rf
 
 prepare-site:
-	@mkdir -p $(BUILD_ROOT)/hugo-data
-	@cp site.yaml $(BUILD_ROOT)/hugo-data/site.yaml
-	@cp resume.yaml $(BUILD_ROOT)/hugo-data/resume.yaml
+	@mkdir -p "$(BUILD_ROOT)/hugo-data"
+	@cp site.yaml "$(BUILD_ROOT)/hugo-data/site.yaml"
+	@cp resume.yaml "$(BUILD_ROOT)/hugo-data/resume.yaml"
 
 hugo-build: prepare-site
-	@HUGO_DATADIR=../$(BUILD_ROOT)/hugo-data HUGO_RESOURCEDIR=../$(BUILD_ROOT)/hugo-resources \
-		hugo --source hugo --destination ../$(OUTPUT_DIR) --cacheDir $(CURDIR)/$(BUILD_ROOT)/hugo-cache \
+	@HUGO_DATADIR="../$(BUILD_ROOT)/hugo-data" HUGO_RESOURCEDIR="../$(BUILD_ROOT)/hugo-resources" \
+		hugo --source hugo --destination "../$(OUTPUT_DIR)" --cacheDir "$(CURDIR)/$(BUILD_ROOT)/hugo-cache" \
 		--cleanDestinationDir --panicOnWarning $(HUGO_EXTRA)
 
 resume-pdf: check_env hugo-build
-	@$(PYTHON) -m site_tools.pdf --site-dir $(OUTPUT_DIR) --output $(OUTPUT_DIR)/resume.pdf
+	@$(PYTHON) -m site_tools.pdf --site-dir "$(OUTPUT_DIR)" --output "$(OUTPUT_DIR)/resume.pdf"
 
 resume-pdf-application: verify-site
-	@$(PYTHON) -m site_tools.pdf --site-dir site --output local/brad-fidler-resume.pdf \
+	@$(PYTHON) -m site_tools.pdf --site-dir "$(OUTPUT_DIR)" --output "$(LOCAL_ROOT)/brad-fidler-resume.pdf" \
 		--private-overlay resume.private.yaml
 
 preview:
-	@$(MAKE) resume-pdf BUILD_ROOT=local/preview OUTPUT_DIR=local/preview/site
-	@HUGO_DATADIR=../local/preview/hugo-data HUGO_RESOURCEDIR=../local/preview/hugo-resources \
-		hugo server --source hugo --destination ../local/preview/site --cacheDir $(CURDIR)/local/preview/hugo-cache \
+	@$(MAKE) resume-pdf BUILD_ROOT="$(LOCAL_ROOT)/preview" OUTPUT_DIR="$(LOCAL_ROOT)/preview/site"
+	@HUGO_DATADIR="../$(LOCAL_ROOT)/preview/hugo-data" HUGO_RESOURCEDIR="../$(LOCAL_ROOT)/preview/hugo-resources" \
+		hugo server --source hugo --destination "../$(LOCAL_ROOT)/preview/site" --cacheDir "$(CURDIR)/$(LOCAL_ROOT)/preview/hugo-cache" \
 		--disableFastRender --port $(PREVIEW_PORT)
