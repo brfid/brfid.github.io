@@ -12,9 +12,6 @@ links:
   - label: GitLab
     icon: gitlab
     url: https://gitlab.com/brfid
-  - label: ORCID
-    icon: orcid
-    url: https://orcid.org/0000-0002-2882-5915
   - label: Strava
     icon: strava
     url: https://www.strava.com/athletes/brfid

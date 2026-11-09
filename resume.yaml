@@ -3,7 +3,7 @@ basics:
   label: "Principal Technical Writer | Documentation Engineering"
   email: brfid@icloud.com
   summary: |-
-    I run technical documentation at a cybersecurity company, writing product and API guidance and building the tools used to contribute and publish it. Previously, I wrote lessons-learned analyses of distributed systems and taught technology history.
+    I run technical documentation at a cybersecurity company. Previously, I wrote lessons-learned analyses of distributed systems and taught technology history.
   location:
     city: Seattle
     countryCode: US
@@ -21,10 +21,6 @@ basics:
     icon: gitlab
     username: brfid
     url: https://gitlab.com/brfid
-  - network: ORCID
-    icon: orcid
-    username: "0000-0002-2882-5915"
-    url: https://orcid.org/0000-0002-2882-5915
 work:
 - name: DomainTools
   url: https://docs.domaintools.com
