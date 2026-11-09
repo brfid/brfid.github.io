@@ -56,7 +56,7 @@ work:
   position: Technical Writer (Document Control Analyst II)
   startDate: '2022-07-01'
   endDate: '2023-03-01'
-  summary: Wrote Git workflow and release documentation that passed a software process assessment.
+  summary: Wrote Git workflow and release documentation that passed software process audits.
   highlights: []
   location: Los Angeles (Remote), CA, US
 - name: Stevens Institute of Technology
@@ -72,7 +72,7 @@ work:
   url: https://www.cs.ucla.edu
   startDate: '2012-09-01'
   endDate: '2016-07-01'
-  summary: Contributed to a DARPA study on how research teams and institutions shaped the design of the early Internet.
+  summary: Contributed to a DARPA study on how research teams and institutions designed early Internet architecture.
   highlights: []
   location: Los Angeles (Hybrid), CA, US
 education:
@@ -83,7 +83,7 @@ education:
   area: Political Science
   studyType: Master of Arts
 skills:
-- name: Documentation leadership
+- name: Documentation leadership and developer experience
   keywords:
   - Documentation strategy
   - Quarterly planning
@@ -97,7 +97,7 @@ skills:
   - Publishing automation
   - CI/CD
   - Git
-  - Python
+  - Python (pytest)
   - Contributor plugin development (Codex, Claude Code)
 - name: API documentation and validation
   keywords:
@@ -107,7 +107,6 @@ skills:
   - REST APIs
   - API contract testing
   - Contract validation
-  - pytest
   - Schemathesis
 - name: AI tooling and evaluation
   keywords:
