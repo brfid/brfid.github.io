@@ -61,43 +61,39 @@ Set `PREVIEW_PORT` to use another port:
 make preview PREVIEW_PORT=1314
 ```
 
-## Run checks
+### Inspect the built site
+
+To inspect the existing `site/` output without rebuilding, serve it locally:
 
 ```bash
-make check
-make verify-site
+.venv/bin/python -m http.server --bind 127.0.0.1 --directory site 8000
 ```
 
-`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. Its Hugo, browser, and PDF tests use temporary directories without touching your preview.
+Open `http://127.0.0.1:8000/` and inspect the affected pages or PDF.
 
-`make verify-site` builds fresh HTML and a Chromium PDF, then validates the [publication contracts](AGENTS.md#preserve-publication-contracts). CI uploads only a passing artifact. Use `.venv/bin/python -m site_tools.verify site` to recheck existing output without rebuilding it.
+## Run checks
 
-During development, choose checks for the changed behavior:
+At each local checkpoint, review the staged diff and use focused checks as needed. Run the applicable publication checks once for the final candidate.
 
 | Change | Local check |
 |---|---|
-| Python behavior without Hugo or Chromium | `make test-unit` |
-| Hugo layout, script, browser, PDF, or workflow behavior | `make check` |
-| Published routes, feeds, crawler policy, privacy, or complete site output | `make verify-site` after `make check` |
+| Documentation only | Review the diff and verify affected links and command examples |
+| YAML formatting only | Compare the parsed values and types before and after, including nested data. Run the focused tests for the changed file. |
+| Published content | Follow the procedure for [resume, profile, or Work](#edit-the-public-resume-or-profile) or [blog posts](#edit-and-import-a-blog-post). |
+| Code, layout, build, or workflow | Run `make check` and `make verify-site` for the final candidate. When rendering changes, [inspect the built site](#inspect-the-built-site). |
 
-Use `make test` to run the same unit and integration tests without the other quality checks, `make hugo-build` for HTML alone, and `make help` for the supported command list.
+`make check` runs Ruff, formatting checks, mypy, pytest, Pylint, and Vulture. Its Hugo, browser, and PDF tests use temporary directories without touching your preview.
 
-With Gitleaks installed, run the same history scan as CI:
+`make verify-site` builds fresh HTML and a Chromium PDF, then validates the [publication contracts](AGENTS.md#preserve-publication-contracts). Use `.venv/bin/python -m site_tools.verify site` to recheck existing output without rebuilding it.
 
-```bash
-gitleaks git --log-opts="--all --full-history -m" --redact --verbose --no-banner
-```
-
-This scans all fetched branches and tags, including merge results, and redacts matches in its diagnostics. It checks committed history; review uncommitted changes before committing them.
+During development, use `make test-unit` for Python unit tests, `make test` for unit and integration tests, `make hugo-build` for HTML alone, or [preview](#preview-the-site) for iterative design. Run `make help` for the supported commands.
 
 ## Edit the public resume or profile
 
-Use the [public resume data rules](AGENTS.md#public-resume-data) when editing these sources:
-
-1. Apply approved resume content to `resume.yaml`, including the name, headline, summary, experience, skills, and education rendered on the homepage and in the PDF. Edit `site.yaml` for social links and identity metadata. Edit `hugo/content/work.md` for selected samples and publications; its URL supplies the CV’s Selected work link.
-2. Run `make verify-site` to build and validate the public HTML and PDF.
-3. [Start or restart the preview](#preview-the-site), then inspect the homepage, `/work/`, and `/resume.pdf`.
-4. Commit the approved changes locally. Follow [Publish the site](#publish-the-site) when publication is authorized.
+1. Apply approved changes following the [public resume data rules](AGENTS.md#public-resume-data).
+2. For wording and profile changes, run the relevant YAML checks with `.venv/bin/python -m pytest tests/test_resume_yaml.py` and `.venv/bin/python -m pytest tests/test_site_yaml.py` as applicable. Use the [formatting checks](#run-checks) for formatting-only edits.
+3. For changes that affect rendered content, run `make verify-site` once for the final candidate. [Inspect the affected output](#inspect-the-built-site), including `site/resume.pdf` when wording can change wrapping or pagination.
+4. Follow [Publish the site](#publish-the-site) when publication is authorized.
 
 To include a phone number in a private copy, [build an application PDF](#build-an-application-pdf).
 
@@ -129,11 +125,34 @@ A raw PDF URL may download the file instead of opening at a page fragment, so gi
 
 ## Publish the site
 
-A push to `main` runs the full-history secret scan, `make check`, and `make verify-site`. The workflow uploads and deploys the verified artifact from that run without rebuilding, only from this repository's protected `main` and only while the checked commit is current.
+Get [authorization](AGENTS.md#commit-and-publish) before pushing or publishing. A push to `main` runs the full-history secret scan, `make check`, and `make verify-site`. The workflow uploads and deploys the verified artifact from that run without rebuilding, only from this repository's protected `main` and only while the checked commit is current.
 
 A push whose head commit message contains `[nopublish]` runs the checks and retains the artifact without deploying.
 
-To publish the current `main` manually, authenticate GitHub CLI and start the workflow:
+### Scan before pushing
+
+Install [Gitleaks](https://github.com/gitleaks/gitleaks#installing) before running the local scan. Review all outgoing commits, including their messages and intermediate changes, for private material. Scan their patches locally before pushing. GitHub Actions runs after the push and cannot prevent initial exposure.
+
+For a routine push of local `main` to `origin`, fetch the destination and use its current tip as the base. Check that `origin/main` is an ancestor of `main`, then review and scan the outgoing range:
+
+```bash
+git fetch origin &&
+git merge-base --is-ancestor origin/main main &&
+  git log --patch --full-history -m origin/main..main &&
+  gitleaks git --log-opts="--full-history -m origin/main..main" --redact --verbose --no-banner
+```
+
+If the destination differs, use its actual remote tip and the exact commit to be pushed. If coverage is uncertain, use the full-history scan on a complete checkout:
+
+```bash
+gitleaks git --log-opts="--all --full-history -m" --redact --verbose --no-banner
+```
+
+For an authorized routine push, run `git push origin main` once review and scanning pass.
+
+### Run the workflow manually
+
+With publication authorized, authenticate GitHub CLI and start the workflow:
 
 ```bash
 gh auth status
@@ -153,7 +172,7 @@ The [indexing and crawler controls](AGENTS.md#preserve-publication-contracts) de
 
 ## Recover a publication
 
-If only deployment failed, `main` has not advanced, and the checked artifact remains available, use GitHub Actions' **Re-run failed jobs** to reuse it. If the artifact expired or `main` advanced, start a new manual publication of `main`.
+If only deployment failed, `main` has not advanced, and the checked artifact remains available, use GitHub Actions' **Re-run failed jobs** to reuse it. If the artifact expired or `main` advanced, [run the workflow manually](#run-the-workflow-manually) for the current `main`.
 
 If published source needs correction, start with a clean checkout on `main`:
 
@@ -171,12 +190,8 @@ If published source needs correction, start with a clean checkout on `main`:
    git revert BAD_COMMIT_SHA
    ```
 
-3. Run the [complete checks](#run-checks).
-4. Publish the correction:
-
-   ```bash
-   git push origin main
-   ```
+3. Run the [checks appropriate to the correction](#run-checks).
+4. Follow [Publish the site](#publish-the-site).
 
 Revert a multi-commit change from newest to oldest, or prepare a focused corrective commit when other work depends on it. Recovery preserves shared history and passes through the same checks as an ordinary publication.
 
@@ -184,7 +199,7 @@ For Wayback Machine exclusion or removal, follow the [Internet Archive's request
 
 ## Update dependencies
 
-After changing `pyproject.toml` or `requirements/build.in`, regenerate the affected locks with uv:
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) to regenerate locks after changing `pyproject.toml` or `requirements/build.in`:
 
 ```bash
 uv pip compile requirements/build.in --python-version 3.11 --universal --generate-hashes -o requirements/build.lock

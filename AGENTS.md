@@ -28,12 +28,12 @@ Read [README.md](README.md), then the source files relevant to the task. Follow 
 
 ## Public resume data
 
-- Use `resume.yaml` as the canonical CV source for the landing page and public PDF. The landing introduction uses its name, title, and summary; `site.yaml` supplies the social links and public identity metadata. Keep selected samples and the bibliography in `hugo/content/work.md`; its URL supplies the CV’s Selected work link.
+- Use `resume.yaml` as the canonical CV source for the landing page and public PDF. The landing introduction uses its name, headline, and summary. Keep `site.yaml` name and headline in sync with `resume.yaml` fields `basics.name` and `basics.label`. Use `site.yaml` for landing-page social links. Keep selected samples and the bibliography in `hugo/content/work.md`; its URL supplies the CV’s Selected work link.
 - Keep phone numbers out of `resume.yaml` and generated Hugo data; the public artifact must meet the [publication contracts](#preserve-publication-contracts).
 - Use only the gitignored `resume.private.yaml` for `basics.phone`. Only `make resume-pdf-application` may read it, and that target must write outside the public `site/` tree.
-- Treat `hugo/data/resume.yaml` as generated output. Never edit or commit it.
+- Edit the root YAML files. Leave the copies staged by Make in the build and preview directories alone.
 - Keep alternate or rejected resume copy out of tracked examples and generated artifacts.
-- Double-quote human-authored YAML strings that contain a colon.
+- Use literal blocks (`|-`) for the headline and prose descriptions, including short descriptions. Keep each paragraph on one source line. Leave short, unambiguous strings plain; quote date-like or otherwise ambiguous single-line strings. Use a literal block or double quotes for text containing a colon.
 - Preserve the factual scope and attribution of approved copy. Editing or regenerating a document does not verify its claims.
 
 ## Work locally
@@ -61,11 +61,11 @@ Read [README.md](README.md), then the source files relevant to the task. Follow 
 
 ## Commit and publish
 
-- Make coherent, scoped local commits for authorized edits at milestones, before major changes of direction, and on completion. Use messages that identify each stage and any unfinished work. Preserve unrelated work and useful checkpoints; do not amend, squash, or rewrite them unless requested.
-- Keep `main` linear. Validate as appropriate to the change and do not commit generated directories such as `site/`, `build/`, `local/`, or `.venv/`.
-- Do not rewrite shared `main` history unless the operator explicitly requests it.
-- Do not push unless the operator explicitly requests a push.
-- Before pushing, inspect changed files for private or secret material and run validation appropriate to the change.
+- Make coherent, scoped local commits for authorized edits at milestones, before major changes of direction, and on completion. Review the staged diff and use a terse imperative subject. Preserve unrelated work, attribution, and useful checkpoints. Use the [checks appropriate to the change](README.md#run-checks).
+- Keep `main` linear. Do not commit generated directories such as `site/`, `build/`, `local/`, or `.venv/`.
+- Get explicit authorization before pushing, publishing, or rewriting shared history. Proceed within the authorized scope unless permissions block the action. Branch settings that allow a force push do not authorize a rewrite.
+- Before pushing, review all outgoing changes and commit messages for private material and [scan all outgoing commits for secrets](README.md#scan-before-pushing).
+- For an authorized published-history rewrite, preserve one private recovery ref or bundle and use an exact lease, `--force-with-lease=refs/heads/main:<expected-remote-tip>`, with the reviewed remote commit ID. Keep recovery material outside publication.
 - Every push to `main` starts deployment unless its head commit message contains `[nopublish]`.
 
 ## Report implementation work

@@ -1,9 +1,10 @@
 basics:
   name: Brad Fidler
-  label: "Principal Technical Writer | Documentation Engineering"
+  label: |-
+    Principal Technical Writer | Docs Tech Lead @ DomainTools
   email: brfid@icloud.com
   summary: |-
-    I run technical documentation at a cybersecurity company. Previously, I wrote lessons-learned analyses of distributed systems and taught technology history.
+    I run technical documentation for cybersecurity software. I build and test publishing systems and AI tools. Previously, I wrote commissioned lessons-learned analyses of distributed systems and taught technology history.
   location:
     city: Seattle
     countryCode: US
@@ -29,30 +30,35 @@ work:
   positions:
   - position: Principal Technical Writer
     startDate: '2026-07-01'
-    summary: "Set documentation priorities with product and engineering teams. Plan quarterly work, provide technical direction to another writer, and serve as final editor for the site."
+    summary: |-
+      Set documentation priorities with product and engineering teams. Plan quarterly work, provide technical direction, and serve as final editor for the site.
     highlights: []
   - position: Senior Technical Writer
     startDate: '2025-01-01'
     endDate: '2026-06-01'
-    summary: "Maintained product documentation and OpenAPI specifications. Integrated documentation into product releases and improved publishing tools to allow direct SME contributions. Contributed to AI product testing."
+    summary: |-
+      Maintained product documentation and OpenAPI specifications. Integrated documentation into product releases and improved publishing tools to allow direct SME contributions. Contributed to AI product testing.
     highlights: []
   - position: Technical Writer
     startDate: '2023-10-01'
     endDate: '2024-12-01'
-    summary: "Set up docs.domaintools.com, migrated the existing documentation, and established writing standards and a contribution process."
+    summary: |-
+      Set up docs.domaintools.com, migrated the existing documentation, and established writing standards and a contribution process.
     highlights: []
 - name: JPMorgan Chase & Co.
   position: Contract Technical Writer
   startDate: '2023-04-01'
   endDate: '2023-10-01'
-  summary: "Ran a documentation hub for cloud migration. Wrote migration and configuration-management policy that passed external audit."
+  summary: |-
+    Ran a docs hub for company-wide cloud migration. Wrote configuration-management policies with senior technology leaders.
   highlights: []
   location: Jersey City (Hybrid), NJ, US
 - name: Romeo Power, Inc.
   position: Technical Writer (Document Control Analyst II)
   startDate: '2022-07-01'
   endDate: '2023-03-01'
-  summary: Documented Git workflows and release processes for a software process assessment.
+  summary: |-
+    Documented Git workflows and release processes for a software process assessment.
   highlights: []
   location: Los Angeles (Remote), CA, US
 - name: Stevens Institute of Technology
@@ -60,7 +66,8 @@ work:
   url: https://www.stevens.edu
   startDate: '2017-08-01'
   endDate: '2022-06-01'
-  summary: Taught computing, networking, and policy, and ran research and consulting projects for NSF and the aerospace industry.
+  summary: |-
+    Taught computer networking policy and history, and ran research and consulting projects for NSF and the aerospace industry.
   highlights: []
   location: Hoboken (Hybrid), NJ, US
 - name: UCLA Computer Science
@@ -68,7 +75,8 @@ work:
   url: https://www.cs.ucla.edu
   startDate: '2012-09-01'
   endDate: '2016-07-01'
-  summary: Contributed to a DARPA study of how research teams and institutions shaped early Internet architecture.
+  summary: |-
+    Contributed to a DARPA study of how research teams and institutions shaped early Internet architecture.
   highlights: []
   location: Los Angeles (Hybrid), CA, US
 education:
@@ -79,13 +87,6 @@ education:
   area: Political Science
   studyType: Master of Arts
 skills:
-- name: Documentation leadership and developer experience
-  keywords:
-  - Documentation strategy
-  - Quarterly planning
-  - Information architecture
-  - Editorial standards
-  - Contributor workflows
 - name: Documentation engineering
   keywords:
   - Docs-as-code
@@ -93,17 +94,27 @@ skills:
   - CI/CD
   - Git
   - Python (pytest)
-  - Contributor plugin development (Codex, Claude Code)
+  - Documentation frameworks (Astro/Starlight)
+  - Containerized builds (Docker)
+  - Contributor workflows and tooling
+  - Site monitoring and log analysis (Grafana Loki)
+- name: AI tooling and evaluation
+  keywords:
+  - MCP server development (FastMCP)
+  - MCP tool and resource definitions
+  - LLM interaction testing
+  - Contributor AI tooling and plugins (Claude Code, Codex, OpenCode)
+- name: Documentation strategy and leadership
+  keywords:
+  - Documentation strategy
+  - Quarterly planning
+  - Information architecture
+  - Editorial standards
+  - Technical direction
 - name: API documentation and validation
   keywords:
   - API documentation
   - OpenAPI specifications
+  - API reference publishing (Scalar, Swagger UI, SwaggerHub)
   - REST APIs
-  - API contract testing
-  - Contract validation
-  - Schemathesis
-- name: AI tooling and evaluation
-  keywords:
-  - Agent instructions and evaluation
-  - MCP tool and resource definitions
-  - LLM interaction testing
+  - API contract testing and validation (Schemathesis)
