@@ -29,17 +29,18 @@ ignoreFiles = ['(^|/)\.DS_Store$']
     pageRef = "/work"
     weight = 1
   [[menu.main]]
+    identifier = "resume"
+    name = "Resume"
+    pageRef = "/resume"
+    weight = 2
+    [menu.main.params]
+      companionurl = "/resume.pdf"
+      companionlabel = "Download resume (PDF)"
+  [[menu.main]]
     identifier = "posts"
     name = "Blog"
     pageRef = "/posts"
-    weight = 2
-  [[menu.main]]
-    identifier = "cv"
-    name = "Download CV"
-    url = "/resume.pdf"
-    weight = 5
-    [menu.main.params]
-      download = true
+    weight = 3
   [[menu.main]]
     identifier = "source"
     name = "Source"

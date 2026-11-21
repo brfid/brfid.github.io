@@ -105,7 +105,6 @@ def test_navigation_and_keyboard_access(web_page: tuple[Page, str]) -> None:
     expect(skip).to_be_focused()
     page.keyboard.press("Enter")
     expect(page.get_by_role("main")).to_be_focused()
-    expect(page.get_by_role("link", name="Download CV")).to_have_attribute("download", "")
     for name in ("Hugo", "PaperMod"):
         expect(page.get_by_role("contentinfo").get_by_role("link", name=name, exact=True)).to_be_visible()
 
@@ -113,6 +112,42 @@ def test_navigation_and_keyboard_access(web_page: tuple[Page, str]) -> None:
     original_color = blog.evaluate("el => getComputedStyle(el).color")
     blog.hover()
     expect(blog).not_to_have_css("color", original_color)
+
+
+@pytest.mark.parametrize("width", (320, 1280))
+def test_resume_route_and_download_navigation(web_page: tuple[Page, str], width: int) -> None:
+    page, origin = web_page
+    page.set_viewport_size({"width": width, "height": 900})
+    page.goto(origin)
+    nav = page.get_by_role("navigation", name="Primary navigation")
+    resume = nav.get_by_role("link", name="Resume", exact=True)
+    download = nav.get_by_role("link", name="Download resume (PDF)", exact=True)
+    tooltip = download.locator(".menu-companion-tooltip")
+
+    expect(page.get_by_role("navigation", name="Online profiles")).to_be_visible()
+    expect(page.locator(".cv-content")).to_have_count(0)
+    expect(resume).to_have_attribute("href", "https://brfid.github.io/resume/")
+    assert resume.get_attribute("download") is None
+    expect(download).to_have_attribute("href", "https://brfid.github.io/resume.pdf")
+    expect(download).to_have_attribute("download", "")
+    expect(tooltip).to_be_hidden()
+    download.hover()
+    expect(tooltip).to_be_visible()
+    page.mouse.move(0, 300)
+    expect(tooltip).to_be_hidden()
+
+    resume.focus()
+    page.keyboard.press("Tab")
+    expect(download).to_be_focused()
+    expect(tooltip).to_be_visible()
+    target = download.bounding_box()
+    assert target is not None and min(target["width"], target["height"]) >= 44
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+
+    page.goto(f"{origin}/resume/")
+    expect(resume).to_have_attribute("aria-current", "page")
+    expect(page.locator(".cv-content")).to_be_visible()
+    expect(page.get_by_role("heading", name="Selected work", exact=True)).to_be_visible()
 
 
 @pytest.mark.parametrize("width", (390, 1280))
@@ -292,7 +327,7 @@ volunteer:
     endDate: 2012-01-01
 """
     output = render_site(tmp_path, resume_yaml=resume_yaml)
-    source = (output / "index.html").read_text(encoding="utf-8")
+    source = (output / "resume/index.html").read_text(encoding="utf-8")
     for expected in (
         "Jan 2020 - Present",
         "Mar 2022 - Present",
@@ -308,7 +343,10 @@ volunteer:
 def test_resume_print_styles_are_scoped_to_the_resume(web_page: tuple[Page, str]) -> None:
     page, origin = web_page
     page.emulate_media(media="print")
-    page.goto(f"{origin}/")
+    page.goto(origin)
+    expect(page.locator("body")).to_have_css("page", "auto")
+    expect(page.locator(".home-info")).to_be_visible()
+    page.goto(f"{origin}/resume/")
     expect(page.locator("body")).to_have_css("page", "resume")
     expect(page.locator(".header")).to_be_hidden()
     resume_title_size = page.locator(".resume-print-header h1").evaluate("el => getComputedStyle(el).fontSize")

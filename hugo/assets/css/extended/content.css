@@ -110,19 +110,44 @@
   width: 0.9rem;
 }
 
-.post-entry:hover,
-.post-entry:focus-within {
-  border-color: var(--border);
-  transform: none;
+.blog-entry {
+  position: relative;
 }
 
-.post-entry .entry-header h2 {
+.blog-entry + .blog-entry {
+  margin-block-start: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.blog-entry .entry-header h2 {
+  font-size: 1.625rem;
   font-weight: 500;
+  line-height: 1.2;
 }
 
-.post-entry:hover .entry-header h2,
-.post-entry:focus-within .entry-header h2 {
+.blog-entry .entry-content {
+  display: block;
+  color: var(--content);
+  font-size: 1.0625rem;
+  line-height: 1.5;
+  margin-block: 0.35rem;
+}
+
+.blog-entry .entry-footer {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* Keep the full entry clickable, with keyboard focus on its title. */
+.blog-title-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.blog-title-link:is(:hover, :focus-visible) {
   color: var(--interactive-hover);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 .md-content a.heading-link {

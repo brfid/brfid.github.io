@@ -41,7 +41,6 @@ CORE_ALLOWED_FILES = frozenset(REQUIRED_FILES) | {
 }
 LEGACY_ALIAS_TARGETS = {
     "about/index.html": "index.html",
-    "resume/index.html": "index.html",
     "posts/doc-rot-maintenance-gap/index.html": "posts/doc-rot-e2e/index.html",
     "portfolio/index.html": "work/index.html",
 }
@@ -693,12 +692,19 @@ def verify_primary_links(
         pages = load_rendered_artifact(site_dir, errors).pages
     homepage = pages.get("index.html")
     if homepage is not None:
-        for path in ("/work/", "/posts/", "/resume.pdf"):
+        for path in ("/work/", "/resume/", "/posts/"):
+            link = find_link(homepage, path, "menu-primary-link")
             record(
-                find_link(homepage, path, "menu-primary-link", source_page="index.html") is not None,
+                link is not None and "download" not in link,
                 errors,
-                f"index.html: missing primary link to {path}",
+                f"index.html: missing primary page link to {path}",
             )
+        download = find_link(homepage, "/resume.pdf", "menu-companion-link")
+        record(
+            download is not None and "download" in download and bool(download.get("aria-label", "").strip()),
+            errors,
+            "index.html: missing accessible companion download for the resume PDF",
+        )
 
     posts = pages.get("posts/index.html")
     if posts is not None:
@@ -708,12 +714,13 @@ def verify_primary_links(
             "posts/index.html: missing section RSS link",
         )
 
-    resume = pages.get("index.html")
+    resume = pages.get("resume/index.html")
     if resume is not None:
+        record(not resume.refresh_urls, errors, "resume/index.html: HTML resume redirects")
         record(
-            find_link(resume, "/resume.pdf", "resume-download-link", source_page="index.html") is not None,
+            resume.canonical_urls == [f"{PUBLIC_ORIGIN}/resume/"],
             errors,
-            "index.html: missing resume PDF link",
+            "resume/index.html: incorrect canonical URL",
         )
 
 
@@ -729,6 +736,7 @@ def verify_menu_state(
         pages = load_rendered_artifact(site_dir, errors).pages
     expected_states = {
         "posts/index.html": ("/posts/", "page"),
+        "resume/index.html": ("/resume/", "page"),
         "work/index.html": ("/work/", "page"),
     }
     for post_path in post_pages:

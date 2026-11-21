@@ -41,7 +41,7 @@ Install Git, Make, Python 3.11 or newer, Hugo extended 0.156.0 or newer, and Pop
    make verify-site
    ```
 
-The result is the complete public site under `site/`, including `site/resume.pdf`. The homepage presents the introduction and CV; `/work/` contains selected samples and publications, and `/posts/` contains the blog. The PDF prints the homepage with a compact Selected work block and visible Work and LinkedIn addresses. Compatibility redirects retain `/resume/`, `/about/`, and `/portfolio/`.
+The result is the complete public site under `site/`, including `site/resume.pdf`. The homepage presents the introduction and social links. The Resume link opens the full résumé at `/resume/` and its companion icon downloads `/resume.pdf`. The PDF prints the résumé page with a compact Selected work block and visible Work and LinkedIn addresses. Visit `/work/` for selected samples and publications and `/posts/` for the blog. Compatibility redirects retain `/about/` and `/portfolio/`.
 
 The repository vendors PaperMod as a pinned Git submodule and serves its [fonts locally](docs/fonts.md). There is no front-end package install or build step.
 
@@ -206,7 +206,7 @@ uv pip compile requirements/build.in --python-version 3.11 --universal --generat
 uv pip compile pyproject.toml --all-extras --python-version 3.11 --universal --generate-hashes --no-emit-package brfid-site -o requirements/dev.lock
 ```
 
-Reinstall from the updated locks and, if Playwright changed, reinstall Chromium using the [checkout setup commands](#set-up-a-checkout). Run [the checks](#run-checks). After a Playwright update, inspect the homepage and `/resume.pdf`, since its Chromium version affects pagination.
+Reinstall from the updated locks and, if Playwright changed, reinstall Chromium using the [checkout setup commands](#set-up-a-checkout). Run [the checks](#run-checks). After a Playwright update, inspect `/resume/` and `/resume.pdf`, since its Chromium version affects pagination.
 
 Update the Python selection in [.github/workflows/publish.yml](.github/workflows/publish.yml); update Hugo's version in [scripts/github/setup.sh](scripts/github/setup.sh) together with its independently verified package checksum in `requirements/hugo.sha256`.
 
@@ -231,7 +231,7 @@ Repository-owned templates in `hugo/layouts/` extend the pinned PaperMod theme. 
 | Path | Function |
 |---|---|
 | `site.yaml` | Public name, headline, and profile links |
-| `resume.yaml` | Canonical landing-page CV and PDF content |
+| `resume.yaml` | Canonical introduction, HTML résumé, and PDF content |
 | `hugo/` | Content, templates, configuration, styles, and fonts |
 | `site_tools/`, `tests/` | Python build, PDF, prerequisite, and verification tools and their tests |
 | `requirements/` | Hash-locked Python environment and Hugo/Gitleaks download checksums |

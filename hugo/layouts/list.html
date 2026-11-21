@@ -38,12 +38,12 @@
 
 {{- range $paginator.Pages }}
 
-<article class="post-entry">
+<article class="blog-entry">
   {{- $isHidden := (.Param "cover.hiddenInList") | default (.Param "cover.hidden") | default false }}
   {{- partial "cover.html" (dict "cxt" . "IsSingle" false "isHidden" $isHidden) }}
   <header class="entry-header">
     <h2 class="entry-hint-parent">
-      {{- .Title }}
+      <a class="blog-title-link" href="{{ .Permalink }}">{{ .Title }}</a>
       {{- if .Draft }}
       <span class="entry-hint" title="Draft">
         <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" height="20" viewBox="0 -960 960 960" fill="currentColor">
@@ -67,7 +67,6 @@
     {{- partial "post_meta.html" . -}}
   </footer>
   {{- end }}
-  <a class="entry-link" aria-label="Read {{ .Title | plainify }}" href="{{ .Permalink }}"></a>
 </article>
 {{- end }}
 

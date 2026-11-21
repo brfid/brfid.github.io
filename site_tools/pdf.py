@@ -47,7 +47,7 @@ def build_pdf(
 
     Args:
         site_dir: Directory containing the generated resume site (served as root).
-        resume_url_path: URL path to the resume HTML (for example: "/").
+        resume_url_path: URL path to the resume HTML (for example: "/resume/").
         pdf_path: Output PDF path. It may be outside `site_dir`.
         private_resume_path: Optional untracked YAML overlay whose `basics.phone`
             is injected into the PDF render only.
@@ -146,7 +146,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--site-dir", type=Path, required=True, help="Generated HTML site")
     parser.add_argument("--output", type=Path, required=True, help="Destination PDF")
-    parser.add_argument("--resume-url", default="/", help="Résumé URL path within the generated site")
+    parser.add_argument("--resume-url", default="/resume/", help="Résumé URL path within the generated site")
     parser.add_argument("--private-overlay", type=Path, help="Optional untracked YAML with basics.phone")
     args = parser.parse_args(argv)
     try:

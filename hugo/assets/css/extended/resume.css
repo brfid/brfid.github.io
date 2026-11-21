@@ -165,7 +165,7 @@
     display: block;
   }
 
-  .home-info,
+  body.home-cv .home-info,
   .resume-profile-links {
     display: none;
   }

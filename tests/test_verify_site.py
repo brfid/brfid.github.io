@@ -330,6 +330,7 @@ def test_menu_state_checks_articles_when_an_old_post_url_redirects(tmp_path: Pat
     article_path = "posts/current-post/index.html"
     for relative_path, href, state in (
         ("posts/index.html", "/posts/", "page"),
+        ("resume/index.html", "/resume/", "page"),
         ("work/index.html", "/work/", "page"),
         (article_path, "/posts/", "location"),
     ):
@@ -931,22 +932,36 @@ def test_feed_rejects_missing_duplicate_and_wrong_post_items(tmp_path: Path) -> 
     assert sum("item target is not a canonical published post" in error for error in errors) == 2
 
 
-@pytest.mark.parametrize("path", ("/work/", "/posts/", "/resume.pdf"))
+@pytest.mark.parametrize("path", ("/work/", "/resume/", "/posts/", "/resume.pdf"))
 def test_primary_navigation_rejects_a_foreign_origin_with_the_same_path(tmp_path: Path, path: str) -> None:
-    site_dir = tmp_path / "site"
-    site_dir.mkdir()
     links = []
-    for href in ("/work/", "/posts/", "/resume.pdf"):
+    for href in ("/work/", "/resume/", "/posts/", "/resume.pdf"):
         target = f"https://example.invalid{href}" if href == path else href
-        css_class = "menu-primary-link resume-download-link" if href == "/resume.pdf" else "menu-primary-link"
-        links.append(f'<a class="{css_class}" href="{target}">Menu</a>')
-    (site_dir / "index.html").write_text(
-        "".join(links),
+        attrs = 'class="menu-companion-link" download aria-label="Download resume (PDF)"'
+        if href != "/resume.pdf":
+            attrs = 'class="menu-primary-link"'
+        links.append(f'<a {attrs} href="{target}">Menu</a>')
+    (tmp_path / "index.html").write_text("".join(links), encoding="utf-8")
+    errors: list[str] = []
+    verifier.verify_primary_links(tmp_path, errors)
+    if path == "/resume.pdf":
+        assert errors == ["index.html: missing accessible companion download for the resume PDF"]
+    else:
+        assert errors == [f"index.html: missing primary page link to {path}"]
+
+
+def test_html_resume_is_canonical_and_does_not_redirect(tmp_path: Path) -> None:
+    resume = tmp_path / "resume/index.html"
+    resume.parent.mkdir()
+    resume.write_text('<link rel="canonical" href="https://brfid.github.io/resume/">', encoding="utf-8")
+    errors: list[str] = []
+    verifier.verify_primary_links(tmp_path, errors)
+    assert errors == []
+
+    resume.write_text(
+        '<link rel="canonical" href="https://brfid.github.io/">'
+        '<meta http-equiv="refresh" content="0; url=https://brfid.github.io/">',
         encoding="utf-8",
     )
-    errors: list[str] = []
-    verifier.verify_primary_links(site_dir, errors)
-    expected = [f"index.html: missing primary link to {path}"]
-    if path == "/resume.pdf":
-        expected.append("index.html: missing resume PDF link")
-    assert errors == expected
+    verifier.verify_primary_links(tmp_path, errors)
+    assert errors == ["resume/index.html: HTML resume redirects", "resume/index.html: incorrect canonical URL"]

@@ -1,0 +1,14 @@
+{{- define "main" }}
+{{- partial "home_info.html" . }}
+<div class="post-content cv-content">
+  {{- partial "resume/print_header.html" . }}
+  {{- with hugo.Data.resume.basics.summary }}
+  <section class="listing-section resume-print-summary">
+    <h2>Summary</h2>
+    <p>{{ . }}</p>
+  </section>
+  {{- end }}
+  {{- partial "resume/sections.html" . }}
+  {{- partial "resume/selected_work.html" . }}
+</div>
+{{- end }}

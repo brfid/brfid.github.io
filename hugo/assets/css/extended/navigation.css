@@ -1,5 +1,32 @@
 /* Navigation and footer. */
 
+.header-nav {
+  display: grid;
+  grid-template: "brand menu theme" auto / 1fr auto auto;
+  column-gap: 0.5rem;
+  align-items: center;
+}
+
+.header-nav .logo {
+  grid-area: brand;
+}
+
+.header-nav .theme-toggle {
+  grid-area: theme;
+  display: grid;
+  place-items: center;
+  justify-self: end;
+  padding: 0;
+  width: 44px;
+  height: 44px;
+}
+
+@media (max-width: 31rem) {
+  .header-nav {
+    grid-template: "brand theme" auto "menu menu" auto / minmax(0, 1fr) auto;
+  }
+}
+
 .header .logo a {
   font-family: var(--mono);
   font-size: 14px;
@@ -13,8 +40,17 @@
   display: inline-flex;
   font-family: var(--mono);
   font-size: 14px;
-  gap: 0.35rem;
+  gap: var(--icon-gap);
   transition: color 0.12s ease;
+}
+
+#menu {
+  --icon-gap: 0.5rem;
+  --item-gap: 1.25rem;
+  grid-area: menu;
+  column-gap: 0;
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 #menu > li {
@@ -22,15 +58,12 @@
   display: inline-flex;
 }
 
-#menu .menu-item-with-companion {
-  gap: 0.35rem;
+#menu > li:not(:last-child, .menu-item-with-companion) {
+  margin-inline-end: var(--item-gap);
 }
 
 #menu .menu-utility-item {
-  border-inline-start: 1px solid var(--border);
   color: var(--secondary);
-  margin-inline-start: 0.2rem;
-  padding-inline-start: 0.8rem;
 }
 
 #menu .menu-utility-item a {
@@ -46,12 +79,36 @@
 
 #menu .menu-link-icon svg,
 #menu .menu-companion-link svg {
-  height: 0.9rem;
-  width: 0.9rem;
+  height: 1rem;
+  width: 1rem;
 }
 
 #menu .menu-companion-link {
   color: var(--secondary);
+  /* The spaces on either side of the icon also form its touch target. */
+  padding-inline: var(--icon-gap) var(--item-gap);
+  min-height: 44px;
+  position: relative;
+}
+
+.menu-companion-tooltip {
+  background: var(--primary);
+  border-radius: 0.2rem;
+  color: var(--theme);
+  font-size: 0.75rem;
+  inset-block-start: 100%;
+  inset-inline-start: calc(var(--icon-gap) + 0.5rem);
+  line-height: 1.4;
+  padding: 0.35rem 0.55rem;
+  position: absolute;
+  transform: translateX(-50%);
+  visibility: hidden;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+.menu-companion-link:is(:hover, :focus-visible) .menu-companion-tooltip {
+  visibility: visible;
 }
 
 /* Resume and article links. */

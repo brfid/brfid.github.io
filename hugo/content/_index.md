@@ -1,4 +1,4 @@
 ---
 title: "Brad Fidler"
-aliases: ["/resume/", "/about/"]
+aliases: ["/about/"]
 ---

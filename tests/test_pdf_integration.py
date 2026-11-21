@@ -23,8 +23,8 @@ def test_private_pdf_injection_stays_outside_the_public_site(tmp_path: Path) -> 
     phone = "415-555-0199"
     overlay.write_text(f'basics:\n  phone: "{phone}"\n', encoding="utf-8")
 
-    build_pdf(site_dir=site_dir, resume_url_path="/", pdf_path=public_pdf)
-    build_pdf(site_dir=site_dir, resume_url_path="/", pdf_path=private_pdf, private_resume_path=overlay)
+    build_pdf(site_dir=site_dir, resume_url_path="/resume/", pdf_path=public_pdf)
+    build_pdf(site_dir=site_dir, resume_url_path="/resume/", pdf_path=private_pdf, private_resume_path=overlay)
     pdftotext = shutil.which("pdftotext")
     assert pdftotext is not None
     public_text = subprocess.run(  # noqa: S603 - inspect PDFs generated in this test.
@@ -34,7 +34,7 @@ def test_private_pdf_injection_stays_outside_the_public_site(tmp_path: Path) -> 
         [pdftotext, str(private_pdf), "-"], capture_output=True, text=True, check=True
     ).stdout
 
-    assert phone not in (site_dir / "index.html").read_text(encoding="utf-8")
+    assert phone not in (site_dir / "resume/index.html").read_text(encoding="utf-8")
     assert phone not in public_text
     assert phone in private_text
     assert not private_pdf.is_relative_to(site_dir)

@@ -18,9 +18,9 @@
     {{- partial "head.html" . }}
 </head>
 
-{{- if .IsHome }}
+{{- if eq .Layout "resume" }}
 <body class="home-cv" id="top">
-{{- else if ne .Kind `page` }}
+{{- else if and (not .IsHome) (ne .Kind `page`) }}
 <body class="list" id="top">
 {{- else }}
 <body id="top">

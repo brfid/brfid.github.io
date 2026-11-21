@@ -28,7 +28,7 @@ Read [README.md](README.md), then the source files relevant to the task. Follow 
 
 ## Public resume data
 
-- Use `resume.yaml` as the canonical CV source for the landing page and public PDF. The landing introduction uses its name, headline, and summary. Keep `site.yaml` name and headline in sync with `resume.yaml` fields `basics.name` and `basics.label`. Use `site.yaml` for landing-page social links. Keep selected samples and the bibliography in `hugo/content/work.md`; its URL supplies the CV’s Selected work link.
+- Use `resume.yaml` as the canonical source for the landing introduction, HTML résumé, and public PDF. The landing introduction uses its name, headline, and summary. Keep `site.yaml` name and headline in sync with `resume.yaml` fields `basics.name` and `basics.label`. Use `site.yaml` for landing-page social links. Keep selected samples and the bibliography in `hugo/content/work.md`; its URL supplies the CV’s Selected work link.
 - Keep phone numbers out of `resume.yaml` and generated Hugo data; the public artifact must meet the [publication contracts](#preserve-publication-contracts).
 - Use only the gitignored `resume.private.yaml` for `basics.phone`. Only `make resume-pdf-application` may read it, and that target must write outside the public `site/` tree.
 - Edit the root YAML files. Leave the copies staged by Make in the build and preview directories alone.
@@ -50,7 +50,7 @@ Read [README.md](README.md), then the source files relevant to the task. Follow 
 - Keep all HTML, including the blog index, published posts, pagination, homepage, résumé, and aliases, on `noindex, nofollow, noarchive, nosnippet, noimageindex`. Apply this policy globally to current and future articles.
 - Do not publish or advertise a sitemap while all HTML is excluded from indexing.
 - Leave HTML crawlable for search engines in `robots.txt` so they can observe `noindex`. Block non-HTML artifacts and explicitly exclude archive crawlers (`archive.org_bot`, `ia_archiver`, and `CCBot`) from the entire site.
-- Publish the CV at `/`, selected work at `/work/`, the blog at `/posts/`, both feeds at `/index.xml` and `/posts/index.xml`, and the tagged PDF at `/resume.pdf`. Keep `/resume/` and `/about/` redirecting to `/`, and `/portfolio/` redirecting to `/work/`.
+- Publish the introduction at `/`, the résumé at `/resume/`, selected work at `/work/`, the blog at `/posts/`, and both feeds at `/index.xml` and `/posts/index.xml`. Put a separate download link for the tagged PDF at `/resume.pdf` beside Resume in the header. Keep `/about/` redirecting to `/` and `/portfolio/` redirecting to `/work/`.
 - Publish a post only when its front matter sets `draft: false`.
 - Fail deployment if a required route, feed, navigation link, indexing directive, or public-PDF contract is missing.
 - Keep the GitHub repository and Pages site public.
