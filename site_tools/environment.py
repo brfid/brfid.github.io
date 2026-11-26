@@ -13,13 +13,13 @@ from pathlib import Path
 
 INSTALL_LOCATION = re.compile(r"^\s*Install location:\s+(.+?)\s*$", re.MULTILINE)
 HUGO_VERSION = re.compile(r"\bhugo v(\d+)\.(\d+)\.(\d+)", re.IGNORECASE)
-MINIMUM_HUGO_VERSION = (0, 156, 0)
+MINIMUM_HUGO_VERSION = (0, 170, 1)
 PROJECT_FILE = Path(__file__).resolve().parents[1] / "pyproject.toml"
 PLAYWRIGHT_PIN = re.compile(r"^playwright==([^;\s]+)$", re.IGNORECASE)
 
 
 def check_hugo() -> None:
-    """Require the supported extended Hugo executable."""
+    """Require a supported Hugo version."""
     executable = shutil.which("hugo")
     if executable is None:
         raise RuntimeError("Hugo not found")
@@ -35,9 +35,8 @@ def check_hugo() -> None:
         raise RuntimeError(f"could not read Hugo version: {output or 'no output'}")
     version = tuple(int(component) for component in match.groups())
     if version < MINIMUM_HUGO_VERSION:
-        raise RuntimeError(f"Hugo 0.156.0 or newer is required; found {'.'.join(match.groups())}")
-    if "+extended" not in output.lower():
-        raise RuntimeError("Hugo extended is required")
+        minimum = ".".join(map(str, MINIMUM_HUGO_VERSION))
+        raise RuntimeError(f"Hugo {minimum} or newer is required; found {'.'.join(match.groups())}")
 
 
 def playwright_install_locations() -> list[Path]:

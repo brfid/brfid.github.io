@@ -84,7 +84,7 @@ def test_full_history_scan_and_verified_downloads_are_required() -> None:
     setup = (ROOT / "scripts/github/setup.sh").read_text(encoding="utf-8")
     hugo_version = re.search(r'HUGO_VERSION="([^"]+)"', setup)
     assert hugo_version is not None
-    hugo_asset = f"hugo_extended_{hugo_version.group(1)}_linux-amd64.deb"
+    hugo_asset = f"hugo_{hugo_version.group(1)}_linux-amd64.deb"
     assert hugo_asset in (ROOT / "requirements/hugo.sha256").read_text(encoding="utf-8")
     assert "cp requirements/hugo.sha256" in setup
     assert "sha256sum --check hugo.sha256" in setup

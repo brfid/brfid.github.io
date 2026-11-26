@@ -11,7 +11,7 @@ site.yaml + resume.yaml + Hugo content and templates
 
 ## Set up a checkout
 
-Install Git, Make, Python 3.11 or newer, Hugo extended 0.156.0 or newer, and Poppler (`pdfinfo` and `pdftotext`). GitHub CLI (`gh`) is needed only for manual workflow operations. Complete these steps from the repository root:
+Install Git, Make, Python 3.11 or newer, Hugo 0.170.1 or newer, and Poppler (`pdfinfo` and `pdftotext`). GitHub CLI (`gh`) is needed only for manual workflow operations. Complete these steps from the repository root:
 
 1. Initialize the theme and install the Python dependencies:
 

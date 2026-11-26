@@ -2,8 +2,8 @@
 # Install the same tools for pull-request validation and main-branch builds.
 set -euo pipefail
 
-readonly HUGO_VERSION="0.163.3"
-readonly HUGO_ASSET="hugo_extended_${HUGO_VERSION}_linux-amd64.deb"
+readonly HUGO_VERSION="0.170.1"
+readonly HUGO_ASSET="hugo_${HUGO_VERSION}_linux-amd64.deb"
 readonly HUGO_RELEASE="https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}"
 
 if [[ "$(uname -m)" != "x86_64" ]]; then
